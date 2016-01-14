@@ -1,9 +1,10 @@
 package org.hcjf.log;
 
 /**
- * Clase estatica que provee la funcionalidad de log del sistema, formateando
- * todos los registros de log para generar un conjunto de registros omogeneos.
- * @author javaito [javaito@gmail.com]
+ * Static class that contains the funcionality in order to
+ * maintain and organize a log file with the same records format
+ * @author javaito
+ * @mail javaito@gmail.com
  */
 public class Log {
 }
