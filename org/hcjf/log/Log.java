@@ -16,6 +16,14 @@ package org.hcjf.log;
  */
 public final class Log {
 
+    private static final String LOG_PATH = "log_path";
+    private static final String LOG_FILE_PREFIX = "log_file_prefix";
+    private static final String LOG_ERROR_FILE = "log_error_file";
+    private static final String LOG_WARNING_FILE = "log_warning_file";
+    private static final String LOG_INFO_FILE = "log_info_file";
+    private static final String LOG_DEBUG_FILE = "log_debug_file";
+    private static final String LOG_LEVEL= "log_level";
+
     /**
      * Private constructor
      */
@@ -23,11 +31,106 @@ public final class Log {
     }
 
     /**
-     * Create a record with info tag ("[I]").
-     * @param message
-     * @param params
+     * Create a record with debug tag ("[D]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param message Message to the record.
+     * @param params Parameters for the places in the message.
+     */
+    public static void d(String message, Object... params) {
+
+    }
+
+    /**
+     * Create a record with info tag ("[I]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param message Message to the record.
+     * @param params Parameters for the places in the message.
      */
     public static void i(String message, Object... params) {
 
+    }
+
+    /**
+     * Create a record with warning tag ("[W]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param message Message to the record.
+     * @param params Parameters for the places in the message.
+     */
+    public static void w(String message, Object... params) {
+
+    }
+
+    /**
+     * Create a record with warning tag ("[W]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param message Message to the record.
+     * @param throwable Throwable whose message will be printed as part of record
+     * @param params Parameters for the places in the message.
+     */
+    public static void w(String message, Throwable throwable, Object... params) {
+
+    }
+
+    /**
+     * Create a record with error tag ("[E]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param message Message to the record.
+     * @param params Parameters for the places in the message.
+     */
+    public static void e(String message, Object... params) {
+
+    }
+
+    /**
+     * Create a record with error tag ("[E]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param message Message to the record.
+     * @param throwable Throwable whose message will be printed as part of record
+     * @param params Parameters for the places in the message.
+     */
+    public static void e(String message, Throwable throwable, Object... params) {
+
+    }
+
+    private static class LogRecord {
+
+    }
+
+    /**
+     * This enum contains all the possible tags for the records
+     */
+    private static enum LogTag {
+
+        DEBUG("D", 0),
+
+        INFO("I", 1),
+
+        WARNING("W", 2),
+
+        ERROR("E", 3);
+
+        private Integer order;
+        private String tag;
+
+        LogTag(String tag, Integer order) {
+            this.order = order;
+            this.tag = tag;
+        }
+
+        /**
+         * Return the tag order.
+         * @return Tag order.
+         */
+        public Integer getOrder() {
+            return order;
+        }
+
+        /**
+         * Return the tag label.
+         * @return Tag label.
+         */
+        public String getTag() {
+            return tag;
+        }
     }
 }
