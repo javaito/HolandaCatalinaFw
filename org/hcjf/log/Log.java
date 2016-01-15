@@ -5,7 +5,10 @@ import org.hcjf.properties.SystemProperties;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Stream;
 
@@ -54,6 +57,18 @@ public final class Log {
     }
 
     /**
+     * Add the record to the queue and notify the consumer thread.
+     * @param record Record to add.
+     */
+    private void addRecord(LogRecord record) {
+        if(instance.queue.add(record)) {
+            synchronized (this.thread) {
+                this.thread.notify();
+            }
+        }
+    }
+
+    /**
      * Create a record with debug tag ("[D]"). All the places in the messages
      * are replaced for each param in the natural order.
      * @param message Message to the record. This message use the syntax for class
@@ -61,7 +76,7 @@ public final class Log {
      * @param params Parameters for the places in the message.
      */
     public static void d(String message, Object... params) {
-
+        instance.addRecord(new LogRecord(LogTag.DEBUG, message, params));
     }
 
     /**
@@ -72,7 +87,7 @@ public final class Log {
      * @param params Parameters for the places in the message.
      */
     public static void i(String message, Object... params) {
-
+        instance.addRecord(new LogRecord(LogTag.INFO, message, params));
     }
 
     /**
@@ -83,7 +98,7 @@ public final class Log {
      * @param params Parameters for the places in the message.
      */
     public static void w(String message, Object... params) {
-
+        instance.addRecord(new LogRecord(LogTag.WARNING, message, params));
     }
 
     /**
@@ -95,7 +110,7 @@ public final class Log {
      * @param params Parameters for the places in the message.
      */
     public static void w(String message, Throwable throwable, Object... params) {
-
+        instance.addRecord(new LogRecord(LogTag.WARNING, message, throwable, params));
     }
 
     /**
@@ -106,7 +121,7 @@ public final class Log {
      * @param params Parameters for the places in the message.
      */
     public static void e(String message, Object... params) {
-
+        instance.addRecord(new LogRecord(LogTag.ERROR, message, params));
     }
 
     /**
@@ -118,7 +133,7 @@ public final class Log {
      * @param params Parameters for the places in the message.
      */
     public static void e(String message, Throwable throwable, Object... params) {
-
+        instance.addRecord(new LogRecord(LogTag.ERROR, message, throwable, params));
     }
 
     private class LogThread extends Thread {
@@ -132,10 +147,21 @@ public final class Log {
         @Override
         public void run() {
             while(!isInterrupted()) {
+                if(instance.queue.isEmpty()) {
+                    synchronized (LogThread.this) {
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {}
+                    }
+                }
 
+                writeRecord(instance.queue.remove());
             }
         }
 
+        private void writeRecord(LogRecord record) {
+            System.out.println(record.toString());
+        }
     }
 
     /**
@@ -157,11 +183,21 @@ public final class Log {
          * @param throwable The error object, could be null
          * @param params Values that will be put in the each places of the message.
          */
-        public LogRecord(LogTag tag, String message, Throwable throwable, Objects... params) {
+        public LogRecord(LogTag tag, String message, Throwable throwable, Object... params) {
             this.date = new Date();
             this.tag = tag;
-            this.message = createMessage(message, throwable, params);
             this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.LOG_DATE_FORMAT));
+            this.message = createMessage(message, throwable, params);
+        }
+
+        /**
+         * Constructor
+         * @param tag Taf for the record.
+         * @param message Message with wildcard for the parameters.
+         * @param params Values that will be put in the each places of the message.
+         */
+        public LogRecord(LogTag tag, String message, Object... params) {
+            this(tag, message, null, params);
         }
 
         /**
@@ -211,6 +247,11 @@ public final class Log {
          */
         public String getMessage() {
             return message;
+        }
+
+        @Override
+        public String toString() {
+            return getMessage();
         }
     }
 

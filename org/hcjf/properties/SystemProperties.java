@@ -37,7 +37,7 @@ public final class SystemProperties {
         defaultValues.put(LOG_INFO_FILE, "false");
         defaultValues.put(LOG_DEBUG_FILE, "false");
         defaultValues.put(LOG_LEVEL, "I");
-        defaultValues.put(LOG_DATE_FORMAT, "yyyy-mm-dd HH:MM:ss");
+        defaultValues.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
 
     }
 
