@@ -222,6 +222,9 @@ public final class Log {
                 throwable.printStackTrace(printWriter);
             }
 
+            printWriter.flush();
+            printWriter.close();
+
             return stringWriter.toString();
         }
 
@@ -249,6 +252,10 @@ public final class Log {
             return message;
         }
 
+        /**
+         * Return de format message.
+         * @return Format message.
+         */
         @Override
         public String toString() {
             return getMessage();
