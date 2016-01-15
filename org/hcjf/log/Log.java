@@ -1,5 +1,14 @@
 package org.hcjf.log;
 
+import org.hcjf.properties.SystemProperties;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.stream.Stream;
+
 /**
  * Static class that contains the funcionality in order to
  * maintain and organize a log file with the same records format
@@ -11,29 +20,44 @@ package org.hcjf.log;
  * <br><b>hcfj_log_info_file</b>: if the property is true then log create a particular file for info tag only, by default false
  * <br><b>hcfj_log_debug_file</b>: if the property is true then log create a particular file for debug tag only, by default false
  * <br><b>hcfj_log_level</b>: min level to write file, by default "I"
+ * <br><b>hcfj_log_date_format</b>: date format to show in the log file, by default "yyyy-mm-dd hh:mm:ss"
  * @author javaito
- * @mail javaito@gmail.com
+ * @email javaito@gmail.com
  */
 public final class Log {
 
-    private static final String LOG_PATH = "log_path";
-    private static final String LOG_FILE_PREFIX = "log_file_prefix";
-    private static final String LOG_ERROR_FILE = "log_error_file";
-    private static final String LOG_WARNING_FILE = "log_warning_file";
-    private static final String LOG_INFO_FILE = "log_info_file";
-    private static final String LOG_DEBUG_FILE = "log_debug_file";
-    private static final String LOG_LEVEL= "log_level";
+    private static final Integer QUEUE_INITIAL_SIZE = 10000;
+
+    private static final Log instance;
+
+    static {
+        instance = new Log();
+    }
+
+    private final Queue<LogRecord> queue;
+    private final Thread thread;
 
     /**
      * Private constructor
      */
     private Log() {
+        this.queue = new PriorityBlockingQueue<>(QUEUE_INITIAL_SIZE, new Comparator<LogRecord>() {
+
+            @Override
+            public int compare(LogRecord o1, LogRecord o2) {
+                return (int)((o1.getDate().getTime() / 1000) - (o2.getDate().getTime() / 1000));
+            }
+
+        });
+        this.thread = new LogThread();
+        this.thread.start();
     }
 
     /**
      * Create a record with debug tag ("[D]"). All the places in the messages
      * are replaced for each param in the natural order.
-     * @param message Message to the record.
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      */
     public static void d(String message, Object... params) {
@@ -43,7 +67,8 @@ public final class Log {
     /**
      * Create a record with info tag ("[I]"). All the places in the messages
      * are replaced for each param in the natural order.
-     * @param message Message to the record.
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      */
     public static void i(String message, Object... params) {
@@ -53,7 +78,8 @@ public final class Log {
     /**
      * Create a record with warning tag ("[W]"). All the places in the messages
      * are replaced for each param in the natural order.
-     * @param message Message to the record.
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      */
     public static void w(String message, Object... params) {
@@ -63,7 +89,8 @@ public final class Log {
     /**
      * Create a record with warning tag ("[W]"). All the places in the messages
      * are replaced for each param in the natural order.
-     * @param message Message to the record.
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
      * @param throwable Throwable whose message will be printed as part of record
      * @param params Parameters for the places in the message.
      */
@@ -74,7 +101,8 @@ public final class Log {
     /**
      * Create a record with error tag ("[E]"). All the places in the messages
      * are replaced for each param in the natural order.
-     * @param message Message to the record.
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      */
     public static void e(String message, Object... params) {
@@ -84,7 +112,8 @@ public final class Log {
     /**
      * Create a record with error tag ("[E]"). All the places in the messages
      * are replaced for each param in the natural order.
-     * @param message Message to the record.
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
      * @param throwable Throwable whose message will be printed as part of record
      * @param params Parameters for the places in the message.
      */
@@ -92,8 +121,97 @@ public final class Log {
 
     }
 
+    private class LogThread extends Thread {
+
+        private static final String LOG_THREAD_NAME = "LogThread";
+
+        public LogThread() {
+            super(LOG_THREAD_NAME);
+        }
+
+        @Override
+        public void run() {
+            while(!isInterrupted()) {
+
+            }
+        }
+
+    }
+
+    /**
+     * This class contains all the information to write a record in the log.
+     * The instances of this class will be queued sorted chronologically waiting for
+     * be write
+     */
     private static class LogRecord {
 
+        private final Date date;
+        private final LogTag tag;
+        private final String message;
+        private final SimpleDateFormat dateFormat;
+
+        /**
+         * Constructor
+         * @param tag Taf for the record.
+         * @param message Message with wildcard for the parameters.
+         * @param throwable The error object, could be null
+         * @param params Values that will be put in the each places of the message.
+         */
+        public LogRecord(LogTag tag, String message, Throwable throwable, Objects... params) {
+            this.date = new Date();
+            this.tag = tag;
+            this.message = createMessage(message, throwable, params);
+            this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.LOG_DATE_FORMAT));
+        }
+
+        /**
+         * Create a final version of string to print the record.
+         * @param message Message to be format
+         * @param throwable The error object, could be null.
+         * @param params Parameters to format the message.
+         * @return Return the last version of the message.
+         */
+        private String createMessage(String message, Throwable throwable, Object... params) {
+            StringWriter stringWriter = new StringWriter();
+            PrintWriter printWriter = new PrintWriter(stringWriter);
+
+            printWriter.print(dateFormat.format(getDate()));
+            printWriter.print(" [");
+            printWriter.print(getTag().getTag());
+            printWriter.print("] ");
+            printWriter.printf(message, params);
+
+            if(throwable != null) {
+                printWriter.print("\r\n");
+                throwable.printStackTrace(printWriter);
+            }
+
+            return stringWriter.toString();
+        }
+
+        /**
+         * Return the record date
+         * @return Record date.
+         */
+        public Date getDate() {
+            return date;
+        }
+
+        /**
+         * Return the record tag.
+         * @return Record tag.
+         */
+        public LogTag getTag() {
+            return tag;
+        }
+
+        /**
+         * Return the last version of the message.
+         * @return Record message.
+         */
+        public String getMessage() {
+            return message;
+        }
     }
 
     /**
@@ -131,6 +249,23 @@ public final class Log {
          */
         public String getTag() {
             return tag;
+        }
+
+        /**
+         * Return the tag instance that correspond with the parameter.
+         * @param tagString String tag
+         * @return Tag instance founded or null if the instance is not exist.
+         */
+        public LogTag valueOfByTag(String tagString) {
+            LogTag result = null;
+
+            try {
+                result = Stream.of(values()).
+                        filter(r -> r.getTag().equals(tagString)).
+                        findFirst().get();
+            } catch (NoSuchElementException ex) {}
+
+            return result;
         }
     }
 }
