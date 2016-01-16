@@ -5,10 +5,7 @@ import org.hcjf.properties.SystemProperties;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.NoSuchElementException;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Stream;
 
@@ -17,6 +14,7 @@ import java.util.stream.Stream;
  * maintain and organize a log file with the same records format
  * The log behavior is affected by the following system properties
  * <br><b>hcfj_log_path</b>: work directory of the log, by default app work directory
+ * <br><b>hcfj_log_initial_queue_size</b>: initial size of the internal queue, by default 10000;
  * <br><b>hcfj_log_file_prefix</b>: all the log files start with this prefix, by default hcjf
  * <br><b>hcfj_log_error_file</b>: if the property is true then log create a particular file for error tag only, by default false
  * <br><b>hcfj_log_warning_file</b>: if the property is true then log create a particular file for warning tag only, by default false
@@ -37,6 +35,7 @@ public final class Log {
         instance = new Log();
     }
 
+    private final List<LogPrinter> printers;
     private final Queue<LogRecord> queue;
     private final Thread thread;
 
@@ -44,6 +43,7 @@ public final class Log {
      * Private constructor
      */
     private Log() {
+        this.printers = new ArrayList<>();
         this.queue = new PriorityBlockingQueue<>(QUEUE_INITIAL_SIZE, new Comparator<LogRecord>() {
 
             @Override
@@ -77,6 +77,18 @@ public final class Log {
      */
     public static void d(String message, Object... params) {
         instance.addRecord(new LogRecord(LogTag.DEBUG, message, params));
+    }
+
+    /**
+     * Create a record with debug tag ("[D]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
+     * @param throwable Throwable whose message will be printed as part of record
+     * @param params Parameters for the places in the message.
+     */
+    public static void d(String message, Throwable throwable, Object... params) {
+        instance.addRecord(new LogRecord(LogTag.DEBUG, message, throwable, params));
     }
 
     /**
@@ -144,6 +156,9 @@ public final class Log {
             super(LOG_THREAD_NAME);
         }
 
+        /**
+         * Wait to found a recor to print.
+         */
         @Override
         public void run() {
             while(!isInterrupted()) {
@@ -155,11 +170,23 @@ public final class Log {
                     }
                 }
 
-                writeRecord(instance.queue.remove());
+                try {
+                    writeRecord(instance.queue.remove());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
             }
         }
 
+        /**
+         * Print the record in all the printers registered and the
+         * syste out printer.
+         * @param record Record to print.
+         */
         private void writeRecord(LogRecord record) {
+            if(record.getTag() != LogTag.DEBUG) {
+                printers.stream().forEach(printer -> printer.print(record));
+            }
             System.out.println(record.toString());
         }
     }
@@ -169,7 +196,7 @@ public final class Log {
      * The instances of this class will be queued sorted chronologically waiting for
      * be write
      */
-    private static class LogRecord {
+    public static final class LogRecord {
 
         private final Date date;
         private final LogTag tag;
@@ -183,7 +210,7 @@ public final class Log {
          * @param throwable The error object, could be null
          * @param params Values that will be put in the each places of the message.
          */
-        public LogRecord(LogTag tag, String message, Throwable throwable, Object... params) {
+        private LogRecord(LogTag tag, String message, Throwable throwable, Object... params) {
             this.date = new Date();
             this.tag = tag;
             this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.LOG_DATE_FORMAT));
@@ -196,7 +223,7 @@ public final class Log {
          * @param message Message with wildcard for the parameters.
          * @param params Values that will be put in the each places of the message.
          */
-        public LogRecord(LogTag tag, String message, Object... params) {
+        private LogRecord(LogTag tag, String message, Object... params) {
             this(tag, message, null, params);
         }
 

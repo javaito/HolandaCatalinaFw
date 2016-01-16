@@ -1,5 +1,7 @@
 package org.hcjf.properties;
 
+import org.hcjf.log.Log;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +44,25 @@ public final class SystemProperties {
     }
 
     /**
+     * Put the default value for a property.
+     * @param propertyName Property name.
+     * @param defaultValue Property default value.
+     * @throws NullPointerException Throw a {@link NullPointerException} when the
+     * property name or default value are null.
+     */
+    public static void putDefaultValue(String propertyName, String defaultValue) {
+        if(propertyName == null) {
+            throw new NullPointerException("Invalid property name null");
+        }
+
+        if(defaultValue == null) {
+            throw new NullPointerException("Invalid default value null");
+        }
+
+        instance.defaultValues.put(propertyName, defaultValue);
+    }
+
+    /**
      * This method return the string value of the system property
      * named like the parameter.
      * @param propertyName Name of the find property.
@@ -50,8 +71,37 @@ public final class SystemProperties {
     public static String get(String propertyName) {
         String defaultValue = instance.defaultValues.get(propertyName);
 
-        return defaultValue == null ?
+        String result = defaultValue == null ?
                 System.getProperty(propertyName) :
                 System.getProperty(propertyName, defaultValue);
+
+        if(result == null) {
+            Log.d("Property not found: $1",  propertyName);
+        }
+
+        return result;
+    }
+
+    /**
+     * This method return the value of the system property as integer.
+     * @param propertyName Name of the find property.
+     * @return Value of the system property as integer, or null if the property is not found.
+     */
+    public static Integer getInteger(String propertyName) {
+        Integer result = null;
+
+        String propertyValue = get(propertyName);
+        if(propertyValue != null) {
+            try {
+                result = Integer.decode(propertyValue);
+            } catch (NumberFormatException ex) {
+                Log.d("Number format exception for property $1", ex, propertyName);
+                if (instance.defaultValues.containsKey(propertyName)) {
+                    result = Integer.decode(instance.defaultValues.get(propertyName));
+                }
+            }
+        }
+
+        return result;
     }
 }
