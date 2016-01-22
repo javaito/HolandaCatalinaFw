@@ -39,7 +39,7 @@ public final class Log extends Service<LogPrinter> {
 
     private final List<LogPrinter> printers;
     private final Queue<LogRecord> queue;
-    private final Thread thread;
+    private Thread thread;
 
     /**
      * Private constructor
@@ -55,7 +55,14 @@ public final class Log extends Service<LogPrinter> {
             }
 
         });
-        this.thread = new LogThread();
+    }
+
+    /**
+     * Start the log thread.
+     */
+    @Override
+    protected void init() {
+        this.thread = getServiceThreadFactory().newThread(new LogRunnable());
         this.thread.start();
     }
 
@@ -174,22 +181,16 @@ public final class Log extends Service<LogPrinter> {
         instance.addRecord(new LogRecord(LogTag.ERROR, message, throwable, params));
     }
 
-    private class LogThread extends Thread {
-
-        private static final String LOG_THREAD_NAME = "LogThread";
-
-        public LogThread() {
-            super(LOG_THREAD_NAME);
-        }
+    private class LogRunnable implements Runnable {
 
         /**
          * Wait to found a recor to print.
          */
         @Override
         public void run() {
-            while(!isInterrupted()) {
+            while(!Thread.currentThread().isInterrupted()) {
                 if(instance.queue.isEmpty()) {
-                    synchronized (LogThread.this) {
+                    synchronized (LogRunnable.this) {
                         try {
                             wait();
                         } catch (InterruptedException e) {}

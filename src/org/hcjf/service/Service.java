@@ -39,6 +39,14 @@ public abstract class Service<C extends ServiceConsumer> {
     }
 
     /**
+     * Return the internal thread factory for the services.
+     * @return Thread factory.
+     */
+    protected final ThreadFactory getServiceThreadFactory() {
+        return serviceThreadFactory;
+    }
+
+    /**
      * Return the service name.
      * @return Service name.
      */
