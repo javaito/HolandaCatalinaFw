@@ -1,6 +1,7 @@
 package org.hcjf.log;
 
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -25,8 +26,9 @@ import java.util.stream.Stream;
  * @author javaito
  * @email javaito@gmail.com
  */
-public final class Log {
+public final class Log extends Service<LogPrinter> {
 
+    private static final String NAME = "LogService";
     private static final Integer QUEUE_INITIAL_SIZE = 10000;
 
     private static final Log instance;
@@ -43,6 +45,7 @@ public final class Log {
      * Private constructor
      */
     private Log() {
+        super(NAME);
         this.printers = new ArrayList<>();
         this.queue = new PriorityBlockingQueue<>(QUEUE_INITIAL_SIZE, new Comparator<LogRecord>() {
 
@@ -57,6 +60,20 @@ public final class Log {
     }
 
     /**
+     * This method register a printer.
+     * @param consumer Printer.
+     * @throws NullPointerException If the printer is null.
+     */
+    @Override
+    public void registerConsumer(LogPrinter consumer) {
+        if(consumer == null) {
+            throw new NullPointerException("Log printer null");
+        }
+
+        printers.add(consumer);
+    }
+
+    /**
      * Add the record to the queue and notify the consumer thread.
      * @param record Record to add.
      */
@@ -66,6 +83,15 @@ public final class Log {
                 this.thread.notify();
             }
         }
+    }
+
+    /**
+     * This method register a printer.
+     * @param printer Printer.
+     * @throws NullPointerException If the printer is null.
+     */
+    public static void addPrinter(LogPrinter printer) {
+        instance.registerConsumer(printer);
     }
 
     /**
