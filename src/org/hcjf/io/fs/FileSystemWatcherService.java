@@ -16,6 +16,8 @@ import java.util.Map;
  */
 public final class FileSystemWatcherService extends Service<FileSystemWatcherConsumer> {
 
+    public static final String FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG = "FILE_SYSTEM_WATCHER_SERVICE";
+
     private WatchService watcher;
     private final FileSystemWatcherThread thread;
     private final Map<WatchKey, FileSystemWatcherConsumer> consumers;
@@ -40,7 +42,8 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
         try {
             WatchKey key = consumer.getBasePath().register(watcher, consumer.getEvetKinds());
         } catch (IOException ex) {
-            Log.d("Unable to register file system watcher consumer, '$1'", ex, consumer.getBasePath());
+            Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG,
+                    "Unable to register file system watcher consumer, '$1'", ex, consumer.getBasePath());
         }
     }
 
@@ -65,7 +68,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
             try {
                 watcher = FileSystems.getDefault().newWatchService();
             } catch (IOException ex) {
-                Log.d("File System Watcher init fail", ex);
+                Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File System Watcher init fail", ex);
             }
 
             if(watcher != null) {
@@ -97,10 +100,11 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
 
                         boolean valid = key.reset();
                         if (!valid) {
-                            Log.d("Inaccessible path '$1', consumer unregistered", consumer.getBasePath());
+                            Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG,
+                                    "Inaccessible path '$1', consumer unregistered", consumer.getBasePath());
                         }
                     } else {
-                        Log.d("Consumer null");
+                        Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "Consumer null");
                     }
                 }
             }
