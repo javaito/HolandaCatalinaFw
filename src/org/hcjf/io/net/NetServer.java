@@ -9,10 +9,13 @@ package org.hcjf.io.net;
 public abstract class NetServer<S extends NetSession, D extends Object> extends NetServiceConsumer<S, D> {
 
     private final boolean multiSession;
+    private final boolean disconnectAndRemove;
 
-    public NetServer(Integer port, NetService.TransportLayerProtocol protocol, boolean multiSession) {
+    public NetServer(Integer port, NetService.TransportLayerProtocol protocol,
+                     boolean multiSession, boolean disconnectAndRemove) {
         super(port, protocol);
         this.multiSession = multiSession;
+        this.disconnectAndRemove = disconnectAndRemove;
     }
 
     /**
@@ -40,5 +43,28 @@ public abstract class NetServer<S extends NetSession, D extends Object> extends 
      */
     public final boolean isMultiSession() {
         return multiSession;
+    }
+
+    /**
+     * This method indicate if the server must destroy de session when
+     * the session is disconnected.
+     * @return True to destroy and false otherwise
+     */
+    public final boolean isDisconnectAndRemove() {
+        return disconnectAndRemove;
+    }
+
+    /**
+     * This method is to start to listener.
+     */
+    public final void start() {
+        NetService.getInstance().registerConsumer(this);
+    }
+
+    /**
+     *
+     */
+    public final void stop() {
+        //TODO: Need to method to unregister the consumer.
     }
 }

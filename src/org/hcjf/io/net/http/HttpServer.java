@@ -4,14 +4,43 @@ import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.log.Log;
+import org.hcjf.properties.SystemProperties;
+
+import java.util.*;
 
 /**
  *
  */
 public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
-    public HttpServer(Integer port, NetService.TransportLayerProtocol protocol, boolean multiSession) {
-        super(port, protocol, multiSession);
+    private static final Integer DEFAULT_HTTP_PORT = 80;
+    public static final String HTTP_SERVER_LOG_TAG = "HTTP_SERVER";
+
+    private Map<NetSession, HttpRequest> requestBuffers;
+    private Set<Context> contexts;
+
+    public HttpServer() {
+        this(DEFAULT_HTTP_PORT);
+    }
+
+    public HttpServer(Integer port) {
+        super(port, NetService.TransportLayerProtocol.TCP, false, true);
+        requestBuffers = new HashMap<>();
+        contexts = new TreeSet<>(new Comparator<Context>() {
+
+            @Override
+            public int compare(Context context, Context newContext) {
+                int result = context.getContextRegex().compareTo(newContext.getContextRegex());
+
+                if(result == 0) {
+                    Log.w(HTTP_SERVER_LOG_TAG, "Duplicated context: %s", context.getContextRegex());
+                }
+
+                return result;
+            }
+
+        });
     }
 
     /**
@@ -24,7 +53,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected HttpSession createSession(HttpPackage payLoad, NetPackage netPackage) {
-        return null;
+        return new HttpSession(this, (HttpRequest)payLoad);
     }
 
     /**
@@ -35,7 +64,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected final byte[] encode(HttpPackage payLoad) {
-        return new byte[0];
+        return payLoad.toString().getBytes();
     }
 
     /**
@@ -46,7 +75,35 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected final HttpPackage decode(NetPackage netPackage) {
-        return null;
+        HttpRequest request = requestBuffers.get(netPackage.getSession());
+        if(request == null){
+            request = new HttpRequest();
+            requestBuffers.put(netPackage.getSession(), request);
+        }
+        request.addData(netPackage.getPayload());
+        return request;
+    }
+
+    public final void addContext(Context context) {
+        contexts.add(context);
+    }
+
+    /**
+     *
+     * @param contextName
+     * @return
+     */
+    private Context findContext(String contextName) {
+        Context result = null;
+
+        for(Context context : contexts) {
+            if(contextName.matches(context.getContextRegex())) {
+                result = context;
+                break;
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -56,12 +113,46 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     public void destroySession(NetSession session) {
-
+        Log.d(HTTP_SERVER_LOG_TAG, "Do something to destroy session: %s", session.getSessionId());
     }
 
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        super.onRead(session, payLoad, netPackage);
+        try {
+            HttpResponse response = null;
+            HttpRequest request = (HttpRequest) payLoad;
+            if (request.isComplete()) {
+                Context context = findContext(request.getContext());
+                if (context != null) {
+                    try {
+                        response = context.onContext(request);
+                    } catch (Throwable throwable) {
+                        response = context.onError(request, throwable);
+                    }
+                } else {
+
+                    String body = "Context not found: " + request.getContext();
+
+                    response = new HttpResponse();
+                    response.setResponseCode(HttpResponseCode.NOT_FOUND);
+                    response.setReasonPhrase("Context not found: " + request.getContext());
+                    response.setBody(body.getBytes());
+                    response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "text/plain"));
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+                }
+            }
+            response.addHeader(new HttpHeader(HttpHeader.DATE,
+                    SystemProperties.getFormattedDate(SystemProperties.HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, new Date())));
+            response.addHeader(new HttpHeader(HttpHeader.SERVER,
+                    SystemProperties.get(SystemProperties.HTTP_SERVER_NAME)));
+
+            write(session, response);
+        } catch (Throwable throwable) {
+            Log.e(NetService.NET_SERVICE_LOG_TAG, "Http server error", throwable);
+        } finally {
+            disconnect(session, "Http request end");
+        }
     }
 
     /**

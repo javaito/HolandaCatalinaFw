@@ -13,192 +13,65 @@ import java.util.Map;
  */
 public class HttpHeader {
 
+    //Header names
+    public static final String ACCEPT = "Accept";
+    public static final String ACCEPT_CHARSET = "Accept-Charset";
+    public static final String ACCEPT_ENCODING = "Accept-Encoding";
+    public static final String ACCEPT_LANGUAGE = "Accept-Language";
+    public static final String AUTHORIZATION = "Authorization";
+    public static final String EXPECT = "Expect";
+    public static final String FROM = "From";
+    public static final String HOST = "Host";
+    public static final String IF_MATCH = "If-Match";
+    public static final String IF_MODIFIED_SINCE = "If-Modified-Since";
+    public static final String IF_NONE_MATCH = "If-None-Match";
+    public static final String IF_RANGE = "If-Range";
+    public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
+    public static final String MAX_FORWARDS = "Max-Forwards";
+    public static final String PROXY_AUTHORIZATION = "Proxy-Authorization";
+    public static final String RANGE = "Range";
+    public static final String REFERER = "Referer";
+    public static final String TE = "TE";
+    public static final String USER_AGENT = "User-Agent";
+    public static final String CONTENT_TYPE = "Content-Type";
+    public static final String CONTENT_LENGTH = "Content-Length";
+    public static final String SERVER = "Server";
+    public static final String DATE = "Date";
+    public static final String LAST_MODIFIED = "Last-Modified";
+    public static final String CONNECTION = "Connection";
+
+    //Header values
+    public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
+    public static final String CLOSED = "Closed";
+
     private static final char HEADER_ASIGNATION = ':';
-    private static final char HEADER_PARAMETER_DELIMITER = ';';
-    private static final char HEADER_PARAMETER_DELIMITER2 = ' ';
-    private static final char HEADER_PARAMETERS_SEPARATOR = ',';
-    private static final char HEADER_PARAMETER_ASIGNATION = '=';
-    private static final char HEADER_SCAPE_CHARACTER = '\"';
 
-    private static int HEADER_NAME = 0;
-    private static int HEADER_VALUE = 1;
-    private static int HEADER_PARAMETER = 2;
+    //Values in order to parse content-type header
+    protected static final String CONTENT_TYPE_FIELD_SEPARATOR = ";";
+    protected static final String CONTENT_TYPE_FIELD_ASSIGNATION = "=";
 
-    private String headerName;
-    private String headerValue;
-    private final List<String> parameterNames;
+    //Header parameter names
+    public static final String CHARSET = "charset";
+
+    private final String headerName;
+    private final String headerValue;
     private final Map<String, String> parameters;
 
     public HttpHeader(String header) {
-        this.parameters = new HashMap();
-        this.parameterNames = new ArrayList<>();
-        parseHeader(header);
+        this(header.substring(0, header.indexOf(HEADER_ASIGNATION)),
+                header.substring(header.indexOf(HEADER_ASIGNATION) + 1));
     }
 
     public HttpHeader(String headerName, String headerValue) {
-        this.parameters = new HashMap();
-        this.parameterNames = new ArrayList<>();
-        try {
-            parseHeader(headerName + ": " + headerValue);
-        } catch (Exception ex) {
-            this.headerName = headerName;
-            this.headerValue = headerValue;
-        }
+        this.headerName = headerName;
+        this.headerValue = headerValue;
+        this.parameters = new HashMap<>();
+        parse();
     }
 
     /**
-     * Parse the http header and create all the header's components.
-     * @param header Header http.
-     */
-    private void parseHeader(String header) {
-        try {
-            boolean scape = false;
-            String currentParameterName = "";
-            StringBuilder buffer = new StringBuilder();
-            int state = HEADER_NAME;
-            for(char currentChar : header.toCharArray()) {
-                switch(currentChar) {
-                    case HEADER_ASIGNATION: {
-                        if(state == HEADER_NAME) {
-                            this.headerName = buffer.toString().trim();
-                            buffer.delete(0, buffer.length());
-                            state = HEADER_VALUE;
-                        } else {
-                            buffer.append(currentChar);
-                        }
-                        break;
-                    }
-                    case HEADER_PARAMETER_DELIMITER:
-                    case HEADER_PARAMETER_DELIMITER2: {
-                        if(state == HEADER_VALUE && buffer.length() > 0) {
-                            this.headerValue = buffer.toString().trim();
-                            buffer.delete(0, buffer.length());
-                            state = HEADER_PARAMETER;
-                        } else if(!scape && state == HEADER_PARAMETER && (buffer.length() > 0)) {
-                            if(currentParameterName.isEmpty()) {
-                                addParameter(buffer.toString(), "");
-                            } else {
-                                addParameter(currentParameterName, buffer.toString());
-                            }
-                            currentParameterName = "";
-                            buffer.delete(0, buffer.length());
-                        } else {
-                            buffer.append(currentChar);
-                        }
-                        break;
-                    }
-                    case HEADER_PARAMETERS_SEPARATOR: {
-                        if(!scape && state == HEADER_PARAMETER && (buffer.length() > 0)) {
-                            if(currentParameterName.isEmpty()) {
-                                addParameter(buffer.toString(), "");
-                            } else {
-                                addParameter(currentParameterName, buffer.toString());
-                            }
-                            currentParameterName = "";
-                            buffer.delete(0, buffer.length());
-                        } else {
-                            buffer.append(currentChar);
-                        }
-                        break;
-                    }
-                    case HEADER_PARAMETER_ASIGNATION: {
-                        if(!scape && state == HEADER_PARAMETER) {
-                            currentParameterName = buffer.toString();
-                            buffer.delete(0, buffer.length());
-                        } else {
-                            buffer.append(currentChar);
-                        }
-                        break;
-                    }
-                    case HEADER_SCAPE_CHARACTER: {
-                        scape = !scape;
-                        break;
-                    }
-                    default: {
-                        buffer.append(currentChar);
-                    }
-                }
-            }
-
-            if(state == HEADER_VALUE) {
-                this.headerValue = buffer.toString().trim();
-            } else if(state == HEADER_PARAMETER) {
-                if(currentParameterName.isEmpty()) {
-                    addParameter(buffer.toString(), "");
-                } else {
-                    addParameter(currentParameterName, buffer.toString());
-                }
-            }
-        } catch (Exception ex){
-            throw new IllegalArgumentException("Unable to parse http header: " + header, ex);
-        }
-    }
-
-    /**
-     * Add the new field into the header.
-     * @param parameterName Name of the field.
-     * @param parameterValue Value fo the field.
-     */
-    public void addParameter(String parameterName, String parameterValue){
-        parameterName = parameterName.trim();
-        if(!parameterName.isEmpty()){
-            parameters.put(parameterName, parameterValue.trim());
-            parameterNames.add(parameterName);
-        }
-    }
-
-    /**
-     * Return the value of the named field.
-     * @param parameterName Name of the field..
-     * @return Value of the field.
-     */
-    public String getParameter(String parameterName){
-        return parameters.get(parameterName);
-    }
-
-    /**
-     * Find the value of the field that is in the place indicated for the index.
-     * The firs value is the index cero.
-     * @param index Index to indicate the field.
-     * @return Return the value of the founded field.
-     */
-    public String getParameter(int index) {
-        String result = null;
-        String name = null;
-        String value = null;
-        if(index >=0 && index < parameterNames.size()) {
-            name = parameterNames.get(index);
-            value = parameters.get(name);
-            //When the parameter comes without name in the header then it's value
-            //is storage like a key and the place of value is null.
-            if(value.isEmpty()){
-                result = name;
-            }else{
-                result = value;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Check if the parameter exists into the fields.
-     * @param parameterName Field name.
-     * @return Return true if the parameter exists and false if not exists.
-     */
-    public boolean contains(String parameterName) {
-        return parameters.containsKey(parameterName);
-    }
-
-    /**
-     * Retur all the parameter's names.
-     * @return List with the names.
-     */
-    public List<String> getParametersName(){
-        return parameterNames;
-    }
-    /**
-     * Devuelve el nombre del header.
-     * @return Nombre del header.
+     * Return the header name.
+     * @return Header name.
      */
     public String getHeaderName() {
         return headerName;
@@ -233,24 +106,43 @@ public class HttpHeader {
             result.append(HEADER_ASIGNATION).append(" ");
         }
         result.append(getHeaderValue());
-        if(parameterNames.size() > 0) {
-            result.append(HEADER_PARAMETER_DELIMITER);
-            String separator = "";
-            String value;
-            for(String name : parameterNames){
-                result.append(separator);
-                result.append(name);
-                value = parameters.get(name);
-                if(!value.isEmpty()){
-                    result.append(HEADER_PARAMETER_ASIGNATION);
-                    result.append(HEADER_SCAPE_CHARACTER);
-                    result.append(value);
-                    result.append(HEADER_SCAPE_CHARACTER);
-                }
-                separator = ",";
-            }
-        }
         return result.toString();
     }
 
+    /**
+     *
+     * @param parameterName
+     * @return
+     */
+    public final String getParameter(String parameterName) {
+        return parameters.get(parameterName);
+    }
+
+    /**
+     *
+     */
+    private void parse() {
+        switch (headerValue) {
+            case CONTENT_TYPE: {
+                parseContentType();
+                break;
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private void parseContentType() {
+        if(headerValue.indexOf(CONTENT_TYPE_FIELD_SEPARATOR) >= 0) {
+            String[] fields = headerValue.split(CONTENT_TYPE_FIELD_SEPARATOR);
+            String[] name_value;
+            for(int i = 1; i < fields.length; i++) {
+                if(fields[i].indexOf(CONTENT_TYPE_FIELD_ASSIGNATION) >= 0) {
+                    name_value = fields[i].split(CONTENT_TYPE_FIELD_ASSIGNATION);
+                    parameters.put(name_value[0], name_value[1]);
+                }
+            }
+        }
+    }
 }

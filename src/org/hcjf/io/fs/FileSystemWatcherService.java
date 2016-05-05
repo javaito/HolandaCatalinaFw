@@ -16,16 +16,30 @@ import java.util.Map;
  */
 public final class FileSystemWatcherService extends Service<FileSystemWatcherConsumer> {
 
+    private static final String FILE_SYSTEM_WATCHER_SERVICE_NAME = "File System Watcher Service";
     public static final String FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG = "FILE_SYSTEM_WATCHER_SERVICE";
 
+    private static final FileSystemWatcherService instance;
+
+    static {
+        instance = new FileSystemWatcherService();
+    }
+
     private WatchService watcher;
-    private final FileSystemWatcherThread thread;
+    private FileSystemWatcherThread thread;
     private final Map<WatchKey, FileSystemWatcherConsumer> consumers;
 
-    public FileSystemWatcherService(String serviceName) {
-        super(serviceName);
-        thread = new FileSystemWatcherThread();
+    private FileSystemWatcherService() {
+        super(FILE_SYSTEM_WATCHER_SERVICE_NAME);
         consumers = new HashMap<>();
+    }
+
+    /**
+     *
+     * @return
+     */
+    public static final FileSystemWatcherService getInstance() {
+        return instance;
     }
 
     /**
@@ -39,8 +53,18 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
             throw new NullPointerException("File system consumer null");
         }
 
+        synchronized (this) {
+            while(watcher == null) {
+                try {
+                    Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "Waiting file system watcher init");
+                    wait(5000);
+                } catch (InterruptedException e) {}
+            }
+        }
+
         try {
-            WatchKey key = consumer.getBasePath().register(watcher, consumer.getEvetKinds());
+            WatchKey key = consumer.getBasePath().register(watcher, consumer.getEventKinds());
+            consumers.put(key, consumer);
         } catch (IOException ex) {
             Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG,
                     "Unable to register file system watcher consumer, '$1'", ex, consumer.getBasePath());
@@ -52,7 +76,13 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
      */
     @Override
     protected void init() {
+        thread = new FileSystemWatcherThread();
         thread.start();
+        try {
+            watcher = FileSystems.getDefault().newWatchService();
+        } catch (IOException e) {
+            Log.w(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "Unable to start file system watcher service");
+        }
     }
 
     /**
@@ -67,6 +97,9 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
             //this service doesn't start.
             try {
                 watcher = FileSystems.getDefault().newWatchService();
+                synchronized (FileSystemWatcherService.this) {
+                    FileSystemWatcherService.this.notifyAll();
+                }
             } catch (IOException ex) {
                 Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File System Watcher init fail", ex);
             }
@@ -88,13 +121,13 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                             WatchEvent.Kind<?> kind = event.kind();
 
                             if (kind == StandardWatchEventKinds.OVERFLOW) {
-                                consumer.overflow(event);
+                                consumer.overflow((WatchEvent<Path>) event);
                             } else if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                                consumer.create(event);
+                                consumer.create((WatchEvent<Path>) event);
                             } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                consumer.update(event);
+                                consumer.update((WatchEvent<Path>) event);
                             } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                                consumer.delete(event);
+                                consumer.delete((WatchEvent<Path>) event);
                             }
                         }
 

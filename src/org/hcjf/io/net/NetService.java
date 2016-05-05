@@ -23,13 +23,16 @@ import java.util.concurrent.RejectedExecutionException;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class NetService extends Service<NetServiceConsumer> {
+public final class NetService extends Service<NetServiceConsumer> {
 
+    private static final String NET_SERVICE_NAME = "Net service";
     public static final String NET_SERVICE_LOG_TAG = "NET_SERVICE";
 
-    private boolean disconnectAndRemove;
-    private final int inputBufferSize;
-    private final int outBufferSize;
+    private static final NetService instance;
+
+    static {
+        instance = new NetService(NET_SERVICE_NAME);
+    }
 
     private final List<ServerSocketChannel> tcpServers;
     private final Map<NetSession, SelectableChannel> channels;
@@ -60,16 +63,13 @@ public class NetService extends Service<NetServiceConsumer> {
     private boolean shuttingDown;
     private boolean running;
 
-    public NetService(String serviceName) {
+    private NetService(String serviceName) {
         super(serviceName);
 
         this.random = new Random();
         this.timer = new Timer();
         this.selectorMonitor = new Object();
 
-        this.inputBufferSize = SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE);
-        this.outBufferSize = SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE);
-        this.disconnectAndRemove = SystemProperties.getBoolean(SystemProperties.NET_DISCONNECT_AND_REMOVE);
         this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.NET_CONNECTION_TIMEOUT_AVAILABLE);
         this.creationTimeout = SystemProperties.getLong(SystemProperties.NET_CONNECTION_TIMEOUT);
         if(creationTimeoutAvailable && creationTimeout <= 0){
@@ -88,6 +88,14 @@ public class NetService extends Service<NetServiceConsumer> {
         addresses = Collections.synchronizedMap(new HashMap<NetSession, SocketAddress>());
         readActionsQueue = Collections.synchronizedMap(new TreeMap<NetSession, LinkedList<NetPackage>>());
         writeActionsQueue = Collections.synchronizedMap(new TreeMap<NetSession, LinkedList<NetPackage>>());
+    }
+
+    /**
+     * Return the unique instance of the service.
+     * @return Instance of the service.
+     */
+    public static final NetService getInstance() {
+        return instance;
     }
 
     /**
@@ -240,31 +248,6 @@ public class NetService extends Service<NetServiceConsumer> {
      */
     public final Set<NetSession> getSessions() {
         return Collections.unmodifiableSet(sessions);
-    }
-
-    /**
-     * Return a value to indicate if the service is configured to remove the
-     * session when the channel is down.
-     * @return True if the session must be removed and false otherwise
-     */
-    public boolean isDisconnectAndRemove() {
-        return disconnectAndRemove;
-    }
-
-    /**
-     * Devuelve el tamaño del buffer de entrada.
-     * @return Tamaño del buffer de entrada.
-     */
-    private int getInputBuffersize() {
-        return inputBufferSize;
-    }
-
-    /**
-     * Devuelve el tamaño del buffer de salida.
-     * @return Tamaño del buffer de salida.
-     */
-    public int getOutBufferSize() {
-        return outBufferSize;
     }
 
     /**
@@ -445,7 +428,7 @@ public class NetService extends Service<NetServiceConsumer> {
         if(channels.containsKey(session)){
             SelectableChannel channel = channels.get(session);
             if(channel != null){
-                NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.WRITE, null);
+                NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.DISCONNECT, null);
                 netPackage.setSession(session);
                 outputQueue.get(channel).add(netPackage);
                 channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
@@ -470,9 +453,12 @@ public class NetService extends Service<NetServiceConsumer> {
             if(sessions != null){
                 for(NetSession session : sessions) {
                     channels.remove(session);
-                    if (isDisconnectAndRemove()) {
-                        sessions.remove(session);
-                        destroySession(session);
+                    if(session.getConsumer() instanceof NetServer) {
+                        NetServer server = (NetServer) session.getConsumer();
+                        if (server.isDisconnectAndRemove()) {
+                            sessions.remove(session);
+                            destroySession(session);
+                        }
                     }
                     removedSessions.add(session);
                 }
@@ -485,7 +471,7 @@ public class NetService extends Service<NetServiceConsumer> {
             }
 
         } catch (Exception ex){
-            Log.w(NET_SERVICE_LOG_TAG, "Destroy method", ex);
+            Log.d(NET_SERVICE_LOG_TAG, "Destroy method", ex);
         }
     }
 
@@ -912,7 +898,8 @@ public class NetService extends Service<NetServiceConsumer> {
                                 if(!session.isLocked()){
                                     byte[] byteData = netPackage.getPayload();
                                     int begin = 0;
-                                    int length = (byteData.length - begin) > getOutBufferSize() ? getOutBufferSize() : byteData.length - begin;
+                                    int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
+                                            session.getConsumer().getOutputBufferSize(): byteData.length - begin;
                                     while(begin < byteData.length){
                                         ioThread.getOutputBuffer().limit(length);
                                         ioThread.getOutputBuffer().put(byteData, begin, length);
@@ -937,7 +924,8 @@ public class NetService extends Service<NetServiceConsumer> {
 
                                         ioThread.getOutputBuffer().rewind();
                                         begin += length;
-                                        length = (byteData.length - begin) > getOutBufferSize() ? getOutBufferSize() : byteData.length - begin;
+                                        length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
+                                                session.getConsumer().getOutputBufferSize() : byteData.length - begin;
                                     }
 
                                     if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.STREAMING) && channel instanceof SocketChannel){
@@ -965,9 +953,12 @@ public class NetService extends Service<NetServiceConsumer> {
                                 outputQueue.remove(channel);
                                 lastWrite.remove(channel);
                                 channels.remove(netPackage.getSession());
-                                if(isDisconnectAndRemove()){
-                                    sessions.remove(netPackage.getSession());
-                                    destroySession(session);
+                                if(netPackage.getSession().getConsumer() instanceof NetServer) {
+                                    NetServer server = (NetServer) netPackage.getSession().getConsumer();
+                                    if (server.isDisconnectAndRemove()) {
+                                        sessions.remove(netPackage.getSession());
+                                        destroySession(session);
+                                    }
                                 }
                             }
                             onAction(netPackage, consumer);

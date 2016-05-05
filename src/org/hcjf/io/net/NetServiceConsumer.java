@@ -9,7 +9,6 @@ import java.net.SocketOption;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -22,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class NetServiceConsumer<S extends NetSession, D extends Object> implements ServiceConsumer {
 
-    private static final int MAXIMUN_IO_THREAD_POOL_SIZE = 15000;
+    private static final int MAX_IO_THREAD_POOL_SIZE = 15000;
     private static final int DEFAULT_INPUT_BUFFER_SIZE = 1024;
     private static final int DEFAULT_OUTPUT_BUFFER_SIZE = 1024;
 
@@ -40,7 +39,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         this.protocol = protocol;
         ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
         ioExecutor.setKeepAliveTime(10, TimeUnit.SECONDS);
-        ioExecutor.setMaximumPoolSize(MAXIMUN_IO_THREAD_POOL_SIZE);
+        ioExecutor.setMaximumPoolSize(MAX_IO_THREAD_POOL_SIZE);
         inputBufferSize = DEFAULT_INPUT_BUFFER_SIZE;
         outputBufferSize = DEFAULT_OUTPUT_BUFFER_SIZE;
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.NET_WRITE_TIMEOUT);
@@ -103,13 +102,21 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     }
 
     /**
+     *
+     * @param session
+     */
+    protected final void disconnect(S session, String message) {
+        service.disconnect(session, message);
+    }
+
+    /**
      * This method writes some data over the session indicated,
      * this operation generate a blocking until the net service confirm
      * that the data was written over the communication channel
      * @param session Net session.
      * @param payLoad Data to be written
      */
-    public final void write(S session, D payLoad) throws IOException {
+    protected final void write(S session, D payLoad) throws IOException {
         write(session, payLoad, true);
     }
 
@@ -120,7 +127,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param waitFor If this parameter is true then the operation generate
      *                a blocking over the communication channel.
      */
-    public final void write(S session, D payLoad, boolean waitFor) throws IOException {
+    protected final void write(S session, D payLoad, boolean waitFor) throws IOException {
         NetPackage netPackage = service.writeData(session, encode(payLoad));
 
         if(waitFor) {

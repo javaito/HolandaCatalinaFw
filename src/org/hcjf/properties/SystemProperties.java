@@ -2,8 +2,8 @@ package org.hcjf.properties;
 
 import org.hcjf.log.Log;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * This class is an interface with some utilities in order to
@@ -11,28 +11,34 @@ import java.util.Map;
  * @author javaito
  * @email javaito@gmail.com
  */
-public final class SystemProperties {
+public final class SystemProperties extends Properties {
 
     private static final String SYSTEM_PROPERTIES_LOG_TAG = "SYSTEM_PROPERTIES";
 
-    public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj_service_thread_pool_max_size";
-    public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj_service_thread_pool_keep_alive_time";
+    public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
+    public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
 
-    public static final String LOG_PATH = "hcfj_log_path";
-    public static final String LOG_FILE_PREFIX = "hcfj_log_file_prefix";
-    public static final String LOG_ERROR_FILE = "hcfj_log_error_file";
-    public static final String LOG_WARNING_FILE = "hcfj_log_warning_file";
-    public static final String LOG_INFO_FILE = "hcfj_log_info_file";
-    public static final String LOG_DEBUG_FILE = "hcfj_log_debug_file";
-    public static final String LOG_LEVEL= "hcfj_log_level";
-    public static final String LOG_DATE_FORMAT = "hcfj_log_date_format";
+    public static final String LOG_PATH = "hcfj.log.path";
+    public static final String LOG_FILE_PREFIX = "hcfj.log.file.prefix";
+    public static final String LOG_ERROR_FILE = "hcfj.log.error.file";
+    public static final String LOG_WARNING_FILE = "hcfj.log.warning.file";
+    public static final String LOG_INFO_FILE = "hcfj.log.info.file";
+    public static final String LOG_DEBUG_FILE = "hcfj.log.debug.file";
+    public static final String LOG_LEVEL= "hcfj.log.level";
+    public static final String LOG_DATE_FORMAT = "hcfj.log.date.format";
 
-    public static final String NET_INPUT_BUFFER_SIZE = "hcfj_net_input_buffer_size";
-    public static final String NET_OUTPUT_BUFFER_SIZE = "hcfj_net_output_buffer_size";
-    public static final String NET_DISCONNECT_AND_REMOVE = "hcfj_net_disconnect_and_remove";
-    public static final String NET_CONNECTION_TIMEOUT_AVAILABLE = "hcfj_net_connection_timeout_available";
-    public static final String NET_CONNECTION_TIMEOUT = "hcfj_net_connection_timeout";
-    public static final String NET_WRITE_TIMEOUT = "hcjf_net_write_timeout";
+    public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
+    public static final String NET_OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
+    public static final String NET_DISCONNECT_AND_REMOVE = "hcfj.net.disconnect.and.remove";
+    public static final String NET_CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
+    public static final String NET_CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
+    public static final String NET_WRITE_TIMEOUT = "hcjf.net.write.timeout";
+
+    public static final String HTTP_SERVER_NAME = "http.server.name";
+    public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "http.response.date.header.format.value";
+
+    //Java property names
+    public static final String FILE_ENCODING = "file.encoding";
 
     private static final SystemProperties instance;
 
@@ -40,28 +46,36 @@ public final class SystemProperties {
         instance = new SystemProperties();
     }
 
-    private final Map<String, String> defaultValues;
+    private final Map<String, SimpleDateFormat> dateFormaters;
 
     private SystemProperties() {
-        defaultValues = new HashMap<>();
+        super(new Properties());
+        dateFormaters = new HashMap<>();
 
-        defaultValues.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
-        defaultValues.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
+        defaults.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
+        defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
 
-        defaultValues.put(LOG_FILE_PREFIX, "hcfj");
-        defaultValues.put(LOG_ERROR_FILE, "false");
-        defaultValues.put(LOG_WARNING_FILE, "false");
-        defaultValues.put(LOG_INFO_FILE, "false");
-        defaultValues.put(LOG_DEBUG_FILE, "false");
-        defaultValues.put(LOG_LEVEL, "I");
-        defaultValues.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(LOG_FILE_PREFIX, "hcfj");
+        defaults.put(LOG_ERROR_FILE, "false");
+        defaults.put(LOG_WARNING_FILE, "false");
+        defaults.put(LOG_INFO_FILE, "false");
+        defaults.put(LOG_DEBUG_FILE, "false");
+        defaults.put(LOG_LEVEL, "I");
+        defaults.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
 
-        defaultValues.put(NET_INPUT_BUFFER_SIZE, "1024");
-        defaultValues.put(NET_OUTPUT_BUFFER_SIZE, "1024");
-        defaultValues.put(NET_CONNECTION_TIMEOUT_AVAILABLE, "true");
-        defaultValues.put(NET_CONNECTION_TIMEOUT, "10000");
-        defaultValues.put(NET_DISCONNECT_AND_REMOVE, "true");
-        defaultValues.put(NET_WRITE_TIMEOUT, "10000");
+        defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
+        defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");
+        defaults.put(NET_CONNECTION_TIMEOUT_AVAILABLE, "true");
+        defaults.put(NET_CONNECTION_TIMEOUT, "10000");
+        defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
+        defaults.put(NET_WRITE_TIMEOUT, "10000");
+
+        defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
+        defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
+
+        Properties system = System.getProperties();
+        putAll(system);
+        System.setProperties(this);
     }
 
     /**
@@ -80,7 +94,35 @@ public final class SystemProperties {
             throw new NullPointerException("Invalid default value null");
         }
 
-        instance.defaultValues.put(propertyName, defaultValue);
+        instance.defaults.put(propertyName, defaultValue);
+    }
+
+    /**
+     * Calls the <tt>Hashtable</tt> method {@code put}. Provided for
+     * parallelism with the <tt>getProperty</tt> method. Enforces use of
+     * strings for property keys and values. The value returned is the
+     * result of the <tt>Hashtable</tt> call to {@code put}.
+     *
+     * @param key   the key to be placed into this property list.
+     * @param value the value corresponding to <tt>key</tt>.
+     * @return the previous value of the specified key in this property
+     * list, or {@code null} if it did not have one.
+     * @see #getProperty
+     * @since 1.2
+     */
+    @Override
+    public synchronized Object setProperty(String key, String value) {
+        Object result = super.setProperty(key, value);
+
+        synchronized (dateFormaters) {
+            dateFormaters.remove(key);
+        }
+
+        try {
+            //TODO: Create listeners
+        } catch (Exception ex){}
+
+        return result;
     }
 
     /**
@@ -91,11 +133,7 @@ public final class SystemProperties {
      * @return Return the value of the property or null if the property is no defined.
      */
     public static String get(String propertyName, PropertyValueValidator<String> validator) {
-        String defaultValue = instance.defaultValues.get(propertyName);
-
-        String result = defaultValue == null ?
-                System.getProperty(propertyName) :
-                System.getProperty(propertyName, defaultValue);
+        String result = System.getProperty(propertyName);
 
         if(result == null) {
             Log.d("Property not found: $1",  propertyName);
@@ -146,14 +184,7 @@ public final class SystemProperties {
 
         String propertyValue = get(propertyName);
         if(propertyValue != null) {
-            try {
-                result = Integer.decode(propertyValue);
-            } catch (NumberFormatException ex) {
-                Log.d(SYSTEM_PROPERTIES_LOG_TAG, "Number format exception for property $1", ex, propertyName);
-                if (instance.defaultValues.containsKey(propertyName)) {
-                    result = Integer.decode(instance.defaultValues.get(propertyName));
-                }
-            }
+            result = Integer.decode(propertyValue);
         }
 
         return result;
@@ -169,14 +200,7 @@ public final class SystemProperties {
 
         String propertyValue = get(propertyName);
         if(propertyValue != null) {
-            try {
-                result = Long.decode(propertyValue);
-            } catch (NumberFormatException ex) {
-                Log.d(SYSTEM_PROPERTIES_LOG_TAG, "Number format exception for property $1", ex, propertyName);
-                if (instance.defaultValues.containsKey(propertyName)) {
-                    result = Long.decode(instance.defaultValues.get(propertyName));
-                }
-            }
+            result = Long.decode(propertyValue);
         }
 
         return result;
@@ -192,16 +216,39 @@ public final class SystemProperties {
 
         String propertyValue = get(propertyName);
         if(propertyValue != null) {
-            try {
-                result = Double.valueOf(propertyValue);
-            } catch (NumberFormatException ex) {
-                Log.d(SYSTEM_PROPERTIES_LOG_TAG, "Number format exception for property $1", ex, propertyName);
-                if (instance.defaultValues.containsKey(propertyName)) {
-                    result = Double.valueOf(instance.defaultValues.get(propertyName));
-                }
-            }
+            result = Double.valueOf(propertyValue);
         }
 
         return result;
+    }
+
+    /**
+     * Return the default charset of the JVM instance.
+     * @return Default charset.
+     */
+    public static String getDefaultCharset() {
+        return System.getProperty(FILE_ENCODING);
+    }
+
+    private static SimpleDateFormat getDateFormat(String propertyName) {
+        SimpleDateFormat result;
+        synchronized (instance.dateFormaters) {
+            result = instance.dateFormaters.get(propertyName);
+            if(result == null) {
+                result = new SimpleDateFormat(get(propertyName));
+                instance.dateFormaters.put(propertyName, result);
+            }
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param propertyName
+     * @param value
+     * @return
+     */
+    public static String getFormattedDate(String propertyName, Date value) {
+        return getDateFormat(propertyName).format(value);
     }
 }
