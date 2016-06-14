@@ -46,22 +46,42 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         waitForMap = new HashMap<>();
     }
 
+    /**
+     * Return the waiting time to write a package.
+     * @return Waiting time to write a apackage.
+     */
     public long getWriteWaitForTimeout() {
         return writeWaitForTimeout;
     }
 
+    /**
+     * Set the waiting time to write a package.
+     * @param writeWaitForTimeout Waiting time to write a package.
+     */
     public void setWriteWaitForTimeout(long writeWaitForTimeout) {
         this.writeWaitForTimeout = writeWaitForTimeout;
     }
 
+    /**
+     * Return the size of the internal buffer used to read input data.
+     * @return Size of the internal input buffer.
+     */
     public int getInputBufferSize() {
         return inputBufferSize;
     }
 
+    /**
+     * Return the size of the internal buffer used to write output data.
+     * @return Size of the internal output buffer.
+     */
     public int getOutputBufferSize() {
         return outputBufferSize;
     }
 
+    /**
+     * Thread pool exclusively for handling I/O operations server
+     * @return Thread pool.
+     */
     public ThreadPoolExecutor getIoExecutor() {
         return ioExecutor;
     }
@@ -117,7 +137,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param payLoad Data to be written
      */
     protected final void write(S session, D payLoad) throws IOException {
-        write(session, payLoad, true);
+        write(session, payLoad, null, true);
     }
 
     /**
@@ -127,7 +147,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param waitFor If this parameter is true then the operation generate
      *                a blocking over the communication channel.
      */
-    protected final void write(S session, D payLoad, boolean waitFor) throws IOException {
+    protected final void write(S session, D payLoad, NetStreamingSource source, boolean waitFor) throws IOException {
         NetPackage netPackage = service.writeData(session, encode(payLoad));
 
         if(waitFor) {
@@ -163,30 +183,34 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     }
 
     /**
-     *
-     * @param netPackage
+     * This method abstracts the connection event to use the entities of the domain's implementation.
+     * @param netPackage Connection package.
      */
-    public final void onConnect(NetPackage netPackage) { onDisconnect((S) netPackage.getSession(), decode(netPackage), netPackage); }
+    public final void onConnect(NetPackage netPackage) {
+        onConnect((S) netPackage.getSession(), decode(netPackage), netPackage);
+    }
 
     /**
-     *
-     * @param session
-     * @param payLoad
-     * @param netPackage
+     * Method that must be implemented by the custom implementation to know when a session is connected
+     * @param session Connected session.
+     * @param payLoad Decoded package payload.
+     * @param netPackage Original package.
      */
     protected void onConnect(S session, D payLoad, NetPackage netPackage) {}
 
     /**
-     *
-     * @param netPackage
+     * This method abstracts the disconnection event to use the entities of the domain's implementation.
+     * @param netPackage Disconnection package.
      */
-    public final void onDisconnect(NetPackage netPackage) { onDisconnect((S) netPackage.getSession(), decode(netPackage), netPackage); }
+    public final void onDisconnect(NetPackage netPackage) {
+        onDisconnect((S) netPackage.getSession(), decode(netPackage), netPackage);
+    }
 
     /**
-     *
-     * @param session
-     * @param payLoad
-     * @param netPackage
+     * Method must be implemented by the custom implementation to known when a session is disconnected
+     * @param session Disconnected session.
+     * @param payLoad Decoded package payload.
+     * @param netPackage Original package.
      */
     protected void onDisconnect(S session, D payLoad, NetPackage netPackage) {}
 

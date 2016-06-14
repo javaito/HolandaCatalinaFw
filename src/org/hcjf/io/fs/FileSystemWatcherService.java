@@ -35,8 +35,8 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     }
 
     /**
-     *
-     * @return
+     * Return the instance of the singleton.
+     * @return Instance of the singleton.
      */
     public static final FileSystemWatcherService getInstance() {
         return instance;

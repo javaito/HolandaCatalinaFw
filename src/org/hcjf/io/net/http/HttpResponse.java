@@ -1,5 +1,7 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.io.net.NetStreamingSource;
+import org.hcjf.io.net.StreamingNetPackage;
 import org.hcjf.properties.SystemProperties;
 import sun.java2d.pipe.SpanShapeRenderer;
 
@@ -13,6 +15,7 @@ public class HttpResponse extends HttpPackage {
 
     private Integer responseCode;
     private String reasonPhrase;
+    private NetStreamingSource netStreamingSource;
 
     public HttpResponse() {
     }
@@ -48,6 +51,14 @@ public class HttpResponse extends HttpPackage {
     @Override
     protected void processFirstLine(String firstLine) {
 
+    }
+
+    public NetStreamingSource getNetStreamingSource() {
+        return netStreamingSource;
+    }
+
+    public void setNetStreamingSource(NetStreamingSource netStreamingSource) {
+        this.netStreamingSource = netStreamingSource;
     }
 
     @Override

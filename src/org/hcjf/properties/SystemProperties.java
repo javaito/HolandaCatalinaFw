@@ -34,8 +34,11 @@ public final class SystemProperties extends Properties {
     public static final String NET_CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
     public static final String NET_WRITE_TIMEOUT = "hcjf.net.write.timeout";
 
-    public static final String HTTP_SERVER_NAME = "http.server.name";
-    public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "http.response.date.header.format.value";
+    public static final String HTTP_SERVER_NAME = "hcjf.http.server.name";
+    public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
+
+    public static final String SHARED_MEMORY_IMPL = "hcjf.shared.memory.impl";
+    public static final String SHARED_MEMORY_HAZELCAST_IMPL_NAME = "Hazelcast";
 
     //Java property names
     public static final String FILE_ENCODING = "file.encoding";
@@ -72,6 +75,8 @@ public final class SystemProperties extends Properties {
 
         defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
         defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
+
+        defaults.put(SHARED_MEMORY_IMPL, SHARED_MEMORY_HAZELCAST_IMPL_NAME);
 
         Properties system = System.getProperties();
         putAll(system);

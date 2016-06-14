@@ -55,16 +55,29 @@ public abstract class NetServer<S extends NetSession, D extends Object> extends 
     }
 
     /**
-     * This method is to start to listener.
+     * This method starts the server.
      */
     public final void start() {
         NetService.getInstance().registerConsumer(this);
+        onStart();
     }
 
     /**
-     *
+     * This method should be overwritten to know when the server is started
+     */
+    protected void onStart(){}
+
+    /**
+     * This method stops the server.
      */
     public final void stop() {
         //TODO: Need to method to unregister the consumer.
+        onStop();
     }
+
+    /**
+     * This method should be overwritten to know when the server is stopped
+     */
+    protected void onStop(){}
+
 }
