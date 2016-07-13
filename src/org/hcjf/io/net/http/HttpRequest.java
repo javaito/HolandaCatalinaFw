@@ -5,9 +5,7 @@ import org.hcjf.properties.SystemProperties;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This particular kind of package contains the request information.
@@ -24,11 +22,21 @@ public class HttpRequest extends HttpPackage {
     private String context;
     private HttpMethod method;
     private final Map<String, String> parameters;
+    private final List<String> pathParts;
 
     public HttpRequest(String requestPath, HttpMethod method) {
         this.path = requestPath;
         this.method = method;
         this.parameters = new HashMap<>();
+        this.pathParts = new ArrayList<>();
+    }
+
+    protected HttpRequest(HttpRequest httpRequest) {
+        super(httpRequest);
+        this.path = httpRequest.path;
+        this.method = httpRequest.method;
+        this.parameters = httpRequest.parameters;
+        this.pathParts = httpRequest.pathParts;
     }
 
     public HttpRequest() {
@@ -71,6 +79,10 @@ public class HttpRequest extends HttpPackage {
         parameters.put(parameterName, parameterValue);
     }
 
+    public List<String> getPathParts() {
+        return pathParts;
+    }
+
     /**
      * @param body
      * @return
@@ -103,6 +115,10 @@ public class HttpRequest extends HttpPackage {
         } else {
             context = path;
         }
+
+        for(String pathPart : context.split(HTTP_CONTEXT_SEPARATOR)) {
+            pathParts.add(pathPart);
+        }
     }
 
     /**
@@ -115,7 +131,10 @@ public class HttpRequest extends HttpPackage {
         String charset = null;
         HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
         if(contentType != null) {
-            charset = contentType.getParameter(HttpHeader.CHARSET);
+            //The content-type header should not have more than one group
+            //In this case we use the first group.
+            charset = contentType.getParameter(
+                    contentType.getGroups().iterator().next(), HttpHeader.PARAM_CHARSET);
         }
         if(charset == null) {
             charset = SystemProperties.getDefaultCharset();

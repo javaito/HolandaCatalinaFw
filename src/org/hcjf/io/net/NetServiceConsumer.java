@@ -253,7 +253,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     protected void onWrite(S session, D payLoad, NetPackage netPackage){}
 
     /**
-     * This method encode the implementation data.
+     * This method decode the implementation data.
      * @param payLoad Implementation data.
      * @return Implementation data encoded.
      */

@@ -7,7 +7,10 @@ import java.util.Map;
 import java.util.Queue;
 
 /**
- * Created by javaito on 9/6/2016.
+ * This service provides an interface to use a cloud memory
+ * service over the service instances.
+ * @author javaito
+ * @mail javaito@gmail.com
  */
 public abstract class SharedMemory extends Service<SharedMemory.SharedMemoryConsumer> {
 
@@ -30,15 +33,29 @@ public abstract class SharedMemory extends Service<SharedMemory.SharedMemoryCons
         consumer.setMemory(this);
     }
 
+    /**
+     * Get an instance of the distributed map from the cloud. This object
+     * is synchronized with all the instances of the service in the cloud.
+     * @param memoryName Map's name.
+     * @param <K> Map's key type.
+     * @param <V> Map's value type.
+     * @return Return the distributed instance.
+     */
     protected abstract <K extends Object, V extends Object> Map<K, V> getMap(String memoryName);
 
+    /**
+     *
+     * @param memoryName
+     * @param <V>
+     * @return
+     */
     protected abstract <V extends Object> Queue<V> getQueue(String memoryName);
 
     public static class SharedMemoryConsumer implements ServiceConsumer {
 
         private SharedMemory memory;
 
-        public SharedMemoryConsumer() {
+        private SharedMemoryConsumer() {
         }
 
         private void setMemory(SharedMemory memory) {

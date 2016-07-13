@@ -20,6 +20,10 @@ public class HttpResponse extends HttpPackage {
     public HttpResponse() {
     }
 
+    protected HttpResponse(HttpResponse httpResponse) {
+        super(httpResponse);
+    }
+
     public Integer getResponseCode() {
         return responseCode;
     }

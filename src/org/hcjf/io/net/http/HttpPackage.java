@@ -21,6 +21,7 @@ public abstract class HttpPackage {
     protected static final String HTTP_FIELD_START = "?";
     protected static final String HTTP_FIELD_SEPARATOR = "&";
     protected static final String HTTP_FIELD_ASSIGNATION = "=";
+    protected static final String HTTP_CONTEXT_SEPARATOR = "/";
 
     private String httpVersion;
     private final Map<String, HttpHeader> headers;
@@ -35,6 +36,11 @@ public abstract class HttpPackage {
     public HttpPackage() {
         this.httpVersion = HttpVersion.VERSION_1_1;
         this.headers = new HashMap<>();
+    }
+
+    protected HttpPackage(HttpPackage httpPackage) {
+        this.httpVersion = httpPackage.httpVersion;
+        this.headers = httpPackage.headers;
     }
 
     /**
@@ -85,7 +91,7 @@ public abstract class HttpPackage {
         if(header == null) {
             throw new NullPointerException("Null header");
         }
-        headers.put(header.getHeaderName(), header);
+        headers.put(header.getHeaderName().toLowerCase(), header);
     }
 
     /**
@@ -103,7 +109,7 @@ public abstract class HttpPackage {
      * @return
      */
     public HttpHeader getHeader(String headerName) {
-        return headers.get(headerName);
+        return headers.get(headerName.toLowerCase());
     }
 
     /**

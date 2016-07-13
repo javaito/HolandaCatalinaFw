@@ -1,7 +1,23 @@
 package org.hcjf.layers;
 
+import java.lang.reflect.InvocationHandler;
+
 /**
- * Created by javaito on 9/6/2016.
+ * @author javaito
+ * @email javaito@gmail.com
  */
-public class LayerInterface {
+public interface LayerInterface extends InvocationHandler {
+
+    /**
+     *
+     * @return
+     */
+    public String getImplName();
+
+    /**
+     *
+     * @return
+     */
+    public boolean isStateful();
+
 }

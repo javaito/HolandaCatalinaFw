@@ -1,53 +1,17 @@
 package org.hcjf.io.net.http.rest;
 
-import com.sun.istack.internal.NotNull;
-import org.hcjf.io.net.http.Context;
-import org.hcjf.io.net.http.HttpRequest;
-import org.hcjf.io.net.http.HttpResponse;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import org.hcjf.io.net.http.layered.*;
+import org.hcjf.layers.LayerInterface;
 
 /**
- * Created by javaito on 1/6/2016.
+ * 
+ * @author javaito
+ * @email javaito@gmail.com
  */
-public class EndPoint extends Context {
-
-    private final String groupName;
-    private final String resourceName;
-    private final Map<String, Map<String, EndPointImpl>> implementations;
+public abstract class EndPoint<L extends LayerInterface> extends LayeredContext<L> {
 
     public EndPoint(String groupName, String resourceName) {
-        super("^/" + (groupName == null ? resourceName : (groupName + "/" + resourceName)) + ".*");
-        if(resourceName == null) {
-            throw new NullPointerException("Resource name can't be null");
-        }
-        this.groupName = groupName;
-        this.resourceName = resourceName;
-        this.implementations = new HashMap<>();
-    }
-
-    public final void addImplementation(EndPointImpl implementation) {
-        String version = implementation.getVersion();
-        String format = implementation.getFormat();
-
-        synchronized (implementations) {
-            Map<String, EndPointImpl> implMap = implementations.get(version);
-            if(implMap == null) {
-                implMap = new HashMap<>();
-                implementations.put(version, implMap);
-            }
-            implMap.put(format, implementation);
-        }
-    }
-
-    protected final String getGroupName() {
-        return groupName;
-    }
-
-    protected final String getResourceName() {
-        return resourceName;
+        super(groupName, resourceName);
     }
 
     /**
@@ -58,38 +22,64 @@ public class EndPoint extends Context {
      * @return Return an object with all the response information.
      */
     @Override
-    public HttpResponse onContext(HttpRequest request) {
-        HttpResponse response;
-        String[] paths = request.getContext().split("/");
-        int resourceIndex = Arrays.binarySearch(paths, getResourceName());
-        if(paths.length > (resourceIndex + 1)) {
-            String version = paths[resourceIndex+1];
-            String format = version;
-            if(paths.length > (resourceIndex + 2)) {
-                format = paths[resourceIndex+2];
+    public final Object onAction(LayeredRequest request) {
+        Object result = null;
+        switch (request.getMethod()) {
+            case GET: {
+                result = get(request);
+                break;
             }
-            EndPointImpl impl = implementations.get(version).get(format);
-            if(impl != null) {
-                response = impl.onAction(request);
-            } else {
-                throw new IllegalArgumentException("Illegal request format, implementation not found -> " + request.getContext());
+            case POST: {
+                result = post(request);
+                break;
             }
-        } else {
-            throw new IllegalArgumentException("Illegal request format [GROUP_NAME]/RESOURCE/VERSION/[FORMAT] -> " + request.getContext());
+            case PUT: {
+                result = put(request);
+                break;
+            }
+            case DELETE: {
+                result = delete(request);
+                break;
+            }
         }
-        return response;
+
+        return result;
     }
 
     /**
-     * This method is called when there are any error on the context execution.
      *
-     * @param request   All the request information.
-     * @param throwable Throwable object, could be null.
-     * @return Return an object with all the response information.
+     * @param layeredRequest
+     * @return
      */
-    @Override
-    protected HttpResponse onError(HttpRequest request, Throwable throwable) {
-        return null;
+    protected Object get(LayeredRequest layeredRequest) {
+        throw new UnsupportedOperationException("GET method is not implemented on the REST interface");
+    }
+
+    /**
+     *
+     * @param layeredRequest
+     * @return
+     */
+    protected Object post(LayeredRequest layeredRequest) {
+        throw new UnsupportedOperationException("POST method is not implemented on the REST interface");
+    }
+
+    /**
+     *
+     * @param layeredRequest
+     * @return
+     */
+    protected Object put(LayeredRequest layeredRequest) {
+        throw new UnsupportedOperationException("PUT method is not implemented on the REST interface");
+    }
+
+    /**
+     *
+     * @param layeredRequest
+     * @return
+     */
+    protected Object delete(LayeredRequest layeredRequest) {
+        throw new UnsupportedOperationException("DELETE method is not implemented on the REST interface");
     }
 
 }

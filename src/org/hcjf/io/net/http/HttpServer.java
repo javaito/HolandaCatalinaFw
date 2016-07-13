@@ -11,6 +11,8 @@ import java.util.*;
 
 /**
  *
+ * @author javaito
+ * @email javaito@gmail.com
  */
 public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
@@ -57,7 +59,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     * This method encode the implementation data.
+     * This method decode the implementation data.
      *
      * @param payLoad Implementation data.
      * @return Implementation data encoded.
@@ -84,6 +86,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         return request;
     }
 
+    /**
+     *
+     * @param context
+     */
     public final void addContext(Context context) {
         contexts.add(context);
     }
@@ -159,7 +165,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 }
 
                 response.addHeader(new HttpHeader(HttpHeader.DATE,
-                        SystemProperties.getFormattedDate(SystemProperties.HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, new Date())));
+                        SystemProperties.getDateFormat(
+                                SystemProperties.HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
                 response.addHeader(new HttpHeader(HttpHeader.SERVER,
                         SystemProperties.get(SystemProperties.HTTP_SERVER_NAME)));
 
@@ -207,12 +214,18 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         super.onWrite(session, payLoad, netPackage);
     }
 
+    /**
+     *
+     */
     @Override
     protected void onStart() {
         Log.d(HTTP_SERVER_LOG_TAG, "Http server started, listening on port %d", getPort());
         super.onStart();
     }
 
+    /**
+     *
+     */
     @Override
     protected void onStop() {
         Log.d(HTTP_SERVER_LOG_TAG, "Http server stopped.");

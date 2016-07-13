@@ -1,9 +1,8 @@
 package org.hcjf.io.net.http;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class represents a http header and contains all
@@ -44,28 +43,31 @@ public class HttpHeader {
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String CLOSED = "Closed";
 
-    private static final char HEADER_ASIGNATION = ':';
+    private static final String HEADER_ASSIGNATION = ":";
+    private static final String HEADER_GROUPS_SEPARATOR = ",";
+    private static final String HEADER_FIELDS_SEPARATOR = ";";
+    private static final String HEADER_FIELDS_ASSIGNATION = "=";
 
-    //Values in order to parse content-type header
-    protected static final String CONTENT_TYPE_FIELD_SEPARATOR = ";";
-    protected static final String CONTENT_TYPE_FIELD_ASSIGNATION = "=";
+    //Parameters group
+    private static final String STANDARD_GROUP = "standard";
 
     //Header parameter names
-    public static final String CHARSET = "charset";
+    public static final String PARAM_CHARSET = "charset";
+    public static final String PARAM_IMPL = "impl";
 
     private final String headerName;
     private final String headerValue;
-    private final Map<String, String> parameters;
+    private final Map<String, Map<String, String>> headerGroups;
 
     public HttpHeader(String header) {
-        this(header.substring(0, header.indexOf(HEADER_ASIGNATION)),
-                header.substring(header.indexOf(HEADER_ASIGNATION) + 1));
+        this(header.substring(0, header.indexOf(HEADER_ASSIGNATION)),
+                header.substring(header.indexOf(HEADER_ASSIGNATION) + 1));
     }
 
     public HttpHeader(String headerName, String headerValue) {
         this.headerName = headerName;
         this.headerValue = headerValue;
-        this.parameters = new HashMap<>();
+        this.headerGroups = new HashMap<>();
         parse();
     }
 
@@ -103,7 +105,7 @@ public class HttpHeader {
         StringBuilder result = new StringBuilder();
         if(includeHeaderName) {
             result.append(getHeaderName());
-            result.append(HEADER_ASIGNATION).append(" ");
+            result.append(HEADER_ASSIGNATION).append(" ");
         }
         result.append(getHeaderValue());
         return result.toString();
@@ -111,20 +113,38 @@ public class HttpHeader {
 
     /**
      *
+     * @return
+     */
+    public final Set<String> getGroups() {
+        return headerGroups.keySet();
+    }
+
+    /**
+     *
+     * @param groupName
      * @param parameterName
      * @return
      */
-    public final String getParameter(String parameterName) {
-        return parameters.get(parameterName);
+    public final String getParameter(String groupName, String parameterName) {
+        if(groupName == null) {
+            throw new IllegalArgumentException("Parameter 'groupName' can't be null");
+        }
+
+        if(parameterName == null) {
+            throw new IllegalArgumentException("Parameter 'parameterName' can't be null");
+        }
+
+        return headerGroups.get(groupName).get(parameterName);
     }
 
     /**
      *
      */
     private void parse() {
-        switch (headerValue) {
-            case CONTENT_TYPE: {
-                parseContentType();
+        switch (headerName) {
+            case CONTENT_TYPE:
+            case ACCEPT: {
+                parseStandardGroup();
                 break;
             }
         }
@@ -133,16 +153,25 @@ public class HttpHeader {
     /**
      *
      */
-    private void parseContentType() {
-        if(headerValue.indexOf(CONTENT_TYPE_FIELD_SEPARATOR) >= 0) {
-            String[] fields = headerValue.split(CONTENT_TYPE_FIELD_SEPARATOR);
+    private void parseStandardGroup() {
+        String[] groups = headerValue.split(HEADER_GROUPS_SEPARATOR);
+        Map<String, String> groupParameters;
+        for(String group : groups) {
+            String[] fields = group.split(HEADER_FIELDS_SEPARATOR);
+            groupParameters = new HashMap<>();
+            headerGroups.put(fields[0].trim(), groupParameters);
             String[] name_value;
-            for(int i = 1; i < fields.length; i++) {
-                if(fields[i].indexOf(CONTENT_TYPE_FIELD_ASSIGNATION) >= 0) {
-                    name_value = fields[i].split(CONTENT_TYPE_FIELD_ASSIGNATION);
-                    parameters.put(name_value[0], name_value[1]);
+            for (int i = 1; i < fields.length; i++) {
+                if (fields[i].indexOf(HEADER_FIELDS_ASSIGNATION) >= 0) {
+                    if (fields[i].indexOf(HEADER_FIELDS_ASSIGNATION) >= 0) {
+                        name_value = fields[i].split(HEADER_FIELDS_ASSIGNATION);
+                        groupParameters.put(name_value[0].trim(), name_value[1].trim());
+                    } else {
+                        groupParameters.put(fields[i].trim(), "");
+                    }
                 }
             }
         }
     }
+
 }

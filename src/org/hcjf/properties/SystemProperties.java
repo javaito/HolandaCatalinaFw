@@ -1,24 +1,34 @@
 package org.hcjf.properties;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.hcjf.log.Log;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * This class is an interface with some utilities in order to
- * be easy the access to java system properties.
+ * This class overrides the system properties default implementation adding
+ * some default values and properties definitions for the service-oriented platforms
+ * works.
  * @author javaito
  * @email javaito@gmail.com
  */
 public final class SystemProperties extends Properties {
 
-    private static final String SYSTEM_PROPERTIES_LOG_TAG = "SYSTEM_PROPERTIES";
+    private static final String HCJF_DEFAULT_DATE_FORMAT = "hcjf.default.date.format";
+    private static final String HCJF_DEFAULT_NUMBER_FORMAT = "hcjf.default.number.format";
+    private static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
+    private static final String HCJF_DEFAULT_GROUPING_SEPARATOR = "hcjf.default.grouping.separator";
+    private static final String HCJF_DEFAULT_LOCALE = "hcjf.default.locale";
 
     public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
     public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
 
-    public static final String LOG_PATH = "hcfj.log.path";
     public static final String LOG_FILE_PREFIX = "hcfj.log.file.prefix";
     public static final String LOG_ERROR_FILE = "hcfj.log.error.file";
     public static final String LOG_WARNING_FILE = "hcfj.log.warning.file";
@@ -26,6 +36,7 @@ public final class SystemProperties extends Properties {
     public static final String LOG_DEBUG_FILE = "hcfj.log.debug.file";
     public static final String LOG_LEVEL= "hcfj.log.level";
     public static final String LOG_DATE_FORMAT = "hcfj.log.date.format";
+    public static final String LOG_CONSUMERS = "hcjf.log.consumers";
 
     public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
     public static final String NET_OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
@@ -37,8 +48,7 @@ public final class SystemProperties extends Properties {
     public static final String HTTP_SERVER_NAME = "hcjf.http.server.name";
     public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
 
-    public static final String SHARED_MEMORY_IMPL = "hcjf.shared.memory.impl";
-    public static final String SHARED_MEMORY_HAZELCAST_IMPL_NAME = "Hazelcast";
+    public static final String CLOUD_IMPL = "hcjf.cloud.impl";
 
     //Java property names
     public static final String FILE_ENCODING = "file.encoding";
@@ -49,11 +59,19 @@ public final class SystemProperties extends Properties {
         instance = new SystemProperties();
     }
 
-    private final Map<String, SimpleDateFormat> dateFormaters;
+    private final Map<String, Object> instancesCache;
+    private final JsonParser jsonParser;
 
     private SystemProperties() {
         super(new Properties());
-        dateFormaters = new HashMap<>();
+        instancesCache = new HashMap<>();
+        jsonParser = new JsonParser();
+
+        defaults.put(HCJF_DEFAULT_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(HCJF_DEFAULT_NUMBER_FORMAT, "0.000");
+        defaults.put(HCJF_DEFAULT_DECIMAL_SEPARATOR, ".");
+        defaults.put(HCJF_DEFAULT_GROUPING_SEPARATOR, ",");
+        defaults.put(HCJF_DEFAULT_LOCALE, "EN");
 
         defaults.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
         defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
@@ -65,6 +83,7 @@ public final class SystemProperties extends Properties {
         defaults.put(LOG_DEBUG_FILE, "false");
         defaults.put(LOG_LEVEL, "I");
         defaults.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(LOG_CONSUMERS, "[]");
 
         defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
         defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");
@@ -75,8 +94,6 @@ public final class SystemProperties extends Properties {
 
         defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
         defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
-
-        defaults.put(SHARED_MEMORY_IMPL, SHARED_MEMORY_HAZELCAST_IMPL_NAME);
 
         Properties system = System.getProperties();
         putAll(system);
@@ -119,8 +136,8 @@ public final class SystemProperties extends Properties {
     public synchronized Object setProperty(String key, String value) {
         Object result = super.setProperty(key, value);
 
-        synchronized (dateFormaters) {
-            dateFormaters.remove(key);
+        synchronized (instancesCache) {
+            instancesCache.remove(key);
         }
 
         try {
@@ -172,8 +189,13 @@ public final class SystemProperties extends Properties {
         Boolean result = null;
 
         String propertyValue = get(propertyName);
-        if(propertyValue != null){
-            result = Boolean.valueOf(propertyValue);
+        try {
+            if (propertyValue != null) {
+                result = Boolean.valueOf(propertyValue);
+            }
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("The property value has not a boolean valid format: '"
+                    + propertyName + ":" + propertyValue + "'", ex);
         }
 
         return result;
@@ -188,8 +210,13 @@ public final class SystemProperties extends Properties {
         Integer result = null;
 
         String propertyValue = get(propertyName);
-        if(propertyValue != null) {
-            result = Integer.decode(propertyValue);
+        try {
+            if(propertyValue != null) {
+                result = Integer.decode(propertyValue);
+            }
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("The property value has not a integer valid format: '"
+                    + propertyName + ":" + propertyValue + "'", ex);
         }
 
         return result;
@@ -204,8 +231,13 @@ public final class SystemProperties extends Properties {
         Long result = null;
 
         String propertyValue = get(propertyName);
-        if(propertyValue != null) {
-            result = Long.decode(propertyValue);
+        try {
+            if (propertyValue != null) {
+                result = Long.decode(propertyValue);
+            }
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("The property value has not a long valid format: '"
+                    + propertyName + ":" + propertyValue + "'", ex);
         }
 
         return result;
@@ -220,8 +252,13 @@ public final class SystemProperties extends Properties {
         Double result = null;
 
         String propertyValue = get(propertyName);
-        if(propertyValue != null) {
-            result = Double.valueOf(propertyValue);
+        try {
+            if (propertyValue != null) {
+                result = Double.valueOf(propertyValue);
+            }
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("The property value has not a double valid format: '"
+                    + propertyName + ":" + propertyValue + "'", ex);
         }
 
         return result;
@@ -235,25 +272,143 @@ public final class SystemProperties extends Properties {
         return System.getProperty(FILE_ENCODING);
     }
 
-    private static SimpleDateFormat getDateFormat(String propertyName) {
-        SimpleDateFormat result;
-        synchronized (instance.dateFormaters) {
-            result = instance.dateFormaters.get(propertyName);
+    /**
+     * This method return the value of the property as Locale instance.
+     * The instance returned will be stored on near cache and will be removed when the
+     * value of the property has been updated.
+     * @param propertyName Name of the property that contains locale representation.
+     * @return Locale instance.
+     */
+    public static Locale getLocale(String propertyName) {
+        Locale result;
+        synchronized (instance.instancesCache) {
+            result = (Locale) instance.instancesCache.get(propertyName);
             if(result == null) {
-                result = new SimpleDateFormat(get(propertyName));
-                instance.dateFormaters.put(propertyName, result);
+                String propertyValue = get(propertyName);
+                try {
+                    result = Locale.forLanguageTag(propertyValue);
+                    instance.instancesCache.put(propertyName, result);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a locale tag valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
         }
         return result;
     }
 
     /**
-     *
-     * @param propertyName
-     * @param value
-     * @return
+     * This method return the valuo of the property called 'hcjf.default.locale' as a locale instance.
+     * The instance returned will be stored on near cache and will be removed when the
+     * value of the property has been updated.
+     * @return Locale instance.
      */
-    public static String getFormattedDate(String propertyName, Date value) {
-        return getDateFormat(propertyName).format(value);
+    public static Locale getLocale() {
+        return getLocale(HCJF_DEFAULT_LOCALE);
+    }
+
+    /**
+     * This method return the value of the property as a DecimalFormat instnace.
+     * The instance returned will be stored on near cache and will be removed when the
+     * value of the property has been updated.
+     * @param propertyName Name of the property that contains decimal pattern.
+     * @return DecimalFormat instance.
+     */
+    public static DecimalFormat getDecimalFormat(String propertyName) {
+        DecimalFormat result;
+        synchronized (instance.instancesCache) {
+            result = (DecimalFormat) instance.instancesCache.get(propertyName);
+            if(result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+                    symbols.setDecimalSeparator(get(HCJF_DEFAULT_DECIMAL_SEPARATOR).charAt(0));
+                    symbols.setGroupingSeparator(get(HCJF_DEFAULT_GROUPING_SEPARATOR).charAt(0));
+                    result = new DecimalFormat(propertyValue, symbols);
+                    instance.instancesCache.put(propertyName, result);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a decimal pattern valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * This method return the value of the property as a SimpleDateFormat instance.
+     * The instance returned will be stored on near cache and will be removed when the
+     * value of the property has been updated.
+     * @param propertyName Name of the property that contains date representation.
+     * @return Simple date format instance.
+     */
+    public static SimpleDateFormat getDateFormat(String propertyName) {
+        SimpleDateFormat result;
+        synchronized (instance.instancesCache) {
+            result = (SimpleDateFormat) instance.instancesCache.get(propertyName);
+            if(result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    result = new SimpleDateFormat(get(propertyName));
+                    instance.instancesCache.put(propertyName, result);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a date pattern valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * This method return the value of the property as instance of list.
+     * @param propertyName Name of the property that contains the json array representation.
+     * @return List instance.
+     */
+    public static List<String> getList(String propertyName) {
+        String propertyValue = get(propertyName);
+        List<String> result = new ArrayList<>();
+        if(instance.instancesCache.containsKey(propertyName)) {
+            result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
+        } else {
+            try {
+                Gson gson = new Gson();
+                JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
+                array.forEach(A -> result.add(A.getAsString()));
+                List<String> cachedResult = new ArrayList<>();
+                cachedResult.addAll(result);
+                instance.instancesCache.put(propertyName, cachedResult);
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("The property value has not a json array valid format: '"
+                        + propertyName + ":" + propertyValue + "'", ex);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * This method return the value of the property as instance of map.
+     * @param propertyName The name of the property that contains the json object representation.
+     * @return Map instance.
+     */
+    public static Map<String, String> getMap(String propertyName) {
+        String propertyValue = get(propertyName);
+        Map<String, String> result = new HashMap<>();
+        if(instance.instancesCache.containsKey(propertyName)) {
+            result.putAll((Map<String, String>) instance.instancesCache.get(propertyName));
+        } else {
+            try {
+                Gson gson = new Gson();
+                JsonObject object = (JsonObject) instance.jsonParser.parse(propertyValue);
+                object.entrySet().forEach(S -> result.put(S.getKey(), object.get(S.getKey()).getAsString()));
+                Map<String, String> cachedResult = new HashMap<>();
+                cachedResult.putAll(result);
+                instance.instancesCache.put(propertyName, cachedResult);
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("The property value has not a json object valid format: '"
+                        + propertyName + ":" + propertyValue + "'", ex);
+            }
+        }
+        return result;
     }
 }

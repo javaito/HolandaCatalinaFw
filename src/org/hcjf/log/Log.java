@@ -65,6 +65,15 @@ public final class Log extends Service<LogPrinter> {
     protected void init() {
         this.thread = getServiceThreadFactory().newThread(new LogRunnable());
         this.thread.start();
+        List<String> logConsumers = SystemProperties.getList(SystemProperties.LOG_CONSUMERS);
+        logConsumers.forEach(S -> {
+            try {
+                LogPrinter printer = (LogPrinter) Class.forName(S).newInstance();
+                registerConsumer(printer);
+            } catch (Exception ex){
+                ex.printStackTrace();
+            }
+        });
     }
 
     /**
