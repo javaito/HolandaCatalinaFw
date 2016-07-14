@@ -97,6 +97,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
         if(!duplicated) {
             contexts.add(context);
+            Log.i(HTTP_SERVER_LOG_TAG, "Context added: [%s] %s",
+                    context.getClass().getName(),  context.getContextRegex());
         } else {
             Log.w(HTTP_SERVER_LOG_TAG, "Duplicated context: [%s] %s",
                     context.getClass().getName(),  context.getContextRegex());
