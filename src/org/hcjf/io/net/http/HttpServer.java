@@ -138,6 +138,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(payLoad.isComplete()) {
             HttpResponse response = null;
             HttpRequest request = (HttpRequest) payLoad;
+            Log.in(HTTP_SERVER_LOG_TAG, "Request\r\n%s", request.toString());
             try {
                 if (request.isComplete()) {
                     Context context = findContext(request.getContext());
@@ -182,6 +183,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         SystemProperties.get(SystemProperties.HTTP_SERVER_NAME)));
 
                 write(session, response, response.getNetStreamingSource(), true);
+                Log.out(HTTP_SERVER_LOG_TAG, "Response\r\n%s", response.toString());
             } catch (Throwable throwable) {
                 Log.e(NetService.NET_SERVICE_LOG_TAG, "Http server error", throwable);
             } finally {

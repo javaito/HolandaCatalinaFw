@@ -160,4 +160,26 @@ public class HttpRequest extends HttpPackage {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(getMethod().toString()).append(LINE_FIELD_SEPARATOR).
+                append(getPath()).append(LINE_FIELD_SEPARATOR).
+                append(getHttpVersion()).append(STRING_LINE_SEPARATOR);
+        for(HttpHeader header : getHeaders()) {
+            builder.append(header).append(STRING_LINE_SEPARATOR);
+        }
+        builder.append(STRING_LINE_SEPARATOR);
+        if(getBody() != null) {
+            if (getBody().length > 1024) {
+                builder.append(new String(getBody(), 0, 1024));
+            } else {
+                builder.append(new String(getBody()));
+            }
+        }
+
+        return builder.toString();
+    }
 }

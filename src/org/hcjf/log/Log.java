@@ -149,6 +149,30 @@ public final class Log extends Service<LogPrinter> {
     }
 
     /**
+     * Create a record with info group ("[IN]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param tag Tag of the record
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
+     * @param params Parameters for the places in the message.
+     */
+    public static void in(String tag, String message, Object... params) {
+        instance.addRecord(new LogRecord(LogGroup.INPUT, tag, message, params));
+    }
+
+    /**
+     * Create a record with info group ("[OUT]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param tag Tag of the record
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
+     * @param params Parameters for the places in the message.
+     */
+    public static void out(String tag, String message, Object... params) {
+        instance.addRecord(new LogRecord(LogGroup.OUTPUT, tag, message, params));
+    }
+
+    /**
      * Create a record with warning group ("[W]"). All the places in the messages
      * are replaced for each param in the natural order.
      * @param tag Tag of the record
@@ -353,6 +377,10 @@ public final class Log extends Service<LogPrinter> {
     private static enum LogGroup {
 
         DEBUG("D", 0),
+
+        INPUT("IN", 1),
+
+        OUTPUT("OUT", 1),
 
         INFO("I", 1),
 

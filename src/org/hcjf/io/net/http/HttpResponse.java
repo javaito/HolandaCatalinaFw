@@ -67,22 +67,24 @@ public class HttpResponse extends HttpPackage {
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder();
+        StringBuilder builder = new StringBuilder();
 
-        result.append(getHttpVersion()).append(LINE_FIELD_SEPARATOR);
-        result.append(getResponseCode()).append(LINE_FIELD_SEPARATOR);
-        result.append(getReasonPhrase()).append(STRING_LINE_SEPARATOR);
-        String separator = "";
+        builder.append(getHttpVersion()).append(LINE_FIELD_SEPARATOR);
+        builder.append(getResponseCode()).append(LINE_FIELD_SEPARATOR);
+        builder.append(getReasonPhrase()).append(STRING_LINE_SEPARATOR);
         for(HttpHeader header : getHeaders()) {
-            result.append(separator).append(header);
-            separator = STRING_LINE_SEPARATOR;
+            builder.append(header).append(STRING_LINE_SEPARATOR);
         }
+        builder.append(STRING_LINE_SEPARATOR);
         if(getBody() != null) {
-            result.append(STRING_LINE_SEPARATOR).append(STRING_LINE_SEPARATOR);
-            result.append(new String(getBody()));
+            if (getBody().length > 1024) {
+                builder.append(new String(getBody(), 0, 1024));
+            } else {
+                builder.append(new String(getBody()));
+            }
         }
 
-        return result.toString();
+        return builder.toString();
     }
 
 }
