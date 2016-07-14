@@ -248,46 +248,41 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * Devuleve el selector de claves creado para el servidor a partir del
-     * server socket generado.
-     * @return Selector de claves.
+     *
+     * @return
      */
     private Selector getSelector() {
         return selector;
     }
 
     /**
-     * Setea el selector de claves creado para el servidor a partir del server
-     * socket generado.
-     * @param selector Selector de claves.
+     *
+     * @param selector
      */
     private void setSelector(Selector selector) {
         this.selector = selector;
     }
 
     /**
-     * Devuelve un valor que indica si el servidor esta configurado para
-     * mantener un timeout de creacion de sesiones.
-     * @return Verdadero o falso.
+     * Return a value to indicate if the session creation timeout is available ot not.
+     * @return True if it is available.
      */
     private boolean isCreationTimeoutAvailable() {
         return creationTimeoutAvailable;
     }
 
     /**
-     * Devuelve el valor en milisegundo del timeout de creacion de sesiones que
-     * esta configurado en el servidor, en caso de que el servidor no este
-     * configurado para usar timeout de creacion de sesiones este valor no tiene
-     * sentido.
-     * @return Valor en milisegundo del timeout de creacion de sesiones
+     * Return the value in milliseconds that the server wait before destroy the channel if
+     * it has not session assigned.
+     * @return Session creation timeout.
      */
     private long getCreationTimeout() {
         return creationTimeout;
     }
 
     /**
-     * Devuelve el timer del servidor.
-     * @return Timer del servidor.
+     * Return the server timer
+     * @return server timer.
      */
     private Timer getTimer() {
         return timer;
@@ -579,33 +574,29 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 if(keyChannel != null && key.channel().isOpen()) {
                                     if(key.isValid()) {
                                         try {
-                                            consumer.getIoExecutor().execute(new Runnable() {
-
-                                                @Override
-                                                public void run() {
-                                                    try {
-                                                        if(key.isValid()) {
-                                                            if(key.isReadable()){
-                                                                synchronized(key) {
-                                                                    read(keyChannel, consumer);
-                                                                    write(keyChannel, consumer);
-                                                                }
-                                                                if(key.isValid()) {
-                                                                    key.interestOps(SelectionKey.OP_WRITE);
-                                                                }
-                                                            } else if(key.isWritable()){
-                                                                synchronized(key) {
-                                                                    write(keyChannel, consumer);
-                                                                    read(keyChannel, consumer);
-                                                                }
-                                                                if(key.isValid()) {
-                                                                    key.interestOps(SelectionKey.OP_READ);
-                                                                }
+                                            consumer.getIoExecutor().execute(() -> {
+                                                try {
+                                                    if(key.isValid()) {
+                                                        if(key.isReadable()){
+                                                            synchronized(key) {
+                                                                read(keyChannel, consumer);
+                                                                write(keyChannel, consumer);
+                                                            }
+                                                            if(key.isValid()) {
+                                                                key.interestOps(SelectionKey.OP_WRITE);
+                                                            }
+                                                        } else if(key.isWritable()){
+                                                            synchronized(key) {
+                                                                write(keyChannel, consumer);
+                                                                read(keyChannel, consumer);
+                                                            }
+                                                            if(key.isValid()) {
+                                                                key.interestOps(SelectionKey.OP_READ);
                                                             }
                                                         }
-                                                    } catch (Exception ex){
-                                                        Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
                                                     }
+                                                } catch (Exception ex){
+                                                    Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
                                                 }
                                             });
                                         } catch (RejectedExecutionException ex){
@@ -986,8 +977,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * Este metodo sera llamado cuando una escritura por streaming sea
-     * finalizada.
+     * This method is called when the streaming process done.
      * @param netPackage Net Package.
      */
     public final void streamingDone(NetPackage netPackage) {
@@ -1090,9 +1080,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * Esta clase es una tarea programada que destruira un canal en caso de que
-     * el servidor este configurado para destruir las conexiones en caso de que
-     * no concreten una sesion despues de un tipo determinado.
+     * Timer task to destroy the channel if has not session assigned.
      */
     private class ConnectionTimeout extends TimerTask {
 
@@ -1103,8 +1091,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         /**
-         * Destruye el canal en caso de que este no tenga asociada una session
-         * en caso contrario no hace nada.
+         * Destroy channel
          */
         @Override
         public void run() {
