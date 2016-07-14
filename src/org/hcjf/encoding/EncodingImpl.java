@@ -2,12 +2,10 @@ package org.hcjf.encoding;
 
 import org.hcjf.service.ServiceConsumer;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * @author javaito
@@ -90,7 +88,9 @@ public abstract class EncodingImpl implements ServiceConsumer {
 
         STRING((byte)10),
 
-        BYTE_BUFFER((byte)11);
+        BYTE_BUFFER((byte)11),
+
+        UUID((byte)12);
 
         private final byte id;
 
@@ -110,6 +110,40 @@ public abstract class EncodingImpl implements ServiceConsumer {
                     result = type;
                     break;
                 }
+            }
+
+            return result;
+        }
+
+        public static EncodingType fromClass(Class clazz) {
+            EncodingType result = null;
+
+            if(List.class.isAssignableFrom(clazz)) {
+                result = LIST;
+            } else if(Map.class.isAssignableFrom(clazz)) {
+                result = MAP;
+            } else if(Boolean.class.isAssignableFrom(clazz)) {
+                result = BOOLEAN;
+            } else if(Byte.class.isAssignableFrom(clazz)) {
+                result = BYTE;
+            } else if(Integer.class.isAssignableFrom(clazz)) {
+                result = INTEGER;
+            } else if(Short.class.isAssignableFrom(clazz)) {
+                result = SHORT;
+            } else if(Long.class.isAssignableFrom(clazz)) {
+                result = LONG;
+            } else if(Float.class.isAssignableFrom(clazz)) {
+                result = FLOAT;
+            } else if(Double.class.isAssignableFrom(clazz)) {
+                result = DOUBLE;
+            } else if(Date.class.isAssignableFrom(clazz)) {
+                result = DATE;
+            } else if(String.class.isAssignableFrom(clazz)) {
+                result = STRING;
+            } else if(ByteBuffer.class.isAssignableFrom(clazz)) {
+                result = BYTE_BUFFER;
+            } else if(java.util.UUID.class.isAssignableFrom(clazz)) {
+                result = UUID;
             }
 
             return result;

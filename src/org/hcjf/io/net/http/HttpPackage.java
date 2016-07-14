@@ -41,6 +41,7 @@ public abstract class HttpPackage {
     protected HttpPackage(HttpPackage httpPackage) {
         this.httpVersion = httpPackage.httpVersion;
         this.headers = httpPackage.headers;
+        this.body = httpPackage.getBody();
     }
 
     /**

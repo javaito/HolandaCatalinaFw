@@ -3,6 +3,7 @@ package org.hcjf.layers.crud;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +57,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
      * This method implements the read operation without filters.
      * @return List with all the instances of the resource.
      */
-    public List<O> read();
+    public Collection<O> read();
 
     /**
      * This method implements the read operation using the filters
@@ -64,7 +65,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    public List<O> read(Query.QueryId queryId);
+    public Collection<O> read(Query.QueryId queryId);
 
     /**
      * This method implements the update operation over a set of the instances,
@@ -74,7 +75,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
      *                   instances.
      * @return Return the instances updated.
      */
-    public List<O> update(Query.QueryId queryId, Map<String, Object> parameters);
+    public Collection<O> update(Query.QueryId queryId, Map<String, Object> parameters);
 
     /**
      * This method implements the delete operation over a set of the instances.
@@ -82,7 +83,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
      * @param queryId Id of the query.
      * @return Return the instances deleted.
      */
-    public List<O> delete(Query.QueryId queryId);
+    public Collection<O> delete(Query.QueryId queryId);
 
     /**
      * This method implements the read operation over the set of queries created.

@@ -1,6 +1,5 @@
 package org.hcjf.layers;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -9,10 +8,11 @@ import java.util.UUID;
  */
 public class Query {
 
-    private final QueryId id;
+    private QueryId id;
+    private Integer limit;
 
-    public Query(QueryId id) {
-        this.id = id;
+
+    public Query(){
     }
 
     public QueryId getId() {

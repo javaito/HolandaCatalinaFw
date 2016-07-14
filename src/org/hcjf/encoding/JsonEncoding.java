@@ -1,9 +1,6 @@
 package org.hcjf.encoding;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
@@ -33,7 +30,106 @@ public class JsonEncoding extends EncodingImpl {
      */
     @Override
     public byte[] encode(DecodedPackage decodedPackage) {
-        return new byte[0];
+        Gson gson = new Gson();
+        JsonObject jsonObject = new JsonObject();
+
+        if(decodedPackage.getParameters() != null) {
+            JsonObject parameterObject = new JsonObject();
+            EncodingType type;
+            JsonObject typedObject;
+            for(String key : decodedPackage.getParameters().keySet()) {
+                typedObject = new JsonObject();
+                type = EncodingType.fromClass(decodedPackage.getParameters().get(key).getClass());
+                typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
+                typedObject.add(VALUE_PARAMETER_FIELD, getElement(type, decodedPackage.getParameters().get(key)));
+                parameterObject.add(key, typedObject);
+            }
+            jsonObject.add(PARAMETERS_JSON_FIELD, parameterObject);
+        }
+
+        if(decodedPackage.getObject() != null) {
+            if(decodedPackage.getObject() instanceof Collection) {
+                JsonArray array = new JsonArray();
+                for(Object arrayObject : (Collection)decodedPackage.getObject()) {
+                    array.add(getBodyObject(arrayObject));
+                }
+                jsonObject.add(BODY_JSON_FIELD, array);
+            } else {
+                jsonObject.add(BODY_JSON_FIELD, getBodyObject(decodedPackage.getObject()));
+            }
+        }
+
+        return gson.toJson(jsonObject).getBytes();
+    }
+
+    public JsonObject getBodyObject(Object object) {
+        JsonObject bodyObject = new JsonObject();
+        EncodingType type;
+        JsonObject typedObject;
+        Object value;
+        Map<String, Introspection.Getter> getters = Introspection.getGetters(object.getClass());
+        for(String fieldName : getters.keySet()) {
+            try {
+                value = getters.get(fieldName).invoke(object);
+                if(value == null) {
+                    continue;
+                }
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("", ex);
+            }
+            typedObject = new JsonObject();
+            type = EncodingType.fromClass(value.getClass());
+            typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
+            typedObject.add(VALUE_PARAMETER_FIELD, getElement(type, value));
+            bodyObject.add(fieldName, typedObject);
+        }
+        return bodyObject;
+    }
+
+    public JsonElement getElement(EncodingType type, Object value) {
+        JsonElement element = null;
+
+        switch (type) {
+            case BOOLEAN: element = new JsonPrimitive((Boolean)value); break;
+            case BYTE: element = new JsonPrimitive((Byte)value); break;
+            case DATE: element = new JsonPrimitive(((Date)value).getTime()); break;
+            case DOUBLE: element = new JsonPrimitive((Double)value); break;
+            case FLOAT: element = new JsonPrimitive((Float)value); break;
+            case INTEGER: element = new JsonPrimitive((Integer)value); break;
+            case LONG: element = new JsonPrimitive((Long)value); break;
+            case SHORT: element = new JsonPrimitive((Short)value); break;
+            case STRING: element = new JsonPrimitive((String)value); break;
+            case UUID: element = new JsonPrimitive(value.toString()); break;
+            case  LIST: {
+                JsonArray array = new JsonArray();
+                JsonObject typedObject;
+                for(Object arrayValue : (List)value) {
+                    typedObject = new JsonObject();
+                    type = EncodingType.fromClass(value.getClass());
+                    typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
+                    typedObject.add(TYPE_PARAMETER_FIELD, getElement(type, arrayValue));
+                    array.add(typedObject);
+                }
+                element = array;
+                break;
+            }
+            case MAP: {
+                JsonObject map = new JsonObject();
+                JsonObject typedObject;
+                for(String name : ((Map<String, ?>)value).keySet()){
+                    typedObject = new JsonObject();
+                    type = EncodingType.fromClass(((Map<String, ?>)value).get(name).getClass());
+                    typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
+                    typedObject.add(TYPE_PARAMETER_FIELD, getElement(type, ((Map<String, ?>)value).get(name)));
+                    map.add(name, typedObject);
+                }
+                element = map;
+                break;
+            }
+            case BYTE_BUFFER: throw new UnsupportedOperationException("Byte buffer type is not supported for 'HCJF' json encoding");
+        }
+
+        return element;
     }
 
     /**
@@ -191,6 +287,7 @@ public class JsonEncoding extends EncodingImpl {
             case LONG: try { result = jsonElement.getAsLong(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as long", ex);} ; break;
             case SHORT: try { result = jsonElement.getAsShort(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as short", ex);} ; break;
             case STRING: try { result = jsonElement.getAsString(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
+            case UUID: try { result = UUID.fromString(jsonElement.getAsString()); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
             case BYTE_BUFFER: throw new UnsupportedOperationException("Byte buffer type is not supported for 'HCJF' json encoding");
         }
 

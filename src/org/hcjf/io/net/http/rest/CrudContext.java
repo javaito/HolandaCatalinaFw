@@ -1,7 +1,6 @@
 package org.hcjf.io.net.http.rest;
 
-import org.hcjf.io.net.http.HttpHeader;
-import org.hcjf.io.net.http.HttpRequest;
+import org.hcjf.io.net.http.*;
 import org.hcjf.io.net.http.layered.LayeredRequest;
 import org.hcjf.io.net.http.layered.LayeredResponse;
 import org.hcjf.layers.Query;
@@ -85,13 +84,21 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
      * @return
      */
     private DecodedPackage decode(HttpRequest request, Class resourceType) {
-        HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
-        String implName = contentTypeHeader.getParameter(
-                contentTypeHeader.getGroups().iterator().next(), HttpHeader.PARAM_IMPL);
-        MimeType type = MimeType.fromString(contentTypeHeader.getGroups().iterator().next());
-        Map<String, Object> parameters = new HashMap<>();
-        parameters.putAll(request.getParameters());
-        return EncodingService.decode(type, implName, resourceType, request.getBody(), parameters);
+        DecodedPackage result;
+        if(request.getMethod().equals(HttpMethod.GET) || request.getMethod().equals(HttpMethod.DELETE)) {
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.putAll(request.getParameters());
+            result = new DecodedPackage(null, parameters);
+        } else {
+            HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
+            String implName = contentTypeHeader.getParameter(
+                    contentTypeHeader.getGroups().iterator().next(), HttpHeader.PARAM_IMPL);
+            MimeType type = MimeType.fromString(contentTypeHeader.getGroups().iterator().next());
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.putAll(request.getParameters());
+            result = EncodingService.decode(type, implName, resourceType, request.getBody(), parameters);
+        }
+        return result;
     }
 
     /**
@@ -101,7 +108,21 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
      */
     @Override
     protected LayeredResponse encode(Object object, LayeredRequest request) {
-        return null;
+        HttpHeader contentTypeHeader = request.getHeader(HttpHeader.ACCEPT);
+        String implName = contentTypeHeader.getParameter(
+                contentTypeHeader.getGroups().iterator().next(), HttpHeader.PARAM_IMPL);
+        MimeType type = MimeType.fromString(contentTypeHeader.getGroups().iterator().next());
+
+        byte[] body = EncodingService.encode(type, implName, new DecodedPackage(object, null));
+
+        HttpResponse response = new HttpResponse();
+        response.setResponseCode(HttpResponseCode.OK);
+        response.setReasonPhrase("OK: " + request.getContext());
+        response.setBody(body);
+        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, type.toString()));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+        return new LayeredResponse(response);
     }
 
     /**
@@ -133,7 +154,11 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         Object result = null;
         CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
         if(layeredRequest.getResourceAction() == null) {
-            result = layerInterface.read(layeredRequest.getId());
+            if(layeredRequest.getId() == null) {
+                result = layerInterface.read();
+            } else {
+                result = layerInterface.read(layeredRequest.getId());
+            }
         } else if(layeredRequest.getResourceAction().equals(QUERY_PARAMETER_PATH)) {
             result = layerInterface.read(UUID.fromString(layeredRequest.getId()));
         } else if(layeredRequest.getResourceAction().equals(QUERY_PATH)) {

@@ -34,7 +34,8 @@ public final class Introspection {
                 if(Modifier.isPublic(method.getModifiers())) {
                     matcher = GETTER_METHODS_PATTERN.matcher(method.getName());
                     if(matcher.matches()) {
-                        fieldName = matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
+                        fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
+                                matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
                         result.put(fieldName, new Getter(clazz, fieldName, method));
                     }
                 }

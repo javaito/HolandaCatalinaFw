@@ -4,6 +4,7 @@ import org.hcjf.layers.business.BusinessLayer;
 import org.hcjf.layers.Query;
 
 import java.lang.reflect.ParameterizedType;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -86,7 +87,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
      * @return List with all the instances of the resource.
      */
     @Override
-    public List<O> read() {
+    public Collection<O> read() {
         throw new UnsupportedOperationException();
     }
 
@@ -98,7 +99,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
      * @return Return the list with the instances founded.
      */
     @Override
-    public List<O> read(Query.QueryId queryId) {
+    public Collection<O> read(Query.QueryId queryId) {
         throw new UnsupportedOperationException();
     }
 
@@ -112,7 +113,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
      * @return Return the instances updated.
      */
     @Override
-    public List<O> update(Query.QueryId queryId, Map<String, Object> parameters) {
+    public Collection<O> update(Query.QueryId queryId, Map<String, Object> parameters) {
         throw new UnsupportedOperationException();
     }
 
@@ -124,7 +125,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
      * @return Return the instances deleted.
      */
     @Override
-    public List<O> delete(Query.QueryId queryId) {
+    public Collection<O> delete(Query.QueryId queryId) {
         throw new UnsupportedOperationException();
     }
 
