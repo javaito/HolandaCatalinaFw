@@ -35,10 +35,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             public int compare(Context context, Context newContext) {
                 int result = context.getContextRegex().compareTo(newContext.getContextRegex());
 
-                if(result == 0) {
-                    Log.w(HTTP_SERVER_LOG_TAG, "Duplicated context: %s", context.getContextRegex());
-                }
-
                 return result;
             }
 
@@ -90,8 +86,21 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      *
      * @param context
      */
-    public final void addContext(Context context) {
-        contexts.add(context);
+    public final synchronized void addContext(Context context) {
+        boolean duplicated = false;
+        for(Context ctx : contexts) {
+            if(ctx.getContextRegex().equals(context.getContextRegex())) {
+                duplicated = true;
+                break;
+            }
+        }
+
+        if(!duplicated) {
+            contexts.add(context);
+        } else {
+            Log.w(HTTP_SERVER_LOG_TAG, "Duplicated context: [%s] %s",
+                    context.getClass().getName(),  context.getContextRegex());
+        }
     }
 
     /**
