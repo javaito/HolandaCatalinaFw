@@ -47,14 +47,9 @@ public final class Log extends Service<LogPrinter> {
     private Log() {
         super(NAME);
         this.printers = new ArrayList<>();
-        this.queue = new PriorityBlockingQueue<>(QUEUE_INITIAL_SIZE, new Comparator<LogRecord>() {
-
-            @Override
-            public int compare(LogRecord o1, LogRecord o2) {
-                return (int)((o1.getDate().getTime() / 1000) - (o2.getDate().getTime() / 1000));
-            }
-
-        });
+        this.queue = new PriorityBlockingQueue<>(
+                SystemProperties.getInteger(SystemProperties.LOG_QUEUE_INITIAL_SIZE),
+                (o1, o2) -> (int)((o1.getDate().getTime() / 1000) - (o2.getDate().getTime() / 1000)));
         init();
     }
 
@@ -252,10 +247,13 @@ public final class Log extends Service<LogPrinter> {
          * @param record Record to print.
          */
         private void writeRecord(LogRecord record) {
-            if(record.getGroup() != LogGroup.DEBUG) {
+            if(record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.LOG_LEVEL)) {
                 printers.stream().forEach(printer -> printer.print(record));
             }
-            System.out.println(record.toString());
+
+            if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED)) {
+                System.out.println(record.toString());
+            }
         }
     }
 

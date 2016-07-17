@@ -1,6 +1,6 @@
 package org.hcjf.layers.storage;
 
-import org.hcjf.layers.Query;
+import org.hcjf.layers.query.Query;
 
 import java.io.Closeable;
 import java.util.List;

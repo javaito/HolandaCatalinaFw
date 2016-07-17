@@ -37,8 +37,10 @@ public final class SystemProperties extends Properties {
     public static final String LOG_LEVEL= "hcfj.log.level";
     public static final String LOG_DATE_FORMAT = "hcfj.log.date.format";
     public static final String LOG_CONSUMERS = "hcjf.log.consumers";
+    public static final String LOG_SYSTEM_OUT_ENABLED = "hcjf.log.system.out.enabled";
+    public static final String LOG_QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
 
-    public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
+    public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.inpt.buffer.size";
     public static final String NET_OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
     public static final String NET_DISCONNECT_AND_REMOVE = "hcfj.net.disconnect.and.remove";
     public static final String NET_CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
@@ -47,6 +49,16 @@ public final class SystemProperties extends Properties {
 
     public static final String HTTP_SERVER_NAME = "hcjf.http.server.name";
     public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
+    public static final String HTTP_INPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.input.log.body.max.length";
+    public static final String HTTP_OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
+
+    public static final String REST_DEFAULT_MIME_TYPE = "hcjf.rest.default.mime.type";
+    public static final String REST_DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
+    public static final String REST_QUERY_PATH = "hcjf.rest.query.path";
+    public static final String REST_QUERY_PARAMETER_PATH = "hcjf.rest.query.parameter.path";
+
+    public static final String QUERY_DEFAULT_LIMIT = "hcjf.query.default.limit";
+    public static final String QUERY_DEFAULT_DESC_ORDER = "hcjf.query.default.desc.order";
 
     public static final String CLOUD_IMPL = "hcjf.cloud.impl";
 
@@ -81,9 +93,11 @@ public final class SystemProperties extends Properties {
         defaults.put(LOG_WARNING_FILE, "false");
         defaults.put(LOG_INFO_FILE, "false");
         defaults.put(LOG_DEBUG_FILE, "false");
-        defaults.put(LOG_LEVEL, "I");
+        defaults.put(LOG_LEVEL, "1");
         defaults.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
         defaults.put(LOG_CONSUMERS, "[]");
+        defaults.put(LOG_SYSTEM_OUT_ENABLED, "true");
+        defaults.put(LOG_QUEUE_INITIAL_SIZE, "10000");
 
         defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
         defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");
@@ -94,6 +108,16 @@ public final class SystemProperties extends Properties {
 
         defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
         defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
+        defaults.put(HTTP_INPUT_LOG_BODY_MAX_LENGTH, "1024");
+        defaults.put(HTTP_OUTPUT_LOG_BODY_MAX_LENGTH, "1024");
+
+        defaults.put(REST_DEFAULT_MIME_TYPE, "application/json");
+        defaults.put(REST_DEFAULT_ENCODING_IMPL, "hcjf");
+        defaults.put(REST_QUERY_PATH, "query");
+        defaults.put(REST_QUERY_PARAMETER_PATH, "q");
+
+        defaults.put(QUERY_DEFAULT_LIMIT, "1000");
+        defaults.put(QUERY_DEFAULT_DESC_ORDER, "false");
 
         Properties system = System.getProperties();
         putAll(system);

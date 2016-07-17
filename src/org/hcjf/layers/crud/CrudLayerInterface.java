@@ -1,10 +1,9 @@
 package org.hcjf.layers.crud;
 
 import org.hcjf.layers.LayerInterface;
-import org.hcjf.layers.Query;
+import org.hcjf.layers.query.Query;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -86,7 +85,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
     public Collection<O> delete(Query.QueryId queryId);
 
     /**
-     * This method implements the read operation over the set of queries created.
+     * This method implements the read operation over the set of query created.
      * @param queryId Id of the query.
      * @return Return the instance of the resource's query.
      */

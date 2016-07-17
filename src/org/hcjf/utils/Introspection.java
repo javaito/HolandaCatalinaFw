@@ -19,6 +19,9 @@ public final class Introspection {
     private static final int SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP = 2;
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
 
+    private static final Map<Class, Map<String, Getter>> gettersCache = new HashMap<>();
+    private static final Map<Class, Map<String, Setter>> settersCache = new HashMap<>();
+
     /**
      *
      * @param clazz
@@ -27,25 +30,33 @@ public final class Introspection {
     public static Map<String, Getter> getGetters(Class clazz) {
         Map<String, Getter> result = new HashMap<>();
 
-        Matcher matcher;
-        String fieldName;
         if(!clazz.equals(Object.class)) {
-            for(Method method : clazz.getDeclaredMethods()) {
-                if(Modifier.isPublic(method.getModifiers())) {
-                    matcher = GETTER_METHODS_PATTERN.matcher(method.getName());
-                    if(matcher.matches()) {
-                        fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
-                                matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
-                        result.put(fieldName, new Getter(clazz, fieldName, method));
+            synchronized (gettersCache) {
+                if(!gettersCache.containsKey(clazz)) {
+                    gettersCache.put(clazz, result);
+                    Matcher matcher;
+                    String fieldName;
+                    for(Method method : clazz.getDeclaredMethods()) {
+                        if(Modifier.isPublic(method.getModifiers())) {
+                            matcher = GETTER_METHODS_PATTERN.matcher(method.getName());
+                            if(matcher.matches()) {
+                                fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
+                                        matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
+                                result.put(fieldName, new Getter(clazz, fieldName, method));
+                            }
+                        }
                     }
+                } else {
+                    result = gettersCache.get(clazz);
                 }
             }
+
             if(!clazz.getSuperclass().equals(Objects.class)) {
                 result.putAll(getGetters(clazz.getSuperclass()));
             }
         }
 
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     /**
@@ -56,25 +67,33 @@ public final class Introspection {
     public static Map<String, Setter> getSetters(Class clazz) {
         Map<String, Setter> result = new HashMap<>();
 
-        Matcher matcher;
-        String fieldName;
         if(!clazz.equals(Object.class)) {
-            for(Method method : clazz.getDeclaredMethods()) {
-                if(Modifier.isPublic(method.getModifiers())) {
-                    matcher = SETTER_METHODS_PATTERN.matcher(method.getName());
-                    if(matcher.matches()) {
-                        fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
-                                matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
-                        result.put(fieldName, new Setter(clazz, fieldName, method));
+            synchronized (settersCache) {
+                if (!settersCache.containsKey(clazz)) {
+                    settersCache.put(clazz, result);
+                    Matcher matcher;
+                    String fieldName;
+                    for(Method method : clazz.getDeclaredMethods()) {
+                        if(Modifier.isPublic(method.getModifiers())) {
+                            matcher = SETTER_METHODS_PATTERN.matcher(method.getName());
+                            if(matcher.matches()) {
+                                fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
+                                        matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
+                                result.put(fieldName, new Setter(clazz, fieldName, method));
+                            }
+                        }
                     }
+                } else {
+                    result = settersCache.get(clazz);
                 }
             }
+
             if(!clazz.getSuperclass().equals(Objects.class)) {
                 result.putAll(getSetters(clazz.getSuperclass()));
             }
         }
 
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     /**

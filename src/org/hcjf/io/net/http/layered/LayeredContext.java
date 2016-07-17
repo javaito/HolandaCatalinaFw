@@ -84,8 +84,10 @@ public abstract class LayeredContext<L extends LayerInterface> extends Context {
      */
     @Override
     protected HttpResponse onError(HttpRequest request, Throwable throwable) {
-        //TODO: Implements the error driver
-        return null;
+        HttpResponse result = new HttpResponse();
+        result.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
+        result.setReasonPhrase(throwable.getMessage());
+        return result;
     }
 
     /**

@@ -1,13 +1,11 @@
 package org.hcjf.layers.crud;
 
 import org.hcjf.layers.business.BusinessLayer;
-import org.hcjf.layers.Query;
+import org.hcjf.layers.query.Query;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * This layer implements the {@link CrudLayerInterface}
@@ -130,7 +128,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
     }
 
     /**
-     * This method implements the read operation over the set of queries created.
+     * This method implements the read operation over the set of query created.
      *
      * @param queryId Id of the query.
      * @return Return the instance of the resource's query.

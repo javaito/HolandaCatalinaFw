@@ -22,6 +22,8 @@ public class HttpResponse extends HttpPackage {
 
     protected HttpResponse(HttpResponse httpResponse) {
         super(httpResponse);
+        this.responseCode = httpResponse.responseCode;
+        this.reasonPhrase = httpResponse.reasonPhrase;
     }
 
     public Integer getResponseCode() {
@@ -71,16 +73,19 @@ public class HttpResponse extends HttpPackage {
 
         builder.append(getHttpVersion()).append(LINE_FIELD_SEPARATOR);
         builder.append(getResponseCode()).append(LINE_FIELD_SEPARATOR);
-        builder.append(getReasonPhrase()).append(STRING_LINE_SEPARATOR);
+        builder.append(getReasonPhrase() == null ? "" : getReasonPhrase()).append(STRING_LINE_SEPARATOR);
         for(HttpHeader header : getHeaders()) {
             builder.append(header).append(STRING_LINE_SEPARATOR);
         }
         builder.append(STRING_LINE_SEPARATOR);
         if(getBody() != null) {
-            if (getBody().length > 1024) {
-                builder.append(new String(getBody(), 0, 1024));
-            } else {
-                builder.append(new String(getBody()));
+            int maxLength = SystemProperties.getInteger(SystemProperties.HTTP_OUTPUT_LOG_BODY_MAX_LENGTH);
+            if(maxLength > 0) {
+                if (getBody().length > maxLength) {
+                    builder.append(new String(getBody(), 0, maxLength));
+                } else {
+                    builder.append(new String(getBody()));
+                }
             }
         }
 

@@ -16,7 +16,7 @@ public enum HttpMethod {
      * Responses to this method are not cacheable.
      * If the OPTIONS request includes an entity-body (as indicated by the presence of Content-Length or Transfer-Encoding),
      * then the media type MUST be indicated by a Content-Type field. Although this specification does not define any
-     * use for such a body, future extensions to HTTP might use the OPTIONS body to make more detailed queries on the
+     * use for such a body, future extensions to HTTP might use the OPTIONS body to make more detailed query on the
      * server. A server that does not support such an extension MAY discard the request body.
      * If the Request-URI is an asterisk ("*"), the OPTIONS request is intended to apply to the server in general rather
      * than to a specific resource. Since a server's communication options typically depend on the resource, the "*"

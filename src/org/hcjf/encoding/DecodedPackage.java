@@ -1,5 +1,7 @@
 package org.hcjf.encoding;
 
+import org.hcjf.layers.query.Query;
+
 import java.util.Map;
 
 /**
@@ -9,10 +11,17 @@ import java.util.Map;
 public class DecodedPackage {
 
     private final Object object;
+    private final Query query;
     private final Map<String, Object> parameters;
 
     public DecodedPackage(Object object, Map<String, Object> parameters) {
-        this.object = object;
+        if(object instanceof Query) {
+            this.object = null;
+            this.query = (Query) object;
+        } else {
+            this.object = object;
+            this.query = null;
+        }
         this.parameters = parameters;
     }
 

@@ -3,11 +3,12 @@ package org.hcjf.io.net.http.rest;
 import org.hcjf.io.net.http.*;
 import org.hcjf.io.net.http.layered.LayeredRequest;
 import org.hcjf.io.net.http.layered.LayeredResponse;
-import org.hcjf.layers.Query;
+import org.hcjf.layers.query.Query;
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.encoding.DecodedPackage;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.encoding.EncodingService;
+import org.hcjf.properties.SystemProperties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,9 +19,6 @@ import java.util.UUID;
  * @mail javaito@gmail.com
  */
 public class CrudContext extends EndPoint<CrudLayerInterface> {
-
-    private static final String QUERY_PATH = "query";
-    private static final String QUERY_PARAMETER_PATH = "q";
 
     private static final Integer CRUD_RESOURCE_NAME_INDEX = 3;
     private static final Integer CRUD_RESOURCE_ACTION_INDEX = 4;
@@ -45,12 +43,12 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         String id = null;
         if(request.getPathParts().size() > CRUD_RESOURCE_ACTION_INDEX) {
             resourceAction = request.getPathParts().get(CRUD_RESOURCE_ACTION_INDEX);
-            if(resourceAction.equals(QUERY_PATH)) {
+            if(resourceAction.equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
                 //In this case the action is over the resource's query
                 if(request.getPathParts().size() > CRUD_QUERY_ID_INDEX) {
                     id = request.getPathParts().get(CRUD_QUERY_ID_INDEX);
                 }
-            } else if(resourceAction.equals(QUERY_PARAMETER_PATH)){
+            } else if(resourceAction.equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))){
                 //In this case the action is over the resource object.
                 if(request.getPathParts().size() > CRUD_QUERY_ID_INDEX) {
                     id = request.getPathParts().get(CRUD_QUERY_ID_INDEX);
@@ -88,7 +86,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         if(request.getMethod().equals(HttpMethod.GET) || request.getMethod().equals(HttpMethod.DELETE)) {
             Map<String, Object> parameters = new HashMap<>();
             parameters.putAll(request.getParameters());
-            result = new DecodedPackage(null, parameters);
+            result = new DecodedPackage(parameters);
         } else {
             HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
             String implName = contentTypeHeader.getParameter(
@@ -117,7 +115,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
 
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.OK);
-        response.setReasonPhrase("OK: " + request.getContext());
+        response.setReasonPhrase("REST Success");
         response.setBody(body);
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, type.toString()));
@@ -136,9 +134,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
         if(layeredRequest.getResourceAction() == null) {
             result = layerInterface.create(layeredRequest.getAttach(), layeredRequest.getRestParameters());
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PARAMETER_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
             throw new IllegalArgumentException("The resources can't be created using a query like a parameter.");
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.createQuery((Query) layeredRequest.getAttach(), layeredRequest.getRestParameters());
         }
         return result;
@@ -159,9 +157,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
             } else {
                 result = layerInterface.read(layeredRequest.getId());
             }
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PARAMETER_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
             result = layerInterface.read(UUID.fromString(layeredRequest.getId()));
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.readQuery(new Query.QueryId(UUID.fromString(layeredRequest.getId())));
         }
         return result;
@@ -178,9 +176,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
         if(layeredRequest.getResourceAction() == null) {
             result = layerInterface.update(layeredRequest.getAttach(), layeredRequest.getRestParameters());
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PARAMETER_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
             result = layerInterface.update(new Query.QueryId(UUID.fromString(layeredRequest.getId())), layeredRequest.getRestParameters());
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.updateQuery((Query) layeredRequest.getAttach(), layeredRequest.getRestParameters());
         }
         return result;
@@ -197,9 +195,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
         if(layeredRequest.getResourceAction() == null) {
             result = layerInterface.delete(layeredRequest.getId());
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PARAMETER_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
             result = layerInterface.delete(new Query.QueryId(UUID.fromString(layeredRequest.getId())));
-        } else if(layeredRequest.getResourceAction().equals(QUERY_PATH)) {
+        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.deleteQuery(new Query.QueryId(UUID.fromString(layeredRequest.getId())));
         }
         return result;

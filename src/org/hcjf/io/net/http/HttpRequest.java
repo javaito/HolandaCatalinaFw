@@ -173,10 +173,13 @@ public class HttpRequest extends HttpPackage {
         }
         builder.append(STRING_LINE_SEPARATOR);
         if(getBody() != null) {
-            if (getBody().length > 1024) {
-                builder.append(new String(getBody(), 0, 1024));
-            } else {
-                builder.append(new String(getBody()));
+            int maxLength = SystemProperties.getInteger(SystemProperties.HTTP_INPUT_LOG_BODY_MAX_LENGTH);
+            if(maxLength > 0) {
+                if (getBody().length > maxLength) {
+                    builder.append(new String(getBody(), 0, maxLength));
+                } else {
+                    builder.append(new String(getBody()));
+                }
             }
         }
 
