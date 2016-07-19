@@ -4,7 +4,7 @@ package org.hcjf.layers.query;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public class NotIn extends Evaluator {
+public class NotIn extends In {
 
     public NotIn(String fieldName, Object value) {
         super(fieldName, value);
@@ -12,6 +12,6 @@ public class NotIn extends Evaluator {
 
     @Override
     protected boolean evaluate(Object object) {
-        return false;
+        return !super.evaluate(object);
     }
 }
