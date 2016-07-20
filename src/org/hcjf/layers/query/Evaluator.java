@@ -2,7 +2,7 @@ package org.hcjf.layers.query;
 
 /**
  * This abstract class define the structure of the evaluating. The evaluator
- * is the implementation of a method to decide if an object is part of the result set
+ * is the implementation of a method to decide if an object is part of the result add
  * of the query or not is.
  * @author javaito
  * @mail javaito@gmail.com
@@ -68,7 +68,7 @@ public abstract class Evaluator {
      * This method must be implemented for each particular implementation
      * to evaluate some details about instances of the data collection.
      * @param object Object of the data collection.
-     * @return Return true if the object must be part of the result set or false in the
+     * @return Return true if the object must be part of the result add or false in the
      * other ways.
      */
     protected abstract boolean evaluate(Object object);

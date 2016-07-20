@@ -67,7 +67,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
     public Collection<O> read(Query.QueryId queryId);
 
     /**
-     * This method implements the update operation over a set of the instances,
+     * This method implements the update operation over a add of the instances,
      * this instances are selected using the query like a filter.
      * @param queryId Id of the query.
      * @param parameters Values that contains the information to update the
@@ -77,7 +77,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
     public Collection<O> update(Query.QueryId queryId, Map<String, Object> parameters);
 
     /**
-     * This method implements the delete operation over a set of the instances.
+     * This method implements the delete operation over a add of the instances.
      * This instances are selected using the query like a filter.
      * @param queryId Id of the query.
      * @return Return the instances deleted.
@@ -85,7 +85,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
     public Collection<O> delete(Query.QueryId queryId);
 
     /**
-     * This method implements the read operation over the set of query created.
+     * This method implements the read operation over the add of query created.
      * @param queryId Id of the query.
      * @return Return the instance of the resource's query.
      */

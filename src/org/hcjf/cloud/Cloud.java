@@ -90,7 +90,7 @@ public final class Cloud {
     }
 
     /**
-     * This method replicates the property set operation over the cloud.
+     * This method replicates the property add operation over the cloud.
      * @param propertyName Property name.
      * @param propertyValue Property value.
      */

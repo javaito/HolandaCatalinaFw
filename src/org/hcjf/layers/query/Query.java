@@ -103,7 +103,7 @@ public class Query {
 
     /**
      * Add an instance of the evaluator object that evaluate if some instance of the
-     * data collection must be in the result set or not.
+     * data collection must be in the result add or not.
      * @param evaluator Evaluator instance.
      * @return Return the same instance of this class.
      * @throws IllegalArgumentException If the instance of the evaluator is null.
@@ -222,23 +222,29 @@ public class Query {
 
     /**
      * This method evaluate each object of the collection and sort filtered
-     * object to create a result set with the object filtered and sorted.
+     * object to create a result add with the object filtered and sorted.
+     * If there are order fields added then the result implementation is a
+     * {@link TreeSet} implementation else the result implementation is a
+     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * from the source
      * @param objects Data collection.
      * @param <O> Kind of instances of the data collection.
-     * @return Result set filtered and sorted.
+     * @return Result add filtered and sorted.
      */
     public <O extends Object> Set<O> evaluate(Collection<O> objects) {
-        Set<O> result = new TreeSet<>((o1, o2) -> {
-            int compareResult = 0;
+        Set<O> result;
 
-            if(orderFields.size() > 0) {
+        if(orderFields.size() > 0) {
+            result = new TreeSet<>((o1, o2) -> {
+                int compareResult = 0;
+
                 Map<String, Introspection.Getter> getters = Introspection.getGetters(o1.getClass());
                 Comparable<Object> comparable1;
                 Comparable<Object> comparable2;
                 Introspection.Getter getter;
-                for(String orderField : orderFields) {
+                for (String orderField : orderFields) {
                     getter = getters.get(orderField);
-                    if(getter != null) {
+                    if (getter != null) {
                         try {
                             comparable1 = getter.invoke(o1);
                             comparable2 = getter.invoke(o2);
@@ -252,14 +258,16 @@ public class Query {
                         Log.w(QUERY_LOG_TAG, "Order field not found: %s", orderField);
                     }
                 }
-            }
 
-            if (compareResult == 0) {
-                compareResult = o1.hashCode() - o2.hashCode();
-            }
+                if (compareResult == 0) {
+                    compareResult = o1.hashCode() - o2.hashCode();
+                }
 
-            return compareResult * (isDesc() ? -1 : 1);
-        });
+                return compareResult * (isDesc() ? -1 : 1);
+            });
+        } else {
+            result = new LinkedHashSet<>();
+        }
 
         boolean add;
         for(O object : objects) {

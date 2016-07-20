@@ -88,7 +88,7 @@ public enum HttpMethod {
      * Responses to this method are not cacheable, unless the response includes appropriate Cache-Control or Expires
      * header fields. However, the 303 (See Other) response can be used to direct the user agent to retrieve a cacheable
      * resource.
-     * POST requests MUST obey the message transmission requirements set out in section 8.2
+     * POST requests MUST obey the message transmission requirements add out in section 8.2
      */
     POST,
 
@@ -117,7 +117,7 @@ public enum HttpMethod {
      * identifying "the current version" which is separate from the URI identifying each particular version. In this
      * case, a PUT request on a general URI might result in several other URIs being defined by the origin server.
      * HTTP/1.1 does not define how a PUT method affects the state of an origin server.
-     * PUT requests MUST obey the message transmission requirements set out in section 8.2.
+     * PUT requests MUST obey the message transmission requirements add out in section 8.2.
      * Unless otherwise specified for a particular entity-header, the entity-headers in the PUT request SHOULD be
      * applied to the resource created or modified by the PUT.
      */

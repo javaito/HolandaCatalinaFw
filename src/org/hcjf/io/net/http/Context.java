@@ -11,7 +11,7 @@ public abstract class Context {
 
     /**
      * Constructor
-     * @param contextRegex Regular expression that represents the set
+     * @param contextRegex Regular expression that represents the add
      * of URLs that refer to this context.
      */
     public Context(String contextRegex) {
@@ -19,7 +19,7 @@ public abstract class Context {
     }
 
     /**
-     * Return the regular expression that represents the set of URLs
+     * Return the regular expression that represents the add of URLs
      * that refer to this context.
      * @return Regular expression.
      */

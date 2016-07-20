@@ -17,6 +17,7 @@ public class JsonEncoding extends EncodingImpl {
 
     private static final String PARAMETERS_JSON_FIELD = "params";
     private static final String BODY_JSON_FIELD = "body";
+    private static final String QUERY_JSON_FIELD = "query";
     private static final String TYPE_PARAMETER_FIELD = "t";
     private static final String VALUE_PARAMETER_FIELD = "v";
 
@@ -62,7 +63,12 @@ public class JsonEncoding extends EncodingImpl {
         return gson.toJson(jsonObject).getBytes();
     }
 
-    public JsonObject getBodyObject(Object object) {
+    /**
+     *
+     * @param object
+     * @return
+     */
+    protected JsonObject getBodyObject(Object object) {
         JsonObject bodyObject = new JsonObject();
         EncodingType type;
         JsonObject typedObject;
@@ -86,7 +92,13 @@ public class JsonEncoding extends EncodingImpl {
         return bodyObject;
     }
 
-    public JsonElement getElement(EncodingType type, Object value) {
+    /**
+     *
+     * @param type
+     * @param value
+     * @return
+     */
+    protected JsonElement getElement(EncodingType type, Object value) {
         JsonElement element = null;
 
         switch (type) {
@@ -201,6 +213,12 @@ public class JsonEncoding extends EncodingImpl {
         return new DecodedPackage(decodedObject, decodedParameters);
     }
 
+    /**
+     *
+     * @param objectClass
+     * @param jsonElement
+     * @return
+     */
     protected Object getInstance(Class objectClass, JsonElement jsonElement) {
         Object result;
         if(jsonElement.isJsonObject()) {
@@ -217,7 +235,7 @@ public class JsonEncoding extends EncodingImpl {
                     try {
                         setters.get(fieldName).invoke(result, getValue(fieldName, jsonObject.get(fieldName)));
                     } catch (Exception ex) {
-                        throw new IllegalArgumentException("Unable to set field " + fieldName, ex);
+                        throw new IllegalArgumentException("Unable to add field " + fieldName, ex);
                     }
                 }
             }
@@ -227,6 +245,12 @@ public class JsonEncoding extends EncodingImpl {
         return result;
     }
 
+    /**
+     *
+     * @param fieldName
+     * @param jsonElement
+     * @return
+     */
     protected Object getValue(String fieldName, JsonElement jsonElement) {
         Object result;
         if(jsonElement.isJsonObject() &&
@@ -247,6 +271,13 @@ public class JsonEncoding extends EncodingImpl {
         return result;
     }
 
+    /**
+     *
+     * @param fieldName
+     * @param type
+     * @param jsonElement
+     * @return
+     */
     protected Object getValue(String fieldName, EncodingType type, JsonElement jsonElement) {
         Object result = null;
 

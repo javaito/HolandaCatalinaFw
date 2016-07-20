@@ -240,7 +240,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * Return an unmodificable set with all the sessions created en the service.
+     * Return an unmodificable add with all the sessions created en the service.
      * @return Set with se sessions.
      */
     public final Set<NetSession> getSessions() {
@@ -313,10 +313,10 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * Create the correct implementation of the set containing
+     * Create the correct implementation of the add containing
      * the sessions associated with the same channel
-     * @param firstValue First value of the set.
-     * @return Return the set implementation.
+     * @param firstValue First value of the add.
+     * @return Return the add implementation.
      */
     private Set<NetSession> createSessionSet(NetSession firstValue) {
         Set<NetSession> result = new TreeSet<>();

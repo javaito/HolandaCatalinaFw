@@ -1,6 +1,6 @@
 package org.hcjf.layers.crud;
 
-import org.hcjf.layers.business.BusinessLayer;
+import org.hcjf.layers.Layer;
 import org.hcjf.layers.query.Query;
 
 import java.lang.reflect.ParameterizedType;
@@ -12,7 +12,7 @@ import java.util.Map;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class CrudLayer<O extends Object> extends BusinessLayer implements CrudLayerInterface<O> {
+public abstract class CrudLayer<O extends Object> extends Layer implements CrudLayerInterface<O> {
 
     public CrudLayer(String implName) {
         super(implName);
@@ -102,7 +102,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
     }
 
     /**
-     * This method implements the update operation over a set of the instances,
+     * This method implements the update operation over a add of the instances,
      * this instances are selected using the query like a filter.
      *
      * @param queryId    Id of the query.
@@ -116,7 +116,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
     }
 
     /**
-     * This method implements the delete operation over a set of the instances.
+     * This method implements the delete operation over a add of the instances.
      * This instances are selected using the query like a filter.
      *
      * @param queryId Id of the query.
@@ -128,7 +128,7 @@ public abstract class CrudLayer<O extends Object> extends BusinessLayer implemen
     }
 
     /**
-     * This method implements the read operation over the set of query created.
+     * This method implements the read operation over the add of query created.
      *
      * @param queryId Id of the query.
      * @return Return the instance of the resource's query.
