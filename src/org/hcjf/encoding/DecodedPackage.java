@@ -5,6 +5,7 @@ import org.hcjf.layers.query.Query;
 import java.util.Map;
 
 /**
+ * The instances of this class are the resulting of decode process.
  * @author javaito
  * @mail javaito@gmail.com
  */
@@ -14,34 +15,36 @@ public class DecodedPackage {
     private final Query query;
     private final Map<String, Object> parameters;
 
-    public DecodedPackage(Object object, Map<String, Object> parameters) {
-        if(object instanceof Query) {
-            this.object = null;
-            this.query = (Query) object;
-        } else {
-            this.object = object;
-            this.query = null;
+    public DecodedPackage(Object object, Query query, Map<String, Object> parameters) {
+        if(parameters == null) {
+            throw new IllegalArgumentException("Parameters map can't be null");
         }
+        this.object = object;
+        this.query = query;
         this.parameters = parameters;
     }
 
-    public DecodedPackage(Map<String, Object> parameters) {
-        this(null, parameters);
+    /**
+     * Return the query object decoded.
+     * @return Object query or null.
+     */
+    public final Query getQuery() {
+        return query;
     }
 
     /**
-     *
-     * @return
+     * Return the body object decoded
+     * @return Object query or null.
      */
-    public Object getObject() {
+    public final Object getObject() {
         return object;
     }
 
     /**
-     *
-     * @return
+     * Return the map of parameters
+     * @return Map of the parameters.
      */
-    public Map<String, Object> getParameters() {
+    public final Map<String, Object> getParameters() {
         return parameters;
     }
 }

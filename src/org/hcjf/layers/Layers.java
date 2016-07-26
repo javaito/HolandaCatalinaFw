@@ -4,6 +4,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  *
@@ -78,16 +79,20 @@ public class Layers {
         }
 
         Class<? extends LayerInterface> layerInterfaceClass = null;
-        for(Class layerInterface : layerClass.getInterfaces()) {
-            for(Class superInterface : layerInterface.getInterfaces()) {
-                if (superInterface.equals(LayerInterface.class)) {
-                    layerInterfaceClass = layerInterface;
-                    break;
-                }
-                if(layerInterfaceClass != null){
-                    break;
+        Class introspectedClass = layerClass;
+        while(layerInterfaceClass == null && !introspectedClass.equals(Object.class)) {
+            for (Class layerInterface : introspectedClass.getInterfaces()) {
+                for (Class superInterface : layerInterface.getInterfaces()) {
+                    if (superInterface.equals(LayerInterface.class)) {
+                        layerInterfaceClass = layerInterface;
+                        break;
+                    }
+                    if (layerInterfaceClass != null) {
+                        break;
+                    }
                 }
             }
+            introspectedClass = introspectedClass.getSuperclass();
         }
 
         if(layerInterfaceClass == null) {

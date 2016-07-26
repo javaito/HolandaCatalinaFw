@@ -91,6 +91,22 @@ public class Query {
     }
 
     /**
+     *
+     * @return
+     */
+    public List<String> getOrderFields() {
+        return Collections.unmodifiableList(orderFields);
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Set<Evaluator> getEvaluators() {
+        return Collections.unmodifiableSet(evaluators);
+    }
+
+    /**
      * Add a name of the field for order the data collection. This name must be exist
      * like a setter/getter method in the instances of the data collection.
      * @param orderField Name of the pair getter/setter.

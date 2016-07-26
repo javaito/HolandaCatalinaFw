@@ -7,10 +7,10 @@ import org.hcjf.layers.storage.StorageSession;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class Delete extends StorageAction {
+public abstract class Delete<S extends StorageSession> extends StorageAction<S> {
 
-    public Delete(StorageSession session, String storageName) {
-        super(session, storageName);
+    public Delete(S session) {
+        super(session);
     }
 
 }

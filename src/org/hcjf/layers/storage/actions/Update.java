@@ -7,10 +7,10 @@ import org.hcjf.layers.storage.StorageSession;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class Update extends StorageAction {
+public abstract class Update<S extends StorageSession> extends StorageAction<S> {
 
-    public Update(StorageSession session, String storageName) {
-        super(session, storageName);
+    public Update(S session) {
+        super(session);
     }
 
 }

@@ -1,11 +1,15 @@
 package org.hcjf.encoding;
 
 import com.google.gson.*;
+import org.hcjf.layers.query.Evaluator;
+import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
+import org.hcjf.utils.Strings;
 
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author javaito
@@ -14,12 +18,6 @@ import java.util.*;
 public class JsonEncoding extends EncodingImpl {
 
     private static final String HCJF_JSON_IMPLEMENTATION = "hcjf";
-
-    private static final String PARAMETERS_JSON_FIELD = "params";
-    private static final String BODY_JSON_FIELD = "body";
-    private static final String QUERY_JSON_FIELD = "query";
-    private static final String TYPE_PARAMETER_FIELD = "t";
-    private static final String VALUE_PARAMETER_FIELD = "v";
 
     public JsonEncoding() {
         super(MimeType.APPLICATION_JSON, HCJF_JSON_IMPLEMENTATION);
@@ -36,16 +34,31 @@ public class JsonEncoding extends EncodingImpl {
 
         if(decodedPackage.getParameters() != null) {
             JsonObject parameterObject = new JsonObject();
-            EncodingType type;
-            JsonObject typedObject;
             for(String key : decodedPackage.getParameters().keySet()) {
-                typedObject = new JsonObject();
-                type = EncodingType.fromClass(decodedPackage.getParameters().get(key).getClass());
-                typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
-                typedObject.add(VALUE_PARAMETER_FIELD, getElement(type, decodedPackage.getParameters().get(key)));
-                parameterObject.add(key, typedObject);
+                parameterObject.add(key, createTypedObject(decodedPackage.getParameters().get(key)));
             }
             jsonObject.add(PARAMETERS_JSON_FIELD, parameterObject);
+        }
+
+        if(decodedPackage.getQuery() != null) {
+            JsonObject queryObject = new JsonObject();
+            queryObject.add(QUERY_ID_FIELD, new JsonPrimitive(decodedPackage.getQuery().getId().toString()));
+            queryObject.add(QUERY_LIMIT_FIELD, new JsonPrimitive(decodedPackage.getQuery().getLimit()));
+            queryObject.add(QUERY_DESC_FIELD, new JsonPrimitive(decodedPackage.getQuery().isDesc()));
+            queryObject.add(QUERY_PAGE_START_FIELD, createTypedObject(decodedPackage.getQuery().getPageStart()));
+            JsonArray orderArray = new JsonArray();
+            decodedPackage.getQuery().getOrderFields().forEach(orderArray::add);
+            queryObject.add(QUERY_ORDER_FIELDS_FIELD, orderArray);
+            JsonArray evaluatorArray = new JsonArray();
+            for(Evaluator evaluator : decodedPackage.getQuery().getEvaluators()) {
+                JsonObject evaluatorJsonObject = new JsonObject();
+                evaluatorJsonObject.add(EVALUATOR_ACTION_FIELD,
+                        new JsonPrimitive(Strings.uncapitalize(evaluator.getClass().getSimpleName())));
+                evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(evaluator.getFieldName()));
+                evaluatorJsonObject.add(EVALUATOR_VALUE_FIELD, createTypedObject(evaluator.getValue()));
+                evaluatorArray.add(evaluatorJsonObject);
+            }
+            jsonObject.add(QUERY_JSON_FIELD, queryObject);
         }
 
         if(decodedPackage.getObject() != null) {
@@ -70,8 +83,6 @@ public class JsonEncoding extends EncodingImpl {
      */
     protected JsonObject getBodyObject(Object object) {
         JsonObject bodyObject = new JsonObject();
-        EncodingType type;
-        JsonObject typedObject;
         Object value;
         Map<String, Introspection.Getter> getters = Introspection.getGetters(object.getClass());
         for(String fieldName : getters.keySet()) {
@@ -83,13 +94,22 @@ public class JsonEncoding extends EncodingImpl {
             } catch (Exception ex) {
                 throw new IllegalArgumentException("", ex);
             }
-            typedObject = new JsonObject();
-            type = EncodingType.fromClass(value.getClass());
-            typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
-            typedObject.add(VALUE_PARAMETER_FIELD, getElement(type, value));
-            bodyObject.add(fieldName, typedObject);
+            bodyObject.add(fieldName, createTypedObject(value));
         }
         return bodyObject;
+    }
+
+    /**
+     *
+     * @param object
+     * @return
+     */
+    protected JsonObject createTypedObject(Object object) {
+        JsonObject typedObject = new JsonObject();
+        EncodingType type = EncodingType.fromClass(object.getClass());
+        typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
+        typedObject.add(VALUE_PARAMETER_FIELD, getElement(type, object));
+        return typedObject;
     }
 
     /**
@@ -112,28 +132,19 @@ public class JsonEncoding extends EncodingImpl {
             case SHORT: element = new JsonPrimitive((Short)value); break;
             case STRING: element = new JsonPrimitive((String)value); break;
             case UUID: element = new JsonPrimitive(value.toString()); break;
+            case REGEX: element = new JsonPrimitive(((Pattern)value).pattern()); break;
             case  LIST: {
                 JsonArray array = new JsonArray();
-                JsonObject typedObject;
                 for(Object arrayValue : (List)value) {
-                    typedObject = new JsonObject();
-                    type = EncodingType.fromClass(value.getClass());
-                    typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
-                    typedObject.add(TYPE_PARAMETER_FIELD, getElement(type, arrayValue));
-                    array.add(typedObject);
+                    array.add(createTypedObject(arrayValue));
                 }
                 element = array;
                 break;
             }
             case MAP: {
                 JsonObject map = new JsonObject();
-                JsonObject typedObject;
                 for(String name : ((Map<String, ?>)value).keySet()){
-                    typedObject = new JsonObject();
-                    type = EncodingType.fromClass(((Map<String, ?>)value).get(name).getClass());
-                    typedObject.add(TYPE_PARAMETER_FIELD, new JsonPrimitive(type.getId()));
-                    typedObject.add(TYPE_PARAMETER_FIELD, getElement(type, ((Map<String, ?>)value).get(name)));
-                    map.add(name, typedObject);
+                    map.add(name, createTypedObject(((Map<String, ?>)value).get(name)));
                 }
                 element = map;
                 break;
@@ -174,24 +185,10 @@ public class JsonEncoding extends EncodingImpl {
         JsonObject jsonData = (JsonObject) jsonElement;
 
         Object decodedObject = null;
+        Query decodedQuery = null;
         Map<String, Object> decodedParameters = new HashMap<>();
-        if(jsonData.has(PARAMETERS_JSON_FIELD)) {
-            if(jsonData.get(PARAMETERS_JSON_FIELD).isJsonObject()) {
-                JsonObject jsonParams = jsonData.get(PARAMETERS_JSON_FIELD).getAsJsonObject();
-                for(Map.Entry<String, JsonElement> entry : jsonParams.entrySet()) {
-                    if(entry.getValue().isJsonObject()) {
-                        decodedParameters.put(entry.getKey(), getValue(entry.getKey(), entry.getValue()));
-                    } else if(entry.getValue().isJsonPrimitive()) {
-                        decodedParameters.put(entry.getKey(), entry.getValue().getAsString());
-                    } else {
-                        throw new IllegalArgumentException("The HCJF json implementation expected parameter values as json object or as json primitive");
-                    }
-                }
-            } else {
-                throw new IllegalArgumentException("The HCJF json implementation expected " + PARAMETERS_JSON_FIELD + " field as json object");
-            }
-        }
 
+        //Body object parsing: body:{...
         if(objectClass != null) {
             if (jsonData.has(BODY_JSON_FIELD)) {
                 if(jsonData.get(BODY_JSON_FIELD).isJsonObject()) {
@@ -210,7 +207,89 @@ public class JsonEncoding extends EncodingImpl {
             }
         }
 
-        return new DecodedPackage(decodedObject, decodedParameters);
+        //Query object parsing: query:{...
+        if(jsonData.has(QUERY_JSON_FIELD)) {
+            JsonObject queryJsonObject = jsonData.get(QUERY_JSON_FIELD).getAsJsonObject();
+            if(queryJsonObject.has(QUERY_ID_FIELD)) {
+                decodedQuery = new Query(new Query.QueryId(UUID.fromString(queryJsonObject.get(QUERY_ID_FIELD).getAsString())));
+            } else {
+                decodedQuery = new Query();
+            }
+            if(queryJsonObject.has(QUERY_LIMIT_FIELD)) {
+                decodedQuery.setLimit(queryJsonObject.get(QUERY_LIMIT_FIELD).getAsInt());
+            }
+            if(queryJsonObject.has(QUERY_DESC_FIELD)) {
+                decodedQuery.setDesc(queryJsonObject.get(QUERY_DESC_FIELD).getAsBoolean());
+            }
+            if(queryJsonObject.has(QUERY_PAGE_START_FIELD)) {
+                decodedQuery.setPageStart(getValue(QUERY_PAGE_START_FIELD, queryJsonObject.get(QUERY_PAGE_START_FIELD)));
+            }
+            if(queryJsonObject.has(QUERY_ORDER_FIELDS_FIELD)) {
+                JsonArray ordersJasonArray = queryJsonObject.getAsJsonArray(QUERY_ORDER_FIELDS_FIELD);
+                for(JsonElement orderElement : ordersJasonArray) {
+                    decodedQuery.addOrderField(orderElement.getAsString());
+                }
+            }
+            if(queryJsonObject.has(QUERY_EVALUATORS_FIELD)) {
+                JsonArray actionsJsonArray = queryJsonObject.getAsJsonArray(QUERY_EVALUATORS_FIELD);
+                for(JsonElement actionElement : actionsJsonArray) {
+                    JsonObject actionJsonObject = actionElement.getAsJsonObject();
+                    String actionName;
+                    String actionFieldName;
+                    Object actionValue;
+                    if(actionJsonObject.has(EVALUATOR_ACTION_FIELD)) {
+                        actionName = actionJsonObject.get(EVALUATOR_ACTION_FIELD).getAsString();
+                    } else {
+                        throw new IllegalArgumentException("The evaluator action json object must has field 'a' as string");
+                    }
+
+                    if(actionJsonObject.has(EVALUATOR_FIELD_FIELD)) {
+                        actionFieldName = actionJsonObject.get(EVALUATOR_FIELD_FIELD).getAsString();
+                    } else {
+                        throw new IllegalArgumentException("The evaluator action json object must has field 'f' as string");
+                    }
+
+                    if(actionJsonObject.has(EVALUATOR_VALUE_FIELD)) {
+                        actionValue = getValue(EVALUATOR_VALUE_FIELD, actionJsonObject.get(EVALUATOR_VALUE_FIELD));
+                    } else {
+                        throw new IllegalArgumentException("The evaluator action json object must has field 'v' as typed object");
+                    }
+
+                    switch(actionName) {
+                        case EVALUATOR_DISTINCT : decodedQuery.distinct(actionFieldName, actionValue); break;
+                        case EVALUATOR_EQUALS : decodedQuery.equals(actionFieldName, actionValue); break;
+                        case EVALUATOR_GREATER_THAN : decodedQuery.greaterThan(actionFieldName, actionValue); break;
+                        case EVALUATOR_GREATER_THAN_OR_EQUALS : decodedQuery.greaterThanOrEquals(actionFieldName, actionValue); break;
+                        case EVALUATOR_IN : decodedQuery.in(actionFieldName, actionValue); break;
+                        case EVALUATOR_LIKE : decodedQuery.like(actionFieldName, actionValue); break;
+                        case EVALUATOR_NOT_IN : decodedQuery.notIn(actionFieldName, actionValue); break;
+                        case EVALUATOR_SMALLER_THAN : decodedQuery.smallerThan(actionFieldName, actionValue); break;
+                        case EVALUATOR_SMALLER_THAN_OR_EQUALS : decodedQuery.smallerThanOrEqual(actionFieldName, actionValue); break;
+                        default: throw new IllegalArgumentException("Not implemented evaluation action: " + actionFieldName);
+                    }
+                }
+            }
+        }
+
+        //Parameters map parsing: params:{...
+        if(jsonData.has(PARAMETERS_JSON_FIELD)) {
+            if(jsonData.get(PARAMETERS_JSON_FIELD).isJsonObject()) {
+                JsonObject jsonParams = jsonData.get(PARAMETERS_JSON_FIELD).getAsJsonObject();
+                for(Map.Entry<String, JsonElement> entry : jsonParams.entrySet()) {
+                    if(entry.getValue().isJsonObject()) {
+                        decodedParameters.put(entry.getKey(), getValue(entry.getKey(), entry.getValue()));
+                    } else if(entry.getValue().isJsonPrimitive()) {
+                        decodedParameters.put(entry.getKey(), entry.getValue().getAsString());
+                    } else {
+                        throw new IllegalArgumentException("The HCJF json implementation expected parameter values as json object or as json primitive");
+                    }
+                }
+            } else {
+                throw new IllegalArgumentException("The HCJF json implementation expected " + PARAMETERS_JSON_FIELD + " field as json object");
+            }
+        }
+
+        return new DecodedPackage(decodedObject, decodedQuery, decodedParameters);
     }
 
     /**
@@ -319,6 +398,7 @@ public class JsonEncoding extends EncodingImpl {
             case SHORT: try { result = jsonElement.getAsShort(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as short", ex);} ; break;
             case STRING: try { result = jsonElement.getAsString(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
             case UUID: try { result = UUID.fromString(jsonElement.getAsString()); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
+            case REGEX: try { result = Pattern.compile(jsonElement.getAsString()); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
             case BYTE_BUFFER: throw new UnsupportedOperationException("Byte buffer type is not supported for 'HCJF' json encoding");
         }
 

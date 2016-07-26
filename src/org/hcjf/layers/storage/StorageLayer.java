@@ -7,7 +7,7 @@ import org.hcjf.layers.Layer;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class StorageLayer extends Layer implements StorageLayerInterface {
+public abstract class StorageLayer<S extends StorageSession> extends Layer implements StorageLayerInterface<S> {
 
     public static final String STORAGE_LOG_TAG = "STORAGE";
 

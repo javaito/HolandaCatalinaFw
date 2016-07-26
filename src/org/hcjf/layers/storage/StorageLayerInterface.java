@@ -11,12 +11,12 @@ import java.util.List;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public interface StorageLayerInterface extends LayerInterface {
+public interface StorageLayerInterface<S extends StorageSession> extends LayerInterface {
 
     /**
      * Return a session with the storage implementation.
      * @return Storage implementation.
      */
-    public StorageSession begin();
+    public S begin();
 
 }

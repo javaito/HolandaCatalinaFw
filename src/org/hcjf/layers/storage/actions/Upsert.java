@@ -8,10 +8,10 @@ import org.hcjf.layers.storage.StorageSession;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class Upsert extends StorageAction {
+public abstract class Upsert<S extends StorageSession> extends StorageAction<S> {
 
-    public Upsert(StorageSession session, String storageName) {
-        super(session, storageName);
+    public Upsert(S session) {
+        super(session);
     }
 
 }

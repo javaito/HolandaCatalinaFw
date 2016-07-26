@@ -7,10 +7,10 @@ import org.hcjf.layers.storage.StorageSession;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class Procedure extends StorageAction {
+public abstract class Procedure<S extends StorageSession> extends StorageAction<S> {
 
-    public Procedure(StorageSession session, String storageName) {
-        super(session, storageName);
+    public Procedure(S session) {
+        super(session);
     }
 
 }

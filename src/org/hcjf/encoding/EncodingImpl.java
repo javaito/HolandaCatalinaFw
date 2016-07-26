@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * @author javaito
@@ -14,6 +15,30 @@ import java.util.Map;
 public abstract class EncodingImpl implements ServiceConsumer {
 
     protected static final String CHARSET_PARAMETER_NAME = "charset";
+
+    protected static final String PARAMETERS_JSON_FIELD = "params";
+    protected static final String BODY_JSON_FIELD = "body";
+    protected static final String QUERY_JSON_FIELD = "query";
+    protected static final String QUERY_ID_FIELD = "id";
+    protected static final String QUERY_LIMIT_FIELD = "limit";
+    protected static final String QUERY_PAGE_START_FIELD = "pageStart";
+    protected static final String QUERY_DESC_FIELD = "desc";
+    protected static final String QUERY_ORDER_FIELDS_FIELD = "orderFields";
+    protected static final String QUERY_EVALUATORS_FIELD = "evaluators";
+    protected static final String EVALUATOR_ACTION_FIELD = "a";
+    protected static final String EVALUATOR_FIELD_FIELD = "f";
+    protected static final String EVALUATOR_VALUE_FIELD = "v";
+    protected static final String EVALUATOR_DISTINCT = "distinct";
+    protected static final String EVALUATOR_EQUALS = "equals";
+    protected static final String EVALUATOR_GREATER_THAN = "greaterThan";
+    protected static final String EVALUATOR_GREATER_THAN_OR_EQUALS = "greaterThanOrEquals";
+    protected static final String EVALUATOR_IN = "in";
+    protected static final String EVALUATOR_LIKE = "like";
+    protected static final String EVALUATOR_NOT_IN = "notIn";
+    protected static final String EVALUATOR_SMALLER_THAN = "smallerThan";
+    protected static final String EVALUATOR_SMALLER_THAN_OR_EQUALS = "smallerThanOrEquals";
+    protected static final String TYPE_PARAMETER_FIELD = "t";
+    protected static final String VALUE_PARAMETER_FIELD = "v";
 
     private final MimeType mimeType;
     private final String implementationName;
@@ -90,7 +115,9 @@ public abstract class EncodingImpl implements ServiceConsumer {
 
         BYTE_BUFFER((byte)11),
 
-        UUID((byte)12);
+        UUID((byte)12),
+
+        REGEX((byte)13);
 
         private final byte id;
 
@@ -144,6 +171,8 @@ public abstract class EncodingImpl implements ServiceConsumer {
                 result = BYTE_BUFFER;
             } else if(java.util.UUID.class.isAssignableFrom(clazz)) {
                 result = UUID;
+            } else if(Pattern.class.isAssignableFrom(clazz)) {
+                result = REGEX;
             }
 
             return result;

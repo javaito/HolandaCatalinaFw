@@ -86,7 +86,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         if(request.getMethod().equals(HttpMethod.GET) || request.getMethod().equals(HttpMethod.DELETE)) {
             Map<String, Object> parameters = new HashMap<>();
             parameters.putAll(request.getParameters());
-            result = new DecodedPackage(parameters);
+            result = new DecodedPackage(null, null, parameters);
         } else {
             HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
             String implName = contentTypeHeader.getParameter(
@@ -111,7 +111,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
                 contentTypeHeader.getGroups().iterator().next(), HttpHeader.PARAM_IMPL);
         MimeType type = MimeType.fromString(contentTypeHeader.getGroups().iterator().next());
 
-        byte[] body = EncodingService.encode(type, implName, new DecodedPackage(object, null));
+        byte[] body = EncodingService.encode(type, implName, new DecodedPackage(object, null, null));
 
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.OK);

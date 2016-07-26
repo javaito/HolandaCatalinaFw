@@ -23,13 +23,12 @@ public abstract class StorageSession implements Closeable {
     /**
      * This method must return a select operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storageName Storage name refer the storage structure to be requested.
      * @param query Object with all the information to create the particular query implementation
      *              over the storage technology.
      * @return Return the select action.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Select select(String storageName, Query query) throws StorageAccessException {
+    public Select select(Query query) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported select action for " + implName + " implementation");
     }
 
@@ -47,11 +46,10 @@ public abstract class StorageSession implements Closeable {
     /**
      * This method must return a insert operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storageName Storage name refer the storage structure to be inserted.
      * @return Return the insert operation.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Insert insert(String storageName) throws StorageAccessException {
+    public Insert insert() throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported insert action for " + implName + " implementation");
     }
 
@@ -69,11 +67,10 @@ public abstract class StorageSession implements Closeable {
     /**
      * This method must return a update operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storageName Storage name refer the storage structure to be updated.
      * @return Return the update operation.
      * @throws StorageAccessException
      */
-    public Update update(String storageName) throws StorageAccessException {
+    public Update update() throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported update action for " + implName + " implementation");
     }
 
@@ -102,22 +99,20 @@ public abstract class StorageSession implements Closeable {
     /**
      * This method must return a upsert operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storageName Storage name refer the storage structure to be upserted.
      * @return Return the upsert operation.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Upsert upsert(String storageName) throws StorageAccessException {
+    public Upsert upsert() throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported upsert action for " + implName + " implementation");
     }
 
     /**
      * This method must return a procedure operation implementation, this implementation
      * depends of the storage session technology.
-     * @param procedureName Name of the procedure to be executed.
      * @return Return the procedure operation.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Procedure procedure(String procedureName) throws StorageAccessException {
+    public Procedure procedure() throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported procedure action for " + implName + " implementation");
     }
 }

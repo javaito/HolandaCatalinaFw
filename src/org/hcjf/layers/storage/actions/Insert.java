@@ -7,10 +7,15 @@ import org.hcjf.layers.storage.StorageSession;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class Insert extends StorageAction {
+public abstract class Insert<S extends StorageSession> extends StorageAction<S> {
 
-    public Insert(StorageSession session, String storageName) {
-        super(session, storageName);
+    public Insert(S session) {
+        super(session);
     }
 
+    @Override
+    protected void onAdd(Object object) {
+        setResultType(object.getClass());
+        setResourceName(object.getClass().getSimpleName().toLowerCase());
+    }
 }

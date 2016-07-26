@@ -7,27 +7,10 @@ import org.hcjf.layers.storage.StorageSession;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class Select extends StorageAction {
+public abstract class Select<S extends StorageSession> extends StorageAction<S> {
 
-    private Class resultType;
-
-    public Select(StorageSession session, String storageName) {
-        super(session, storageName);
+    public Select(S session) {
+        super(session);
     }
 
-    /**
-     * Return the result type that must complete the action with the stored data.
-     * @return Result type.
-     */
-    protected final Class getResultType() {
-        return resultType;
-    }
-
-    /**
-     * Set the result type that must complete the action with the stored data.
-     * @param resultType Result type.
-     */
-    public final void setResultType(Class resultType) {
-        this.resultType = resultType;
-    }
 }
