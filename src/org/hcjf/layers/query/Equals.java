@@ -1,7 +1,5 @@
 package org.hcjf.layers.query;
 
-import org.hcjf.utils.Introspection;
-
 /**
  * Compare two object and return true if the objects are equals and false in other ways.
  * @author javaito
@@ -18,16 +16,16 @@ public class Equals extends Evaluator {
      * the parameter instance are equals.
      * This method support any kind of object like field value and parameter value too.
      * @param object Instance to obtain the field value.
+     * @param consumer Data source consumer
      * @return True if the two values are equals and false in other ways
      * @throws IllegalArgumentException If is impossible to get value from instance
      * with introspection.
      */
     @Override
-    protected boolean evaluate(Object object) {
+    protected boolean evaluate(Object object, Query.Consumer consumer) {
         boolean result;
-        Introspection.Getter getter = Introspection.getGetters(object.getClass()).get(getFieldName());
         try {
-            result = getValue().equals(getter.invoke(object));
+            result = getValue().equals(consumer.get(object, getFieldName()));
         } catch (Exception ex) {
             throw new IllegalArgumentException("Equals evaluator fail", ex);
         }

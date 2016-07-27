@@ -35,6 +35,10 @@ public class Query {
         this(new QueryId());
     }
 
+    /**
+     * Return the id of the query.
+     * @return Id of the query.
+     */
     public final QueryId getId() {
         return id;
     }
@@ -91,16 +95,16 @@ public class Query {
     }
 
     /**
-     *
-     * @return
+     * Return the unmodifiable list with order fields.
+     * @return Order fields.
      */
     public List<String> getOrderFields() {
         return Collections.unmodifiableList(orderFields);
     }
 
     /**
-     *
-     * @return
+     * Return the unmodifiable set with evaluators.
+     * @return Evaluators.
      */
     public Set<Evaluator> getEvaluators() {
         return Collections.unmodifiableSet(evaluators);
@@ -250,29 +254,44 @@ public class Query {
     public <O extends Object> Set<O> evaluate(Collection<O> objects) {
         Set<O> result;
 
+        if(objects.size() > 0) {
+            result = evaluate(objects, new IntrospectionConsumer(objects.iterator().next().getClass()));
+        } else {
+            result = Collections.EMPTY_SET;
+        }
+
+        return result;
+    }
+
+    /**
+     * This method evaluate each object of the collection and sort filtered
+     * object to create a result add with the object filtered and sorted.
+     * If there are order fields added then the result implementation is a
+     * {@link TreeSet} implementation else the result implementation is a
+     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * from the source
+     * @param objects Data collection.
+     * @param consumer Data source consumer.
+     * @param <O> Kind of instances of the data collection.
+     * @return Result add filtered and sorted.
+     */
+    public <O extends Object> Set<O> evaluate(Collection<O> objects, Consumer consumer) {
+        Set<O> result;
+
         if(orderFields.size() > 0) {
             result = new TreeSet<>((o1, o2) -> {
                 int compareResult = 0;
 
-                Map<String, Introspection.Getter> getters = Introspection.getGetters(o1.getClass());
                 Comparable<Object> comparable1;
                 Comparable<Object> comparable2;
-                Introspection.Getter getter;
                 for (String orderField : orderFields) {
-                    getter = getters.get(orderField);
-                    if (getter != null) {
-                        try {
-                            comparable1 = getter.invoke(o1);
-                            comparable2 = getter.invoke(o2);
-                        } catch (ClassCastException ex) {
-                            throw new IllegalArgumentException("Order field must be comparable");
-                        } catch (Exception ex) {
-                            throw new IllegalArgumentException("Unable to obtain order field value", ex);
-                        }
-                        compareResult = comparable1.compareTo(comparable2);
-                    } else {
-                        Log.w(QUERY_LOG_TAG, "Order field not found: %s", orderField);
+                    try {
+                        comparable1 = consumer.get(o1, orderField);
+                        comparable2 = consumer.get(o2, orderField);
+                    } catch (ClassCastException ex) {
+                        throw new IllegalArgumentException("Order field must be comparable");
                     }
+                    compareResult = comparable1.compareTo(comparable2);
                 }
 
                 if (compareResult == 0) {
@@ -289,7 +308,7 @@ public class Query {
         for(O object : objects) {
             add = true;
             for(Evaluator evaluator : evaluators) {
-                add = evaluator.evaluate(object);
+                add = evaluator.evaluate(object, consumer);
                 if(!add) {
                     break;
                 }
@@ -326,6 +345,60 @@ public class Query {
          */
         public UUID getId() {
             return id;
+        }
+    }
+
+    /**
+     * This class provides an interface to consume a
+     * different collection of naming data to be useful in evaluation
+     * process.
+     */
+    public interface Consumer {
+
+        /**
+         * Get naming information from an instance.
+         * @param instance Data source.
+         * @param fieldName Name of particular data.
+         * @return Return the data storage in the data source indexed
+         * by the parameter name.
+         */
+        public <R extends Object> R get(Object instance, String fieldName);
+
+    }
+
+    /**
+     * This private class is the default consume method of the queries.
+     */
+    private static class IntrospectionConsumer implements Consumer {
+
+        private final Map<String, Introspection.Getter> getterMap;
+
+        public IntrospectionConsumer(Class clazz) {
+            getterMap = Introspection.getGetters(clazz);
+        }
+
+        /**
+         * Get naming information from an instance.
+         *
+         * @param instance    Data source.
+         * @param fieldName Name of particular data.
+         * @return Return the data storage in the data source indexed
+         * by the parameter name.
+         */
+        @Override
+        public <R extends Object> R get(Object instance, String fieldName) {
+            Object result = null;
+            try {
+                Introspection.Getter getter = getterMap.get(fieldName);
+                if(getter != null) {
+                    result = getter.get(instance);
+                } else {
+                    Log.w(QUERY_LOG_TAG, "Order field not found: %s", fieldName);
+                }
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("Unable to obtain order field value", ex);
+            }
+            return (R) result;
         }
     }
 }

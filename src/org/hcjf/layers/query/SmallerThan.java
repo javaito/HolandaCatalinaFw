@@ -1,7 +1,5 @@
 package org.hcjf.layers.query;
 
-import org.hcjf.utils.Introspection;
-
 /**
  * @author javaito
  * @mail javaito@gmail.com
@@ -20,11 +18,10 @@ public class SmallerThan extends Evaluator {
     }
 
     @Override
-    protected boolean evaluate(Object object) {
+    protected boolean evaluate(Object object, Query.Consumer consumer) {
         boolean result;
-        Introspection.Getter getter = Introspection.getGetters(object.getClass()).get(getFieldName());
         try {
-            Object fieldValue = getter.invoke(object);
+            Object fieldValue = consumer.get(object, getFieldName());
             if(Comparable.class.isAssignableFrom(getValue().getClass())) {
                 if(fieldValue.getClass().isAssignableFrom(getValue().getClass()) ||
                         getValue().getClass().isAssignableFrom(fieldValue.getClass())) {

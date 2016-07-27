@@ -71,5 +71,5 @@ public abstract class Evaluator {
      * @return Return true if the object must be part of the result add or false in the
      * other ways.
      */
-    protected abstract boolean evaluate(Object object);
+    protected abstract boolean evaluate(Object object, Query.Consumer consumer);
 }

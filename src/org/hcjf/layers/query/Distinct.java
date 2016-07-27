@@ -16,13 +16,14 @@ public class Distinct extends Equals {
      * the parameter instance are distinct.
      * This method support any kind of object like field value and parameter value too.
      * @param object Instance to obtain the field value.
+     * @param consumer Data source consumer
      * @return True if the two values are distinct and false in other ways
      * @throws IllegalArgumentException If is impossible to get value from instance
      * with introspection.
      */
     @Override
-    protected boolean evaluate(Object object) {
-        return !super.evaluate(object);
+    protected boolean evaluate(Object object, Query.Consumer consumer) {
+        return !super.evaluate(object, consumer);
     }
 
 }

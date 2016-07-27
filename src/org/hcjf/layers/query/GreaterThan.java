@@ -25,6 +25,7 @@ public class GreaterThan extends Evaluator {
      * Evaluate if the field's value of the instance is greater than the
      * parameter value.
      * @param object Object of the data collection.
+     * @param consumer Data source consumer
      * @return True if he field's value is greater than the parameter value and
      * false in the other ways.
      * @throws IllegalArgumentException
@@ -33,11 +34,10 @@ public class GreaterThan extends Evaluator {
      * <li> If the parameter value and field's valur are incompatible: 'Incompatible types between value and field's value'</li>
      */
     @Override
-    protected boolean evaluate(Object object) {
+    protected boolean evaluate(Object object, Query.Consumer consumer) {
         boolean result;
-        Introspection.Getter getter = Introspection.getGetters(object.getClass()).get(getFieldName());
         try {
-            Object fieldValue = getter.invoke(object);
+            Object fieldValue = consumer.get(object, getFieldName());
             if(Comparable.class.isAssignableFrom(getValue().getClass()) &&
                     Comparable.class.isAssignableFrom(fieldValue.getClass())) {
                 if(fieldValue.getClass().isAssignableFrom(getValue().getClass()) ||

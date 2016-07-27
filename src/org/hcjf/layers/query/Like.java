@@ -1,7 +1,5 @@
 package org.hcjf.layers.query;
 
-import org.hcjf.utils.Introspection;
-
 import java.util.regex.Pattern;
 
 /**
@@ -15,12 +13,11 @@ public class Like extends Evaluator {
     }
 
     @Override
-    protected boolean evaluate(Object object) {
+    protected boolean evaluate(Object object, Query.Consumer consumer) {
         boolean result = false;
 
-        Introspection.Getter getter = Introspection.getGetters(object.getClass()).get(getFieldName());
         try {
-            Object fieldValue = getter.invoke(object);
+            Object fieldValue = consumer.get(object, getFieldName());
             if(fieldValue instanceof String) {
                 if(getValue() instanceof Pattern) {
                     result = ((Pattern)getValue()).matcher((String)fieldValue).matches();
