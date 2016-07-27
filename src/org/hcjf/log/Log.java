@@ -29,7 +29,6 @@ import java.util.stream.Stream;
 public final class Log extends Service<LogPrinter> {
 
     private static final String NAME = "LogService";
-    private static final Integer QUEUE_INITIAL_SIZE = 10000;
 
     private static final Log instance;
 
