@@ -9,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ *
  * @author javaito
  * @mail javaito@gmail.com
  */
@@ -133,19 +134,14 @@ public final class Introspection {
         return Collections.unmodifiableMap(result);
     }
 
-    /**
-     * This class groups all the information about getter/setter accessor methods.
-     */
-    public static abstract class Accessor {
+    public static abstract class Invoker {
 
         private final Class implementationClass;
-        private final String resourceName;
         private final Method method;
         private final Map<Class<? extends Annotation>, Annotation> annotationsMap;
 
-        protected Accessor(Class implementationClass, String resourceName, Method method) {
+        public Invoker(Class implementationClass, Method method) {
             this.implementationClass = implementationClass;
-            this.resourceName = resourceName;
             this.method = method;
             this.annotationsMap = new HashMap<>();
             for(Annotation annotation : method.getAnnotations()) {
@@ -159,15 +155,6 @@ public final class Introspection {
          */
         public final Class getImplementationClass() {
             return implementationClass;
-        }
-
-        /**
-         * Return the name of the resource, this name is a representation based on the
-         * accessor method name. if the accessor name is 'getA' then the resource name is 'a'.
-         * @return Resource name.
-         */
-        public final String getResourceName() {
-            return resourceName;
         }
 
         /**
@@ -206,9 +193,42 @@ public final class Introspection {
          * by the class of the each annotation instance.
          * @return Unmodifiable map.
          */
-        public Map<Class<? extends Annotation>, Annotation> getAnnotationsMap() {
+        public final Map<Class<? extends Annotation>, Annotation> getAnnotationsMap() {
             return Collections.unmodifiableMap(annotationsMap);
         }
+
+        /**
+         * Wrapper method to get the storage method.
+         * @param instance Instance to get the mehtod.
+         * @param params Method parameters.
+         * @return Invokation result.
+         */
+        public Object invoke(Object instance, Object... params) throws InvocationTargetException, IllegalAccessException {
+            return getMethod().invoke(instance, params);
+        }
+    }
+
+    /**
+     * This class groups all the information about getter/setter accessor methods.
+     */
+    public static abstract class Accessor extends Invoker {
+
+        private final String resourceName;
+
+        protected Accessor(Class implementationClass, String resourceName, Method method) {
+            super(implementationClass, method);
+            this.resourceName = resourceName;
+        }
+
+        /**
+         * Return the name of the resource, this name is a representation based on the
+         * accessor method name. if the accessor name is 'getA' then the resource name is 'a'.
+         * @return Resource name.
+         */
+        public final String getResourceName() {
+            return resourceName;
+        }
+
     }
 
     /**
@@ -228,8 +248,8 @@ public final class Introspection {
          * @throws InvocationTargetException
          * @throws IllegalAccessException
          */
-        public <O extends Object> O invoke(Object instance) throws InvocationTargetException, IllegalAccessException {
-            return (O) getMethod().invoke(instance);
+        public <O extends Object> O get(Object instance) throws InvocationTargetException, IllegalAccessException {
+            return (O) invoke(instance);
         }
     }
 
@@ -249,8 +269,9 @@ public final class Introspection {
          * @throws InvocationTargetException
          * @throws IllegalAccessException
          */
-        public void invoke(Object instance, Object value) throws InvocationTargetException, IllegalAccessException {
-            getMethod().invoke(instance, value);
+        public void set(Object instance, Object value) throws InvocationTargetException, IllegalAccessException {
+            invoke(instance, value);
         }
+
     }
 }
