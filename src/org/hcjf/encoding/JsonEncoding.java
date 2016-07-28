@@ -87,7 +87,7 @@ public class JsonEncoding extends EncodingImpl {
         Map<String, Introspection.Getter> getters = Introspection.getGetters(object.getClass());
         for(String fieldName : getters.keySet()) {
             try {
-                value = getters.get(fieldName).invoke(object);
+                value = getters.get(fieldName).get(object);
                 if(value == null) {
                     continue;
                 }
@@ -312,7 +312,7 @@ public class JsonEncoding extends EncodingImpl {
             for(String fieldName : setters.keySet()) {
                 if(jsonObject.has(fieldName)) {
                     try {
-                        setters.get(fieldName).invoke(result, getValue(fieldName, jsonObject.get(fieldName)));
+                        setters.get(fieldName).set(result, getValue(fieldName, jsonObject.get(fieldName)));
                     } catch (Exception ex) {
                         throw new IllegalArgumentException("Unable to add field " + fieldName, ex);
                     }

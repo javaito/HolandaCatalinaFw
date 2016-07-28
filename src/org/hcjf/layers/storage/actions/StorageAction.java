@@ -88,7 +88,7 @@ public abstract class StorageAction<S extends StorageSession> {
         //TODO: set the environment annotations
         for(Introspection.Getter getter : Introspection.getGetters(object.getClass()).values()) {
             try {
-                add(getter.getResourceName(), new FieldStorageValue(getter.invoke(object), getter.getAnnotationsMap()));
+                add(getter.getResourceName(), new FieldStorageValue(getter.get(object), getter.getAnnotationsMap()));
             } catch(Exception ex) {
                 Log.w(StorageLayer.STORAGE_LOG_TAG, "Invoke getter method fail: $s", ex, getter.getResourceName());
             }
