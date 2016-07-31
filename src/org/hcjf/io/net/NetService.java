@@ -578,21 +578,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                 try {
                                                     if(key.isValid()) {
                                                         if(key.isReadable()){
-                                                            synchronized(key) {
-                                                                read(keyChannel, consumer);
-                                                                write(keyChannel, consumer);
-                                                            }
-                                                            if(key.isValid()) {
-                                                                key.interestOps(SelectionKey.OP_WRITE);
-                                                            }
+                                                            read(keyChannel, consumer);
                                                         } else if(key.isWritable()){
-                                                            synchronized(key) {
-                                                                write(keyChannel, consumer);
-                                                                read(keyChannel, consumer);
-                                                            }
-                                                            if(key.isValid()) {
-                                                                key.interestOps(SelectionKey.OP_READ);
-                                                            }
+                                                            write(keyChannel, consumer);
                                                         }
                                                     }
                                                 } catch (Exception ex){

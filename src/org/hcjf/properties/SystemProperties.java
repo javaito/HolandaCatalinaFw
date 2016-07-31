@@ -104,7 +104,7 @@ public final class SystemProperties extends Properties {
         defaults.put(NET_CONNECTION_TIMEOUT_AVAILABLE, "true");
         defaults.put(NET_CONNECTION_TIMEOUT, "10000");
         defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
-        defaults.put(NET_WRITE_TIMEOUT, "10000");
+        defaults.put(NET_WRITE_TIMEOUT, "100");
 
         defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
         defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");

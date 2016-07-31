@@ -29,16 +29,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     public HttpServer(Integer port) {
         super(port, NetService.TransportLayerProtocol.TCP, false, true);
         requestBuffers = new HashMap<>();
-        contexts = new TreeSet<>(new Comparator<Context>() {
-
-            @Override
-            public int compare(Context context, Context newContext) {
-                int result = context.getContextRegex().compareTo(newContext.getContextRegex());
-
-                return result;
-            }
-
-        });
+        contexts = new TreeSet<>((context, newContext) ->
+                context.getContextRegex().compareTo(newContext.getContextRegex()));
     }
 
     /**
@@ -75,8 +67,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     protected final HttpPackage decode(NetPackage netPackage) {
         HttpRequest request = requestBuffers.get(netPackage.getSession());
         if(request == null){
-            request = new HttpRequest();
-            requestBuffers.put(netPackage.getSession(), request);
+            synchronized (requestBuffers) {
+                request = new HttpRequest();
+                requestBuffers.put(netPackage.getSession(), request);
+            }
         }
         request.addData(netPackage.getPayload());
         return request;

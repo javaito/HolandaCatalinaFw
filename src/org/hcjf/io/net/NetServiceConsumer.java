@@ -148,10 +148,10 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      *                a blocking over the communication channel.
      */
     protected final void write(S session, D payLoad, NetStreamingSource source, boolean waitFor) throws IOException {
-        NetPackage netPackage = service.writeData(session, encode(payLoad));
-
         if(waitFor) {
+            NetPackage netPackage;
             synchronized (session) {
+                netPackage = service.writeData(session, encode(payLoad));
                 waitForMap.put(netPackage, Thread.currentThread());
                 if (netPackage.getPackageStatus().equals(NetPackage.PackageStatus.WAITING)) {
                     try {
@@ -179,6 +179,8 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
                     throw new IOException("Unknown session");
                 }
             }
+        } else {
+            NetPackage netPackage = service.writeData(session, encode(payLoad));
         }
     }
 
@@ -203,6 +205,13 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param netPackage Disconnection package.
      */
     public final void onDisconnect(NetPackage netPackage) {
+        synchronized (netPackage.getSession()) {
+            if(waitForMap.containsKey(netPackage)) {
+                netPackage.getSession().notify();
+                Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getSessionId());
+            }
+        }
+
         onDisconnect((S) netPackage.getSession(), decode(netPackage), netPackage);
     }
 
