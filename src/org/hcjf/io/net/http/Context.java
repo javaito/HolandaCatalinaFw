@@ -1,5 +1,11 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.encoding.MimeType;
+import org.hcjf.properties.SystemProperties;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 /**
  * This class represents a standard web context that can be published
  * @author javaito
@@ -41,5 +47,24 @@ public abstract class Context {
      * @param throwable Throwable object, could be null.
      * @return Return an object with all the response information.
      */
-    protected abstract HttpResponse onError(HttpRequest request, Throwable throwable);
+    protected HttpResponse onError(HttpRequest request, Throwable throwable) {
+        HttpResponse response = new HttpResponse();
+        response.setReasonPhrase(throwable.getMessage());
+        response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
+
+        byte[] body;
+        if(SystemProperties.getBoolean(SystemProperties.HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK)) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PrintStream printer = new PrintStream(out);
+            throwable.printStackTrace(printer);
+            body = out.toByteArray();
+        } else {
+            body = throwable.getMessage().getBytes();
+        }
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(body.length)));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+        response.setBody(body);
+
+        return response;
+    }
 }

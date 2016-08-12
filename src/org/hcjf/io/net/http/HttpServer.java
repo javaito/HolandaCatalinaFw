@@ -7,6 +7,7 @@ import org.hcjf.io.net.NetSession;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 /**
@@ -16,14 +17,13 @@ import java.util.*;
  */
 public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
-    private static final Integer DEFAULT_HTTP_PORT = 80;
     public static final String HTTP_SERVER_LOG_TAG = "HTTP_SERVER";
 
     private Map<NetSession, HttpRequest> requestBuffers;
     private Set<Context> contexts;
 
     public HttpServer() {
-        this(DEFAULT_HTTP_PORT);
+        this(SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_SERVER_PORT));
     }
 
     public HttpServer(Integer port) {
@@ -54,7 +54,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected final byte[] encode(HttpPackage payLoad) {
-        return payLoad.toString().getBytes();
+        byte[] result = null;
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            out.write(payLoad.getProtocolHeader());
+            out.write(payLoad.getBody());
+            out.flush();
+            result = out.toByteArray();
+        } catch (Exception ex){}
+        return result;
     }
 
     /**
@@ -201,24 +208,21 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     /**
      * @param session
-     * @param payLoad
      * @param netPackage
      */
     @Override
-    protected final void onDisconnect(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        super.onDisconnect(session, payLoad, netPackage);
+    protected final void onDisconnect(HttpSession session, NetPackage netPackage) {
+        requestBuffers.remove(session);
     }
 
     /**
      * When the net service write data then call this method to process the package.
      *
      * @param session    Net session.
-     * @param payLoad    Net package decoded.
      * @param netPackage Net package.
      */
     @Override
-    protected final void onWrite(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        super.onWrite(session, payLoad, netPackage);
+    protected final void onWrite(HttpSession session, NetPackage netPackage) {
     }
 
     /**
@@ -227,7 +231,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected void onStart() {
         Log.d(HTTP_SERVER_LOG_TAG, "Http server started, listening on port %d", getPort());
-        super.onStart();
     }
 
     /**
@@ -236,6 +239,5 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected void onStop() {
         Log.d(HTTP_SERVER_LOG_TAG, "Http server stopped.");
-        super.onStop();
     }
 }

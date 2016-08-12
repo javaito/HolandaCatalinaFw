@@ -2,6 +2,7 @@ package org.hcjf.io.fs;
 
 import org.hcjf.service.ServiceConsumer;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent;
 
@@ -13,17 +14,35 @@ import java.nio.file.WatchEvent;
  */
 public abstract class FileSystemWatcherConsumer implements ServiceConsumer {
 
+    private final Path path;
+    private final String fileName;
     private final Path basePath;
     private final WatchEvent.Kind[] eventKinds;
 
     /**
      * Constructor
-     * @param basePath Base path, all the paths bellow of the base are wached by the consumer
+     * @param path Base path, all the paths bellow of the base are wached by the consumer
      * @param eventKinds Kinds of events that this consumer are listening
      */
-    public FileSystemWatcherConsumer(Path basePath, WatchEvent.Kind... eventKinds) {
-        this.basePath = basePath;
+    public FileSystemWatcherConsumer(Path path, WatchEvent.Kind... eventKinds) {
+        this.path = path;
+        if(!Files.isDirectory(path)) {
+            basePath = path.getParent();
+            fileName = path.getFileName().toString();
+        } else {
+            basePath = path;
+            fileName = null;
+        }
+
         this.eventKinds = eventKinds;
+    }
+
+    /**
+     * Return complete path. If the consumer is watching a directory then path and base path are the same.
+     * @return Complete path.
+     */
+    public Path getPath() {
+        return path;
     }
 
     /**
@@ -32,6 +51,14 @@ public abstract class FileSystemWatcherConsumer implements ServiceConsumer {
      */
     public final Path getBasePath() {
         return basePath;
+    }
+
+    /**
+     * Return the file name associated to the consumer or null if the consumer is watching a directory
+     * @return File name or null.
+     */
+    public final String getFileName() {
+        return fileName;
     }
 
     /**

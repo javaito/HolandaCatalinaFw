@@ -105,7 +105,9 @@ public class HttpRequest extends HttpPackage {
         String[] parts = firstLine.split(LINE_FIELD_SEPARATOR);
 
         method = HttpMethod.valueOf(parts[METHOD_INDEX]);
-        path = parts[REQUEST_PATH_INDEX];
+        try {
+            path = URLDecoder.decode(parts[REQUEST_PATH_INDEX], SystemProperties.getDefaultCharset());
+        } catch (UnsupportedEncodingException e) {}
         setHttpVersion(parts[VERSION_INDEX]);
 
         //Check if there are parameters into request
@@ -161,8 +163,11 @@ public class HttpRequest extends HttpPackage {
         }
     }
 
-    @Override
-    public String toString() {
+    /**
+     *
+     * @return
+     */
+    private String toStringProtocolHeader() {
         StringBuilder builder = new StringBuilder();
 
         builder.append(getMethod().toString()).append(LINE_FIELD_SEPARATOR).
@@ -172,11 +177,32 @@ public class HttpRequest extends HttpPackage {
             builder.append(header).append(STRING_LINE_SEPARATOR);
         }
         builder.append(STRING_LINE_SEPARATOR);
+        return builder.toString();
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public final byte[] getProtocolHeader() {
+        return toStringProtocolHeader().getBytes();
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(toStringProtocolHeader());
         if(getBody() != null) {
             int maxLength = SystemProperties.getInteger(SystemProperties.HTTP_INPUT_LOG_BODY_MAX_LENGTH);
             if(maxLength > 0) {
                 if (getBody().length > maxLength) {
                     builder.append(new String(getBody(), 0, maxLength));
+                    builder.append(" ... [").append(getBody().length - maxLength).append(" more]");
                 } else {
                     builder.append(new String(getBody()));
                 }

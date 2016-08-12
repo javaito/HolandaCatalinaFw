@@ -48,9 +48,6 @@ public class HttpHeader {
     private static final String HEADER_FIELDS_SEPARATOR = ";";
     private static final String HEADER_FIELDS_ASSIGNATION = "=";
 
-    //Parameters group
-    private static final String STANDARD_GROUP = "standard";
-
     //Header parameter names
     public static final String PARAM_CHARSET = "charset";
     public static final String PARAM_IMPL = "impl";
@@ -60,8 +57,8 @@ public class HttpHeader {
     private final Map<String, Map<String, String>> headerGroups;
 
     public HttpHeader(String header) {
-        this(header.substring(0, header.indexOf(HEADER_ASSIGNATION)),
-                header.substring(header.indexOf(HEADER_ASSIGNATION) + 1));
+        this(header.substring(0, header.indexOf(HEADER_ASSIGNATION)).trim(),
+                header.substring(header.indexOf(HEADER_ASSIGNATION) + 1).trim());
     }
 
     public HttpHeader(String headerName, String headerValue) {

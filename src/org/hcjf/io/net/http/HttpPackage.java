@@ -48,7 +48,7 @@ public abstract class HttpPackage {
      * Return the body of the package.
      * @return Body.
      */
-    public byte[] getBody() {
+    public final byte[] getBody() {
         return body;
     }
 
@@ -56,7 +56,7 @@ public abstract class HttpPackage {
      * Set the body of the package.
      * @param body Body.
      */
-    public void setBody(byte[] body) {
+    public final void setBody(byte[] body) {
         this.body = body;
     }
 
@@ -64,7 +64,7 @@ public abstract class HttpPackage {
      *
      * @return
      */
-    public String getHttpVersion() {
+    public final String getHttpVersion() {
         return httpVersion;
     }
 
@@ -72,7 +72,7 @@ public abstract class HttpPackage {
      *
      * @param httpVersion
      */
-    public void setHttpVersion(String httpVersion) {
+    public final void setHttpVersion(String httpVersion) {
         this.httpVersion = httpVersion;
     }
 
@@ -80,7 +80,7 @@ public abstract class HttpPackage {
      *
      * @return
      */
-    public boolean isComplete() {
+    public final boolean isComplete() {
         return complete;
     }
 
@@ -88,11 +88,11 @@ public abstract class HttpPackage {
      * Add a new header into a package.
      * @param header New header.
      */
-    public void addHeader(HttpHeader header) {
+    public final void addHeader(HttpHeader header) {
         if(header == null) {
             throw new NullPointerException("Null header");
         }
-        headers.put(header.getHeaderName().toLowerCase(), header);
+        headers.put(header.getHeaderName(), header);
     }
 
     /**
@@ -100,7 +100,7 @@ public abstract class HttpPackage {
      * into the package.
      * @return List of the headers.
      */
-    public Collection<HttpHeader> getHeaders() {
+    public final Collection<HttpHeader> getHeaders() {
         return Collections.unmodifiableCollection(headers.values());
     }
 
@@ -109,15 +109,30 @@ public abstract class HttpPackage {
      * @param headerName
      * @return
      */
-    public HttpHeader getHeader(String headerName) {
-        return headers.get(headerName.toLowerCase());
+    public final HttpHeader getHeader(String headerName) {
+        HttpHeader result = null;
+        for(String name : headers.keySet()) {
+            if(name.equalsIgnoreCase(headerName)) {
+                result = headers.get(name);
+            }
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param headerName
+     * @return
+     */
+    public final boolean containsHeader(String headerName) {
+        return getHeader(headerName) != null;
     }
 
     /**
      *
      * @param data
      */
-    public final void addData(byte[] data) {
+    public final synchronized void addData(byte[] data) {
         if(!complete) {
             if (currentBody == null) {
                 currentBody = new ByteArrayOutputStream();
@@ -136,10 +151,14 @@ public abstract class HttpPackage {
                 for (int i = 0; i < data.length - 1; i++) {
                     if (data[i] == LINE_SEPARATOR_CR && data[i + 1] == LINE_SEPARATOR_LF) {
                         if (currentBody.size() == 0) {
+                            //The previous line is empty
                             //Start body, because there are two CRLF together
                             currentBody.reset();
                             currentBody.write(data, i + 2, data.length - (i + 2));
                             onBody = true;
+                            for(int j = 1; j < lines.size(); j++) {
+                                addHeader(new HttpHeader(lines.get(j)));
+                            }
                             break;
                         } else {
                             //The current body is a new line
@@ -158,15 +177,13 @@ public abstract class HttpPackage {
 
             if (onBody) {
                 int length = 0;
-                if (headers.containsKey(HttpHeader.CONTENT_LENGTH)) {
-                    length = Integer.parseInt(headers.get(HttpHeader.CONTENT_LENGTH).getHeaderValue());
+                HttpHeader contentLengthHeader = getHeader(HttpHeader.CONTENT_LENGTH);
+                if (contentLengthHeader != null) {
+                    length = Integer.parseInt(contentLengthHeader.getHeaderValue().trim());
                 }
 
                 if (currentBody.size() >= length) {
                     setBody(currentBody.toByteArray());
-                    for(int i = 1; i < lines.size(); i++) {
-                        addHeader(new HttpHeader(lines.get(i)));
-                    }
                     processFirstLine(lines.get(0));
                     processBody(getBody());
                     currentBody = null;
@@ -190,5 +207,11 @@ public abstract class HttpPackage {
      * @param firstLine
      */
     protected abstract void processFirstLine(String firstLine);
+
+    /**
+     *
+     * @return
+     */
+    public abstract byte[] getProtocolHeader();
 
 }

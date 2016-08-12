@@ -21,10 +21,6 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class NetServiceConsumer<S extends NetSession, D extends Object> implements ServiceConsumer {
 
-    private static final int MAX_IO_THREAD_POOL_SIZE = 15000;
-    private static final int DEFAULT_INPUT_BUFFER_SIZE = 1024;
-    private static final int DEFAULT_OUTPUT_BUFFER_SIZE = 1024;
-
     private final Integer port;
     private final NetService.TransportLayerProtocol protocol;
     private NetService service;
@@ -32,16 +28,16 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     private int inputBufferSize;
     private int outputBufferSize;
     private long writeWaitForTimeout;
-    private final Map<NetPackage, Thread> waitForMap;
+    private final Map<S, Thread> waitForMap;
 
     public NetServiceConsumer(Integer port, NetService.TransportLayerProtocol protocol) {
         this.port = port;
         this.protocol = protocol;
         ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
-        ioExecutor.setKeepAliveTime(10, TimeUnit.SECONDS);
-        ioExecutor.setMaximumPoolSize(MAX_IO_THREAD_POOL_SIZE);
-        inputBufferSize = DEFAULT_INPUT_BUFFER_SIZE;
-        outputBufferSize = DEFAULT_OUTPUT_BUFFER_SIZE;
+        ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+        ioExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.NET_MAX_IO_THREAD_POOL_SIZE));
+        inputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_INPUT_BUFFER_SIZE);
+        outputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_OUTPUT_BUFFER_SIZE);
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.NET_WRITE_TIMEOUT);
         waitForMap = new HashMap<>();
     }
@@ -151,9 +147,9 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         if(waitFor) {
             NetPackage netPackage;
             synchronized (session) {
+                waitForMap.put(session, Thread.currentThread());
                 netPackage = service.writeData(session, encode(payLoad));
-                waitForMap.put(netPackage, Thread.currentThread());
-                if (netPackage.getPackageStatus().equals(NetPackage.PackageStatus.WAITING)) {
+                while (netPackage.getPackageStatus().equals(NetPackage.PackageStatus.WAITING)) {
                     try {
                         Log.d(NetService.NET_SERVICE_LOG_TAG, "Session waiting %s ....", session.getSessionId());
                         session.wait(getWriteWaitForTimeout());
@@ -206,22 +202,21 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      */
     public final void onDisconnect(NetPackage netPackage) {
         synchronized (netPackage.getSession()) {
-            if(waitForMap.containsKey(netPackage)) {
+            if(waitForMap.containsKey(netPackage.getSession())) {
                 netPackage.getSession().notify();
                 Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getSessionId());
             }
         }
 
-        onDisconnect((S) netPackage.getSession(), decode(netPackage), netPackage);
+        onDisconnect((S) netPackage.getSession(), netPackage);
     }
 
     /**
      * Method must be implemented by the custom implementation to known when a session is disconnected
      * @param session Disconnected session.
-     * @param payLoad Decoded package payload.
      * @param netPackage Original package.
      */
-    protected void onDisconnect(S session, D payLoad, NetPackage netPackage) {}
+    protected void onDisconnect(S session, NetPackage netPackage) {}
 
     /**
      * When the net service receive data call this method to process the package
@@ -245,21 +240,20 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      */
     public final void onWrite(NetPackage netPackage) {
         synchronized (netPackage.getSession()) {
-            if(waitForMap.containsKey(netPackage)) {
+            if(waitForMap.containsKey(netPackage.getSession())) {
                 netPackage.getSession().notify();
                 Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getSessionId());
             }
         }
-        onWrite((S)netPackage.getSession(), decode(netPackage), netPackage);
+        onWrite((S)netPackage.getSession(), netPackage);
     }
 
     /**
      * When the net service write data then call this method to process the package.
      * @param session Net session.
-     * @param payLoad Net package decoded.
      * @param netPackage Net package.
      */
-    protected void onWrite(S session, D payLoad, NetPackage netPackage){}
+    protected void onWrite(S session, NetPackage netPackage){}
 
     /**
      * This method decode the implementation data.

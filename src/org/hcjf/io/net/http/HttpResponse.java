@@ -67,8 +67,11 @@ public class HttpResponse extends HttpPackage {
         this.netStreamingSource = netStreamingSource;
     }
 
-    @Override
-    public String toString() {
+    /**
+     *
+     * @return
+     */
+    private String toStringProtocolHeader() {
         StringBuilder builder = new StringBuilder();
 
         builder.append(getHttpVersion()).append(LINE_FIELD_SEPARATOR);
@@ -78,11 +81,32 @@ public class HttpResponse extends HttpPackage {
             builder.append(header).append(STRING_LINE_SEPARATOR);
         }
         builder.append(STRING_LINE_SEPARATOR);
+        return builder.toString();
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public byte[] getProtocolHeader() {
+        return toStringProtocolHeader().getBytes();
+    }
+
+    /**
+     *
+     * @return
+     */
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(toStringProtocolHeader());
         if(getBody() != null) {
             int maxLength = SystemProperties.getInteger(SystemProperties.HTTP_OUTPUT_LOG_BODY_MAX_LENGTH);
             if(maxLength > 0) {
                 if (getBody().length > maxLength) {
                     builder.append(new String(getBody(), 0, maxLength));
+                    builder.append(" ... [").append(getBody().length - maxLength).append(" more]");
                 } else {
                     builder.append(new String(getBody()));
                 }

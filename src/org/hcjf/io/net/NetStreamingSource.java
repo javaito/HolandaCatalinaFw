@@ -44,11 +44,9 @@ public abstract class NetStreamingSource implements Runnable {
      */
     @Override
     public void run() {
-        try (ReadableByteChannel resourceIn = getResourceChannel();){
+        try (ReadableByteChannel resourceIn = getSource();){
 
             int writeSize;
-            int last;
-            long lastTime;
             int readSize = 0;
             try {
                 readSize = resourceIn.read(buffer);
@@ -57,18 +55,9 @@ public abstract class NetStreamingSource implements Runnable {
                 buffer.flip();
 
                 writeSize = 0;
-                last = 0;
-                lastTime = System.currentTimeMillis();
                 while(writeSize < readSize && channel.isConnected()){
                     //Stores the number of written byte
-                    last = channel.write(buffer);
-                    writeSize += last;
-
-                    //If the number of bytes is greater than cero then
-                    //stores the system timestamp to know tha last write of the cycle.
-                    if(last > 0){
-                        lastTime = System.currentTimeMillis();
-                    }
+                    writeSize += channel.write(buffer);
                 }
 
                 totalWrite += writeSize;
@@ -103,25 +92,19 @@ public abstract class NetStreamingSource implements Runnable {
     }
 
     /**
-    * Este metodo sera llamado cuando se termine la escritura de datos, ya sea
-    * normalmente o por un error.
-    * @param totalWrite Cantidad de bytes escritos sobre el canal.
+    * This method will called when the streaming process done.
+    * @param totalWrite Quantity of the bytes written over the channel.
     */
     public abstract void resourceDone(long totalWrite);
 
     /**
-    * La implementacion debe proveer el canal de donde se sacaran los datos
-    * que se enviaran por streaming al cliente.
-    * @return Canal de donde se sacaran los datos.
-    * @throws java.io.IOException
+    * The implementation must provides the data source to the streaming process.
+    * @throws java.io.IOException Throws if the source provide fail.
     */
-    public abstract ReadableByteChannel getResourceChannel() throws Exception;
+    public abstract ReadableByteChannel getSource() throws Exception;
 
     /**
-    * Este metodo sera llamado cuando la conexion con el cliente se cierre por
-    * algun motivo, este metodo puede ser implementado por ejemplo para
-    * notificar al productor del streaming que el cliente ya no esta recibiendo
-    * los datos.
+    * When the streaming client close the channel this method will be called.
     */
     public void clientConnectionClosed() {}
 }

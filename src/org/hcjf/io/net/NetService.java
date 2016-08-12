@@ -45,8 +45,6 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     private final Set<NetSession> sessions;
     private final List<NetServiceConsumer> consumers;
-    private final Map<NetSession, LinkedList<NetPackage>> readActionsQueue;
-    private final Map<NetSession, LinkedList<NetPackage>> writeActionsQueue;
 
     private Selector selector;
     private final Object selectorMonitor;
@@ -83,8 +81,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         sessions = Collections.synchronizedSet(new TreeSet<NetSession>());
         consumers = Collections.synchronizedList(new ArrayList<NetServiceConsumer>());
         addresses = Collections.synchronizedMap(new HashMap<NetSession, SocketAddress>());
-        readActionsQueue = Collections.synchronizedMap(new TreeMap<NetSession, LinkedList<NetPackage>>());
-        writeActionsQueue = Collections.synchronizedMap(new TreeMap<NetSession, LinkedList<NetPackage>>());
     }
 
     /**
@@ -105,12 +101,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             setSelector(SelectorProvider.provider().openSelector());
             running = true;
 
-            getServiceExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    runNetService();
-                }
-            });
+            getServiceExecutor().execute(() -> runNetService());
         } catch (IOException ex) {
             Log.e(NET_SERVICE_LOG_TAG, "Unable to init net service $1", ex, this);
         }
@@ -248,16 +239,16 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     *
-     * @return
+     * Return the net selector.
+     * @return Net selector.
      */
     private Selector getSelector() {
         return selector;
     }
 
     /**
-     *
-     * @param selector
+     * Set the net selector.
+     * @param selector Net selector.
      */
     private void setSelector(Selector selector) {
         this.selector = selector;
@@ -568,7 +559,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 accept(key.channel(), (NetServer) consumer);
                             } else if(key.isConnectable()) {
                                 connect(key.channel(), (NetClient) consumer);
-                                key.interestOps(SelectionKey.OP_WRITE);
                             } else {
                                 final SelectableChannel keyChannel = key.channel();
                                 if(keyChannel != null && key.channel().isOpen()) {
@@ -576,21 +566,23 @@ public final class NetService extends Service<NetServiceConsumer> {
                                         try {
                                             consumer.getIoExecutor().execute(() -> {
                                                 try {
-                                                    if(key.isValid()) {
-                                                        if(key.isReadable()){
+                                                    if (key.isValid()) {
+                                                        if (key.isReadable()) {
                                                             read(keyChannel, consumer);
-                                                        } else if(key.isWritable()){
+                                                        } else if (key.isWritable()) {
                                                             write(keyChannel, consumer);
                                                         }
                                                     }
-                                                } catch (Exception ex){
+                                                } catch (Exception ex) {
                                                     Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
                                                 }
                                             });
                                         } catch (RejectedExecutionException ex){
                                             Log.d(NET_SERVICE_LOG_TAG, "IO Rejected execution");
-                                            //Update the flag in order to process the key again.
-                                            removeKey = false;
+                                            //Update the flag in order to process the key again.y
+                                            if(key.isValid()) {
+                                                removeKey = false;
+                                            }
                                         }
                                     }
                                 }
@@ -683,7 +675,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 //A new readable key is created associated to the channel.
                 socketChannel.register(getSelector(), SelectionKey.OP_READ, server);
 
-                InetAddress address = socketChannel.socket().getInetAddress();
                 if(isCreationTimeoutAvailable()){
                     getTimer().schedule(new ConnectionTimeout(socketChannel), getCreationTimeout());
                 }
@@ -759,7 +750,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     updateChannel((SocketChannel) channels.remove(session), channel);
                                 } else {
                                     sessionsByChannel.put(channel, createSessionSet(session));
-                                    outputQueue.put(channel, new LinkedBlockingQueue<NetPackage>());
+                                    outputQueue.put(channel, new LinkedBlockingQueue<>());
                                     lastWrite.put(channel, System.currentTimeMillis());
                                     channels.put(session, channel);
                                 }
@@ -848,21 +839,22 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      *
-     * @param keyChannel
+     * @param channel
      */
-    private void write(SelectableChannel keyChannel, NetServiceConsumer consumer) {
-        SelectableChannel channel = (SelectableChannel) keyChannel;
+    private void write(SelectableChannel channel, NetServiceConsumer consumer) {
         NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
         try {
             Queue<NetPackage> queue = outputQueue.get(channel);
 
             if(queue != null) {
                 lastWrite.put(channel, System.currentTimeMillis());
-                int packageCounter = 0;
                 boolean stop = false;
 
-                while(!queue.isEmpty() && packageCounter <= 50 && !stop){
+                while(!queue.isEmpty() && !stop){
                     NetPackage netPackage = queue.poll();
+                    if(netPackage == null) {
+                        break;
+                    }
                     NetSession session = netPackage.getSession();
 
                     switch(netPackage.getActionEvent()) {
@@ -871,6 +863,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                             try {
                                 if(!session.isLocked()){
                                     byte[] byteData = netPackage.getPayload();
+                                    if(byteData.length == 0) {
+                                        Log.d(NET_SERVICE_LOG_TAG, "Empty write data");
+                                    }
                                     int begin = 0;
                                     int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
                                             session.getConsumer().getOutputBufferSize(): byteData.length - begin;
@@ -910,7 +905,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 } else {
                                     netPackage.setPackageStatus(NetPackage.PackageStatus.REJECTED_SESSION_LOCK);
                                 }
-                            } catch (IOException ex){
+                            } catch (Exception ex){
                                 netPackage.setPackageStatus(NetPackage.PackageStatus.IO_ERROR);
                                 throw ex;
                             } finally {
@@ -940,11 +935,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                             break;
                         }
                     }
-
-                    packageCounter++;
                 }
             }
         } catch (Exception ex){
+            Log.d(NET_SERVICE_LOG_TAG, "Write global thread exception", ex);
         } finally {
             ioThread.getOutputBuffer().clear();
             ioThread.getOutputBuffer().rewind();
@@ -983,87 +977,15 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param consumer Consumer associated to the session.
      */
     private void onAction(final NetPackage netPackage, final NetServiceConsumer consumer){
-        synchronized (netPackage.getSession()) {
-            if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.READ) ||
-                    netPackage.getActionEvent().equals(NetPackage.ActionEvent.CONNECT)) {
-                boolean createReadRunnable = false;
-                LinkedList<NetPackage> readQueue = this.readActionsQueue.get(netPackage.getSession());
-                if (readQueue == null) {
-                    readQueue = new LinkedList<>();
-                    this.readActionsQueue.put(netPackage.getSession(), readQueue);
-                    createReadRunnable = true;
-                }
-                readQueue.add(netPackage);
-
-                if(createReadRunnable) {
-                    getServiceExecutor().execute(new ActionsConsumer(
-                            readQueue, consumer, netPackage.getActionEvent()));
-                }
+        try {
+            switch (netPackage.getActionEvent()) {
+                case CONNECT: consumer.onConnect(netPackage); break;
+                case DISCONNECT: consumer.onDisconnect(netPackage); break;
+                case READ: consumer.onRead(netPackage); break;
+                case WRITE: consumer.onWrite(netPackage); break;
             }
-
-            if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.WRITE) ||
-                    netPackage.getActionEvent().equals(NetPackage.ActionEvent.DISCONNECT)) {
-                boolean createWriteRunnable = false;
-                LinkedList<NetPackage> writeQueue = this.writeActionsQueue.get(netPackage.getSession());
-                if (writeQueue == null) {
-                    writeQueue = new LinkedList<>();
-                    this.writeActionsQueue.put(netPackage.getSession(), writeQueue);
-                    createWriteRunnable = true;
-                }
-                writeQueue.add(netPackage);
-
-                if(createWriteRunnable) {
-                    getServiceExecutor().execute(new ActionsConsumer(
-                            writeQueue, consumer, netPackage.getActionEvent()));
-                }
-            }
-        }
-    }
-
-    /**
-     * These instances will consume all actions generated by the service
-     */
-    private class ActionsConsumer implements Runnable {
-
-        private final LinkedList<NetPackage> actionQueue;
-        private final NetServiceConsumer consumer;
-        private final NetPackage.ActionEvent actionEvent;
-
-        public ActionsConsumer(LinkedList<NetPackage> actionQueue,
-                               NetServiceConsumer consumer, NetPackage.ActionEvent actionEvent) {
-            this.actionQueue = actionQueue;
-            this.consumer = consumer;
-            this.actionEvent = actionEvent;
-        }
-
-        @Override
-        public void run() {
-            NetPackage queueData;
-            do {
-                queueData = actionQueue.removeFirst();
-                try {
-                    switch (queueData.getActionEvent()) {
-                        case CONNECT: consumer.onConnect(queueData); break;
-                        case DISCONNECT: consumer.onDisconnect(queueData); break;
-                        case READ: consumer.onRead(queueData); break;
-                        case WRITE: consumer.onWrite(queueData); break;
-                    }
-                } catch (Exception ex){
-                    Log.e(NET_SERVICE_LOG_TAG, "Action consumer exception", ex);
-                }
-                synchronized (queueData.getSession()) {
-                    if (actionQueue.isEmpty()) {
-                        if(actionEvent.equals(NetPackage.ActionEvent.READ)){
-                            NetService.this.readActionsQueue.remove(queueData.getSession());
-                            Log.d(NET_SERVICE_LOG_TAG, "Action consumer read queue destroyed.");
-                        } else if(actionEvent.equals(NetPackage.ActionEvent.WRITE)) {
-                            NetService.this.writeActionsQueue.remove(queueData.getSession());
-                            Log.d(NET_SERVICE_LOG_TAG, "Action consumer write queue destroyed.");
-                        }
-                        break;
-                    }
-                }
-            } while (true);
+        } catch (Exception ex){
+            Log.e(NET_SERVICE_LOG_TAG, "Action consumer exception", ex);
         }
     }
 

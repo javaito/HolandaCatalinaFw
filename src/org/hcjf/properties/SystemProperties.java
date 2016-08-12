@@ -20,11 +20,13 @@ import java.util.*;
  */
 public final class SystemProperties extends Properties {
 
-    private static final String HCJF_DEFAULT_DATE_FORMAT = "hcjf.default.date.format";
-    private static final String HCJF_DEFAULT_NUMBER_FORMAT = "hcjf.default.number.format";
-    private static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
-    private static final String HCJF_DEFAULT_GROUPING_SEPARATOR = "hcjf.default.grouping.separator";
-    private static final String HCJF_DEFAULT_LOCALE = "hcjf.default.locale";
+    public static final String HCJF_DEFAULT_DATE_FORMAT = "hcjf.default.date.format";
+    public static final String HCJF_DEFAULT_NUMBER_FORMAT = "hcjf.default.number.format";
+    public static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
+    public static final String HCJF_DEFAULT_GROUPING_SEPARATOR = "hcjf.default.grouping.separator";
+    public static final String HCJF_DEFAULT_LOCALE = "hcjf.default.locale";
+    public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
+    public static final String HCJF_DEFAULT_PROPERTIES_FILE_XML = "hcjf.default.properties.file.xml";
 
     public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
     public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
@@ -46,11 +48,18 @@ public final class SystemProperties extends Properties {
     public static final String NET_CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
     public static final String NET_CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
     public static final String NET_WRITE_TIMEOUT = "hcjf.net.write.timeout";
+    public static final String NET_IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.io.thread.pool.keep.alive.time";
+    public static final String NET_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.max.io.thread.pool.size";
+    public static final String NET_DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
+    public static final String NET_DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
 
     public static final String HTTP_SERVER_NAME = "hcjf.http.server.name";
     public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
     public static final String HTTP_INPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.input.log.body.max.length";
     public static final String HTTP_OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
+    public static final String HTTP_DEFAULT_SERVER_PORT = "hcjf.http.default.server.port";
+    public static final String HTTP_STREAMING_LIMIT_FILE_SIZE = "hcjf.http.streaming.limit.file.size";
+    public static final String HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.http.default.error.format.show.stack";
 
     public static final String REST_DEFAULT_MIME_TYPE = "hcjf.rest.default.mime.type";
     public static final String REST_DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
@@ -84,6 +93,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_DECIMAL_SEPARATOR, ".");
         defaults.put(HCJF_DEFAULT_GROUPING_SEPARATOR, ",");
         defaults.put(HCJF_DEFAULT_LOCALE, "EN");
+        defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
 
         defaults.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
         defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
@@ -96,7 +106,7 @@ public final class SystemProperties extends Properties {
         defaults.put(LOG_LEVEL, "1");
         defaults.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
         defaults.put(LOG_CONSUMERS, "[]");
-        defaults.put(LOG_SYSTEM_OUT_ENABLED, "true");
+        defaults.put(LOG_SYSTEM_OUT_ENABLED, "false");
         defaults.put(LOG_QUEUE_INITIAL_SIZE, "10000");
 
         defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
@@ -105,11 +115,18 @@ public final class SystemProperties extends Properties {
         defaults.put(NET_CONNECTION_TIMEOUT, "10000");
         defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
         defaults.put(NET_WRITE_TIMEOUT, "100");
+        defaults.put(NET_IO_THREAD_POOL_KEEP_ALIVE_TIME, "10");
+        defaults.put(NET_MAX_IO_THREAD_POOL_SIZE, "10000");
+        defaults.put(NET_DEFAULT_INPUT_BUFFER_SIZE, "5000");
+        defaults.put(NET_DEFAULT_OUTPUT_BUFFER_SIZE, "5000");
 
         defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
         defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
-        defaults.put(HTTP_INPUT_LOG_BODY_MAX_LENGTH, "1024");
-        defaults.put(HTTP_OUTPUT_LOG_BODY_MAX_LENGTH, "1024");
+        defaults.put(HTTP_INPUT_LOG_BODY_MAX_LENGTH, "128");
+        defaults.put(HTTP_OUTPUT_LOG_BODY_MAX_LENGTH, "128");
+        defaults.put(HTTP_DEFAULT_SERVER_PORT, "80");
+        defaults.put(HTTP_STREAMING_LIMIT_FILE_SIZE, "10240");
+        defaults.put(HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK, "true");
 
         defaults.put(REST_DEFAULT_MIME_TYPE, "application/json");
         defaults.put(REST_DEFAULT_ENCODING_IMPL, "hcjf");
@@ -396,7 +413,6 @@ public final class SystemProperties extends Properties {
             result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
         } else {
             try {
-                Gson gson = new Gson();
                 JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
                 array.forEach(A -> result.add(A.getAsString()));
                 List<String> cachedResult = new ArrayList<>();
@@ -422,7 +438,6 @@ public final class SystemProperties extends Properties {
             result.putAll((Map<String, String>) instance.instancesCache.get(propertyName));
         } else {
             try {
-                Gson gson = new Gson();
                 JsonObject object = (JsonObject) instance.jsonParser.parse(propertyValue);
                 object.entrySet().forEach(S -> result.put(S.getKey(), object.get(S.getKey()).getAsString()));
                 Map<String, String> cachedResult = new HashMap<>();
