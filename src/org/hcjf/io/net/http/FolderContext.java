@@ -26,9 +26,10 @@ public class FolderContext extends Context {
 
     private final Path baseFolder;
     private final String name;
+    private final String defaultFile;
     private final String[] names;
 
-    public FolderContext(String name, Path baseFolder) {
+    public FolderContext(String name, Path baseFolder, String defaultFile) {
         super(START_CONTEXT + URI_FOLDER_SEPARATOR + name + END_CONTEXT);
 
         if(baseFolder == null) {
@@ -41,7 +42,12 @@ public class FolderContext extends Context {
 
         this.name = name;
         this.baseFolder = baseFolder;
+        this.defaultFile = defaultFile;
         this.names = name.split(URI_FOLDER_SEPARATOR);
+    }
+
+    public FolderContext(String name, Path baseFolder) {
+        this(name, baseFolder, null);
     }
 
     /**
@@ -64,10 +70,15 @@ public class FolderContext extends Context {
 
         //The first value is a empty value, and the second value is the base public context.
         Path path = baseFolder.toAbsolutePath();
+        boolean emptyElement = true;
         for(String element : elements) {
             if(!element.isEmpty() && Arrays.binarySearch(names, element) < 0) {
                 path = path.resolve(element);
+                emptyElement = false;
             }
+        }
+        if(emptyElement && defaultFile != null) {
+            path = path.resolve(defaultFile);
         }
 
         HttpResponse response = new HttpResponse();
