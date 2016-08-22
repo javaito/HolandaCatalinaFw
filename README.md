@@ -45,7 +45,23 @@ server.start();
 open your browser again on http://localhost:1338/home
 
 #### Publishing custom context
-
+Publishing custom context whit low level implementation...
+```java
+byte[] document;
+document = "Hello world!!".getBytes();
+HttpServer server = new HttpServer(1338);
+server.addContext(new Context(".*") {
+    @Override
+    public HttpResponse onContext(HttpRequest request) {
+        HttpResponse response = new HttpResponse();
+        response.setResponseCode(HttpResponseCode.OK);
+        response.setBody(document);
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(document.length)));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+        return response;
+    }
+});
+```
 
 ### Service wrapper
 
