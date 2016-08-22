@@ -61,6 +61,7 @@ server.addContext(new Context(".*") {
         return response;
     }
 });
+server.start();
 ```
 
 ### Service wrapper
