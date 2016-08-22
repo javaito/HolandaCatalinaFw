@@ -1,16 +1,16 @@
 # Holanda Catalina
 
-## Motivación
-Basando las necesidades, en construir un conjunto específicos de componentes que por sí mismo definen una arquitectura decidimos brindar las herramientas de alto nivel que permitan construir las estructuras necesarias para el desarrollo de una plataforma como servicios (PaaS)
+## Motivation
+Basing needs, to build a specific set of components by itself define a services-based architecture, we decided to provide high-level tools that build the structures necessary for the development of this type of platforms (PaaS)
 
-En los siguientes links se describe un conjunto básico de componentes necesarios para este tipo de plataformas:
+In the following links a basic set of required components described for this type of platform:
 - https://www.nginx.com/blog/introduction-to-microservices/?utm_source=service-discovery-in-a-microservices-architecture&utm_medium=blog
 - http://microservices.io/index.html
 
-Actualmente existen muchas implementaciones de propósito general para el desarrollo de soluciones Java, pero ninguna de estas implementaciones está específicamente creada para desarrollar un conjunto de servicios intercomunicados entre sí que conforman una plataforma.
-Como ejemplo para poder crear un servicio que responda a una interfaz HTTP REST basado en java tenemos que pensar en una solución JEE, lo que incluye un servidor de aplicaciones / web, un conjunto no menor de librerías y son, generalmente, sistemas que requieren un hardware poderoso. A diferencia de este ejemplo proponemos código simple, sin entornos complejos, sin librerías que la solución no requiera y que sean soluciones livianas y ágiles sin necesidad de hardware poderoso.
+Currently there are many implementations of general purpose Java development solutions, but none of these implementations is specifically created to develop a set of services interconnected with each other to form a platform.
+As an example to create a service that responds to an HTTP REST interface based on java we have to think of a JEE solution, which includes an application server / web, not less libset and are generally systems that require powerful hardware. Unlike this example we propose simple code, without complex environments, without libraries that the solution does not require and are lightweight and flexible solutions without powerful hardware.
 
-## Componentes
+## Components
 - Http Service Interface
 - PaaS Protocol
 - Shared Memory beetwen instances (Cloud computing)
