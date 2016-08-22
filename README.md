@@ -12,7 +12,7 @@ As an example to create a service that responds to an HTTP REST interface based 
 
 ## Components
 - Http Service Interface
-- Service whrapper
+- Service wrapper
 - PaaS Protocol
 - Shared Memory beetwen instances (Cloud computing)
 - Layered arquitecture
@@ -21,14 +21,14 @@ As an example to create a service that responds to an HTTP REST interface based 
 ### Http service interface
 Entre la herramientas de alto nivel, el entorno cuenta con un potente servidor http de alto rendimiento y a la vez muy simple de usar. Con esta herramienta podemos públicas en forma muy simple interfaces http sin necesidad de infraestructura extra ni grandes requerimientos de hardaware.
 
-####Publishing a local folder
+#### Publishing a local folder
 Publishing some folder of your own computer...
 ```java
 HttpServer server = new HttpServer(1338);
 server.addContext(new FolderContext("", Paths.get("/home/javaito"));
 server.start();
 ```
-Then open your web borwser on http://localhost:1338
+Then open your web browser on http://localhost:1338
 
 Publishing some folder with default element...
 
@@ -39,11 +39,14 @@ Hello world!!
 then we need to publish a context with a default element
 ```java
 HttpServer server = new HttpServer(1338);
-server.addContext(new FolderContext("", Paths.get("/home/javaito", "default.txt"));
+server.addContext(new FolderContext("/home", Paths.get("/home/javaito", "default.txt"));
 server.start();
 ```
+open your browser again on http://localhost:1338/home
 
-### Service whrapper
+#### Publishing custom context
+
+### Service wrapper
 
 
 ### PaaS Protocol
