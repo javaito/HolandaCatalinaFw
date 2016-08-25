@@ -571,6 +571,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                             read(keyChannel, consumer);
                                                         } else if (key.isWritable()) {
                                                             write(keyChannel, consumer);
+                                                            if (consumer instanceof NetClient) {
+                                                                read(keyChannel, consumer);
+                                                            }
                                                         }
                                                     }
                                                 } catch (Exception ex) {
@@ -644,6 +647,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                 outputQueue.put(channel, new LinkedBlockingQueue<NetPackage>());
                 lastWrite.put(channel, System.currentTimeMillis());
                 portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
+                NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
+                onAction(connectionPackage, client);
             } catch (Exception ex){
                 Log.w(NET_SERVICE_LOG_TAG, "Error creating new client connection.", ex);
             }
@@ -697,23 +702,25 @@ public final class NetService extends Service<NetServiceConsumer> {
                 //Ger the instance of the current IO thread.
                 NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
 
-                try {
-                    ByteArrayOutputStream readData = new ByteArrayOutputStream();
+                try (ByteArrayOutputStream readData = new ByteArrayOutputStream()) {
+
                     int readSize = 0;
+                    int totalSize = 0;
                     long nanoTime = 0;
 
                     try {
                         //Put all the bytes into the buffer of the IO thread.
                         ioThread.getInputBuffer().rewind();
                         nanoTime = System.nanoTime();
-                        readSize = channel.read(ioThread.getInputBuffer());
+                        totalSize += readSize = channel.read(ioThread.getInputBuffer());
                         while(readSize > 0){
                             //TODO: Create statistics
                             //getStatistics().putReadLatency((System.nanoTime() - nanoTime) / readSize);
                             readData.write(ioThread.getInputBuffer().array(), 0, readSize);
+                            readData.flush();
                             ioThread.getInputBuffer().rewind();
                             nanoTime = System.nanoTime();
-                            readSize = channel.read(ioThread.getInputBuffer());
+                            totalSize += readSize = channel.read(ioThread.getInputBuffer());
                         }
                         //TODO: Create statistics
                         //getStatistics().putReadBytes(readData.size());
@@ -721,7 +728,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         destroyChannel(channel);
                     }
 
-                    if(readSize == -1) {
+                    if(totalSize == -1) {
                         destroyChannel(channel);
                     } else if(readData.size() > 0) {
                         NetPackage netPackage = new NetPackage(

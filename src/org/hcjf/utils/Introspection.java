@@ -236,8 +236,11 @@ public final class Introspection {
      */
     public static class Getter extends Accessor {
 
+        private final Class returnType;
+
         protected Getter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
+            returnType = method.getReturnType();
         }
 
         /**
@@ -251,6 +254,14 @@ public final class Introspection {
         public <O extends Object> O get(Object instance) throws InvocationTargetException, IllegalAccessException {
             return (O) invoke(instance);
         }
+
+        /**
+         *
+         * @return
+         */
+        public Class getReturnType() {
+            return returnType;
+        }
     }
 
     /**
@@ -258,8 +269,11 @@ public final class Introspection {
      */
     public static class Setter extends Accessor {
 
+        private final Class parameterType;
+
         protected Setter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
+            this.parameterType = method.getParameterTypes()[0];
         }
 
         /**
@@ -273,5 +287,12 @@ public final class Introspection {
             invoke(instance, value);
         }
 
+        /**
+         *
+         * @return
+         */
+        public Class getParameterType() {
+            return parameterType;
+        }
     }
 }

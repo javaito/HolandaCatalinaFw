@@ -42,6 +42,7 @@ public class HttpHeader {
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String CLOSED = "Closed";
+    public static final String DEFAULT_USER_AGENT = "HCJF";
 
     private static final String HEADER_ASSIGNATION = ":";
     private static final String HEADER_GROUPS_SEPARATOR = ",";

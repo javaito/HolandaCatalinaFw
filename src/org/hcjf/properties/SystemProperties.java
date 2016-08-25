@@ -58,8 +58,12 @@ public final class SystemProperties extends Properties {
     public static final String HTTP_INPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.input.log.body.max.length";
     public static final String HTTP_OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
     public static final String HTTP_DEFAULT_SERVER_PORT = "hcjf.http.default.server.port";
+    public static final String HTTP_DEFAULT_CLIENT_PORT = "hcjf.http.default.client.port";
     public static final String HTTP_STREAMING_LIMIT_FILE_SIZE = "hcjf.http.streaming.limit.file.size";
     public static final String HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.http.default.error.format.show.stack";
+    public static final String HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.http.default.client.connect.timeout";
+    public static final String HTTP_DEFAULT_CLIENT_READ_TIMEOUT = "hcjf.http.default.client.read.timeout";
+    public static final String HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.http.default.client.write.timeout";
 
     public static final String REST_DEFAULT_MIME_TYPE = "hcjf.rest.default.mime.type";
     public static final String REST_DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
@@ -125,8 +129,12 @@ public final class SystemProperties extends Properties {
         defaults.put(HTTP_INPUT_LOG_BODY_MAX_LENGTH, "128");
         defaults.put(HTTP_OUTPUT_LOG_BODY_MAX_LENGTH, "128");
         defaults.put(HTTP_DEFAULT_SERVER_PORT, "80");
+        defaults.put(HTTP_DEFAULT_CLIENT_PORT, "80");
         defaults.put(HTTP_STREAMING_LIMIT_FILE_SIZE, "10240");
         defaults.put(HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK, "true");
+        defaults.put(HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT, "10000");
+        defaults.put(HTTP_DEFAULT_CLIENT_READ_TIMEOUT, "10000");
+        defaults.put(HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT, "10000");
 
         defaults.put(REST_DEFAULT_MIME_TYPE, "application/json");
         defaults.put(REST_DEFAULT_ENCODING_IMPL, "hcjf");

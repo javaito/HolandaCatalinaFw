@@ -234,9 +234,7 @@ public final class Log extends Service<LogPrinter> {
 
                 try {
                     writeRecord(instance.queue.remove());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
+                } catch (Exception ex) {}
             }
         }
 

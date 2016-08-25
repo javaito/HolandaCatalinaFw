@@ -29,7 +29,7 @@ public abstract class Context {
      * that refer to this context.
      * @return Regular expression.
      */
-    public String getContextRegex() {
+    public final String getContextRegex() {
         return contextRegex;
     }
 

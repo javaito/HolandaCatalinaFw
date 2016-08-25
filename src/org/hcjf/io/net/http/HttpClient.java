@@ -4,6 +4,11 @@ import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.properties.SystemProperties;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URL;
 
 /**
  * @author javaito
@@ -11,8 +16,111 @@ import org.hcjf.io.net.NetSession;
  */
 public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
-    public HttpClient(String host, Integer port, NetService.TransportLayerProtocol protocol) {
-        super(host, port, protocol);
+    public static final String HTTP_CLIENT_LOG_TAG = "HTTP_CLIENT";
+
+    private final URL url;
+    private Status status;
+    private HttpResponse response;
+    private HttpRequest request;
+    private Long connectTimeout;
+    private Long writeTimeout;
+    private Long readTimeout;
+    private HttpSession session;
+
+    public HttpClient(URL url) {
+        super(url.getHost(), url.getPort() == -1 ? url.getDefaultPort() :
+                SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_CLIENT_PORT),
+                NetService.TransportLayerProtocol.TCP);
+        this.url = url;
+        this.connectTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT);
+        this.writeTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT);
+        this.readTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_READ_TIMEOUT);
+        init();
+    }
+
+    private void init() {
+        //Init defaults
+        this.response = null;
+        this.status = Status.INACTIVE;
+
+        //Create default request
+        request = new HttpRequest();
+        request.setHttpVersion(HttpVersion.VERSION_1_1);
+        request.setContext(url.getFile());
+        request.setMethod(HttpMethod.GET);
+        request.addHeader(new HttpHeader(HttpHeader.HOST, url.getHost()));
+        request.addHeader(new HttpHeader(HttpHeader.USER_AGENT, HttpHeader.DEFAULT_USER_AGENT));
+    }
+
+    /**
+     *
+     * @return
+     */
+    public final Long getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    /**
+     *
+     * @param connectTimeout
+     */
+    public final void setConnectTimeout(Long connectTimeout) {
+        this.connectTimeout = connectTimeout;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public final Long getWriteTimeout() {
+        return writeTimeout;
+    }
+
+    /**
+     *
+     * @param writeTimeout
+     */
+    public final void setWriteTimeout(Long writeTimeout) {
+        this.writeTimeout = writeTimeout;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public final Long getReadTimeout() {
+        return readTimeout;
+    }
+
+    /**
+     *
+     * @param readTimeout
+     */
+    public final void setReadTimeout(Long readTimeout) {
+        this.readTimeout = readTimeout;
+    }
+
+    /**
+     *
+     */
+    public final void reset() {
+        init();
+    }
+
+    /**
+     *
+     * @param method
+     */
+    public final void setHttpMethod(HttpMethod method) {
+        request.setMethod(method);
+    }
+
+    /**
+     *
+     * @param header
+     */
+    public final void addHttpHeader(String header) {
+        request.addHeader(new HttpHeader(header));
     }
 
     /**
@@ -23,7 +131,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     @Override
     public HttpSession getSession() {
-        return null;
+        return session;
     }
 
     /**
@@ -34,7 +142,16 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     @Override
     protected byte[] encode(HttpPackage payLoad) {
-        return new byte[0];
+        byte[] result = null;
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            out.write(payLoad.getProtocolHeader());
+            if(payLoad.getBody() != null) {
+                out.write(payLoad.getBody());
+            }
+            out.flush();
+            result = out.toByteArray();
+        } catch (Exception ex){}
+        return result;
     }
 
     /**
@@ -45,7 +162,11 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     @Override
     protected HttpPackage decode(NetPackage netPackage) {
-        return null;
+        if(response == null) {
+            response = new HttpResponse();
+        }
+        response.addData(netPackage.getPayload());
+        return response;
     }
 
     /**
@@ -55,6 +176,127 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     @Override
     public void destroySession(NetSession session) {
+        session = null;
+    }
+
+    /**
+     *
+     * @param session Connected session.
+     * @param payLoad Decoded package payload.
+     * @param netPackage Original package.
+     */
+    @Override
+    protected void onConnect(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
+        synchronized (this) {
+            status = Status.CONNECTED;
+            notifyAll();
+        }
+    }
+
+    /**
+     *
+     * @param session Net session.
+     * @param netPackage Net package.
+     */
+    @Override
+    protected void onWrite(HttpSession session, NetPackage netPackage) {
+    }
+
+    /**
+     *
+     * @param session Net session.
+     * @param payLoad Net package decoded
+     * @param netPackage Net package.
+     */
+    @Override
+    protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
+        if(response.isComplete()) {
+            synchronized (this) {
+                status = Status.DONE;
+                notifyAll();
+            }
+        }
+    }
+
+    /**
+     * @return
+     */
+    public final HttpResponse request() {
+        session = new HttpSession(this, request);
+        Integer errorCode = null;
+        String errorPhrase = null;
+
+        //Connection block
+        status = Status.CONNECTING;
+        connect();
+        synchronized (this) {
+            if (status == Status.CONNECTING) {
+                try {
+                    wait(getConnectTimeout());
+                } catch (InterruptedException e) {}
+            }
+
+            if (status == Status.CONNECTING) {
+                status = Status.ERROR;
+                errorCode = HttpResponseCode.REQUEST_TIMEOUT;
+                errorPhrase = "Connect timeout";
+            }
+        }
+
+        //Request writing / response read block
+        if(status != Status.ERROR) {
+            status = Status.WRITING;
+            try {
+                write(getSession(), request);
+            } catch (IOException ex) {
+                status = Status.ERROR;
+                errorCode = HttpResponseCode.BAD_REQUEST;
+                errorPhrase = ex.getMessage();
+            }
+
+            synchronized (this) {
+                if (status == Status.WRITING) {
+                    try {
+                        wait(getReadTimeout());
+                    } catch (InterruptedException e) {
+                    }
+                }
+
+                if (status == Status.WRITING) {
+                    status = Status.ERROR;
+                    errorCode = HttpResponseCode.REQUEST_TIMEOUT;
+                    errorPhrase = "Read timeout";
+                }
+            }
+        }
+
+        HttpResponse response;
+        if(status == Status.ERROR) {
+            response = new HttpResponse();
+            response.setHttpVersion(HttpVersion.VERSION_1_1);
+            response.setResponseCode(errorCode);
+            response.setReasonPhrase(errorPhrase);
+        } else {
+            response = this.response;
+        }
+
+        disconnect(getSession(), "");
+        return response;
+    }
+
+    private enum Status {
+
+        INACTIVE,
+
+        CONNECTING,
+
+        CONNECTED,
+
+        WRITING,
+
+        DONE,
+
+        ERROR;
 
     }
 }

@@ -11,7 +11,9 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 
 /**
- * Created by javaito on 8/6/2016.
+ * This class publish
+ * @author javaito
+ * @email javaito@gmail.com
  */
 public class FolderContext extends Context {
 

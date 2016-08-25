@@ -16,6 +16,13 @@ public abstract class NetClient<S extends NetSession, D extends Object> extends 
     }
 
     /**
+     * Put the client on the net service implementation
+     */
+    protected void connect() {
+        NetService.getInstance().registerConsumer(this);
+    }
+
+    /**
      * Returns the host where it will connect the client
      * @return Remote host.
      */

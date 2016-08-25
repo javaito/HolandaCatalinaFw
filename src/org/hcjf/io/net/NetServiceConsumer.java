@@ -35,7 +35,8 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         this.protocol = protocol;
         ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
         ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
-        ioExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.NET_MAX_IO_THREAD_POOL_SIZE));
+        ioExecutor.setMaximumPoolSize(this instanceof NetClient ? 1 :
+                SystemProperties.getInteger(SystemProperties.NET_MAX_IO_THREAD_POOL_SIZE));
         inputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_INPUT_BUFFER_SIZE);
         outputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_OUTPUT_BUFFER_SIZE);
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.NET_WRITE_TIMEOUT);

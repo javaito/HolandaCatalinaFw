@@ -1,17 +1,18 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.io.net.NetStreamingSource;
-import org.hcjf.io.net.StreamingNetPackage;
 import org.hcjf.properties.SystemProperties;
-import sun.java2d.pipe.SpanShapeRenderer;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
- * Created by javaito on 13/4/2016.
+ * This class represents a http response package.
+ * @author javaito
+ * @email javaito@gmail.com
  */
 public class HttpResponse extends HttpPackage {
+
+    private static final int VERSION_INDEX = 0;
+    private static final int RESPONSE_CODE_INDEX = 1;
+    private static final int REASON_PHRASE_INDEX = 2;
 
     private Integer responseCode;
     private String reasonPhrase;
@@ -26,37 +27,56 @@ public class HttpResponse extends HttpPackage {
         this.reasonPhrase = httpResponse.reasonPhrase;
     }
 
+    /**
+     * Return the numeric code that represents the status of the http request.
+     * @return Response code.
+     */
     public Integer getResponseCode() {
         return responseCode;
     }
 
+    /**
+     * Set the numeric code that represents the status of the http request.
+     * @param responseCode Response code.
+     */
     public void setResponseCode(Integer responseCode) {
         this.responseCode = responseCode;
     }
 
+    /**
+     * Return a phrase that represents why the server response with this package.
+     * @return Reason phrase.
+     */
     public String getReasonPhrase() {
         return reasonPhrase;
     }
 
+    /**
+     * Set a phrase that represents why the server response with this package.
+     * @param reasonPhrase Reason phrase.
+     */
     public void setReasonPhrase(String reasonPhrase) {
         this.reasonPhrase = reasonPhrase;
     }
 
     /**
-     * @param body
-     * @return
+     * This kind of http package never process his body.
+     * @param body Package body.
      */
     @Override
-    protected void processBody(byte[] body) {
-
-    }
+    protected void processBody(byte[] body) {}
 
     /**
-     * @param firstLine
+     * Set the values of the first line of the package.
+     * @param firstLine String representation of the firs line.
      */
     @Override
     protected void processFirstLine(String firstLine) {
+        String[] parts = firstLine.split(LINE_FIELD_SEPARATOR);
 
+        setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX]));
+        setReasonPhrase(parts[REASON_PHRASE_INDEX]);
+        setHttpVersion(parts[VERSION_INDEX]);
     }
 
     public NetStreamingSource getNetStreamingSource() {
@@ -68,8 +88,8 @@ public class HttpResponse extends HttpPackage {
     }
 
     /**
-     *
-     * @return
+     * Return the string representation of the package header.
+     * @return String representation of the package header.
      */
     private String toStringProtocolHeader() {
         StringBuilder builder = new StringBuilder();
@@ -85,8 +105,8 @@ public class HttpResponse extends HttpPackage {
     }
 
     /**
-     *
-     * @return
+     * Return the byte array that represents the http package header.
+     * @return Byte array.
      */
     @Override
     public byte[] getProtocolHeader() {
@@ -94,8 +114,8 @@ public class HttpResponse extends HttpPackage {
     }
 
     /**
-     *
-     * @return
+     * Create the standard representation of the http response package.
+     * @return String representation of the package
      */
     @Override
     public String toString() {

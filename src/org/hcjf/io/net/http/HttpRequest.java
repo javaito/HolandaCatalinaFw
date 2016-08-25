@@ -57,6 +57,7 @@ public class HttpRequest extends HttpPackage {
 
     public void setContext(String context) {
         this.context = context;
+        this.path = context;
     }
 
     public HttpMethod getMethod() {
@@ -90,7 +91,8 @@ public class HttpRequest extends HttpPackage {
     @Override
     protected void processBody(byte[] body) {
         HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
-        if(contentType != null && contentType.getHeaderValue().equals(HttpHeader.APPLICATION_X_WWW_FORM_URLENCODED)) {
+        if(contentType != null &&
+                contentType.getHeaderValue().equals(HttpHeader.APPLICATION_X_WWW_FORM_URLENCODED)) {
             parseHttpParameters(new String(body));
         } else {
 
