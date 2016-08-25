@@ -11,6 +11,8 @@ Currently there are many implementations of general purpose Java development sol
 As an example to create a service that responds to an HTTP REST interface based on java we have to think of a JEE solution, which includes an application server / web, not less libset and are generally systems that require powerful hardware. Unlike this example we propose simple code, without complex environments, without libraries that the solution does not require and are lightweight and flexible solutions without powerful hardware.
 
 ## Components
+In this repository you will find a set of high-level solutions as a base for the development of each of the components needed to publish services, to consume third party services, to share resources between instances of the same service and to organize and discover services on the platform.
+
 - Http Service Interface
 - Service wrapper
 - PaaS Protocol
@@ -65,7 +67,10 @@ server.start();
 ```
 
 ### Service wrapper
+First we can consume some third party service and implements any wrapper solution
+```java
 
+```
 
 ### PaaS Protocol
 
