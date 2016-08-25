@@ -16,8 +16,8 @@ In this repository you will find a set of high-level solutions as a base for the
 - Http Service Interface
 - Service wrapper
 - PaaS Protocol
-- Shared Memory beetwen instances (Cloud computing)
-- Layered arquitecture
+- Shared Memory between instances (Cloud computing)
+- Layered architecture
 - Deployment service
 
 ### Http service interface
@@ -75,10 +75,10 @@ First we can consume some third party service and implements any wrapper solutio
 ### PaaS Protocol
 
 
-### Shared memory beetwen instances
+### Shared memory between instances
 
 
-### Layered arquitecture
+### Layered architecture
 
 
 ### Deployment service
