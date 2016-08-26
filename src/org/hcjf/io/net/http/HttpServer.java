@@ -9,7 +9,6 @@ import org.hcjf.properties.SystemProperties;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
-import java.util.regex.Matcher;
 
 /**
  *
@@ -88,7 +87,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      *
      * @param context
      */
-    public final synchronized void addContext(Context context) {
+    public synchronized void addContext(Context context) {
         boolean duplicated = false;
         for(Context ctx : contexts) {
             if(ctx.getContextRegex().equals(context.getContextRegex())) {
@@ -112,7 +111,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @param contextName
      * @return
      */
-    private Context findContext(String contextName) {
+    protected Context findContext(String contextName) {
         Context result = null;
 
         for(Context context : contexts) {
