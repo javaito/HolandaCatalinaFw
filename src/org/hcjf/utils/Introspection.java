@@ -1,5 +1,7 @@
 package org.hcjf.utils;
 
+import org.hcjf.names.Naming;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -53,6 +55,31 @@ public final class Introspection {
      * <li>without parameters</li>
      * <li>must be a public method</li>
      * @param clazz Class definition to found the getters method.
+     * @param namingImpl Name of the naming implementation.
+     * @return All the accessors founded indexed by the possible field name.
+     */
+    public static Map<String, Getter> getGetters(Class clazz, String namingImpl) {
+        Map<String, Getter> getters = getGetters(clazz);
+        Map<String, Getter> result = new HashMap<>();
+
+        for(String name : getters.keySet()) {
+            result.put(Naming.normalize(namingImpl, name), getters.get(name));
+        }
+
+        return Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * Return a map with all the getters accessor instances indexed by the expected name of the
+     * field that represents each accessor. The fields represented by the name can exists or no.
+     * The accessor instances contains all the information about accessor method and the annotation
+     * bounded to the method.
+     * The found methods comply with the following regular expression and conditions:
+     * <li>^(get|is)([1,A-Z]|[1,0-9])(.*)</li>
+     * <li>must return something distinct to void type</li>
+     * <li>without parameters</li>
+     * <li>must be a public method</li>
+     * @param clazz Class definition to found the getters method.
      * @return All the accessors founded indexed by the possible field name.
      */
     public static Map<String, Getter> getGetters(Class clazz) {
@@ -83,6 +110,30 @@ public final class Introspection {
             if(!clazz.getSuperclass().equals(Objects.class)) {
                 result.putAll(getGetters(clazz.getSuperclass()));
             }
+        }
+
+        return Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * Return a map with all the setters accessor instances indexed by the expected name of the
+     * field that represents each accessor. The fields represented by the name can exists or no.
+     * The accessor instances contains all the information about accessor method and the annotation
+     * bounded to the method.
+     * The found methods comply with the following regular expression and conditions:
+     * <li>^(set)([1,A-Z]|[1,0-9])(.*)</li>
+     * <li>must return void type.</li>
+     * <li>with only one parameter</li>
+     * <li>must be a public method</li>
+     * @param clazz Class definition to found the setter method.
+     * @return All the accessors founded indexed by the possible field name.
+     */
+    public static Map<String, Setter> getSetters(Class clazz, String namingImpl) {
+        Map<String, Setter> setters = getSetters(clazz);
+        Map<String, Setter> result = new HashMap<>();
+
+        for(String name : setters.keySet()) {
+            result.put(Naming.normalize(namingImpl, name), setters.get(name));
         }
 
         return Collections.unmodifiableMap(result);

@@ -6,7 +6,9 @@ import org.hcjf.service.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
@@ -142,7 +144,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         boolean illegal = false;
         try {
             switch (consumer.getProtocol()) {
-                case TCP: {
+                case TCP: case TCP_SSL: {
                     if (consumer instanceof NetServer) {
                         registerTCPNetServer((NetServer) consumer);
                     } else if (consumer instanceof NetClient) {
@@ -358,7 +360,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             throw new IllegalArgumentException("Unknown channel type");
         }
         if (source == null) {
-            netPackage = new NetPackage(remoteHost, remoteAddress, remotePort,
+            netPackage = new DefaultNetPackage(remoteHost, remoteAddress, remotePort,
                     localPort, data, event);
         } else {
             netPackage = new StreamingNetPackage(remoteHost, remoteAddress, remotePort,
@@ -567,7 +569,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             consumer.getIoExecutor().execute(() -> {
                                                 try {
                                                     if (key.isValid()) {
-                                                        if (key.isReadable()) {
+                                                        if (key.isReadable() ) {
                                                             read(keyChannel, consumer);
                                                         } else if (key.isWritable()) {
                                                             write(keyChannel, consumer);
@@ -633,6 +635,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         if(!isShuttingDown()) {
             try {
                 SocketChannel channel = (SocketChannel) keyChannel;
+                channel.configureBlocking(false);
                 channel.finishConnect();
                 Map<SocketOption, Object> socketOptions = client.getSocketOptions();
                 if(socketOptions != null){
@@ -644,7 +647,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 sessions.add(client.getSession());
                 sessionsByChannel.put(channel, createSessionSet(client.getSession()));
                 channels.put(client.getSession(), channel);
-                outputQueue.put(channel, new LinkedBlockingQueue<NetPackage>());
+                outputQueue.put(channel, new LinkedBlockingQueue<>());
                 lastWrite.put(channel, System.currentTimeMillis());
                 portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
                 NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
@@ -704,14 +707,12 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                 try (ByteArrayOutputStream readData = new ByteArrayOutputStream()) {
 
-                    int readSize = 0;
+                    int readSize;
                     int totalSize = 0;
-                    long nanoTime = 0;
 
                     try {
                         //Put all the bytes into the buffer of the IO thread.
                         ioThread.getInputBuffer().rewind();
-                        nanoTime = System.nanoTime();
                         totalSize += readSize = channel.read(ioThread.getInputBuffer());
                         while(readSize > 0){
                             //TODO: Create statistics
@@ -719,11 +720,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                             readData.write(ioThread.getInputBuffer().array(), 0, readSize);
                             readData.flush();
                             ioThread.getInputBuffer().rewind();
-                            nanoTime = System.nanoTime();
                             totalSize += readSize = channel.read(ioThread.getInputBuffer());
                         }
-                        //TODO: Create statistics
-                        //getStatistics().putReadBytes(readData.size());
                     } catch (IOException ex) {
                         destroyChannel(channel);
                     }
@@ -731,7 +729,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     if(totalSize == -1) {
                         destroyChannel(channel);
                     } else if(readData.size() > 0) {
-                        NetPackage netPackage = new NetPackage(
+                        NetPackage netPackage = new DefaultNetPackage(
                                 "",
                                 "",
                                 channel.socket().getPort(), channel.socket().getLocalPort(),
@@ -786,18 +784,11 @@ public final class NetService extends Service<NetServiceConsumer> {
                     ioThread.getInputBuffer().clear();
                     ioThread.getInputBuffer().rewind();
 
-                    long nanoTime = System.nanoTime();
                     InetSocketAddress address = (InetSocketAddress) channel.receive(ioThread.getInputBuffer());
-                    if(ioThread.getInputBuffer().position() > 0) {
-                        //TODO: Create statistics
-                        //getStatistics().putReadLatency((System.nanoTime() - nanoTime) / ioThread.getInputBuffer().position());
-                    }
                     readData.write(ioThread.getInputBuffer().array(), 0, ioThread.getInputBuffer().position());
-                    //TODO: Create statistics
-                    //getStatistics().putReadBytes(readData.size());
 
                     if(address != null){
-                        NetPackage netPackage = new NetPackage(
+                        NetPackage netPackage = new DefaultNetPackage(
                                 channel.socket().getInetAddress().getHostName(),
                                 channel.socket().getInetAddress().getHostAddress(),
                                 channel.socket().getPort(), channel.socket().getLocalPort(),
@@ -828,7 +819,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 channels.put(session, channel);
                             }
                             if(!outputQueue.containsKey(channel)){
-                                outputQueue.put(channel, new LinkedBlockingQueue<NetPackage>());
+                                outputQueue.put(channel, new LinkedBlockingQueue<>());
                                 lastWrite.put(channel, System.currentTimeMillis());
                             }
 
@@ -876,6 +867,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     int begin = 0;
                                     int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
                                             session.getConsumer().getOutputBufferSize(): byteData.length - begin;
+
                                     while(begin < byteData.length){
                                         ioThread.getOutputBuffer().limit(length);
                                         ioThread.getOutputBuffer().put(byteData, begin, length);
@@ -883,20 +875,15 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                                         if(channel instanceof SocketChannel) {
                                             int writtenData = 0;
-                                            long nanoTime = System.nanoTime();
                                             while(writtenData < length){
                                                 writtenData += ((SocketChannel)channel).write(ioThread.getOutputBuffer());
                                             }
-                                            //TODO: Create statistics
-                                            //getStatistics().putWriteLatency((System.nanoTime() - nanoTime) / writtenData);
                                         } else if(channel instanceof DatagramChannel) {
                                             SocketAddress address = addresses.get(netPackage.getSession());
                                             if(sessionsByAddress.get(address).equals(netPackage.getSession())){
                                                 ((DatagramChannel)channel).send(ioThread.getOutputBuffer(), address);
                                             }
                                         }
-                                        //TODO: Create statistics
-                                        //getStatistics().putWriteBytes(length);
 
                                         ioThread.getOutputBuffer().rewind();
                                         begin += length;
@@ -1028,7 +1015,9 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         TCP,
 
-        UDP;
+        TCP_SSL,
+
+        UDP
     }
 
 }

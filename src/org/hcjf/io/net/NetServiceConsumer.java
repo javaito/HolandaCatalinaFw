@@ -1,9 +1,11 @@
 package org.hcjf.io.net;
 
+import org.hcjf.io.net.ssl.SSLHelper;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceConsumer;
 
+import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.SocketOption;
 import java.nio.ByteBuffer;
@@ -29,6 +31,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     private int outputBufferSize;
     private long writeWaitForTimeout;
     private final Map<S, Thread> waitForMap;
+    private final SSLHelper sslHelper;
 
     public NetServiceConsumer(Integer port, NetService.TransportLayerProtocol protocol) {
         this.port = port;
@@ -40,6 +43,11 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         inputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_INPUT_BUFFER_SIZE);
         outputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_OUTPUT_BUFFER_SIZE);
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.NET_WRITE_TIMEOUT);
+        if(protocol.equals(NetService.TransportLayerProtocol.TCP_SSL)) {
+            sslHelper = new SSLHelper(createSSLEngine(), this);
+        } else {
+            sslHelper = null;
+        }
         waitForMap = new HashMap<>();
     }
 
@@ -108,6 +116,22 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      */
     public final Integer getPort() {
         return port;
+    }
+
+    /**
+     * This method should create the ssl engine for the consumer.
+     * @return SSL engine implementation.
+     */
+    protected SSLEngine createSSLEngine() {
+        throw new  UnsupportedOperationException("Unsupported ssl engine");
+    }
+
+    /**
+     * Return the ssl helper of the instance.
+     * @return SSL Helper.
+     */
+    public final SSLHelper getSslHelper() {
+        return sslHelper;
     }
 
     /**
@@ -306,15 +330,20 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
 
         public NetIOThread(Runnable target) {
             super(target, "Net IO");
-            inputBuffer = ByteBuffer.allocate(getInputBufferSize());
-            outputBuffer = ByteBuffer.allocate(getOutputBufferSize());
+            if(SystemProperties.getBoolean(SystemProperties.NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
+                inputBuffer = ByteBuffer.allocateDirect(getInputBufferSize());
+                outputBuffer = ByteBuffer.allocateDirect(getOutputBufferSize());
+            } else {
+                inputBuffer = ByteBuffer.allocate(getInputBufferSize());
+                outputBuffer = ByteBuffer.allocate(getOutputBufferSize());
+            }
         }
 
         /**
          * Return the input buffer of the thread.
          * @return Input buffer.
          */
-        public ByteBuffer getInputBuffer() {
+        public final ByteBuffer getInputBuffer() {
             return inputBuffer;
         }
 
@@ -322,7 +351,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
          * Return the output buffer of the thread.
          * @return Output buffer.
          */
-        public ByteBuffer getOutputBuffer() {
+        public final ByteBuffer getOutputBuffer() {
             return outputBuffer;
         }
 

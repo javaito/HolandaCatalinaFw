@@ -5,7 +5,7 @@ package org.hcjf.io.net;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class StreamingNetPackage extends NetPackage {
+public class StreamingNetPackage extends DefaultNetPackage {
 
     private final NetStreamingSource source;
 

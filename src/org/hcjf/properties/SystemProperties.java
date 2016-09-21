@@ -48,10 +48,12 @@ public final class SystemProperties extends Properties {
     public static final String NET_CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
     public static final String NET_CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
     public static final String NET_WRITE_TIMEOUT = "hcjf.net.write.timeout";
-    public static final String NET_IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.io.thread.pool.keep.alive.time";
+    public static final String NET_IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
     public static final String NET_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.max.io.thread.pool.size";
     public static final String NET_DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
     public static final String NET_DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
+    public static final String NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
+    public static final String NET_SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.max.io.thread.pool.size";
 
     public static final String HTTP_SERVER_NAME = "hcjf.http.server.name";
     public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
@@ -64,6 +66,9 @@ public final class SystemProperties extends Properties {
     public static final String HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.http.default.client.connect.timeout";
     public static final String HTTP_DEFAULT_CLIENT_READ_TIMEOUT = "hcjf.http.default.client.read.timeout";
     public static final String HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.http.default.client.write.timeout";
+
+    public static final String HTTPS_DEFAULT_SERVER_PORT = "hcjf.https.default.server.port";
+    public static final String HTTPS_DEFAULT_CLIENT_PORT = "hcjf.https.default.server.port";
 
     public static final String REST_DEFAULT_MIME_TYPE = "hcjf.rest.default.mime.type";
     public static final String REST_DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
@@ -113,8 +118,8 @@ public final class SystemProperties extends Properties {
         defaults.put(LOG_SYSTEM_OUT_ENABLED, "false");
         defaults.put(LOG_QUEUE_INITIAL_SIZE, "10000");
 
-        defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
-        defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");
+        defaults.put(NET_INPUT_BUFFER_SIZE, "32768");
+        defaults.put(NET_OUTPUT_BUFFER_SIZE, "32768");
         defaults.put(NET_CONNECTION_TIMEOUT_AVAILABLE, "true");
         defaults.put(NET_CONNECTION_TIMEOUT, "10000");
         defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
@@ -123,6 +128,8 @@ public final class SystemProperties extends Properties {
         defaults.put(NET_MAX_IO_THREAD_POOL_SIZE, "10000");
         defaults.put(NET_DEFAULT_INPUT_BUFFER_SIZE, "5000");
         defaults.put(NET_DEFAULT_OUTPUT_BUFFER_SIZE, "5000");
+        defaults.put(NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
+        defaults.put(NET_SSL_MAX_IO_THREAD_POOL_SIZE, "2");
 
         defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
         defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
@@ -135,6 +142,9 @@ public final class SystemProperties extends Properties {
         defaults.put(HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT, "10000");
         defaults.put(HTTP_DEFAULT_CLIENT_READ_TIMEOUT, "10000");
         defaults.put(HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT, "10000");
+
+        defaults.put(HTTPS_DEFAULT_SERVER_PORT, "443");
+        defaults.put(HTTPS_DEFAULT_CLIENT_PORT, "443");
 
         defaults.put(REST_DEFAULT_MIME_TYPE, "application/json");
         defaults.put(REST_DEFAULT_ENCODING_IMPL, "hcjf");

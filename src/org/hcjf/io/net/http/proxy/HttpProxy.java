@@ -26,10 +26,17 @@ public class HttpProxy extends HttpServer {
 
         defaultContext = new Context(DEFAULT_CONTEXT_REGEX) {
 
-
             @Override
             public HttpResponse onContext(HttpRequest request) {
-                return null;
+                HttpResponse response = null;
+                for(HttpProxyRule rule : rules) {
+                    if(rule.evaluate(request)) {
+                        ProxyTask task = rule.getTask();
+                        response = task.execute(request);
+                        break;
+                    }
+                }
+                return response;
             }
 
         };

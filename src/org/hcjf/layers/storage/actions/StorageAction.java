@@ -85,7 +85,6 @@ public abstract class StorageAction<S extends StorageSession> {
      * @param object
      */
     public final void add(Object object) {
-        //TODO: set the environment annotations
         for(Introspection.Getter getter : Introspection.getGetters(object.getClass()).values()) {
             try {
                 add(getter.getResourceName(), new FieldStorageValue(getter.get(object), getter.getAnnotationsMap()));

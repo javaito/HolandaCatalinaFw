@@ -255,7 +255,7 @@ public class Query {
         Set<O> result;
 
         if(objects.size() > 0) {
-            result = evaluate(objects, new IntrospectionConsumer(objects.iterator().next().getClass()));
+            result = evaluate(objects, new IntrospectionConsumer<>(objects.iterator().next().getClass()));
         } else {
             result = Collections.EMPTY_SET;
         }
@@ -275,7 +275,7 @@ public class Query {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public <O extends Object> Set<O> evaluate(Collection<O> objects, Consumer consumer) {
+    public <O extends Object> Set<O> evaluate(Collection<O> objects, Consumer<O> consumer) {
         Set<O> result;
 
         if(orderFields.size() > 0) {
@@ -353,7 +353,7 @@ public class Query {
      * different collection of naming data to be useful in evaluation
      * process.
      */
-    public interface Consumer {
+    public interface Consumer<O extends Object> {
 
         /**
          * Get naming information from an instance.
@@ -362,19 +362,27 @@ public class Query {
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
-        public <R extends Object> R get(Object instance, String fieldName);
+        public <R extends Object> R get(O instance, String fieldName);
 
     }
 
     /**
      * This private class is the default consume method of the queries.
      */
-    private static class IntrospectionConsumer implements Consumer {
+    private static class IntrospectionConsumer<O extends Object> implements Consumer<O> {
 
         private final Map<String, Introspection.Getter> getterMap;
 
         public IntrospectionConsumer(Class clazz) {
             getterMap = Introspection.getGetters(clazz);
+        }
+
+        /**
+         *
+         * @return
+         */
+        protected final Map<String, Introspection.Getter> getGetterMap() {
+            return getterMap;
         }
 
         /**
@@ -386,7 +394,7 @@ public class Query {
          * by the parameter name.
          */
         @Override
-        public <R extends Object> R get(Object instance, String fieldName) {
+        public <R extends Object> R get(O instance, String fieldName) {
             Object result = null;
             try {
                 Introspection.Getter getter = getterMap.get(fieldName);

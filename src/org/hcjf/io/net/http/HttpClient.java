@@ -6,6 +6,8 @@ import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
 import org.hcjf.properties.SystemProperties;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -17,6 +19,8 @@ import java.net.URL;
 public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
     public static final String HTTP_CLIENT_LOG_TAG = "HTTP_CLIENT";
+    private static final String HTTP_PROTOCOL = "http";
+    private static final String HTTPS_PROTOCOL = "https";
 
     private final URL url;
     private Status status;
@@ -30,7 +34,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     public HttpClient(URL url) {
         super(url.getHost(), url.getPort() == -1 ? url.getDefaultPort() :
                 SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_CLIENT_PORT),
-                NetService.TransportLayerProtocol.TCP);
+                url.getProtocol().equals(HTTPS_PROTOCOL) ? NetService.TransportLayerProtocol.TCP_SSL : NetService.TransportLayerProtocol.TCP);
         this.url = url;
         this.connectTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT);
         this.writeTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT);
@@ -121,6 +125,26 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     public final void addHttpHeader(String header) {
         request.addHeader(new HttpHeader(header));
+    }
+
+    /**
+     *
+     * @param header
+     */
+    public final void addHttpHeader(HttpHeader header) {
+        request.addHeader(header);
+    }
+
+    @Override
+    protected SSLEngine createSSLEngine() {
+        try {
+            SSLEngine engine = SSLContext.getDefault().createSSLEngine();
+            engine.setUseClientMode(true);
+            engine.beginHandshake();
+            return engine;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Unsupported ssl engine", ex);
+        }
     }
 
     /**

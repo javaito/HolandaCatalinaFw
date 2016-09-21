@@ -8,37 +8,19 @@ import java.util.UUID;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class NetPackage {
+public abstract class NetPackage {
 
     private final UUID id;
-    private NetSession session;
-    private final String remoteHost;
-    private final String remoteAddress;
-    private final int remotePort;
-    private final int localPort;
-    private final byte[] payload;
-    private final Date date;
-    private final ActionEvent actionEvent;
-    private PackageStatus packageStatus;
 
-    public NetPackage(String remoteHost, String remoteAddress,
-                      int remotePort, int localPort, byte[] payload, ActionEvent actionEvent) {
+    public NetPackage() {
         this.id = UUID.randomUUID();
-        this.remoteHost = remoteHost;
-        this.remoteAddress = remoteAddress;
-        this.remotePort = remotePort;
-        this.localPort = localPort;
-        this.payload = payload;
-        this.date = new Date();
-        this.actionEvent = actionEvent;
-        this.packageStatus = PackageStatus.WAITING;
     }
 
     /**
      * Return the package id.
      * @return Package id.
      */
-    public UUID getId() {
+    public final UUID getId() {
         return id;
     }
 
@@ -46,88 +28,146 @@ public class NetPackage {
      * Return the net session of the package.
      * @return Net session.
      */
-    public NetSession getSession() {
-        return session;
-    }
+    public abstract NetSession getSession();
 
     /**
      * Set the session over the package was created.
      * @param session Net session
      */
-    public void setSession(NetSession session) {
-        this.session = session;
-    }
+    public abstract void setSession(NetSession session);
 
     /**
      * Return the payload of the package.
      * @return Payload of the package.
      */
-    public byte[] getPayload() {
-        return payload;
-    }
+    public abstract byte[] getPayload();
 
     /**
      * Return the remote ip address.
      * @return Remote ip address.
      */
-    public String getRemoteAddress() {
-        return remoteAddress;
-    }
+    public abstract String getRemoteAddress();
 
     /**
      * Return the address of the remote host.
      * @return Address of the remote host.
      */
-    public String getRemoteHost() {
-        return remoteHost;
-    }
+    public abstract String getRemoteHost();
 
     /**
      * Return the port of the remote host.
      * @return Port of the remote host.
      */
-    public int getRemotePort() {
-        return remotePort;
-    }
+    public abstract int getRemotePort();
 
     /**
      * Return the local port on the connections was stablished
      * @return Local port.
      */
-    public int getLocalPort() {
-        return localPort;
-    }
+    public abstract int getLocalPort();
 
     /**
      * Return the creation date of the package.
      * @return Creation date of the package.
      */
-    public Date getDate() {
-        return date;
-    }
+    public abstract Date getDate();
 
     /**
      * Return the action event.
      * @return Action event.
      */
-    public ActionEvent getActionEvent() {
-        return actionEvent;
-    }
+    public abstract ActionEvent getActionEvent();
 
     /**
      * Return the status of the package.
      * @return Package's status.
      */
-    public PackageStatus getPackageStatus() {
-        return packageStatus;
-    }
+    public abstract PackageStatus getPackageStatus();
 
     /**
      * Set a new package status.
      * @param packageStatus Package's status
      */
-    public void setPackageStatus(PackageStatus packageStatus) {
-        this.packageStatus = packageStatus;
+    public abstract void setPackageStatus(PackageStatus packageStatus);
+
+    /**
+     * Create a wrapper of the net package using other pay load.
+     * @param netPackage Package to wrap.
+     * @param newPayLoad New pay load.
+     * @return Net package wrapper.
+     */
+    public static final NetPackage wrap(NetPackage netPackage, byte[] newPayLoad) {
+        return new NetPackageWrapper(netPackage, newPayLoad);
+    }
+
+    public static final class NetPackageWrapper extends NetPackage {
+
+        private final NetPackage netPackage;
+        private final byte[] payLoad;
+
+        private NetPackageWrapper(NetPackage netPackage, byte[] payLoad) {
+            this.netPackage = netPackage;
+            this.payLoad = payLoad;
+        }
+
+        public NetPackage getNetPackage() {
+            return netPackage;
+        }
+
+        @Override
+        public NetSession getSession() {
+            return netPackage.getSession();
+        }
+
+        @Override
+        public void setSession(NetSession session) {
+            netPackage.setSession(session);
+        }
+
+        @Override
+        public byte[] getPayload() {
+            return payLoad;
+        }
+
+        @Override
+        public String getRemoteAddress() {
+            return netPackage.getRemoteAddress();
+        }
+
+        @Override
+        public String getRemoteHost() {
+            return netPackage.getRemoteHost();
+        }
+
+        @Override
+        public int getRemotePort() {
+            return netPackage.getRemotePort();
+        }
+
+        @Override
+        public int getLocalPort() {
+            return netPackage.getLocalPort();
+        }
+
+        @Override
+        public Date getDate() {
+            return netPackage.getDate();
+        }
+
+        @Override
+        public ActionEvent getActionEvent() {
+            return netPackage.getActionEvent();
+        }
+
+        @Override
+        public PackageStatus getPackageStatus() {
+            return netPackage.getPackageStatus();
+        }
+
+        @Override
+        public void setPackageStatus(PackageStatus packageStatus) {
+            netPackage.setPackageStatus(packageStatus);
+        }
     }
 
     /**

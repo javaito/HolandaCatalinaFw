@@ -20,9 +20,9 @@ import java.util.UUID;
  */
 public class CrudContext extends EndPoint<CrudLayerInterface> {
 
-    private static final Integer CRUD_RESOURCE_NAME_INDEX = 3;
-    private static final Integer CRUD_RESOURCE_ACTION_INDEX = 4;
-    private static final Integer CRUD_QUERY_ID_INDEX = 5;
+    private static final Integer CRUD_RESOURCE_NAME_INDEX = 2;
+    private static final Integer CRUD_RESOURCE_ACTION_INDEX = 3;
+    private static final Integer CRUD_QUERY_ID_INDEX = 4;
 
     public CrudContext(String groupName, String resourceName) {
         super(groupName, resourceName);

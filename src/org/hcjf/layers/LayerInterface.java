@@ -9,14 +9,14 @@ import java.lang.reflect.InvocationHandler;
 public interface LayerInterface extends InvocationHandler {
 
     /**
-     *
-     * @return
+     * Return the layer implementation name.
+     * @return Layer implementation name.
      */
     public String getImplName();
 
     /**
-     *
-     * @return
+     * Return if the layer is stateful or not.
+     * @return Stateful
      */
     public boolean isStateful();
 
