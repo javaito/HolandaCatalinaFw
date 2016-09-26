@@ -6,12 +6,13 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- *
+ * This class contains a set of utilities to optimize the introspection native methods.
  * @author javaito
  * @mail javaito@gmail.com
  */
@@ -25,6 +26,7 @@ public final class Introspection {
 
     private static final Map<Class, Map<String, Getter>> gettersCache = new HashMap<>();
     private static final Map<Class, Map<String, Setter>> settersCache = new HashMap<>();
+    private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
 
     /**
      * Returns the subclass of the class specified as a parameter whose simple name
@@ -42,6 +44,50 @@ public final class Introspection {
         } catch (Exception ex) {
             throw new IllegalArgumentException("Sub class of " + superClass.getName() + " called " + className + " not found", ex);
         }
+    }
+
+    /**
+     * Return a map with all the methods founded in the class applying the filter, indexed
+     * by the filter definition.
+     * @param clazz Class to be inspected.
+     * @param filter Filter to apply.
+     * @param <I>
+     * @return Return the founded invokers.
+     */
+    public static <I extends Invoker> Map<String, I> getInvokers(Class clazz, InvokerFilter<I> filter) {
+        Map<String, I> result = new HashMap<>();
+        String invokerKey = getInvokerKey(clazz, filter);
+
+        if(!clazz.equals(Object.class)) {
+            synchronized (gettersCache) {
+                if(!invokerCache.containsKey(invokerKey)) {
+                    invokerCache.put(invokerKey, result);
+                    for(Method method : clazz.getDeclaredMethods()) {
+                        InvokerEntry<I> entry = filter.filter(method);
+                        if(entry != null) {
+                            result.put(entry.getKey(), entry.getInvoker());
+                        }
+                    }
+                    if(!clazz.getSuperclass().equals(Objects.class)) {
+                        result.putAll(getInvokers(clazz.getSuperclass(), filter));
+                    }
+                } else {
+                    result = (Map<String, I>) invokerCache.get(invokerKey);
+                }
+            }
+        }
+
+        return Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * Return the key in order to index the filter result.
+     * @param clazz Class to be filtered.
+     * @param filter Filter
+     * @return Filter key.
+     */
+    private static String getInvokerKey(Class clazz, InvokerFilter filter) {
+        return clazz.getName() + filter.getClass().getName();
     }
 
     /**
@@ -83,35 +129,21 @@ public final class Introspection {
      * @return All the accessors founded indexed by the possible field name.
      */
     public static Map<String, Getter> getGetters(Class clazz) {
-        Map<String, Getter> result = new HashMap<>();
-
-        if(!clazz.equals(Object.class)) {
-            synchronized (gettersCache) {
-                if(!gettersCache.containsKey(clazz)) {
-                    gettersCache.put(clazz, result);
-                    Matcher matcher;
-                    String fieldName;
-                    for(Method method : clazz.getDeclaredMethods()) {
-                        if(Modifier.isPublic(method.getModifiers())) {
-                            matcher = GETTER_METHODS_PATTERN.matcher(method.getName());
-                            if(matcher.matches() && !method.getReturnType().equals(Void.TYPE) &&
-                                    method.getParameterTypes().length == 0) {
-                                fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
-                                        matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
-                                result.put(fieldName, new Getter(clazz, fieldName, method));
-                            }
-                        }
-                    }
-                } else {
-                    result = gettersCache.get(clazz);
+        Map<String, Getter> result = getInvokers(clazz, method -> {
+            InvokerEntry<Getter> result1 = null;
+            Matcher matcher;
+            String fieldName;
+            if(Modifier.isPublic(method.getModifiers())) {
+                matcher = GETTER_METHODS_PATTERN.matcher(method.getName());
+                if(matcher.matches() && !method.getReturnType().equals(Void.TYPE) &&
+                        method.getParameterTypes().length == 0) {
+                    fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
+                            matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
+                    result1 = new InvokerEntry<>(fieldName, new Getter(clazz, fieldName, method));
                 }
             }
-
-            if(!clazz.getSuperclass().equals(Objects.class)) {
-                result.putAll(getGetters(clazz.getSuperclass()));
-            }
-        }
-
+            return result1;
+        });
         return Collections.unmodifiableMap(result);
     }
 
@@ -153,35 +185,21 @@ public final class Introspection {
      * @return All the accessors founded indexed by the possible field name.
      */
     public static Map<String, Setter> getSetters(Class clazz) {
-        Map<String, Setter> result = new HashMap<>();
-
-        if(!clazz.equals(Object.class)) {
-            synchronized (settersCache) {
-                if (!settersCache.containsKey(clazz)) {
-                    settersCache.put(clazz, result);
-                    Matcher matcher;
-                    String fieldName;
-                    for(Method method : clazz.getDeclaredMethods()) {
-                        if(Modifier.isPublic(method.getModifiers())) {
-                            matcher = SETTER_METHODS_PATTERN.matcher(method.getName());
-                            if(matcher.matches() && method.getReturnType().equals(Void.TYPE) &&
-                                    method.getParameterTypes().length == 1) {
-                                fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
-                                        matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
-                                result.put(fieldName, new Setter(clazz, fieldName, method));
-                            }
-                        }
-                    }
-                } else {
-                    result = settersCache.get(clazz);
+        Map<String, Setter> result = getInvokers(clazz, method -> {
+            InvokerEntry<Setter> result1 = null;
+            Matcher matcher;
+            String fieldName;
+            if(Modifier.isPublic(method.getModifiers())) {
+                matcher = SETTER_METHODS_PATTERN.matcher(method.getName());
+                if(matcher.matches() && method.getReturnType().equals(Void.TYPE) &&
+                        method.getParameterTypes().length == 1) {
+                    fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
+                            matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
+                    result1 = new InvokerEntry<>(fieldName, new Setter(clazz, fieldName, method));
                 }
             }
-
-            if(!clazz.getSuperclass().equals(Objects.class)) {
-                result.putAll(getSetters(clazz.getSuperclass()));
-            }
-        }
-
+            return result1;
+        });
         return Collections.unmodifiableMap(result);
     }
 
@@ -196,7 +214,13 @@ public final class Introspection {
             this.method = method;
             this.annotationsMap = new HashMap<>();
             for(Annotation annotation : method.getAnnotations()) {
-                annotationsMap.put(annotation.getClass(), annotation);
+                Class annotationClass = null;
+                for(Class interfaceClass : annotation.getClass().getInterfaces()) {
+                    if(Annotation.class.isAssignableFrom(interfaceClass)) {
+                        annotationClass = interfaceClass;
+                    }
+                }
+                annotationsMap.put(annotationClass, annotation);
             }
         }
 
@@ -344,6 +368,53 @@ public final class Introspection {
          */
         public Class getParameterType() {
             return parameterType;
+        }
+    }
+
+    /**
+     * This interface must be implemented to found some kind of methods implemented
+     * in the any class.
+     * @param <I>
+     */
+    public interface InvokerFilter<I extends Invoker> {
+
+        /**
+         * This method will be called for each method of the filtered class.
+         * @param method Declared method.
+         * @return Return the entry or null if the method does not comply with the rule
+         */
+        public InvokerEntry<I> filter(Method method);
+
+    }
+
+    /**
+     * This class represents the object returned by the invoker filter.
+     * @param <I>
+     */
+    private static class InvokerEntry<I extends Invoker> {
+
+        private final String key;
+        private final I invoker;
+
+        public InvokerEntry(String key, I invoker) {
+            this.key = key;
+            this.invoker = invoker;
+        }
+
+        /**
+         * Return the key of the entry.
+         * @return Key of the entry.
+         */
+        public String getKey() {
+            return key;
+        }
+
+        /**
+         * Return the value of the entry.
+         * @return Value of the entry.
+         */
+        public I getInvoker() {
+            return invoker;
         }
     }
 }
