@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * This class contains a set of utilities to optimize the introspection native methods.
  * @author javaito
- * @mail javaito@gmail.com
+ * @email javaito@gmail.com
  */
 public final class Introspection {
 
@@ -24,8 +24,6 @@ public final class Introspection {
     private static final int SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP = 2;
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
 
-    private static final Map<Class, Map<String, Getter>> gettersCache = new HashMap<>();
-    private static final Map<Class, Map<String, Setter>> settersCache = new HashMap<>();
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
 
     /**
@@ -59,7 +57,7 @@ public final class Introspection {
         String invokerKey = getInvokerKey(clazz, filter);
 
         if(!clazz.equals(Object.class)) {
-            synchronized (gettersCache) {
+            synchronized (invokerCache) {
                 if(!invokerCache.containsKey(invokerKey)) {
                     invokerCache.put(invokerKey, result);
                     for(Method method : clazz.getDeclaredMethods()) {
