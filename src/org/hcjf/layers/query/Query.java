@@ -35,6 +35,17 @@ public class Query {
         this(new QueryId());
     }
 
+    private Query(Query source) {
+        this.id = new QueryId();
+        this.limit = source.limit;
+        this.pageStart = source.pageStart;
+        this.desc = source.desc;
+        this.orderFields = new ArrayList<>();
+        this.orderFields.addAll(source.orderFields);
+        this.evaluators = new HashSet<>();
+        this.evaluators.addAll(source.evaluators);
+    }
+
     /**
      * Return the id of the query.
      * @return Id of the query.
@@ -322,6 +333,26 @@ public class Query {
         }
 
         return result;
+    }
+
+    /**
+     * Return a copy of this query without all the evaluator and order fields of the
+     * parameter collections.
+     * @param evaluators Evaluators to reduce.
+     * @param orderFields Order fields to reduce.
+     * @return Reduced copy of the query.
+     */
+    public final Query reduce(Collection<Evaluator> evaluators, Collection<String> orderFields) {
+        Query copy = new Query(this);
+        if(evaluators != null) {
+            copy.evaluators.removeAll(evaluators);
+        }
+
+        if(orderFields != null) {
+            copy.orderFields.removeAll(orderFields);
+        }
+
+        return copy;
     }
 
     /**

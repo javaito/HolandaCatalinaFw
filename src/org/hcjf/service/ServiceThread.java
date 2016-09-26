@@ -2,10 +2,7 @@ package org.hcjf.service;
 
 import org.hcjf.layers.Layer;
 
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * This are the thread created by the factory in the
@@ -18,15 +15,14 @@ public class ServiceThread extends Thread {
 
     private static final String NAME = "ServiceThread";
 
-    private final Queue<Class<? extends Layer>> layerStack;
+    private ServiceSession session;
 
-    /**
-     * Constructor of the service thread.
-     * @param target Runnable objet with the custom task.
-     */
     public ServiceThread(Runnable target) {
-        super(ServiceThreadGroup.getInstance(), target, NAME + UUID.randomUUID().toString());
-        layerStack = new PriorityQueue<>();
+        this(target, NAME + UUID.randomUUID().toString());
+    }
+
+    public ServiceThread(Runnable target, String name) {
+        super(ServiceThreadGroup.getInstance(), target, name);
     }
 
     /**
@@ -34,13 +30,37 @@ public class ServiceThread extends Thread {
      * @param layerClass Layer class.
      */
     public final void putLayer(Class<? extends Layer> layerClass) {
-        layerStack.add(layerClass);
+        getSession().putLayer(layerClass);
     }
 
     /**
      * Remove the head of the layer stack.
      */
     public final void removeLayer() {
-        layerStack.remove();
+        getSession().removeLayer();
+    }
+
+    /**
+     *
+     * @return
+     */
+    public Class[] getLayerStack() {
+        return getSession().getLayerStack();
+    }
+
+    /**
+     *
+     * @return
+     */
+    public ServiceSession getSession() {
+        return session;
+    }
+
+    /**
+     *
+     * @param session
+     */
+    public void setSession(ServiceSession session) {
+        this.session = session;
     }
 }

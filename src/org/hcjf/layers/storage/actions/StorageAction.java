@@ -4,6 +4,7 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.layers.storage.StorageAccessException;
 import org.hcjf.layers.storage.StorageLayer;
 import org.hcjf.layers.storage.StorageSession;
+import org.hcjf.layers.storage.values.StorageValue;
 import org.hcjf.log.Log;
 import org.hcjf.utils.Introspection;
 
@@ -23,13 +24,11 @@ public abstract class StorageAction<S extends StorageSession> {
     private String resourceName;
     private final Map<String, StorageValue> values;
     private Query query;
-    private final Map<Class<? extends Annotation>, Annotation> environmentAnnotations;
     private Class resultType;
 
     public StorageAction(S session) {
         this.session = session;
         this.values = new HashMap<>();
-        this.environmentAnnotations = new HashMap<>();
     }
 
     /**
@@ -50,7 +49,8 @@ public abstract class StorageAction<S extends StorageSession> {
     }
 
     /**
-     *
+     * Returns the name of the resource upon which the action will be executed
+     * @param resourceName Resource name.
      */
     public final void setResourceName(String resourceName) {
         this.resourceName = resourceName;
@@ -81,8 +81,8 @@ public abstract class StorageAction<S extends StorageSession> {
     }
 
     /**
-     *
-     * @param object
+     * Add an object like data source for the action.
+     * @param object Data source object.
      */
     public final void add(Object object) {
         for(Introspection.Getter getter : Introspection.getGetters(object.getClass()).values()) {
@@ -96,15 +96,15 @@ public abstract class StorageAction<S extends StorageSession> {
     }
 
     /**
-     *
-     * @param object
+     * This method will called when a data source object is added.
+     * @param object Data source object.
      */
     protected void onAdd(Object object) {}
 
     /**
-     *
-     * @param fieldName
-     * @param value
+     * Add some primitive value to the action.
+     * @param fieldName Name of the value.
+     * @param value Value.
      */
     public final void add(String fieldName, Object value) {
         if(fieldName == null || fieldName.length() == 0) {
@@ -115,81 +115,39 @@ public abstract class StorageAction<S extends StorageSession> {
     }
 
     /**
-     *
-     * @param fieldName
-     * @param value
+     * Add value to the action.
+     * @param fieldName Name of the value.
+     * @param value Value.
      */
     private void add(String fieldName, StorageValue value) {
         values.put(fieldName, value);
     }
 
     /**
-     *
-     * @return
+     * Return the query associated to the action.
+     * @return Associated query.
      */
     protected final Query getQuery() {
         return query;
     }
 
     /**
-     *
-     * @param query
+     * Set the associated query to the action.
+     * @param query Associated query.
      */
     public final void setQuery(Query query) {
         this.query = query;
     }
 
     /**
-     *
-     * @param annotationClass
-     * @return
-     */
-    public final boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
-        return environmentAnnotations.containsKey(annotationClass);
-    }
-
-    /**
-     *
-     * @param annotationClass
-     * @param <A>
-     * @return
-     */
-    public final <A extends Annotation> A getAnnotation(Class<? extends A> annotationClass) {
-        A result = null;
-        if(environmentAnnotations.containsKey(annotationClass)) {
-            result = (A) environmentAnnotations.get(annotationClass);
-        }
-        return result;
-    }
-
-    /**
-     *
-     * @return
+     * This method must be implemented for each action implementation
+     * @return Return the storage response for the action.
      */
     public abstract <R extends ResultSet> R execute() throws StorageAccessException;
 
     /**
-     *
-     */
-    protected class StorageValue {
-
-        private final Object value;
-
-        private StorageValue(Object value) {
-            this.value = value;
-        }
-
-        /**
-         *
-         * @return
-         */
-        public final Object getValue() {
-            return value;
-        }
-    }
-
-    /**
-     *
+     * Implementation of the {@link StorageValue} that contains all the information
+     * about of the class's member that contains the value.
      */
     protected class FieldStorageValue extends StorageValue {
 
@@ -201,19 +159,20 @@ public abstract class StorageAction<S extends StorageSession> {
         }
 
         /**
-         *
-         * @param annotationClass
-         * @return
+         * Check if the member value has some class of annotation.
+         * @param annotationClass Class of annotation.
+         * @return Return true if the member has the annotation and false in otherwise.
          */
         public final boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
             return accessorAnnotation.containsKey(annotationClass);
         }
 
         /**
-         *
-         * @param annotationClass
-         * @param <A>
-         * @return
+         * Return the annotation instance that contains the member.
+         * @param annotationClass Annotation class found.
+         * @param <A> Annotation class expected.
+         * @return Return the instance of the annotation or null if the member doesn't have
+         * the annotation.
          */
         public final <A extends Annotation> A getAnnotation(Class<? extends A> annotationClass) {
             A result = null;

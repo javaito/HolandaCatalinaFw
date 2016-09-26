@@ -4,10 +4,7 @@ import org.hcjf.properties.SystemProperties;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * This abstract class contains all the implementations and
@@ -32,14 +29,7 @@ public abstract class Service<C extends ServiceConsumer> {
         }
 
         this.serviceName = serviceName;
-        this.serviceThreadFactory = new ThreadFactory() {
-
-            @Override
-            public Thread newThread(Runnable r) {
-                return new ServiceThread(r);
-            }
-
-        };
+        this.serviceThreadFactory = createThreadFactory();
         this.serviceExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(this.serviceThreadFactory);
         this.serviceExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_MAX_SIZE));
         this.serviceExecutor.setKeepAliveTime(SystemProperties.getLong(SystemProperties.SERVICE_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
@@ -48,19 +38,48 @@ public abstract class Service<C extends ServiceConsumer> {
     }
 
     /**
-     * Return the internal thread factory of the services.
-     * @return Thread factory.
+     *
+     * @return
      */
-    protected final ThreadFactory getServiceThreadFactory() {
-        return serviceThreadFactory;
+    protected ThreadFactory createThreadFactory() {
+        return new ThreadFactory() {
+
+            @Override
+            public Thread newThread(Runnable r) {
+                return new ServiceThread(r);
+            }
+
+        };
     }
 
     /**
      * Return the internal thread pool executor of the service.
      * @return Thread pool executor.
      */
-    protected final ThreadPoolExecutor getServiceExecutor() {
+    private ThreadPoolExecutor getServiceExecutor() {
         return serviceExecutor;
+    }
+
+    /**
+     *
+     * @param runnable
+     */
+    protected final void fork(Runnable runnable) {
+        fork(runnable, getServiceExecutor());
+    }
+
+    /**
+     *
+     * @param runnable
+     * @param executor
+     * @return
+     */
+    protected final void fork(Runnable runnable, ThreadPoolExecutor executor) {
+        ServiceSession session = null;
+        if(Thread.currentThread() instanceof ServiceThread) {
+            session = ((ServiceThread) Thread.currentThread()).getSession();
+        }
+        executor.execute(new RunnableWrapper(runnable, session));
     }
 
     /**
@@ -119,6 +138,40 @@ public abstract class Service<C extends ServiceConsumer> {
          */
         private void register(Service service) {
             services.put(service.getServiceName(), service);
+        }
+    }
+
+    /**
+     *
+     */
+    private class RunnableWrapper implements Runnable {
+
+        private final Runnable runnable;
+        private final ServiceSession session;
+
+        public RunnableWrapper(Runnable runnable, ServiceSession session) {
+            this.runnable = runnable;
+            if(session != null) {
+                this.session = session;
+            } else {
+                this.session = ServiceSession.getGuestSession();
+            }
+        }
+
+        @Override
+        public void run() {
+            if(!(Thread.currentThread() instanceof ServiceThread)) {
+                throw new IllegalArgumentException("All the service executions must be over ServiceThread implementation");
+            }
+
+            try {
+                session.startThread();
+                ((ServiceThread) Thread.currentThread()).setSession(session);
+                runnable.run();
+            } finally {
+                session.endThread();
+                ((ServiceThread) Thread.currentThread()).setSession(null);
+            }
         }
     }
 }

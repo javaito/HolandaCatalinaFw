@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Stream;
 
@@ -38,7 +39,7 @@ public final class Log extends Service<LogPrinter> {
 
     private final List<LogPrinter> printers;
     private final Queue<LogRecord> queue;
-    private Thread thread;
+    private final Object logMonitor;
 
     /**
      * Private constructor
@@ -49,6 +50,7 @@ public final class Log extends Service<LogPrinter> {
         this.queue = new PriorityBlockingQueue<>(
                 SystemProperties.getInteger(SystemProperties.LOG_QUEUE_INITIAL_SIZE),
                 (o1, o2) -> (int)((o1.getDate().getTime() / 1000) - (o2.getDate().getTime() / 1000)));
+        this.logMonitor = new Object();
         init();
     }
 
@@ -57,8 +59,7 @@ public final class Log extends Service<LogPrinter> {
      */
     @Override
     protected void init() {
-        this.thread = getServiceThreadFactory().newThread(new LogRunnable());
-        this.thread.start();
+        fork(new LogRunnable());
         List<String> logConsumers = SystemProperties.getList(SystemProperties.LOG_CONSUMERS);
         logConsumers.forEach(S -> {
             try {
@@ -90,8 +91,8 @@ public final class Log extends Service<LogPrinter> {
      */
     private void addRecord(LogRecord record) {
         if(instance.queue.add(record)) {
-            synchronized (this.thread) {
-                this.thread.notify();
+            synchronized (this.logMonitor) {
+                this.logMonitor.notify();
             }
         }
     }
@@ -225,9 +226,9 @@ public final class Log extends Service<LogPrinter> {
         public void run() {
             while(!Thread.currentThread().isInterrupted()) {
                 if(instance.queue.isEmpty()) {
-                    synchronized (Thread.currentThread()) {
+                    synchronized (Log.this.logMonitor) {
                         try {
-                            Thread.currentThread().wait();
+                            Log.this.logMonitor.wait();
                         } catch (InterruptedException e) {}
                     }
                 }

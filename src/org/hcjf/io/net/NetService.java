@@ -103,7 +103,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             setSelector(SelectorProvider.provider().openSelector());
             running = true;
 
-            getServiceExecutor().execute(() -> runNetService());
+            fork(() -> runNetService());
         } catch (IOException ex) {
             Log.e(NET_SERVICE_LOG_TAG, "Unable to init net service $1", ex, this);
         }
@@ -532,7 +532,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
             } catch(SecurityException ex){}
 
-            long nanoTimeCount;
             boolean removeKey;
             while(running){
                 //Select the next schedule key or sleep if the aren't any key
@@ -544,7 +543,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                     selectedKeys = getSelector().selectedKeys().iterator();
                 }
                 while (selectedKeys.hasNext()) {
-                    nanoTimeCount = System.nanoTime();
                     final SelectionKey key = (SelectionKey) selectedKeys.next();
 
                     //This flag is to indicate whether the key has to be removed once processed
@@ -566,7 +564,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 if(keyChannel != null && key.channel().isOpen()) {
                                     if(key.isValid()) {
                                         try {
-                                            consumer.getIoExecutor().execute(() -> {
+                                            fork(() -> {
                                                 try {
                                                     if (key.isValid()) {
                                                         if (key.isReadable() ) {
@@ -581,7 +579,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                 } catch (Exception ex) {
                                                     Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
                                                 }
-                                            });
+                                            }, consumer.getIoExecutor());
                                         } catch (RejectedExecutionException ex){
                                             Log.d(NET_SERVICE_LOG_TAG, "IO Rejected execution");
                                             //Update the flag in order to process the key again.y
@@ -597,10 +595,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                         }
                     }
 
-                    //TODO: Create statistics
-                    //getStatistics().putDelayMainCycle(System.nanoTime() - nanoTimeCount);
-                    //TODO: Create statistics
-                    //getStatistics().updateIOStatistics(getIoExecutor(), getObserverExecutor());
                     if(removeKey) {
                         selectedKeys.remove();
                     }
@@ -715,8 +709,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                         ioThread.getInputBuffer().rewind();
                         totalSize += readSize = channel.read(ioThread.getInputBuffer());
                         while(readSize > 0){
-                            //TODO: Create statistics
-                            //getStatistics().putReadLatency((System.nanoTime() - nanoTime) / readSize);
                             readData.write(ioThread.getInputBuffer().array(), 0, readSize);
                             readData.flush();
                             ioThread.getInputBuffer().rewind();
@@ -948,7 +940,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         netPackage.getSource().init(this, channel, netPackage);
         synchronized(netPackage.getSession()){
             netPackage.getSession().lock();
-            getServiceExecutor().execute(netPackage.getSource());
+            fork(netPackage.getSource());
         }
     }
 

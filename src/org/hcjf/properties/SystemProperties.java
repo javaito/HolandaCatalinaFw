@@ -30,6 +30,7 @@ public final class SystemProperties extends Properties {
 
     public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
     public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
+    public static final String SERVICE_GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
 
     public static final String LOG_FILE_PREFIX = "hcfj.log.file.prefix";
     public static final String LOG_ERROR_FILE = "hcfj.log.error.file";
@@ -53,7 +54,7 @@ public final class SystemProperties extends Properties {
     public static final String NET_DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
     public static final String NET_DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
     public static final String NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
-    public static final String NET_SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.max.io.thread.pool.size";
+    public static final String NET_SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
 
     public static final String HTTP_SERVER_NAME = "hcjf.http.server.name";
     public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
@@ -106,6 +107,7 @@ public final class SystemProperties extends Properties {
 
         defaults.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
         defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
+        defaults.put(SERVICE_GUEST_SESSION_NAME, "Guest");
 
         defaults.put(LOG_FILE_PREFIX, "hcfj");
         defaults.put(LOG_ERROR_FILE, "false");

@@ -2,7 +2,7 @@ package org.hcjf.layers.query;
 
 /**
  * This abstract class define the structure of the evaluating. The evaluator
- * is the implementation of a method to decide if an object is part of the result add
+ * is the implementation of a method to decide if an object is part of the result
  * of the query or not is.
  * @author javaito
  * @mail javaito@gmail.com

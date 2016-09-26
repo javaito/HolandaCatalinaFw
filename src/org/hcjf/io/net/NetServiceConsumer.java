@@ -4,6 +4,7 @@ import org.hcjf.io.net.ssl.SSLHelper;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceConsumer;
+import org.hcjf.service.ServiceThread;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
@@ -323,7 +324,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     /**
      * Net IO thread.
      */
-    public class NetIOThread extends Thread {
+    public class NetIOThread extends ServiceThread {
 
         private final ByteBuffer inputBuffer;
         private final ByteBuffer outputBuffer;

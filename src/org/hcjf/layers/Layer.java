@@ -82,15 +82,16 @@ public abstract class Layer implements LayerInterface {
         ServiceThread serviceThread = null;
         if(Thread.currentThread() instanceof ServiceThread) {
             serviceThread = (ServiceThread) Thread.currentThread();
+            serviceThread.putLayer(getClass());
         }
 
         Object result;
-        if(serviceThread != null) {
-            serviceThread.putLayer(getClass());
-        }
-        result = method.invoke(this, args);
-        if(serviceThread != null) {
-            serviceThread.removeLayer();
+        try {
+            result = method.invoke(this, args);
+        } finally {
+            if(serviceThread != null) {
+                serviceThread.removeLayer();
+            }
         }
         return result;
     }
