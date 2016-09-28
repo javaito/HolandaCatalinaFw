@@ -18,7 +18,7 @@ public abstract class SharedMemory extends Service<SharedMemory.SharedMemoryCons
     private static final String SHARED_MEMORY_SERVICE_NAME = "Shared Memory";
 
     public SharedMemory() {
-        super(SHARED_MEMORY_SERVICE_NAME);
+        super(SHARED_MEMORY_SERVICE_NAME, 1);
     }
 
     /**

@@ -28,7 +28,7 @@ public final class Naming extends Service<NamingConsumer> {
      * @throws NullPointerException If the name is null.
      */
     private Naming() {
-        super(NAME);
+        super(NAME, 1);
         consumers = new HashMap<>();
     }
 

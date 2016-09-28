@@ -1,17 +1,15 @@
 package org.hcjf.layers;
 
 import java.lang.reflect.Proxy;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  *
  * @author javaito
- * @mail javaito@gmail.com
+ * @email javaito@gmail.com
  */
-public class Layers {
+public final class Layers {
 
     private static final Layers instance;
 
@@ -28,11 +26,13 @@ public class Layers {
     }
 
     /**
-     *
-     * @param layerClass
-     * @param implName
-     * @param <L>
-     * @return
+     * Return the layer interface implementation indexed by implName parameter.
+     * @param layerClass Layer interface for the expected implementation.
+     * @param implName Implementation name.
+     * @param <L> Expected interface.
+     * @return Interface implementation.
+     * @throws IllegalArgumentException If can't create the instance or the implementation
+     * does't exist.
      */
     public static <L extends LayerInterface> L get(Class<? extends L> layerClass, String implName) {
         L result = null;

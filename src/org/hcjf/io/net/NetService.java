@@ -14,6 +14,7 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * This class implements a service that provide an
@@ -61,7 +62,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     private boolean running;
 
     private NetService(String serviceName) {
-        super(serviceName);
+        super(serviceName, 2);
 
         this.random = new Random();
         this.timer = new Timer();
@@ -114,16 +115,53 @@ public final class NetService extends Service<NetServiceConsumer> {
      * method 'shutdown' of the class has been called.
      */
     @Override
-    protected void shutdown() {
-        shuttingDown = true;
-        getSelector().wakeup();
+    protected void shutdown(ShutdownStage stage) {
+        switch (stage) {
+            case START: {
+                shuttingDown = true;
+                getSelector().wakeup();
+                break;
+            }
+            case END: {
+                for(NetSession session : getSessions()){
+                    disconnect(session, "");
+                }
 
-        for(NetSession session : getSessions()){
-            disconnect(session, "");
+                running = false;
+                getSelector().wakeup();
+                break;
+            }
+        }
+    }
+
+    /**
+     * Shutdown all the service consumer executors.
+     * @param executor Service consumer executor.
+     */
+    @Override
+    protected void shutdownRegisteredExecutor(ThreadPoolExecutor executor) {
+        int activityCount = 0;
+        while(activityCount < 3) {
+            if(executor.getActiveCount() == 0) {
+                activityCount++;
+            } else {
+                activityCount = 0;
+            }
+            try {
+                Thread.sleep(SystemProperties.getLong(
+                        SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
+            } catch (InterruptedException e) {
+            }
         }
 
-        running = false;
-        getSelector().wakeup();
+        executor.shutdown();
+        while(!executor.isTerminated()) {
+            try {
+                Thread.sleep(SystemProperties.getLong(
+                        SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
+            } catch (InterruptedException e) {
+            }
+        }
     }
 
     /**
@@ -618,6 +656,8 @@ public final class NetService extends Service<NetServiceConsumer> {
         } catch (Exception ex){
             Log.e(NET_SERVICE_LOG_TAG, "Unexpected error", ex);
         }
+
+        Log.d(NET_SERVICE_LOG_TAG, "Net service stopped");
     }
 
     /**

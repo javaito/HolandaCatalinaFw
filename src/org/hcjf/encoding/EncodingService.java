@@ -25,7 +25,7 @@ public final class EncodingService extends Service<EncodingImpl> {
      * Service constructor.
      */
     private EncodingService() {
-        super(SERIALIZATION_SERVICE_NAME);
+        super(SERIALIZATION_SERVICE_NAME, 1);
         implementations = new HashMap<>();
         registerConsumer(new JsonEncoding());
     }

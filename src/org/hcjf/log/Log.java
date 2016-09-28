@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  */
 public final class Log extends Service<LogPrinter> {
 
-    private static final String NAME = "LogService";
+    public static final String NAME = "LogService";
 
     private static final Log instance;
 
@@ -40,12 +40,13 @@ public final class Log extends Service<LogPrinter> {
     private final List<LogPrinter> printers;
     private final Queue<LogRecord> queue;
     private final Object logMonitor;
+    private Future future;
 
     /**
      * Private constructor
      */
     private Log() {
-        super(NAME);
+        super(NAME, 0);
         this.printers = new ArrayList<>();
         this.queue = new PriorityBlockingQueue<>(
                 SystemProperties.getInteger(SystemProperties.LOG_QUEUE_INITIAL_SIZE),
@@ -69,6 +70,20 @@ public final class Log extends Service<LogPrinter> {
                 ex.printStackTrace();
             }
         });
+    }
+
+    /**
+     * Only valid with the stage is START
+     * @param stage Shutdown stage.
+     */
+    @Override
+    protected void shutdown(ShutdownStage stage) {
+        switch (stage) {
+            case START: {
+                future.cancel(true);
+                break;
+            }
+        }
     }
 
     /**
@@ -251,6 +266,7 @@ public final class Log extends Service<LogPrinter> {
 
             if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED)) {
                 System.out.println(record.toString());
+                System.out.flush();
             }
         }
     }

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.Future;
 
 /**
  * This class provide an interface in order to register
@@ -32,12 +32,13 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     }
 
     private WatchService watcher;
-    private FileSystemWatcherThread thread;
+    private FileSystemWatcherTask thread;
     private final Map<Path, WatchKey> keys;
     private final Map<WatchKey, List<FileSystemWatcherConsumer>> consumers;
+    private Future future;
 
     private FileSystemWatcherService() {
-        super(FILE_SYSTEM_WATCHER_SERVICE_NAME);
+        super(FILE_SYSTEM_WATCHER_SERVICE_NAME, 1);
         keys = new HashMap<>();
         consumers = new HashMap<>();
 
@@ -108,25 +109,32 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
             Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File System Watcher init fail", ex);
         }
 
-        thread = new FileSystemWatcherThread();
-        thread.start();
+        future = fork(new FileSystemWatcherTask());
+    }
+
+    /**
+     *
+     */
+    @Override
+    protected void shutdown(ShutdownStage stage) {
+        future.cancel(true);
     }
 
     /**
      * This thread run all the time and is interrupted
      * by the shutdown call.
      */
-    private class FileSystemWatcherThread extends Thread {
+    private class FileSystemWatcherTask implements Runnable {
 
         @Override
         public void run() {
             if(watcher != null) {
-                while (!isInterrupted()) {
+                while (!Thread.currentThread().isInterrupted()) {
                     WatchKey key;
                     try {
                         key = watcher.take();
                     } catch (InterruptedException x) {
-                        continue;
+                        break;
                     }
 
                     //Find the consumer by key.
@@ -164,6 +172,12 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                         }
                     }
                 }
+
+                try {
+                    watcher.close();
+                } catch (Exception ex){}
+
+                Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File system watcher service stopped");
             }
         }
     }

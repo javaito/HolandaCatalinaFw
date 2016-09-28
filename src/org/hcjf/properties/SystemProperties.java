@@ -31,6 +31,7 @@ public final class SystemProperties extends Properties {
     public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
     public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
     public static final String SERVICE_GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
+    public static final String SERVICE_SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
 
     public static final String LOG_FILE_PREFIX = "hcfj.log.file.prefix";
     public static final String LOG_ERROR_FILE = "hcfj.log.error.file";
@@ -108,6 +109,7 @@ public final class SystemProperties extends Properties {
         defaults.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
         defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(SERVICE_GUEST_SESSION_NAME, "Guest");
+        defaults.put(SERVICE_SHUTDOWN_TIME_OUT, "200");
 
         defaults.put(LOG_FILE_PREFIX, "hcfj");
         defaults.put(LOG_ERROR_FILE, "false");
