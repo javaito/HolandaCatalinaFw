@@ -50,9 +50,8 @@ public final class Log extends Service<LogPrinter> {
         this.printers = new ArrayList<>();
         this.queue = new PriorityBlockingQueue<>(
                 SystemProperties.getInteger(SystemProperties.LOG_QUEUE_INITIAL_SIZE),
-                (o1, o2) -> (int)((o1.getDate().getTime() / 1000) - (o2.getDate().getTime() / 1000)));
+                (o1, o2) -> (int)(o1.getDate().getTime() - o2.getDate().getTime()));
         this.logMonitor = new Object();
-        init();
     }
 
     /**
@@ -60,7 +59,7 @@ public final class Log extends Service<LogPrinter> {
      */
     @Override
     protected void init() {
-        fork(new LogRunnable());
+        future = fork(new LogRunnable());
         List<String> logConsumers = SystemProperties.getList(SystemProperties.LOG_CONSUMERS);
         logConsumers.forEach(S -> {
             try {
@@ -239,19 +238,19 @@ public final class Log extends Service<LogPrinter> {
          */
         @Override
         public void run() {
-            while(!Thread.currentThread().isInterrupted()) {
-                if(instance.queue.isEmpty()) {
-                    synchronized (Log.this.logMonitor) {
-                        try {
+            try {
+                while(!Thread.currentThread().isInterrupted()) {
+                    if(instance.queue.isEmpty()) {
+                        synchronized (Log.this.logMonitor) {
                             Log.this.logMonitor.wait();
-                        } catch (InterruptedException e) {}
+                        }
                     }
-                }
 
-                try {
-                    writeRecord(instance.queue.remove());
-                } catch (Exception ex) {}
-            }
+                    try {
+                        writeRecord(instance.queue.remove());
+                    } catch (Exception ex) {}
+                }
+            } catch (InterruptedException e) {}
         }
 
         /**
@@ -261,7 +260,7 @@ public final class Log extends Service<LogPrinter> {
          */
         private void writeRecord(LogRecord record) {
             if(record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.LOG_LEVEL)) {
-                printers.stream().forEach(printer -> printer.print(record));
+                printers.forEach(printer -> printer.print(record));
             }
 
             if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED)) {
