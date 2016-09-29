@@ -3,6 +3,7 @@ package org.hcjf.io.net;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.service.ServiceThread;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -549,6 +550,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             throw new IllegalArgumentException("The service consumer must be instance of org.hcjf.io.net.NetServer or org.hcjf.io.net.NetClient.");
         }
 
+        ((ServiceThread)Thread.currentThread()).setSession(result);
         return result;
     }
 

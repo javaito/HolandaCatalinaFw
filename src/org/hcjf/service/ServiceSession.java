@@ -1,5 +1,6 @@
 package org.hcjf.service;
 
+import org.hcjf.io.net.NetSession;
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 
@@ -9,7 +10,7 @@ import java.util.*;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class ServiceSession {
+public class ServiceSession implements Comparable {
 
     private static final ServiceSession guestSession;
 
@@ -20,7 +21,7 @@ public class ServiceSession {
     private final UUID id;
     private final String sessionName;
     private final Map<Long, Queue<Class<? extends Layer>>> layerStack;
-    private final Map<String, Object> properties;
+    private final Map<Long, Map<String, Object>> properties;
 
     public ServiceSession(UUID id, String sessionName) {
         this.id = id;
@@ -38,7 +39,7 @@ public class ServiceSession {
     }
 
     public Map<String, Object> getProperties() {
-        return properties;
+        return Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
     }
 
     /**
@@ -46,13 +47,32 @@ public class ServiceSession {
      */
     public synchronized void startThread() {
         layerStack.put(Thread.currentThread().getId(), new PriorityQueue<>());
+        properties.put(Thread.currentThread().getId(), new HashMap<>());
+        onStartThread();
     }
+
+    protected void onStartThread() {}
 
     /**
      *
      */
     public synchronized void endThread() {
         layerStack.remove(Thread.currentThread().getId());
+        properties.remove(Thread.currentThread().getId());
+        onEndThread();
+    }
+
+    /**
+     *
+     */
+    protected void onEndThread(){}
+
+    /**
+     *
+     * @param properties
+     */
+    public void putAll(Map<String, Object> properties) {
+        this.properties.get(Thread.currentThread().getId()).putAll(properties);
     }
 
     /**
@@ -61,7 +81,7 @@ public class ServiceSession {
      * @param propertyValue
      */
     public void put(String propertyName, Object propertyValue) {
-        properties.put(propertyName, propertyValue);
+        properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
     }
 
     /**
@@ -69,8 +89,8 @@ public class ServiceSession {
      * @param propertyName
      * @return
      */
-    public Object get(String propertyName) {
-        return properties.get(propertyName);
+    public <O extends Object> O get(String propertyName) {
+        return (O) properties.get(Thread.currentThread().getId()).get(propertyName);
     }
 
     /**
@@ -102,6 +122,24 @@ public class ServiceSession {
      */
     public static final ServiceSession getGuestSession() {
         return guestSession;
+    }
+
+    /**
+     * Compare this session with other object.
+     * @param object Object to compare.
+     * @return Return an integer to represent the difference between this session
+     * an the object.
+     */
+    @Override
+    public int compareTo(Object object) {
+        int result = hashCode() - object.hashCode();
+        if(getClass().equals(object.getClass())) {
+            ServiceSession otherSession = (ServiceSession) object;
+            if (getId().equals(otherSession.getId())) {
+                result = 0;
+            }
+        }
+        return result;
     }
 
     /**

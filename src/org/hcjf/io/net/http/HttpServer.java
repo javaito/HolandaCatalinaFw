@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
@@ -8,6 +9,7 @@ import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
 import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.*;
 
 /**
@@ -43,7 +45,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected HttpSession createSession(HttpPackage payLoad, NetPackage netPackage) {
-        return new HttpSession(this, (HttpRequest)payLoad);
+        return new HttpSession(UUID.randomUUID(), "Http guest session", this, (HttpRequest)payLoad);
     }
 
     /**
@@ -84,8 +86,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param context
+     * Add context to the server.
+     * @param context Context instance.
      */
     public synchronized void addContext(Context context) {
         boolean duplicated = false;
@@ -107,9 +109,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param contextName
-     * @return
+     * Find the context instance that response to the request's context name.
+     * @param contextName Request's context name.
+     * @return Founded context.
      */
     protected Context findContext(String contextName) {
         Context result = null;
@@ -126,14 +128,20 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     /**
      * Destroy the session.
-     *
      * @param session Net session to be destroyed
      */
     @Override
     public void destroySession(NetSession session) {
-        Log.d(HTTP_SERVER_LOG_TAG, "Do something to destroy session: %s", session.getSessionId());
+        Log.d(HTTP_SERVER_LOG_TAG, "Do something to destroy session: %s", session.getId());
     }
 
+    /**
+     * First check if the package is complete, then try to found the context using the
+     * http request information a create the response package.
+     * @param session Net session.
+     * @param payLoad Net package decoded
+     * @param netPackage Net package.
+     */
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
@@ -150,31 +158,17 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         } catch (Throwable throwable) {
                             Log.e(HTTP_SERVER_LOG_TAG, "Exception on context %s", throwable, context.getContextRegex());
                             response = context.onError(request, throwable);
+                            if(response == null) {
+                                response = createDefaulErrorResponse(throwable);
+                            }
                         }
                     } else {
-
-                        String body = "Context not found: " + request.getContext();
-
-                        response = new HttpResponse();
-                        response.setResponseCode(HttpResponseCode.NOT_FOUND);
-                        response.setReasonPhrase("Context not found: " + request.getContext());
-                        response.setBody(body.getBytes());
-                        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
-                        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "text/plain"));
-                        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+                        response = onContextNotFound(request);
                     }
                 }
 
                 if(response == null) {
-                    String body = "Context unresponsive: " + request.getContext();
-
-                    response = new HttpResponse();
-                    response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
-                    response.setReasonPhrase("Context unresponsive: " + request.getContext());
-                    response.setBody(body.getBytes());
-                    response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
-                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "text/plain"));
-                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+                    response = onUnresponsiveContext(request);
                 }
 
                 response.addHeader(new HttpHeader(HttpHeader.DATE,
@@ -183,16 +177,83 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 response.addHeader(new HttpHeader(HttpHeader.SERVER,
                         SystemProperties.get(SystemProperties.HTTP_SERVER_NAME)));
 
-                write(session, response, response.getNetStreamingSource(), true);
+            } catch (Throwable throwable) {
+                response = createDefaulErrorResponse(throwable);
+            }
+
+            boolean writeError = false;
+            try {
+                write(session, response, response.getNetStreamingSource(), false);
                 Log.out(HTTP_SERVER_LOG_TAG, "Response\r\n%s", response.toString());
             } catch (Throwable throwable) {
                 Log.e(NetService.NET_SERVICE_LOG_TAG, "Http server error", throwable);
+                writeError = true;
             } finally {
-                if(response == null || response.getNetStreamingSource() == null) {
+                if(writeError || response == null || response.getNetStreamingSource() == null) {
                     disconnect(session, "Http request end");
                 }
             }
         }
+    }
+
+    /**
+     * Create default error response.
+     * @param throwable Throwable
+     * @return Http response package.
+     */
+    private HttpResponse createDefaulErrorResponse(Throwable throwable) {
+        HttpResponse response = new HttpResponse();
+        response.setReasonPhrase(throwable.getMessage());
+        response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
+
+        byte[] body;
+        if(SystemProperties.getBoolean(SystemProperties.HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK)) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PrintStream printer = new PrintStream(out);
+            throwable.printStackTrace(printer);
+            body = out.toByteArray();
+        } else {
+            body = throwable.getMessage().getBytes();
+        }
+
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(body.length)));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+        response.setBody(body);
+        return response;
+    }
+
+    /**
+     *
+     * @param request
+     * @return
+     */
+    protected HttpResponse onContextNotFound(HttpRequest request) {
+        HttpResponse response = new HttpResponse();
+        String body = "Context not found: " + request.getContext();
+        response.setResponseCode(HttpResponseCode.NOT_FOUND);
+        response.setReasonPhrase("Context not found: " + request.getContext());
+        response.setBody(body.getBytes());
+        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+        return  response;
+    }
+
+    /**
+     *
+     * @param request
+     * @return
+     */
+    protected HttpResponse onUnresponsiveContext(HttpRequest request) {
+        HttpResponse response = new HttpResponse();
+        String body = "Context unresponsive: " + request.getContext();
+        response.setResponseCode(HttpResponseCode.NO_CONTENT);
+        response.setReasonPhrase("Context unresponsive: " + request.getContext());
+        response.setBody(body.getBytes());
+        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+        return response;
     }
 
     /**
@@ -217,7 +278,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     /**
      * When the net service write data then call this method to process the package.
-     *
      * @param session    Net session.
      * @param netPackage Net package.
      */
@@ -226,7 +286,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
+     * Only put in the log the moment to server start.
      */
     @Override
     protected void onStart() {
@@ -234,7 +294,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
+     * Only put in the log the moment to server stop.
      */
     @Override
     protected void onStop() {

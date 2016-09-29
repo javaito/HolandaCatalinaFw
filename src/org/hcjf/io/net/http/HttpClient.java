@@ -11,6 +11,7 @@ import javax.net.ssl.SSLEngine;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.UUID;
 
 /**
  * @author javaito
@@ -246,7 +247,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      * @return
      */
     public final HttpResponse request() {
-        session = new HttpSession(this, request);
+        session = new HttpSession(UUID.randomUUID(), "Http client session", this, request);
         Integer errorCode = null;
         String errorPhrase = null;
 

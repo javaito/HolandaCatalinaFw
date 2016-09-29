@@ -39,6 +39,7 @@ public abstract class Service<C extends ServiceConsumer> {
         this.priority = priority;
         this.serviceThreadFactory = createThreadFactory();
         this.serviceExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(this.serviceThreadFactory);
+        this.serviceExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_CORE_SIZE));
         this.serviceExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_MAX_SIZE));
         this.serviceExecutor.setKeepAliveTime(SystemProperties.getLong(SystemProperties.SERVICE_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
         this.registeredExecutors = new HashSet<>();
@@ -92,10 +93,12 @@ public abstract class Service<C extends ServiceConsumer> {
         }
 
         ServiceSession session = null;
+        Map<String, Object> invokerProperties = null;
         if(Thread.currentThread() instanceof ServiceThread) {
             session = ((ServiceThread) Thread.currentThread()).getSession();
+            invokerProperties = session.getProperties();
         }
-        return executor.submit(new CallableWrapper<>(callable, session));
+        return executor.submit(new CallableWrapper<>(callable, session, invokerProperties));
     }
 
     /**
@@ -124,10 +127,12 @@ public abstract class Service<C extends ServiceConsumer> {
         }
 
         ServiceSession session = null;
+        Map<String, Object> invokerProperties = null;
         if(Thread.currentThread() instanceof ServiceThread) {
             session = ((ServiceThread) Thread.currentThread()).getSession();
+            invokerProperties = session.getProperties();
         }
-        return executor.submit(new RunnableWrapper(runnable, session));
+        return executor.submit(new RunnableWrapper(runnable, session, invokerProperties));
     }
 
     /**
@@ -283,8 +288,7 @@ public abstract class Service<C extends ServiceConsumer> {
                     try {
                         Thread.sleep(SystemProperties.getLong(
                                 SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
-                    } catch (InterruptedException e) {
-                    }
+                    } catch (InterruptedException e) {}
                 }
                 Log.i(Service.SERVICE_LOG_TAG, "Main service executor finalized");
             }
@@ -297,8 +301,7 @@ public abstract class Service<C extends ServiceConsumer> {
                     try {
                         Thread.sleep(SystemProperties.getLong(
                                 SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
-                    } catch (InterruptedException e) {
-                    }
+                    } catch (InterruptedException e) {}
                 }
                 ((Service)log).shutdown(ShutdownStage.END);
             } catch (Exception ex) {
@@ -329,9 +332,11 @@ public abstract class Service<C extends ServiceConsumer> {
 
         private final Runnable runnable;
         private final ServiceSession session;
+        private final Map<String, Object> invokerProperties;
 
-        public RunnableWrapper(Runnable runnable, ServiceSession session) {
+        public RunnableWrapper(Runnable runnable, ServiceSession session, Map<String, Object> invokerProperties) {
             this.runnable = runnable;
+            this.invokerProperties = invokerProperties;
             if(session != null) {
                 this.session = session;
             } else {
@@ -347,6 +352,9 @@ public abstract class Service<C extends ServiceConsumer> {
 
             try {
                 session.startThread();
+                if(invokerProperties != null) {
+                    session.putAll(invokerProperties);
+                }
                 ((ServiceThread) Thread.currentThread()).setSession(session);
                 runnable.run();
             } finally {
@@ -364,9 +372,11 @@ public abstract class Service<C extends ServiceConsumer> {
 
         private final Callable<O> callable;
         private final ServiceSession session;
+        private final Map<String, Object> invokerProperties;
 
-        public CallableWrapper(Callable<O> callable, ServiceSession session) {
+        public CallableWrapper(Callable<O> callable, ServiceSession session, Map<String, Object> invokerProperties) {
             this.callable = callable;
+            this.invokerProperties = invokerProperties;
             if(session != null) {
                 this.session = session;
             } else {
@@ -382,6 +392,9 @@ public abstract class Service<C extends ServiceConsumer> {
 
             try {
                 session.startThread();
+                if(invokerProperties != null) {
+                    session.putAll(invokerProperties);
+                }
                 ((ServiceThread) Thread.currentThread()).setSession(session);
                 return callable.call();
             } finally {

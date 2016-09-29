@@ -39,8 +39,12 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         this.protocol = protocol;
         ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
         ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
-        ioExecutor.setMaximumPoolSize(this instanceof NetClient ? 1 :
-                SystemProperties.getInteger(SystemProperties.NET_MAX_IO_THREAD_POOL_SIZE));
+        if(this instanceof NetClient) {
+            ioExecutor.setMaximumPoolSize(1);
+        } else {
+            ioExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_CORE_SIZE));
+            ioExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_MAX_SIZE));
+        }
         inputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_INPUT_BUFFER_SIZE);
         outputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_OUTPUT_BUFFER_SIZE);
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.NET_WRITE_TIMEOUT);
@@ -177,7 +181,6 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
                 netPackage = service.writeData(session, encode(payLoad));
                 while (netPackage.getPackageStatus().equals(NetPackage.PackageStatus.WAITING)) {
                     try {
-                        Log.d(NetService.NET_SERVICE_LOG_TAG, "Session waiting %s ....", session.getSessionId());
                         session.wait(getWriteWaitForTimeout());
                     } catch (InterruptedException e) {
                         Log.w(NetService.NET_SERVICE_LOG_TAG, "Write wait for interrupted", e);
@@ -230,7 +233,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         synchronized (netPackage.getSession()) {
             if(waitForMap.containsKey(netPackage.getSession())) {
                 netPackage.getSession().notify();
-                Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getSessionId());
+                Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getId());
             }
         }
 
@@ -268,7 +271,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         synchronized (netPackage.getSession()) {
             if(waitForMap.containsKey(netPackage.getSession())) {
                 netPackage.getSession().notify();
-                Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getSessionId());
+                Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getId());
             }
         }
         onWrite((S)netPackage.getSession(), netPackage);

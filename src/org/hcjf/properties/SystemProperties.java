@@ -1,6 +1,5 @@
 package org.hcjf.properties;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -28,6 +27,7 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_XML = "hcjf.default.properties.file.xml";
 
+    public static final String SERVICE_THREAD_POOL_CORE_SIZE = "hcjf.service.thread.pool.core.size";
     public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
     public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
     public static final String SERVICE_GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
@@ -51,7 +51,8 @@ public final class SystemProperties extends Properties {
     public static final String NET_CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
     public static final String NET_WRITE_TIMEOUT = "hcjf.net.write.timeout";
     public static final String NET_IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
-    public static final String NET_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.max.io.thread.pool.size";
+    public static final String NET_IO_THREAD_POOL_MAX_SIZE = "hcjf.net.io.thread.pool.max.size";
+    public static final String NET_IO_THREAD_POOL_CORE_SIZE = "hcjf.net.io.thread.pool.core.size";
     public static final String NET_DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
     public static final String NET_DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
     public static final String NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
@@ -106,6 +107,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_LOCALE, "EN");
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
 
+        defaults.put(SERVICE_THREAD_POOL_CORE_SIZE, "100");
         defaults.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
         defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(SERVICE_GUEST_SESSION_NAME, "Guest");
@@ -129,7 +131,8 @@ public final class SystemProperties extends Properties {
         defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
         defaults.put(NET_WRITE_TIMEOUT, "100");
         defaults.put(NET_IO_THREAD_POOL_KEEP_ALIVE_TIME, "10");
-        defaults.put(NET_MAX_IO_THREAD_POOL_SIZE, "10000");
+        defaults.put(NET_IO_THREAD_POOL_MAX_SIZE, "10000");
+        defaults.put(NET_IO_THREAD_POOL_CORE_SIZE, "100");
         defaults.put(NET_DEFAULT_INPUT_BUFFER_SIZE, "5000");
         defaults.put(NET_DEFAULT_OUTPUT_BUFFER_SIZE, "5000");
         defaults.put(NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
