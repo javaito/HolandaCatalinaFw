@@ -53,11 +53,9 @@ public final class NetService extends Service<NetServiceConsumer> {
     private Selector selector;
     private final Object selectorMonitor;
 
-    private Timer timer;
+    private final Timer timer;
     private boolean creationTimeoutAvailable;
     private long creationTimeout;
-
-    private Random random;
 
     private boolean shuttingDown;
     private boolean running;
@@ -65,7 +63,6 @@ public final class NetService extends Service<NetServiceConsumer> {
     private NetService(String serviceName) {
         super(serviceName, 2);
 
-        this.random = new Random();
         this.timer = new Timer();
         this.selectorMonitor = new Object();
 
@@ -551,6 +548,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         ((ServiceThread)Thread.currentThread()).setSession(result);
+        result.startThread();
         return result;
     }
 
@@ -605,19 +603,24 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     if(key.isValid()) {
                                         try {
                                             fork(() -> {
-                                                try {
-                                                    if (key.isValid()) {
-                                                        if (key.isReadable() ) {
-                                                            read(keyChannel, consumer);
-                                                        } else if (key.isWritable()) {
-                                                            write(keyChannel, consumer);
-                                                            if (consumer instanceof NetClient) {
+                                                synchronized (keyChannel) {
+                                                    try {
+                                                        if (key.isValid()) {
+                                                            if (key.isReadable()) {
                                                                 read(keyChannel, consumer);
+                                                            } else if (key.isWritable()) {
+                                                                write(keyChannel, consumer);
+                                                                if (consumer instanceof NetClient) {
+                                                                    read(keyChannel, consumer);
+                                                                }
                                                             }
                                                         }
+                                                    } catch (Exception ex) {
+                                                        Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
+                                                    } finally {
+                                                        ((ServiceThread) Thread.currentThread()).getSession().endThread();
+                                                        ((ServiceThread) Thread.currentThread()).setSession(null);
                                                     }
-                                                } catch (Exception ex) {
-                                                    Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
                                                 }
                                             }, consumer.getIoExecutor());
                                         } catch (RejectedExecutionException ex){
@@ -882,7 +885,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 lastWrite.put(channel, System.currentTimeMillis());
                 boolean stop = false;
 
-                while(!queue.isEmpty() && !stop){
+                while(!queue.isEmpty() && !stop) {
                     NetPackage netPackage = queue.poll();
                     if(netPackage == null) {
                         break;
@@ -1033,11 +1036,13 @@ public final class NetService extends Service<NetServiceConsumer> {
          */
         @Override
         public void run() {
-            if(!sessionsByChannel.containsKey(channel)){
-                try {
-                    destroyChannel(channel);
-                } catch (Exception ex){}
-            }
+            fork(() -> {
+                if(!sessionsByChannel.containsKey(channel)){
+                    try {
+                        destroyChannel(channel);
+                    } catch (Exception ex){}
+                }
+            });
         }
 
     }

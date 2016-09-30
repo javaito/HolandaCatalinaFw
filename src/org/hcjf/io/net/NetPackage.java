@@ -107,7 +107,11 @@ public abstract class NetPackage {
 
         private NetPackageWrapper(NetPackage netPackage, byte[] payLoad) {
             this.netPackage = netPackage;
-            this.payLoad = payLoad;
+            if(payLoad != null) {
+                this.payLoad = payLoad;
+            } else {
+                this.payLoad = new byte[0];
+            }
         }
 
         public NetPackage getNetPackage() {

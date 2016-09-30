@@ -124,8 +124,8 @@ public final class SystemProperties extends Properties {
         defaults.put(LOG_SYSTEM_OUT_ENABLED, "false");
         defaults.put(LOG_QUEUE_INITIAL_SIZE, "10000");
 
-        defaults.put(NET_INPUT_BUFFER_SIZE, "32768");
-        defaults.put(NET_OUTPUT_BUFFER_SIZE, "32768");
+        defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
+        defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");
         defaults.put(NET_CONNECTION_TIMEOUT_AVAILABLE, "true");
         defaults.put(NET_CONNECTION_TIMEOUT, "10000");
         defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
