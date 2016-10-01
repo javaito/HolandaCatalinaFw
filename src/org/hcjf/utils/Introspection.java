@@ -389,7 +389,7 @@ public final class Introspection {
      * This class represents the object returned by the invoker filter.
      * @param <I>
      */
-    private static class InvokerEntry<I extends Invoker> {
+    public static class InvokerEntry<I extends Invoker> {
 
         private final String key;
         private final I invoker;
