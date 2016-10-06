@@ -23,6 +23,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     private Map<NetSession, HttpRequest> requestBuffers;
     private Set<Context> contexts;
+    private HttpSessionFactory sessionFactory;
 
     public HttpServer() {
         this(SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_SERVER_PORT));
@@ -36,6 +37,22 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
+     * Return the instance of the session factory.
+     * @return Session factory.
+     */
+    public final HttpSessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+
+    /**
+     * Set the instance of the session factory.
+     * @param sessionFactory Session factory.
+     */
+    public final void setSessionFactory(HttpSessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
+    /**
      * This method must implements the session creation based on
      * the net package that incoming.
      *
@@ -45,7 +62,11 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected HttpSession createSession(HttpPackage payLoad, NetPackage netPackage) {
-        return new HttpSession(UUID.randomUUID(), "Http guest session", this, (HttpRequest)payLoad);
+        HttpSessionFactory factory = getSessionFactory();
+        if(factory == null) {
+            factory = HttpSessionFactory.DEFAULT;
+        }
+        return factory.createSession(this, (HttpRequest) payLoad);
     }
 
     /**
