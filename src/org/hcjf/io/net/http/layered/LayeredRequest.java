@@ -12,63 +12,8 @@ import java.util.*;
  */
 public class LayeredRequest extends HttpRequest {
 
-    private final Map<String, Object> layerParameters;
-    private final Object attach;
-    private final String resourceName;
-    private final String resourceAction;
-    private final String id;
-
-    public LayeredRequest(HttpRequest request,
-                          Map<String, Object> layerParameters,
-                          Object attach,
-                          String resourceName,
-                          String resourceAction,
-                          String id) {
+    public LayeredRequest(HttpRequest request) {
         super(request);
-        this.layerParameters = layerParameters;
-        this.attach = attach;
-        this.resourceName = resourceName;
-        this.resourceAction = resourceAction;
-        this.id = id;
     }
 
-    /**
-     *
-     * @return
-     */
-    public Object getAttach() {
-        return attach;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Map<String, Object> getLayerParameters() {
-        return layerParameters;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public String getResourceName() {
-        return resourceName;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public String getResourceAction() {
-        return resourceAction;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public String getId() {
-        return id;
-    }
 }

@@ -19,7 +19,7 @@ import java.util.UUID;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public class CrudContext extends EndPoint<CrudLayerInterface> {
+public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudResponse> {
 
     private static final Integer CRUD_RESOURCE_NAME_INDEX = 2;
     private static final Integer CRUD_RESOURCE_ACTION_INDEX = 3;
@@ -34,7 +34,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
      * @return
      */
     @Override
-    protected LayeredRequest decode(HttpRequest request) {
+    protected CrudRequest decode(HttpRequest request) {
         if(request.getPathParts().size() <= CRUD_RESOURCE_NAME_INDEX) {
             throw new IllegalArgumentException("Resource name parameter not found");
         }
@@ -71,7 +71,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         parameters.putAll(decodedPackage.getParameters());
         parameters.putAll(request.getParameters());
 
-        LayeredRequest result = new LayeredRequest(request,
+        CrudRequest result = new CrudRequest(request,
                 parameters, object, resourceName, resourceAction, id);
         return result;
     }
@@ -106,7 +106,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
      * @return
      */
     @Override
-    protected LayeredResponse encode(Object object, LayeredRequest request) {
+    protected CrudResponse encode(Object object, CrudRequest request) {
         HttpHeader contentTypeHeader = request.getHeader(HttpHeader.ACCEPT);
         String implName = contentTypeHeader.getParameter(
                 contentTypeHeader.getGroups().iterator().next(), HttpHeader.PARAM_IMPL);
@@ -121,85 +121,85 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, type.toString()));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
-        return new LayeredResponse(response);
+        return new CrudResponse(response);
     }
 
     /**
      *
-     * @param layeredRequest
+     * @param crudRequest
      * @return
      */
     @Override
-    protected final Object post(LayeredRequest layeredRequest) {
+    protected final Object post(CrudRequest crudRequest) {
         Object result = null;
-        CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
-        if(layeredRequest.getResourceAction() == null) {
-            result = layerInterface.create(layeredRequest.getAttach(), layeredRequest.getLayerParameters());
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+        CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
+        if(crudRequest.getResourceAction() == null) {
+            result = layerInterface.create(crudRequest.getAttach(), crudRequest.getCrudParameters());
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
             throw new IllegalArgumentException("The resources can't be created using a query like a parameter.");
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
-            result = layerInterface.createQuery((Query) layeredRequest.getAttach(), layeredRequest.getLayerParameters());
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+            result = layerInterface.createQuery((Query) crudRequest.getAttach(), crudRequest.getCrudParameters());
         }
         return result;
     }
 
     /**
      *
-     * @param layeredRequest
+     * @param crudRequest
      * @return
      */
     @Override
-    protected final Object get(LayeredRequest layeredRequest) {
+    protected final Object get(CrudRequest crudRequest) {
         Object result = null;
-        CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
-        if(layeredRequest.getResourceAction() == null) {
-            if(layeredRequest.getId() == null) {
+        CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
+        if(crudRequest.getResourceAction() == null) {
+            if(crudRequest.getId() == null) {
                 result = layerInterface.read();
             } else {
-                result = layerInterface.read(layeredRequest.getId());
+                result = layerInterface.read(crudRequest.getId());
             }
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
-            result = layerInterface.read(UUID.fromString(layeredRequest.getId()));
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
-            result = layerInterface.readQuery(new Query.QueryId(UUID.fromString(layeredRequest.getId())));
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+            result = layerInterface.read(UUID.fromString(crudRequest.getId()));
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+            result = layerInterface.readQuery(new Query.QueryId(UUID.fromString(crudRequest.getId())));
         }
         return result;
     }
 
     /**
      *
-     * @param layeredRequest
+     * @param crudRequest
      * @return
      */
     @Override
-    protected final Object put(LayeredRequest layeredRequest) {
+    protected final Object put(CrudRequest crudRequest) {
         Object result = null;
-        CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
-        if(layeredRequest.getResourceAction() == null) {
-            result = layerInterface.update(layeredRequest.getAttach(), layeredRequest.getLayerParameters());
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
-            result = layerInterface.update(new Query.QueryId(UUID.fromString(layeredRequest.getId())), layeredRequest.getLayerParameters());
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
-            result = layerInterface.updateQuery((Query) layeredRequest.getAttach(), layeredRequest.getLayerParameters());
+        CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
+        if(crudRequest.getResourceAction() == null) {
+            result = layerInterface.update(crudRequest.getAttach(), crudRequest.getCrudParameters());
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+            result = layerInterface.update(new Query.QueryId(UUID.fromString(crudRequest.getId())), crudRequest.getCrudParameters());
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+            result = layerInterface.updateQuery((Query) crudRequest.getAttach(), crudRequest.getCrudParameters());
         }
         return result;
     }
 
     /**
      *
-     * @param layeredRequest
+     * @param crudRequest
      * @return
      */
     @Override
-    protected final Object delete(LayeredRequest layeredRequest) {
+    protected final Object delete(CrudRequest crudRequest) {
         Object result = null;
-        CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
-        if(layeredRequest.getResourceAction() == null) {
-            result = layerInterface.delete(layeredRequest.getId());
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
-            result = layerInterface.delete(new Query.QueryId(UUID.fromString(layeredRequest.getId())));
-        } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
-            result = layerInterface.deleteQuery(new Query.QueryId(UUID.fromString(layeredRequest.getId())));
+        CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
+        if(crudRequest.getResourceAction() == null) {
+            result = layerInterface.delete(crudRequest.getId());
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+            result = layerInterface.delete(new Query.QueryId(UUID.fromString(crudRequest.getId())));
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+            result = layerInterface.deleteQuery(new Query.QueryId(UUID.fromString(crudRequest.getId())));
         }
         return result;
     }

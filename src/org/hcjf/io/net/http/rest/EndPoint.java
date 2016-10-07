@@ -8,7 +8,8 @@ import org.hcjf.layers.LayerInterface;
  * @author javaito
  * @email javaito@gmail.com
  */
-public abstract class EndPoint<L extends LayerInterface> extends LayeredContext<L> {
+public abstract class EndPoint<L extends LayerInterface,
+        P extends LayeredRequest, R extends LayeredResponse> extends LayeredContext<L, P, R> {
 
     public EndPoint(String groupName, String resourceName) {
         super(groupName, resourceName);
@@ -22,7 +23,7 @@ public abstract class EndPoint<L extends LayerInterface> extends LayeredContext<
      * @return Return an object with all the response information.
      */
     @Override
-    public final Object onAction(LayeredRequest request) {
+    public final Object onAction(P request) {
         Object result = null;
         switch (request.getMethod()) {
             case GET: {
@@ -51,7 +52,7 @@ public abstract class EndPoint<L extends LayerInterface> extends LayeredContext<
      * @param layeredRequest
      * @return
      */
-    protected Object get(LayeredRequest layeredRequest) {
+    protected Object get(P layeredRequest) {
         throw new UnsupportedOperationException("GET method is not implemented on the REST interface");
     }
 
@@ -60,7 +61,7 @@ public abstract class EndPoint<L extends LayerInterface> extends LayeredContext<
      * @param layeredRequest
      * @return
      */
-    protected Object post(LayeredRequest layeredRequest) {
+    protected Object post(P layeredRequest) {
         throw new UnsupportedOperationException("POST method is not implemented on the REST interface");
     }
 
@@ -69,7 +70,7 @@ public abstract class EndPoint<L extends LayerInterface> extends LayeredContext<
      * @param layeredRequest
      * @return
      */
-    protected Object put(LayeredRequest layeredRequest) {
+    protected Object put(P layeredRequest) {
         throw new UnsupportedOperationException("PUT method is not implemented on the REST interface");
     }
 
@@ -78,7 +79,7 @@ public abstract class EndPoint<L extends LayerInterface> extends LayeredContext<
      * @param layeredRequest
      * @return
      */
-    protected Object delete(LayeredRequest layeredRequest) {
+    protected Object delete(P layeredRequest) {
         throw new UnsupportedOperationException("DELETE method is not implemented on the REST interface");
     }
 

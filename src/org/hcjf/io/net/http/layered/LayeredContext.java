@@ -10,7 +10,8 @@ import java.lang.reflect.ParameterizedType;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public abstract class LayeredContext<L extends LayerInterface> extends Context {
+public abstract class LayeredContext<L extends LayerInterface,
+        P extends LayeredRequest, R extends LayeredResponse> extends Context {
 
     private final String layerGroupName;
     private final String resourceName;
@@ -63,7 +64,7 @@ public abstract class LayeredContext<L extends LayerInterface> extends Context {
      */
     @Override
     public final HttpResponse onContext(HttpRequest request) {
-        LayeredRequest layeredRequest = decode(request);
+        P layeredRequest = decode(request);
         Object actionResponse = onAction(layeredRequest);
         return encode(actionResponse, layeredRequest);
     }
@@ -73,7 +74,7 @@ public abstract class LayeredContext<L extends LayerInterface> extends Context {
      * @param request
      * @return
      */
-    protected abstract Object onAction(LayeredRequest request);
+    protected abstract Object onAction(P request);
 
     /**
      * This method is called when there are any error on the context execution.
@@ -94,12 +95,12 @@ public abstract class LayeredContext<L extends LayerInterface> extends Context {
      * @param request
      * @return
      */
-    protected abstract LayeredRequest decode(HttpRequest request);
+    protected abstract P decode(HttpRequest request);
 
     /**
      * @param object
      * @param request
      * @return
      */
-    protected abstract LayeredResponse encode(Object object, LayeredRequest request);
+    protected abstract R encode(Object object, P request);
 }
