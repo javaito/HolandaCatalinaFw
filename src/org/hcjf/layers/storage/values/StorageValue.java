@@ -1,7 +1,8 @@
 package org.hcjf.layers.storage.values;
 
 /**
- * Created by javaito on 22/09/16.
+ * @author javaito
+ * @email javaito@gmail.com
  */
 public class StorageValue {
 

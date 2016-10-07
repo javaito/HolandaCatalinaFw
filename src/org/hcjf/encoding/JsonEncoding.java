@@ -24,7 +24,7 @@ public class JsonEncoding extends EncodingImpl {
     }
 
     /**
-     * @param decodedPackage
+     * @param decodedPackages
      * @return
      */
     @Override
@@ -32,45 +32,50 @@ public class JsonEncoding extends EncodingImpl {
         Gson gson = new Gson();
         JsonObject jsonObject = new JsonObject();
 
-        if(decodedPackage.getParameters() != null) {
-            JsonObject parameterObject = new JsonObject();
-            for(String key : decodedPackage.getParameters().keySet()) {
-                parameterObject.add(key, createTypedObject(decodedPackage.getParameters().get(key)));
-            }
-            jsonObject.add(PARAMETERS_JSON_FIELD, parameterObject);
-        }
-
-        if(decodedPackage.getQuery() != null) {
-            JsonObject queryObject = new JsonObject();
-            queryObject.add(QUERY_ID_FIELD, new JsonPrimitive(decodedPackage.getQuery().getId().toString()));
-            queryObject.add(QUERY_LIMIT_FIELD, new JsonPrimitive(decodedPackage.getQuery().getLimit()));
-            queryObject.add(QUERY_DESC_FIELD, new JsonPrimitive(decodedPackage.getQuery().isDesc()));
-            queryObject.add(QUERY_PAGE_START_FIELD, createTypedObject(decodedPackage.getQuery().getPageStart()));
-            JsonArray orderArray = new JsonArray();
-            decodedPackage.getQuery().getOrderFields().forEach(orderArray::add);
-            queryObject.add(QUERY_ORDER_FIELDS_FIELD, orderArray);
-            JsonArray evaluatorArray = new JsonArray();
-            for(Evaluator evaluator : decodedPackage.getQuery().getEvaluators()) {
-                JsonObject evaluatorJsonObject = new JsonObject();
-                evaluatorJsonObject.add(EVALUATOR_ACTION_FIELD,
-                        new JsonPrimitive(Strings.uncapitalize(evaluator.getClass().getSimpleName())));
-                evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(evaluator.getFieldName()));
-                evaluatorJsonObject.add(EVALUATOR_VALUE_FIELD, createTypedObject(evaluator.getValue()));
-                evaluatorArray.add(evaluatorJsonObject);
-            }
-            jsonObject.add(QUERY_JSON_FIELD, queryObject);
-        }
-
-        if(decodedPackage.getObject() != null) {
-            if(decodedPackage.getObject() instanceof Collection) {
-                JsonArray array = new JsonArray();
-                for(Object arrayObject : (Collection)decodedPackage.getObject()) {
-                    array.add(getBodyObject(arrayObject));
+        if(decodedPackage instanceof CrudDecodedPackage) {
+            CrudDecodedPackage crudDecodedPackage = (CrudDecodedPackage) decodedPackage;
+            if (crudDecodedPackage.getParameters() != null) {
+                JsonObject parameterObject = new JsonObject();
+                for (String key : crudDecodedPackage.getParameters().keySet()) {
+                    parameterObject.add(key, createTypedObject(crudDecodedPackage.getParameters().get(key)));
                 }
-                jsonObject.add(BODY_JSON_FIELD, array);
-            } else {
-                jsonObject.add(BODY_JSON_FIELD, getBodyObject(decodedPackage.getObject()));
+                jsonObject.add(PARAMETERS_JSON_FIELD, parameterObject);
             }
+
+            if (crudDecodedPackage.getQuery() != null) {
+                JsonObject queryObject = new JsonObject();
+                queryObject.add(QUERY_ID_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().getId().toString()));
+                queryObject.add(QUERY_LIMIT_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().getLimit()));
+                queryObject.add(QUERY_DESC_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().isDesc()));
+                queryObject.add(QUERY_PAGE_START_FIELD, createTypedObject(crudDecodedPackage.getQuery().getPageStart()));
+                JsonArray orderArray = new JsonArray();
+                crudDecodedPackage.getQuery().getOrderFields().forEach(orderArray::add);
+                queryObject.add(QUERY_ORDER_FIELDS_FIELD, orderArray);
+                JsonArray evaluatorArray = new JsonArray();
+                for (Evaluator evaluator : crudDecodedPackage.getQuery().getEvaluators()) {
+                    JsonObject evaluatorJsonObject = new JsonObject();
+                    evaluatorJsonObject.add(EVALUATOR_ACTION_FIELD,
+                            new JsonPrimitive(Strings.uncapitalize(evaluator.getClass().getSimpleName())));
+                    evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(evaluator.getFieldName()));
+                    evaluatorJsonObject.add(EVALUATOR_VALUE_FIELD, createTypedObject(evaluator.getValue()));
+                    evaluatorArray.add(evaluatorJsonObject);
+                }
+                jsonObject.add(QUERY_JSON_FIELD, queryObject);
+            }
+
+            if (crudDecodedPackage.getObject() != null) {
+                if (crudDecodedPackage.getObject() instanceof Collection) {
+                    JsonArray array = new JsonArray();
+                    for (Object arrayObject : (Collection) crudDecodedPackage.getObject()) {
+                        array.add(getBodyObject(arrayObject));
+                    }
+                    jsonObject.add(BODY_JSON_FIELD, array);
+                } else {
+                    jsonObject.add(BODY_JSON_FIELD, getBodyObject(crudDecodedPackage.getObject()));
+                }
+            }
+        } else {
+            throw new UnsupportedOperationException("Only support crud packages");
         }
 
         return gson.toJson(jsonObject).getBytes();
@@ -289,7 +294,7 @@ public class JsonEncoding extends EncodingImpl {
             }
         }
 
-        return new DecodedPackage(decodedObject, decodedQuery, decodedParameters);
+        return new CrudDecodedPackage(decodedObject, decodedQuery, decodedParameters);
     }
 
     /**

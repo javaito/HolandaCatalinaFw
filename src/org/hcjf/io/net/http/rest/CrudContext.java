@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http.rest;
 
+import org.hcjf.encoding.CrudDecodedPackage;
 import org.hcjf.io.net.http.*;
 import org.hcjf.io.net.http.layered.LayeredRequest;
 import org.hcjf.io.net.http.layered.LayeredResponse;
@@ -86,7 +87,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         if(request.getMethod().equals(HttpMethod.GET) || request.getMethod().equals(HttpMethod.DELETE)) {
             Map<String, Object> parameters = new HashMap<>();
             parameters.putAll(request.getParameters());
-            result = new DecodedPackage(null, null, parameters);
+            result = new CrudDecodedPackage(null, null, parameters);
         } else {
             HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
             String implName = contentTypeHeader.getParameter(
@@ -111,7 +112,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
                 contentTypeHeader.getGroups().iterator().next(), HttpHeader.PARAM_IMPL);
         MimeType type = MimeType.fromString(contentTypeHeader.getGroups().iterator().next());
 
-        byte[] body = EncodingService.encode(type, implName, new DecodedPackage(object, null, null));
+        byte[] body = EncodingService.encode(type, implName, new CrudDecodedPackage(object, null, null));
 
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.OK);
@@ -133,11 +134,11 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         Object result = null;
         CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
         if(layeredRequest.getResourceAction() == null) {
-            result = layerInterface.create(layeredRequest.getAttach(), layeredRequest.getRestParameters());
+            result = layerInterface.create(layeredRequest.getAttach(), layeredRequest.getLayerParameters());
         } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
             throw new IllegalArgumentException("The resources can't be created using a query like a parameter.");
         } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
-            result = layerInterface.createQuery((Query) layeredRequest.getAttach(), layeredRequest.getRestParameters());
+            result = layerInterface.createQuery((Query) layeredRequest.getAttach(), layeredRequest.getLayerParameters());
         }
         return result;
     }
@@ -175,11 +176,11 @@ public class CrudContext extends EndPoint<CrudLayerInterface> {
         Object result = null;
         CrudLayerInterface layerInterface = getLayerInterface(layeredRequest.getResourceName());
         if(layeredRequest.getResourceAction() == null) {
-            result = layerInterface.update(layeredRequest.getAttach(), layeredRequest.getRestParameters());
+            result = layerInterface.update(layeredRequest.getAttach(), layeredRequest.getLayerParameters());
         } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
-            result = layerInterface.update(new Query.QueryId(UUID.fromString(layeredRequest.getId())), layeredRequest.getRestParameters());
+            result = layerInterface.update(new Query.QueryId(UUID.fromString(layeredRequest.getId())), layeredRequest.getLayerParameters());
         } else if(layeredRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
-            result = layerInterface.updateQuery((Query) layeredRequest.getAttach(), layeredRequest.getRestParameters());
+            result = layerInterface.updateQuery((Query) layeredRequest.getAttach(), layeredRequest.getLayerParameters());
         }
         return result;
     }

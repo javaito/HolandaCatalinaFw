@@ -12,20 +12,20 @@ import java.util.*;
  */
 public class LayeredRequest extends HttpRequest {
 
-    private final Map<String, Object> restParameters;
+    private final Map<String, Object> layerParameters;
     private final Object attach;
     private final String resourceName;
     private final String resourceAction;
     private final String id;
 
     public LayeredRequest(HttpRequest request,
-                          Map<String, Object> restParameters,
+                          Map<String, Object> layerParameters,
                           Object attach,
                           String resourceName,
                           String resourceAction,
                           String id) {
         super(request);
-        this.restParameters = restParameters;
+        this.layerParameters = layerParameters;
         this.attach = attach;
         this.resourceName = resourceName;
         this.resourceAction = resourceAction;
@@ -44,8 +44,8 @@ public class LayeredRequest extends HttpRequest {
      *
      * @return
      */
-    public Map<String, Object> getRestParameters() {
-        return restParameters;
+    public Map<String, Object> getLayerParameters() {
+        return layerParameters;
     }
 
     /**

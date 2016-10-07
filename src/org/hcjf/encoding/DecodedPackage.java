@@ -12,24 +12,14 @@ import java.util.Map;
 public class DecodedPackage {
 
     private final Object object;
-    private final Query query;
     private final Map<String, Object> parameters;
 
-    public DecodedPackage(Object object, Query query, Map<String, Object> parameters) {
+    public DecodedPackage(Object object, Map<String, Object> parameters) {
         if(parameters == null) {
             throw new IllegalArgumentException("Parameters map can't be null");
         }
         this.object = object;
-        this.query = query;
         this.parameters = parameters;
-    }
-
-    /**
-     * Return the query object decoded.
-     * @return Object query or null.
-     */
-    public final Query getQuery() {
-        return query;
     }
 
     /**
@@ -47,4 +37,5 @@ public class DecodedPackage {
     public final Map<String, Object> getParameters() {
         return parameters;
     }
+
 }
