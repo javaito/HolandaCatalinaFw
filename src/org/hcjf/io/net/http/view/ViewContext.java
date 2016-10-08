@@ -1,48 +1,41 @@
 package org.hcjf.io.net.http.view;
 
-import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.layered.LayeredContext;
 import org.hcjf.io.net.http.layered.LayeredRequest;
 import org.hcjf.io.net.http.layered.LayeredResponse;
-import org.hcjf.layers.LayerInterface;
+import org.hcjf.layers.view.ViewCrudLayerInterface;
 import org.hcjf.layers.view.ViewLayerInterface;
 
 /**
  * @mail armedina@gmail.com
  */
-public class ViewContext<L extends LayerInterface> extends LayeredContext<L> {
+public abstract class ViewContext<L extends ViewLayerInterface,
+        P extends ViewRequest, R extends ViewResponse> extends LayeredContext<L, P, R> {
 
     public ViewContext(String groupName, String resourceName) {
         super(groupName, resourceName);
     }
 
     @Override
-    protected Object onAction(LayeredRequest request) {
+    protected final Object onAction(P request) {
         Object result = null;
-        result = get(request);
+        switch (request.getMethod()) {
+            case GET: {
+                result = onViewAction(request);
+                break;
+            }
+            case POST:
+            case PUT:
+            case DELETE: {
+                throw new UnsupportedOperationException("Method is not implemented on the VIEW interface");
+            }
+        }
         return result;
     }
 
-    protected Object get(LayeredRequest layeredRequest) {
-        throw new UnsupportedOperationException("GET method is not implemented on the REST interface");
+    private Object onViewAction(P request) {
+        L layer = getLayerInterface(request.getResourceName());
+        return layer.onAction(request.getAction(),request.getViewParameters());
     }
 
-    @Override
-    protected LayeredRequest decode(HttpRequest request) {
-        String context = request.getContext();
-        String resource =  context.substring(context.lastIndexOf("/")+1);
-        LayeredRequest layeredRequest = new LayeredRequest(
-                request,
-                null,
-                null,
-                resource,
-                request.getMethod().name(),
-                "");
-        return  layeredRequest;
-    }
-
-    @Override
-    protected LayeredResponse encode(Object object, LayeredRequest request) {
-        return null;
-    }
 }

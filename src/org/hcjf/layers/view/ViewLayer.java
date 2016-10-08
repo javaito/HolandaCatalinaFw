@@ -6,6 +6,7 @@ import org.hcjf.view.ViewComponent;
 
 import java.lang.annotation.*;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +19,7 @@ public abstract class ViewLayer extends Layer implements ViewLayerInterface {
     }
 
     @Override
-    public ViewComponent onAction(String action, HashMap<String, Object> params) {
+    public ViewComponent onAction(String action, HashMap params) {
         ViewComponent result = null;
         Map<String, ViewAccessor> viewAccessorMap = Introspection.getInvokers(getImplementationClass(), new ViewActionFilter());
         if(viewAccessorMap.containsKey(action)){
