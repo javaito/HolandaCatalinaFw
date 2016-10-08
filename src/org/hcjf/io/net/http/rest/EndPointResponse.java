@@ -7,9 +7,9 @@ import org.hcjf.io.net.http.layered.LayeredResponse;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class CrudResponse extends EndPointResponse {
+public class EndPointResponse extends LayeredResponse {
 
-    public CrudResponse(HttpResponse httpResponse) {
+    public EndPointResponse(HttpResponse httpResponse) {
         super(httpResponse);
     }
 

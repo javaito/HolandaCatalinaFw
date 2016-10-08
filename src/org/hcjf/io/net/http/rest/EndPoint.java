@@ -9,7 +9,7 @@ import org.hcjf.layers.LayerInterface;
  * @email javaito@gmail.com
  */
 public abstract class EndPoint<L extends LayerInterface,
-        P extends LayeredRequest, R extends LayeredResponse> extends LayeredContext<L, P, R> {
+        P extends EndPointRequest, R extends EndPointResponse> extends LayeredContext<L, P, R> {
 
     public EndPoint(String groupName, String resourceName) {
         super(groupName, resourceName);
