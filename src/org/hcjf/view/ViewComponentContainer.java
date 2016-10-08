@@ -1,5 +1,7 @@
 package org.hcjf.view;
 
+import org.hcjf.view.layouts.Layout;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -9,6 +11,8 @@ import java.util.List;
  * @email armedina@gmail.com
  */
 public class ViewComponentContainer extends ViewComponent {
+
+    private Layout layout;
 
     private final LinkedList<ViewComponent> viewComponentsList = new LinkedList<>();
 
@@ -24,4 +28,11 @@ public class ViewComponentContainer extends ViewComponent {
         return viewComponentsList;
     }
 
+    public Layout getLayout() {
+        return layout;
+    }
+
+    public void setLayout(Layout layout) {
+        this.layout = layout;
+    }
 }

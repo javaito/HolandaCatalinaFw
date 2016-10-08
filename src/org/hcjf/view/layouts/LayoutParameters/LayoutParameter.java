@@ -1,4 +1,4 @@
-package org.hcjf.view.parameters.LayoutParameters;
+package org.hcjf.view.layouts.LayoutParameters;
 
 /**
  * @author Andrés Medina

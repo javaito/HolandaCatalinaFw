@@ -1,4 +1,4 @@
-package org.hcjf.view.containers;
+package org.hcjf.view.layouts;
 
 /**
  * @author Andrés Medina
