@@ -19,7 +19,7 @@ public abstract class ViewLayer extends Layer implements ViewLayerInterface {
     }
 
     @Override
-    public ViewComponent onAction(String action, HashMap params) {
+    public ViewComponent onAction(String action, Map<String, Object> params) {
         ViewComponent result = null;
         Map<String, ViewAccessor> viewAccessorMap = Introspection.getInvokers(getImplementationClass(), new ViewActionFilter());
         if(viewAccessorMap.containsKey(action)){
@@ -51,7 +51,7 @@ public abstract class ViewLayer extends Layer implements ViewLayerInterface {
             super(implementationClass, method);
         }
 
-        public ViewComponent invokeAccessor(Object instance, HashMap<String, Object> params){
+        public ViewComponent invokeAccessor(Object instance, Map<String, Object> params){
             ViewComponent result = null;
             Map annotatedParams = null;
             if(params != null){
