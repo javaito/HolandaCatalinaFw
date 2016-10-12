@@ -103,4 +103,12 @@ public final class EncodingService extends Service<EncodingImpl> {
     public static DecodedPackage decode(MimeType mimeType, String impl, byte[] data, Map<String, Object> parameters) {
         return instance.getSerializationImpl(mimeType, impl).decode(data, parameters);
     }
+
+    /**
+     * Return the instance of Encoding Service
+     * @return
+     */
+    public static EncodingService getInstance() {
+        return instance;
+    }
 }
