@@ -2,6 +2,7 @@ package org.hcjf.log;
 
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.utils.Strings;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -321,12 +322,23 @@ public final class Log extends Service<LogPrinter> {
             StringWriter stringWriter = new StringWriter();
             PrintWriter printWriter = new PrintWriter(stringWriter);
 
+            String group = getGroup().getGroup();
+            String tag = getTag();
+            if(SystemProperties.getBoolean(SystemProperties.LOG_TRUNCATE_TAG)) {
+                int truncateSize = SystemProperties.getInteger(SystemProperties.LOG_TRUNCATE_TAG_SIZE);
+                if(truncateSize > tag.length()) {
+                    tag = Strings.rightPad(tag, truncateSize);
+                } else if(truncateSize < tag.length()) {
+                    tag = tag.substring(0, truncateSize);
+                }
+            }
+
             printWriter.print(dateFormat.format(getDate()));
             printWriter.print(" [");
-            printWriter.print(getGroup().getGroup());
-            printWriter.print("] <<");
-            printWriter.print(getTag());
-            printWriter.print(">> ");
+            printWriter.print(group);
+            printWriter.print("][");
+            printWriter.print(tag);
+            printWriter.print("] ");
             printWriter.printf(message, params);
 
             if(throwable != null) {
@@ -389,9 +401,9 @@ public final class Log extends Service<LogPrinter> {
 
         DEBUG("D", 0),
 
-        INPUT("IN", 1),
+        INPUT("A", 1),
 
-        OUTPUT("OUT", 1),
+        OUTPUT("O", 1),
 
         INFO("I", 1),
 

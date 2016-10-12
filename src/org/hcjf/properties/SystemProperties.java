@@ -43,6 +43,8 @@ public final class SystemProperties extends Properties {
     public static final String LOG_CONSUMERS = "hcjf.log.consumers";
     public static final String LOG_SYSTEM_OUT_ENABLED = "hcjf.log.system.out.enabled";
     public static final String LOG_QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
+    public static final String LOG_TRUNCATE_TAG = "hcjf.log.truncate.tag";
+    public static final String LOG_TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
 
     public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.inpt.buffer.size";
     public static final String NET_OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
@@ -124,6 +126,8 @@ public final class SystemProperties extends Properties {
         defaults.put(LOG_CONSUMERS, "[]");
         defaults.put(LOG_SYSTEM_OUT_ENABLED, "false");
         defaults.put(LOG_QUEUE_INITIAL_SIZE, "10000");
+        defaults.put(LOG_TRUNCATE_TAG, "false");
+        defaults.put(LOG_TRUNCATE_TAG_SIZE, "35");
 
         defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
         defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");

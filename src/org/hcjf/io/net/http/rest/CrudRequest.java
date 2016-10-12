@@ -9,7 +9,7 @@ import java.util.Map;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class CrudRequest extends LayeredRequest {
+public class CrudRequest extends EndPointRequest {
 
     private final Map<String, Object> crudParameters;
     private final Object attach;

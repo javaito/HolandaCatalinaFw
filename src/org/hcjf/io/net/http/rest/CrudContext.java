@@ -19,7 +19,7 @@ import java.util.UUID;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudResponse> {
+public abstract class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudResponse> {
 
     private static final Integer CRUD_RESOURCE_NAME_INDEX = 2;
     private static final Integer CRUD_RESOURCE_ACTION_INDEX = 3;
