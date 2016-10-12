@@ -1,15 +1,14 @@
 package org.hcjf.io.net.http.view;
 
 import org.hcjf.io.net.http.layered.LayeredContext;
-import org.hcjf.io.net.http.layered.LayeredRequest;
-import org.hcjf.io.net.http.layered.LayeredResponse;
+import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.view.ViewCrudLayerInterface;
 import org.hcjf.layers.view.ViewLayerInterface;
 
 /**
  * @mail armedina@gmail.com
  */
-public abstract class ViewContext<L extends ViewLayerInterface,
+public abstract class ViewContext<L extends ViewCrudLayerInterface,
         P extends ViewRequest, R extends ViewResponse> extends LayeredContext<L, P, R> {
 
     public ViewContext(String groupName, String resourceName) {

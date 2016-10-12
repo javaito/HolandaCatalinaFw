@@ -3,7 +3,6 @@ package org.hcjf.layers.view;
 import org.hcjf.utils.Introspection;
 import org.hcjf.view.ViewComponent;
 import org.hcjf.view.ViewComponentContainer;
-import org.hcjf.view.containers.Toolbar;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
@@ -18,9 +17,11 @@ public abstract class ViewCrudLayer<O extends Object> extends ViewLayer implemen
         super(implName);
     }
 
+    //public ViewComponent getList(@ViewActionParameter(name = "OBJECTS") List<O> objects) {
     @ViewAction("LIST")
-    public ViewComponent getList(@ViewActionParameter(name = "OBJECTS") List<O> objects) {
-        Toolbar result = new Toolbar("");
+    public ViewComponent getList() {
+        ViewComponentContainer result = getMainContainer();
+        result.addComponent(getComponentList(getResourceType()));
         return result;
     }
 
@@ -41,6 +42,8 @@ public abstract class ViewCrudLayer<O extends Object> extends ViewLayer implemen
     protected abstract ViewComponentContainer getMainContainer();
 
     protected abstract ViewComponent getFieldComponent(Introspection.Invoker invoker);
+
+    protected abstract ViewComponent getComponentList(Class<O> resourceClass);
 
     protected Collection<? extends Introspection.Invoker> getInvokers(Class<O> resourceClass) {
         return Introspection.getSetters(resourceClass).values();

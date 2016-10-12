@@ -13,12 +13,14 @@ public class ViewRequest extends LayeredRequest {
 
     private final String action;
     private final String resourceName;
+    private final String encodingImplementation;
     private final Map<String, Object> viewParameters;
 
-    public ViewRequest(HttpRequest request, String action, String resourceName, Map<String, Object> viewParameters) {
+    public ViewRequest(HttpRequest request, String action, String resourceName, String encodingImplementation, Map<String, Object> viewParameters) {
         super(request);
         this.action = action;
         this.resourceName = resourceName;
+        this.encodingImplementation = encodingImplementation;
         this.viewParameters = viewParameters;
     }
 
@@ -28,6 +30,10 @@ public class ViewRequest extends LayeredRequest {
 
     public String getResourceName() {
         return resourceName;
+    }
+
+    public String getEncodingImplementation() {
+        return encodingImplementation;
     }
 
     public Map<String, Object> getViewParameters() {
