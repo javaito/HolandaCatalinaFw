@@ -122,7 +122,7 @@ public final class SystemProperties extends Properties {
         defaults.put(LOG_INFO_FILE, "false");
         defaults.put(LOG_DEBUG_FILE, "false");
         defaults.put(LOG_LEVEL, "1");
-        defaults.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss,SSS");
         defaults.put(LOG_CONSUMERS, "[]");
         defaults.put(LOG_SYSTEM_OUT_ENABLED, "false");
         defaults.put(LOG_QUEUE_INITIAL_SIZE, "10000");
