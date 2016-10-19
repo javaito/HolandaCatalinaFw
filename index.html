@@ -23,104 +23,42 @@
 <a id="holanda-catalina" class="anchor" href="#holanda-catalina" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Holanda Catalina</h1>
 
 <h2>
-<a id="motivation" class="anchor" href="#motivation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motivation</h2>
+<a id="motivación" class="anchor" href="#motivaci%C3%B3n" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motivación</h2>
 
-<p>Basing needs, to build a specific set of components by itself define a services-based architecture, we decided to provide high-level tools that build the structures necessary for the development of this type of platforms (PaaS)</p>
-
-<p>In the following links a basic set of required components described for this type of platform:</p>
-
-<ul>
-<li><a href="https://www.nginx.com/blog/introduction-to-microservices/?utm_source=service-discovery-in-a-microservices-architecture&amp;utm_medium=blog">https://www.nginx.com/blog/introduction-to-microservices/?utm_source=service-discovery-in-a-microservices-architecture&amp;utm_medium=blog</a></li>
-<li><a href="http://microservices.io/index.html">http://microservices.io/index.html</a></li>
-</ul>
-
-<p>Currently there are many implementations of general purpose Java development solutions, but none of these implementations is specifically created to develop a set of services interconnected with each other to form a platform.
-As an example to create a service that responds to an HTTP REST interface based on java we have to think of a JEE solution, which includes an application server / web, not less libset and are generally systems that require powerful hardware. Unlike this example we propose simple code, without complex environments, without libraries that the solution does not require and are lightweight and flexible solutions without powerful hardware.</p>
+<p>En la búsqueda de tecnología y soluciones para el desarrollo de plataformas basadas en servicios (PaaS) nos encontramos con una gran variedad de productos, especificaciones, experiencias y modismos que se posicionan como soluciones mágicas para poder montar una plataforma. 
+Dentro del conjunto de productos basados en Java para resolver este tipo de implementaciones me encontré con las soluciones ‘alta gama’ de Java, me refiero a las soluciones Java EE. Si bien este tipo de soluciones son completas tienen un aspecto, a mi entender, negativo. Siempre están asociadas a grandes servidores de aplicaciones de propósito tan general que pierden versatilidad y rendimiento. De este punto surge la principal motivación para el desarrollo de este marco de pequeños servicios que brinda la posibilidad de:
+Acotar el servicio al requerimiento
+Crear y agregar mis pequeños servicios</p>
 
 <h2>
-<a id="components" class="anchor" href="#components" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Components</h2>
-
-<p>In this repository you will find a set of high-level solutions as a base for the development of each of the components needed to publish services, to consume third party services, to share resources between instances of the same service and to organize and discover services on the platform.</p>
-
-<ul>
-<li>Http Service Interface</li>
-<li>Service wrapper</li>
-<li>PaaS Protocol</li>
-<li>Shared Memory between instances (Cloud computing)</li>
-<li>Layered architecture</li>
-<li>Deployment service</li>
-</ul>
+<a id="conjunto-de-servicios-disponibles" class="anchor" href="#conjunto-de-servicios-disponibles" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Conjunto de servicios disponibles</h2>
 
 <h3>
-<a id="http-service-interface" class="anchor" href="#http-service-interface" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Http service interface</h3>
+<a id="net-service" class="anchor" href="#net-service" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Net Service</h3>
 
-<p>Among the high-level tools, the environment has a powerful high-performance HTTP server and very simple to use once. With this tool we can very simply public http interfaces without additional infrastructure or large hardaware requirements.</p>
-
-<h4>
-<a id="publishing-a-local-folder" class="anchor" href="#publishing-a-local-folder" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Publishing a local folder</h4>
-
-<p>Publishing some folder of your own computer...</p>
-
-<div class="highlight highlight-source-java"><pre><span class="pl-smi">HttpServer</span> server <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">HttpServer</span>(<span class="pl-c1">1338</span>);
-server<span class="pl-k">.</span>addContext(<span class="pl-k">new</span> <span class="pl-smi">FolderContext</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>, <span class="pl-smi">Paths</span><span class="pl-k">.</span>get(<span class="pl-s"><span class="pl-pds">"</span>/home/javaito<span class="pl-pds">"</span></span>));
-server<span class="pl-k">.</span>start();</pre></div>
-
-<p>Then open your web browser on http://localhost:1338</p>
-
-<p>Publishing some folder with default element...</p>
-
-<p>First we create a file in the folder that we will publish called default.txt and put the next text into the file.</p>
-
-<pre lang="txt"><code>Hello world!!
-</code></pre>
-
-<p>then we need to publish a context with a default element</p>
-
-<div class="highlight highlight-source-java"><pre><span class="pl-smi">HttpServer</span> server <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">HttpServer</span>(<span class="pl-c1">1338</span>);
-server<span class="pl-k">.</span>addContext(<span class="pl-k">new</span> <span class="pl-smi">FolderContext</span>(<span class="pl-s"><span class="pl-pds">"</span>/home<span class="pl-pds">"</span></span>, <span class="pl-smi">Paths</span><span class="pl-k">.</span>get(<span class="pl-s"><span class="pl-pds">"</span>/home/javaito<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>default.txt<span class="pl-pds">"</span></span>));
-server<span class="pl-k">.</span>start();</pre></div>
-
-<p>open your browser again on http://localhost:1338/home</p>
-
-<h4>
-<a id="publishing-custom-context" class="anchor" href="#publishing-custom-context" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Publishing custom context</h4>
-
-<p>Publishing custom context whit low level implementation...</p>
-
-<div class="highlight highlight-source-java"><pre><span class="pl-k">byte</span>[] document;
-document <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Hello world!!<span class="pl-pds">"</span></span><span class="pl-k">.</span>getBytes();
-<span class="pl-smi">HttpServer</span> server <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">HttpServer</span>(<span class="pl-c1">1338</span>);
-server<span class="pl-k">.</span>addContext(<span class="pl-k">new</span> <span class="pl-smi">Context</span>(<span class="pl-s"><span class="pl-pds">"</span>.*<span class="pl-pds">"</span></span>) {
-    <span class="pl-k">@Override</span>
-    <span class="pl-k">public</span> <span class="pl-smi">HttpResponse</span> <span class="pl-en">onContext</span>(<span class="pl-smi">HttpRequest</span> <span class="pl-v">request</span>) {
-        <span class="pl-smi">HttpResponse</span> response <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-smi">HttpResponse</span>();
-        response<span class="pl-k">.</span>setResponseCode(<span class="pl-smi">HttpResponseCode</span><span class="pl-c1"><span class="pl-k">.</span>OK</span>);
-        response<span class="pl-k">.</span>setBody(document);
-        response<span class="pl-k">.</span>addHeader(<span class="pl-k">new</span> <span class="pl-smi">HttpHeader</span>(<span class="pl-smi">HttpHeader</span><span class="pl-c1"><span class="pl-k">.</span>CONTENT_LENGTH</span>, <span class="pl-smi">Integer</span><span class="pl-k">.</span>toString(document<span class="pl-k">.</span>length)));
-        response<span class="pl-k">.</span>addHeader(<span class="pl-k">new</span> <span class="pl-smi">HttpHeader</span>(<span class="pl-smi">HttpHeader</span><span class="pl-c1"><span class="pl-k">.</span>CONTENT_TYPE</span>, <span class="pl-smi">MimeType</span><span class="pl-c1"><span class="pl-k">.</span>TEXT_PLAIN</span><span class="pl-k">.</span>toString()));
-        <span class="pl-k">return</span> response;
-    }
-});
-server<span class="pl-k">.</span>start();</pre></div>
+<p>Un servicio con muy pocas necesidades de recursos, que brinda una interfaz de red de alto nivel con una gran capacidad de parametrización. Si bien este servicio resuelve toda la complejidad del bajo nivel (Java NIO) dentro del marco propuesto existe una implementación para iniciar un servidor http, realizar consultas http y un proxy http basado en reglas con este servicio.</p>
 
 <h3>
-<a id="service-wrapper" class="anchor" href="#service-wrapper" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Service wrapper</h3>
+<a id="log-service" class="anchor" href="#log-service" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Log Service</h3>
 
-<p>First we can consume some third party service and implements any wrapper solution</p>
-
-<div class="highlight highlight-source-java"><pre></pre></div>
+<p>Provee una método de codificación muy simple que permite realizar log de sistema de forma genérica y abstraer la solución de la tecnología de log elegida y de cualquier cambio que se pueda generar sobre el uso de la tecnología elegida.</p>
 
 <h3>
-<a id="paas-protocol" class="anchor" href="#paas-protocol" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>PaaS Protocol</h3>
+<a id="naming-service" class="anchor" href="#naming-service" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Naming Service</h3>
 
 <h3>
-<a id="shared-memory-between-instances" class="anchor" href="#shared-memory-between-instances" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Shared memory between instances</h3>
+<a id="encoding-service" class="anchor" href="#encoding-service" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Encoding Service</h3>
 
 <h3>
-<a id="layered-architecture" class="anchor" href="#layered-architecture" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Layered architecture</h3>
+<a id="file-system-watcher-service" class="anchor" href="#file-system-watcher-service" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>File System Watcher Service</h3>
+
+<p>Brinda una interfaz de alto nivel para ser notificados al momento de que cierta parte del sistema de archivos sufra modificaciones.</p>
 
 <h3>
-<a id="deployment-service" class="anchor" href="#deployment-service" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Deployment service</h3>
+<a id="shared-memory-service" class="anchor" href="#shared-memory-service" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Shared Memory Service</h3>
+
+<h2>
+<a id="propuesta-de-trabajo-basado-en-capas" class="anchor" href="#propuesta-de-trabajo-basado-en-capas" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Propuesta de trabajo basado en capas</h2>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/javaito/HolandaCatalinaFw">Holanda@Catalina</a> is maintained by <a href="https://github.com/javaito">javaito</a>.</span>
