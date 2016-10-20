@@ -4,6 +4,7 @@ import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
 import javax.net.ssl.SSLContext;
@@ -23,6 +24,11 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     private static final String HTTP_PROTOCOL = "http";
     private static final String HTTPS_PROTOCOL = "https";
 
+    private static final String CONNECTION_TIMEOUT_MESSAGE = "Connection timeout";
+    private static final String READ_TIMEOUT_MESSAGE = "Read timeout";
+    private static final String DISCONNECTION_MESSAGE = "Http client request end";
+    private static final String SESSION_NAME = "Http client session";
+
     private final URL url;
     private Status status;
     private HttpResponse response;
@@ -33,7 +39,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     private HttpSession session;
 
     public HttpClient(URL url) {
-        super(url.getHost(), url.getPort() == -1 ? url.getDefaultPort() :
+        super(url.getHost(), url.getPort() != -1 ? url.getPort() :
                 SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_CLIENT_PORT),
                 url.getProtocol().equals(HTTPS_PROTOCOL) ? NetService.TransportLayerProtocol.TCP_SSL : NetService.TransportLayerProtocol.TCP);
         this.url = url;
@@ -53,89 +59,103 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         request.setHttpVersion(HttpVersion.VERSION_1_1);
         request.setContext(url.getFile());
         request.setMethod(HttpMethod.GET);
+        request.setBody(new byte[0]);
         request.addHeader(new HttpHeader(HttpHeader.HOST, url.getHost()));
         request.addHeader(new HttpHeader(HttpHeader.USER_AGENT, HttpHeader.DEFAULT_USER_AGENT));
     }
 
     /**
-     *
-     * @return
+     * Return the connection timeout value.
+     * @return Connection timeout vaue.
      */
     public final Long getConnectTimeout() {
         return connectTimeout;
     }
 
     /**
-     *
-     * @param connectTimeout
+     * Set the connection timeout value.
+     * @param connectTimeout Connection timeout value.
      */
     public final void setConnectTimeout(Long connectTimeout) {
         this.connectTimeout = connectTimeout;
     }
 
     /**
-     *
-     * @return
+     * Return the write timeout value.
+     * @return Write timeout value.
      */
     public final Long getWriteTimeout() {
         return writeTimeout;
     }
 
     /**
-     *
-     * @param writeTimeout
+     * Set the write timeout value.
+     * @param writeTimeout Write timeout value.
      */
     public final void setWriteTimeout(Long writeTimeout) {
         this.writeTimeout = writeTimeout;
     }
 
     /**
-     *
-     * @return
+     * Return the read timeout value.
+     * @return Read timeout value.
      */
     public final Long getReadTimeout() {
         return readTimeout;
     }
 
     /**
-     *
-     * @param readTimeout
+     * Set the read timeout value.
+     * @param readTimeout Read timeout value.
      */
     public final void setReadTimeout(Long readTimeout) {
         this.readTimeout = readTimeout;
     }
 
     /**
-     *
+     * Return all the internal fields to the default values
+     * in order to reuse this client.
      */
     public final void reset() {
         init();
     }
 
     /**
-     *
-     * @param method
+     * Set the request body.
+     * @param body Request body.
+     */
+    public void setBody(byte[] body) {
+        request.setBody(body);
+    }
+
+    /**
+     * Set the http method to request.
+     * @param method Http method.
      */
     public final void setHttpMethod(HttpMethod method) {
         request.setMethod(method);
     }
 
     /**
-     *
-     * @param header
+     * Add header to request.
+     * @param header Http header.
      */
     public final void addHttpHeader(String header) {
         request.addHeader(new HttpHeader(header));
     }
 
     /**
-     *
-     * @param header
+     * Add header to request.
+     * @param header Http header.
      */
     public final void addHttpHeader(HttpHeader header) {
         request.addHeader(header);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     protected SSLEngine createSSLEngine() {
         try {
@@ -151,7 +171,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     /**
      * This method return the object that represent the
      * client's session.
-     *
      * @return Client's session.
      */
     @Override
@@ -161,7 +180,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
     /**
      * This method decode the implementation data.
-     *
      * @param payLoad Implementation data.
      * @return Implementation data encoded.
      */
@@ -181,7 +199,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
     /**
      * This method decode the net package to obtain the implementation data
-     *
      * @param netPackage Net package.
      * @return Return the implementation data.
      */
@@ -196,7 +213,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
     /**
      * Destroy the session.
-     *
      * @param session Net session to be destroyed
      */
     @Override
@@ -221,15 +237,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     /**
      *
      * @param session Net session.
-     * @param netPackage Net package.
-     */
-    @Override
-    protected void onWrite(HttpSession session, NetPackage netPackage) {
-    }
-
-    /**
-     *
-     * @param session Net session.
      * @param payLoad Net package decoded
      * @param netPackage Net package.
      */
@@ -244,17 +251,20 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     }
 
     /**
-     * @return
+     * This method execute all the steps to do a http request. Creates the connection,
+     * sends the request package and reads the response, then this response
+     * is returned as a method response.
+     * @return Http response package.
      */
     public final HttpResponse request() {
-        session = new HttpSession(UUID.randomUUID(), "Http client session", this, request);
+        session = new HttpSession(UUID.randomUUID(), SESSION_NAME, this, request);
         Integer errorCode = null;
         String errorPhrase = null;
 
         //Connection block
         status = Status.CONNECTING;
-        connect();
         synchronized (this) {
+            connect();
             if (status == Status.CONNECTING) {
                 try {
                     wait(getConnectTimeout());
@@ -264,22 +274,24 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             if (status == Status.CONNECTING) {
                 status = Status.ERROR;
                 errorCode = HttpResponseCode.REQUEST_TIMEOUT;
-                errorPhrase = "Connect timeout";
+                errorPhrase = CONNECTION_TIMEOUT_MESSAGE;
             }
         }
 
-        //Request writing / response read block
+        //Request writing request and read response block
         if(status != Status.ERROR) {
             status = Status.WRITING;
-            try {
-                write(getSession(), request);
-            } catch (IOException ex) {
-                status = Status.ERROR;
-                errorCode = HttpResponseCode.BAD_REQUEST;
-                errorPhrase = ex.getMessage();
-            }
 
             synchronized (this) {
+                Log.out(HTTP_CLIENT_LOG_TAG, "Http client request\r\n%s", request.toString());
+                try {
+                    write(getSession(), request);
+                } catch (IOException ex) {
+                    status = Status.ERROR;
+                    errorCode = HttpResponseCode.BAD_REQUEST;
+                    errorPhrase = ex.getMessage();
+                }
+
                 if (status == Status.WRITING) {
                     try {
                         wait(getReadTimeout());
@@ -290,7 +302,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
                 if (status == Status.WRITING) {
                     status = Status.ERROR;
                     errorCode = HttpResponseCode.REQUEST_TIMEOUT;
-                    errorPhrase = "Read timeout";
+                    errorPhrase = READ_TIMEOUT_MESSAGE;
                 }
             }
         }
@@ -305,10 +317,15 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             response = this.response;
         }
 
-        disconnect(getSession(), "");
+        disconnect(getSession(), DISCONNECTION_MESSAGE);
+
+        Log.in(HTTP_CLIENT_LOG_TAG, "Http client response\r\n%s", response.toString());
         return response;
     }
 
+    /**
+     * Clietn request status.
+     */
     private enum Status {
 
         INACTIVE,

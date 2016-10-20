@@ -180,6 +180,12 @@ public abstract class Service<C extends ServiceConsumer> {
     public abstract void registerConsumer(C consumer);
 
     /**
+     *
+     * @param consumer
+     */
+    public abstract void unregisterConsumer(C consumer);
+
+    /**
      * This method start the global shutdown process.
      */
     public static final void systemShutdown() {

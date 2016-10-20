@@ -100,6 +100,11 @@ public final class Log extends Service<LogPrinter> {
         printers.add(consumer);
     }
 
+    @Override
+    public void unregisterConsumer(LogPrinter consumer) {
+        printers.remove(consumer);
+    }
+
     /**
      * Add the record to the queue and notify the consumer thread.
      * @param record Record to add.

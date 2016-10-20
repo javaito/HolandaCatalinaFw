@@ -1,13 +1,17 @@
 package org.hcjf.io.net.ssl;
 
 import org.hcjf.io.net.NetPackage;
+import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.properties.SystemProperties;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -19,39 +23,40 @@ import java.util.concurrent.Executors;
 public final class SSLHelper implements Runnable {
 
     private SSLEngine sslEngine;
-    private final NetServiceConsumer netServiceConsumer;
+    private final SelectableChannel selectableChannel;
     private final Executor ioExecutor;
     private final Executor engineTaskExecutor;
     private final ByteBuffer srcWrap;
     private final ByteBuffer destWrap;
     private final ByteBuffer srcUnwrap;
     private final ByteBuffer destUnwrap;
+    private SSLHelperStatus status;
     private Object result;
 
-    public SSLHelper(SSLEngine sslEngine, NetServiceConsumer netServiceConsumer) {
+    public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel) {
         this.sslEngine = sslEngine;
-        this.netServiceConsumer = netServiceConsumer;
+        this.selectableChannel = selectableChannel;
         this.ioExecutor = Executors.newSingleThreadExecutor();
         this.engineTaskExecutor = Executors.newFixedThreadPool(
                 SystemProperties.getInteger(SystemProperties.NET_SSL_MAX_IO_THREAD_POOL_SIZE));
         if(SystemProperties.getBoolean(SystemProperties.NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
-            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE));
-            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE));
-            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE));
-            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE));
+            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
+            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
+            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
+            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
         } else {
-            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE));
-            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE));
-            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE));
-            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE));
+            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
+            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
+            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
+            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
         }
+        srcUnwrap.limit(0);
+        status = SSLHelperStatus.WAITING;
         this.ioExecutor.execute(this);
+    }
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public SSLHelperStatus getStatus() {
+        return status;
     }
 
     /**
@@ -72,10 +77,14 @@ public final class SSLHelper implements Runnable {
      * @param encrypted
      */
     private void onWrite(ByteBuffer encrypted) {
-        byte[] encryptedArray = new byte[encrypted.limit()];
-        encrypted.get(encryptedArray);
-
-        result = encryptedArray;
+        try {
+            ((SocketChannel)selectableChannel).write(encrypted);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        byte[] decryptedArray = new byte[encrypted.limit()];
+        encrypted.get(decryptedArray);
+        result = decryptedArray;
         synchronized (this) {
             notifyAll();
         }
@@ -86,19 +95,14 @@ public final class SSLHelper implements Runnable {
      * @param ex
      */
     private void onFailure(Exception ex) {
-        result = ex;
-        synchronized (this) {
-            notifyAll();
-        }
+        status = SSLHelperStatus.FAIL;
     }
 
     /**
      *
      */
     private void onSuccess() {
-        synchronized (this) {
-            notifyAll();
-        }
+        status = SSLHelperStatus.READY;
     }
 
     /**
@@ -128,19 +132,23 @@ public final class SSLHelper implements Runnable {
             SSLHelper.this.run();
         });
 
-        while(result == null) {
-            try {
-                wait();
-            } catch (InterruptedException e) {}
-        }
+//        while(result == null) {
+//            try {
+//                synchronized (this) {
+//                    wait();
+//                }
+//            } catch (InterruptedException e) {}
+//        }
 
-        if(result instanceof Exception) {
-            throw new RuntimeException((Exception) result);
-        }
+//        if(result instanceof Exception) {
+//            throw new RuntimeException((Exception) result);
+//        }
+//
+//        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
+//        result = null;
+//        return resultNetPackage;
 
-        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
-        result = null;
-        return resultNetPackage;
+        return netPackage;
     }
 
     /**
@@ -153,19 +161,23 @@ public final class SSLHelper implements Runnable {
             SSLHelper.this.run();
         });
 
-        while(result == null) {
-            try {
-                wait();
-            } catch (InterruptedException e) {}
-        }
+//        while(result == null) {
+//            try {
+//                synchronized (this) {
+//                    wait();
+//                }
+//            } catch (InterruptedException e) {}
+//        }
+//
+//        if(result instanceof Exception) {
+//            throw new RuntimeException((Exception) result);
+//        }
+//
+//        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
+//        result = null;
+//        return resultNetPackage;
 
-        if(result instanceof Exception) {
-            throw new RuntimeException((Exception) result);
-        }
-
-        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
-        result = null;
-        return resultNetPackage;
+        return netPackage;
     }
 
     /**
@@ -223,6 +235,7 @@ public final class SSLHelper implements Runnable {
         try {
             srcWrap.flip();
             wrapResult = sslEngine.wrap(srcWrap, destWrap);
+            System.out.println(wrapResult.getStatus().toString());
             srcWrap.compact();
         }
         catch (SSLException exc) {
@@ -297,5 +310,15 @@ public final class SSLHelper implements Runnable {
         }
 
         return true;
+    }
+
+    public static enum SSLHelperStatus {
+
+        WAITING,
+
+        READY,
+
+        FAIL
+
     }
 }

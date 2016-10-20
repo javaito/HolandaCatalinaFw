@@ -1,5 +1,7 @@
 package org.hcjf.layers;
 
+import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.storage.StorageLayerInterface;
 import org.hcjf.service.ServiceThread;
 
 import java.lang.reflect.Method;
@@ -49,8 +51,39 @@ public abstract class Layer implements LayerInterface {
      * This method must be override to add restrictions over particular
      * implementations of the layers.
      */
-    public Access checkAccess(){
+    protected Access checkAccess(){
         return new Access(true);
+    }
+
+    /**
+     * Delegation method to get some layer implementation.
+     * @param layerClass Layer implementation class.
+     * @param implName Layer implementation name.
+     * @param <L> Expected layer implementation class.
+     * @return Layer implementation.
+     */
+    protected final <L extends LayerInterface> L getLayer(Class<? extends L> layerClass, String implName) {
+        return Layers.get(layerClass, implName);
+    }
+
+    /**
+     * Delegation method to get some crud layer implementation.
+     * @param implName Layer implementation name.
+     * @param <L> Expected crud layer implementation class.
+     * @return Crud layer implementation.
+     */
+    protected final <L extends CrudLayerInterface<?>> L getCrudLayer(String implName) {
+        return (L) getLayer(CrudLayerInterface.class, implName);
+    }
+
+    /**
+     * Delegation method to get some storage layer implementation.
+     * @param implName Layer implementation name.
+     * @param <L> Expected storage layer implementation class.
+     * @return Storage layer implementation.
+     */
+    protected final <L extends StorageLayerInterface<?>> L getStorageLayer(String implName) {
+        return (L) getLayer(StorageLayerInterface.class, implName);
     }
 
     /**

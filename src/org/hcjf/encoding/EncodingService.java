@@ -50,6 +50,11 @@ public final class EncodingService extends Service<EncodingImpl> {
         }
     }
 
+    @Override
+    public void unregisterConsumer(EncodingImpl consumer) {
+        //TODO
+    }
+
     /**
      *
      * @param mimeType

@@ -44,6 +44,11 @@ public final class Naming extends Service<NamingConsumer> {
         consumers.put(consumer.getName(), consumer);
     }
 
+    @Override
+    public void unregisterConsumer(NamingConsumer consumer) {
+        consumers.remove(consumer.getName());
+    }
+
     /**
      *
      * @param consumer

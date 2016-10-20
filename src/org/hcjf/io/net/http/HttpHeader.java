@@ -139,12 +139,9 @@ public class HttpHeader {
      *
      */
     private void parse() {
-        switch (headerName) {
-            case CONTENT_TYPE:
-            case ACCEPT: {
-                parseStandardGroup();
-                break;
-            }
+        if(headerName.equalsIgnoreCase(ACCEPT) ||
+                headerName.equalsIgnoreCase(CONTENT_TYPE)) {
+            parseStandardGroup();
         }
     }
 

@@ -128,6 +128,7 @@ public class HttpResponse extends HttpPackage {
                     builder.append(new String(getBody(), 0, maxLength));
                     builder.append(" ... [").append(getBody().length - maxLength).append(" more]");
                 } else {
+                    String s = new String(getBody());
                     builder.append(new String(getBody()));
                 }
             }

@@ -32,7 +32,6 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     private int outputBufferSize;
     private long writeWaitForTimeout;
     private final Map<S, Thread> waitForMap;
-    private final SSLHelper sslHelper;
 
     public NetServiceConsumer(Integer port, NetService.TransportLayerProtocol protocol) {
         this.port = port;
@@ -48,11 +47,6 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         inputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_INPUT_BUFFER_SIZE);
         outputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_OUTPUT_BUFFER_SIZE);
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.NET_WRITE_TIMEOUT);
-        if(protocol.equals(NetService.TransportLayerProtocol.TCP_SSL)) {
-            sslHelper = new SSLHelper(createSSLEngine(), this);
-        } else {
-            sslHelper = null;
-        }
         waitForMap = new HashMap<>();
     }
 
@@ -129,14 +123,6 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      */
     protected SSLEngine createSSLEngine() {
         throw new  UnsupportedOperationException("Unsupported ssl engine");
-    }
-
-    /**
-     * Return the ssl helper of the instance.
-     * @return SSL Helper.
-     */
-    public final SSLHelper getSslHelper() {
-        return sslHelper;
     }
 
     /**
@@ -233,7 +219,6 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         synchronized (netPackage.getSession()) {
             if(waitForMap.containsKey(netPackage.getSession())) {
                 netPackage.getSession().notify();
-                Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getId());
             }
         }
 
@@ -271,7 +256,6 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         synchronized (netPackage.getSession()) {
             if(waitForMap.containsKey(netPackage.getSession())) {
                 netPackage.getSession().notify();
-                Log.d(NetService.NET_SERVICE_LOG_TAG, "Session notified %s ....", netPackage.getSession().getId());
             }
         }
         onWrite((S)netPackage.getSession(), netPackage);

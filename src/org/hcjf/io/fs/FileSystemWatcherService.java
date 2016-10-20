@@ -32,7 +32,6 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     }
 
     private WatchService watcher;
-    private FileSystemWatcherTask thread;
     private final Map<Path, WatchKey> keys;
     private final Map<WatchKey, List<FileSystemWatcherConsumer>> consumers;
     private Future future;
@@ -86,11 +85,17 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                     consumers.put(key, new ArrayList<>());
                 }
                 consumers.get(key).add(consumer);
+                Log.i(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File system watcher registered %s", absolutePath);
             }
         } catch (IOException ex) {
             Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG,
                     "Unable to register file system watcher consumer, '$1'", ex, consumer.getBasePath());
         }
+    }
+
+    @Override
+    public void unregisterConsumer(FileSystemWatcherConsumer consumer) {
+        //TODO
     }
 
     /**
@@ -152,17 +157,21 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                             return result;
                         }).forEach(event -> {
 
-                            WatchEvent.Kind<?> kind = event.kind();
+                            fork(() -> {
+                                synchronized (consumer) {
+                                    WatchEvent.Kind<?> kind = event.kind();
 
-                            if (kind == StandardWatchEventKinds.OVERFLOW) {
-                                consumer.overflow((WatchEvent<Path>) event);
-                            } else if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                                consumer.create((WatchEvent<Path>) event);
-                            } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                consumer.update((WatchEvent<Path>) event);
-                            } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-                                consumer.delete((WatchEvent<Path>) event);
-                            }
+                                    if (kind == StandardWatchEventKinds.OVERFLOW) {
+                                        consumer.overflow((WatchEvent<Path>) event);
+                                    } else if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
+                                        consumer.create((WatchEvent<Path>) event);
+                                    } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
+                                        consumer.update((WatchEvent<Path>) event);
+                                    } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
+                                        consumer.delete((WatchEvent<Path>) event);
+                                    }
+                                }
+                            });
                         });
 
                         boolean valid = key.reset();

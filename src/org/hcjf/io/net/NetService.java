@@ -1,5 +1,6 @@
 package org.hcjf.io.net;
 
+import org.hcjf.io.net.ssl.SSLHelper;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -49,6 +50,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     private final Set<NetSession> sessions;
     private final List<NetServiceConsumer> consumers;
+    private final Map<NetSession, SSLHelper> sslHelpers;
 
     private Selector selector;
     private final Object selectorMonitor;
@@ -81,6 +83,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         sessionsByAddress = Collections.synchronizedMap(new HashMap<SocketAddress, Set<NetSession>>());
         sessions = Collections.synchronizedSet(new TreeSet<NetSession>());
         consumers = Collections.synchronizedList(new ArrayList<NetServiceConsumer>());
+        sslHelpers = Collections.synchronizedMap(new HashMap<>());
         addresses = Collections.synchronizedMap(new HashMap<NetSession, SocketAddress>());
     }
 
@@ -212,6 +215,11 @@ public final class NetService extends Service<NetServiceConsumer> {
         consumer.setService(this);
     }
 
+    @Override
+    public void unregisterConsumer(NetServiceConsumer consumer) {
+
+    }
+
     /**
      * This method registers a TCP server service.
      * @param server TCP Server.
@@ -234,7 +242,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         final SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         channel.connect(new InetSocketAddress(client.getHost(), client.getPort()));
-        registerChannel(channel, SelectionKey.OP_CONNECT, client);
+        registerChannel(channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, client);
     }
 
     /**
@@ -446,14 +454,16 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param message
      */
     public final void disconnect(NetSession session, String message) {
-        if(channels.containsKey(session)){
-            SelectableChannel channel = channels.get(session);
-            if(channel != null){
-                NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.DISCONNECT, null);
-                netPackage.setSession(session);
-                outputQueue.get(channel).add(netPackage);
-                channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
-                getSelector().wakeup();
+        SelectableChannel channel = channels.get(session);
+        if(channel != null){
+            synchronized (channel) {
+                if(channels.containsKey(session)) {
+                    NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.DISCONNECT, null);
+                    netPackage.setSession(session);
+                    outputQueue.get(channel).add(netPackage);
+                    channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
+                    getSelector().wakeup();
+                }
             }
         }
     }
@@ -464,33 +474,34 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param channel Channel that will destroy.
      */
     private void destroyChannel(SocketChannel channel) {
-        Set<NetSession> sessions = sessionsByChannel.remove(channel);
-        lastWrite.remove(channel);
-        outputQueue.remove(channel);
-        List<NetSession> removedSessions = new ArrayList<>();
+        synchronized (channel) {
+            Set<NetSession> sessions = sessionsByChannel.remove(channel);
+            lastWrite.remove(channel);
+            outputQueue.remove(channel);
+            List<NetSession> removedSessions = new ArrayList<>();
 
-        try {
-            if(sessions != null){
-                for(NetSession session : sessions) {
-                    channels.remove(session);
-                    if(session.getConsumer() instanceof NetServer) {
-                        NetServer server = (NetServer) session.getConsumer();
-                        if (server.isDisconnectAndRemove()) {
-                            sessions.remove(session);
-                            destroySession(session);
+            try {
+                if (sessions != null) {
+                    for (NetSession session : sessions) {
+                        channels.remove(session);
+                        if (session.getConsumer() instanceof NetServer) {
+                            NetServer server = (NetServer) session.getConsumer();
+                            if (server.isDisconnectAndRemove()) {
+                                sessions.remove(session);
+                                destroySession(session);
+                            }
                         }
+                        removedSessions.add(session);
                     }
-                    removedSessions.add(session);
                 }
-            }
 
-            SocketChannel sChannel = (SocketChannel) channel;
-            if(sChannel.isConnected()){
-                sChannel.close();
+                SocketChannel sChannel = (SocketChannel) channel;
+                if (sChannel.isConnected()) {
+                    sChannel.close();
+                }
+            } catch (Exception ex) {
+                Log.d(NET_SERVICE_LOG_TAG, "Destroy method exception", ex);
             }
-
-        } catch (Exception ex){
-            Log.d(NET_SERVICE_LOG_TAG, "Destroy method exception", ex);
         }
     }
 
@@ -624,12 +635,13 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                 }
                                             }, consumer.getIoExecutor());
                                         } catch (RejectedExecutionException ex){
-                                            Log.d(NET_SERVICE_LOG_TAG, "IO Rejected execution");
-                                            //Update the flag in order to process the key again.y
-                                            if(key.isValid()) {
+                                            //Update the flag in order to process the key again
+                                            if(key.isValid() && sessionsByChannel.containsKey(keyChannel)) {
                                                 removeKey = false;
                                             }
                                         }
+                                    } else {
+                                        key.cancel();
                                     }
                                 }
                             }
@@ -675,6 +687,8 @@ public final class NetService extends Service<NetServiceConsumer> {
             try {
                 SocketChannel channel = (SocketChannel) keyChannel;
                 channel.configureBlocking(false);
+                channel.socket().setKeepAlive(true);
+                channel.socket().setSoTimeout(100);
                 channel.finishConnect();
                 Map<SocketOption, Object> socketOptions = client.getSocketOptions();
                 if(socketOptions != null){
@@ -689,6 +703,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                 outputQueue.put(channel, new LinkedBlockingQueue<>());
                 lastWrite.put(channel, System.currentTimeMillis());
                 portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
+
+                if(client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                    SSLHelper sslHelper = new SSLHelper(client.createSSLEngine(), channel);
+                    sslHelpers.put(client.getSession(), sslHelper);
+                }
+
                 NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
                 onAction(connectionPackage, client);
             } catch (Exception ex){
@@ -745,7 +765,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
 
                 try (ByteArrayOutputStream readData = new ByteArrayOutputStream()) {
-
                     int readSize;
                     int totalSize = 0;
 
@@ -801,9 +820,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 channels.put(session, channel);
                             }
 
-                            if(readData.size() > 0) {
-                                onAction(netPackage, consumer);
+                            if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                                netPackage = sslHelpers.get(session).read(netPackage);
                             }
+                            onAction(netPackage, consumer);
                         }
                     }
                 } catch (Exception ex){
@@ -897,35 +917,41 @@ public final class NetService extends Service<NetServiceConsumer> {
                         case STREAMING: {
                             try {
                                 if(!session.isLocked()){
-                                    byte[] byteData = netPackage.getPayload();
-                                    if(byteData.length == 0) {
-                                        Log.d(NET_SERVICE_LOG_TAG, "Empty write data");
-                                    }
-                                    int begin = 0;
-                                    int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
-                                            session.getConsumer().getOutputBufferSize(): byteData.length - begin;
 
-                                    while(begin < byteData.length){
-                                        ioThread.getOutputBuffer().limit(length);
-                                        ioThread.getOutputBuffer().put(byteData, begin, length);
-                                        ioThread.getOutputBuffer().rewind();
+                                    if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                                        netPackage = sslHelpers.get(session).write(netPackage);
+                                    } else {
 
-                                        if(channel instanceof SocketChannel) {
-                                            int writtenData = 0;
-                                            while(writtenData < length){
-                                                writtenData += ((SocketChannel)channel).write(ioThread.getOutputBuffer());
-                                            }
-                                        } else if(channel instanceof DatagramChannel) {
-                                            SocketAddress address = addresses.get(netPackage.getSession());
-                                            if(sessionsByAddress.get(address).equals(netPackage.getSession())){
-                                                ((DatagramChannel)channel).send(ioThread.getOutputBuffer(), address);
-                                            }
+                                        byte[] byteData = netPackage.getPayload();
+                                        if (byteData.length == 0) {
+                                            Log.d(NET_SERVICE_LOG_TAG, "Empty write data");
                                         }
-
-                                        ioThread.getOutputBuffer().rewind();
-                                        begin += length;
-                                        length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
+                                        int begin = 0;
+                                        int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
                                                 session.getConsumer().getOutputBufferSize() : byteData.length - begin;
+
+                                        while (begin < byteData.length) {
+                                            ioThread.getOutputBuffer().limit(length);
+                                            ioThread.getOutputBuffer().put(byteData, begin, length);
+                                            ioThread.getOutputBuffer().rewind();
+
+                                            if (channel instanceof SocketChannel) {
+                                                int writtenData = 0;
+                                                while (writtenData < length) {
+                                                    writtenData += ((SocketChannel) channel).write(ioThread.getOutputBuffer());
+                                                }
+                                            } else if (channel instanceof DatagramChannel) {
+                                                SocketAddress address = addresses.get(netPackage.getSession());
+                                                if (sessionsByAddress.get(address).equals(netPackage.getSession())) {
+                                                    ((DatagramChannel) channel).send(ioThread.getOutputBuffer(), address);
+                                                }
+                                            }
+
+                                            ioThread.getOutputBuffer().rewind();
+                                            begin += length;
+                                            length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
+                                                    session.getConsumer().getOutputBufferSize() : byteData.length - begin;
+                                        }
                                     }
 
                                     if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.STREAMING) && channel instanceof SocketChannel){
