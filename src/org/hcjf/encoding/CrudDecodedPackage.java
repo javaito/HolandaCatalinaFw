@@ -2,6 +2,7 @@ package org.hcjf.encoding;
 
 import org.hcjf.layers.query.Query;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**

@@ -7,17 +7,17 @@ import org.hcjf.view.ViewComponent;
  * @email armedina@gmail.com
  */
 public class Button extends ViewComponent{
-    private Action action;
+    private String action;
 
     public Button(String name) {
         super(name);
     }
 
-    public Action getAction() {
+    public String getAction() {
         return action;
     }
 
-    public void setAction(Action action) {
+    public void setAction(String action) {
         this.action = action;
     }
 }

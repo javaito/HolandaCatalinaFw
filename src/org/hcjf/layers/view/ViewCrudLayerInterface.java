@@ -9,6 +9,5 @@ import java.util.Map;
  * @author Andrés Medina
  * @email armedina@gmail.com
  */
-public interface ViewCrudLayerInterface extends LayerInterface {
-    public ViewComponent onAction(String action, Map<String, Object> params);
+public interface ViewCrudLayerInterface extends ViewLayerInterface {
 }

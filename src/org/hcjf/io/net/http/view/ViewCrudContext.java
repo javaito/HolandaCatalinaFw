@@ -8,6 +8,7 @@ import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.io.net.http.HttpResponseCode;
 import org.hcjf.layers.view.ViewCrudLayerInterface;
+import org.hcjf.view.components.ViewDataSet;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,14 +35,15 @@ public class ViewCrudContext extends  ViewContext<ViewCrudLayerInterface, ViewRe
         }
 
         String resourceName = request.getPathParts().get(RESOURCE_NAME_INDEX);
-        String resourceAction = "LIST"; // Default action
+        String resourceAction = "list"; // Default action
         String encodingImplementation = request.getPathParts().get(ENCODING_IMPLEMENTATION_INDEX);
 
-        if(request.getPathParts().size() >= RESOURCE_ACTION_INDEX) {
+        if(request.getPathParts().size()-1 >= RESOURCE_ACTION_INDEX) {
             resourceAction = request.getPathParts().get(RESOURCE_ACTION_INDEX);
             //Only 2 actions permitted in view crud context
-            if(!resourceAction.equals("LIST") &&
-                    !resourceAction.equals("CRUD")){
+            if(!resourceAction.equals("list") &&
+                    !resourceAction.equals("crud") &&
+                    !resourceAction.equals("data")){
                 throw new IllegalArgumentException("Resource action forbidden");
             }
         }
@@ -59,12 +61,14 @@ public class ViewCrudContext extends  ViewContext<ViewCrudLayerInterface, ViewRe
 
         byte[] body = EncodingService.encode(MimeType.TEXT_HTML, request.getEncodingImplementation(), new DecodedPackage(object,new HashMap<String, Object>()));
 
+        MimeType mimeType = object instanceof ViewDataSet ? MimeType.APPLICATION_JSON : MimeType.TEXT_HTML;
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.OK);
         response.setReasonPhrase("VIEW Success");
         response.setBody(body);
+        response.addHeader(new HttpHeader("Cache-Control","private, max-age=86400"));
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
-        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_HTML.toString()));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, mimeType.toString()));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
         return new ViewResponse(response);
     }
