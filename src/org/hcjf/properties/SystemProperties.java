@@ -46,7 +46,7 @@ public final class SystemProperties extends Properties {
     public static final String LOG_TRUNCATE_TAG = "hcjf.log.truncate.tag";
     public static final String LOG_TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
 
-    public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.inpt.buffer.size";
+    public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
     public static final String NET_OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
     public static final String NET_DISCONNECT_AND_REMOVE = "hcfj.net.disconnect.and.remove";
     public static final String NET_CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
@@ -132,10 +132,10 @@ public final class SystemProperties extends Properties {
         defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
         defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");
         defaults.put(NET_CONNECTION_TIMEOUT_AVAILABLE, "true");
-        defaults.put(NET_CONNECTION_TIMEOUT, "10000");
+        defaults.put(NET_CONNECTION_TIMEOUT, "30000");
         defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
         defaults.put(NET_WRITE_TIMEOUT, "100");
-        defaults.put(NET_IO_THREAD_POOL_KEEP_ALIVE_TIME, "10");
+        defaults.put(NET_IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(NET_IO_THREAD_POOL_MAX_SIZE, "10000");
         defaults.put(NET_IO_THREAD_POOL_CORE_SIZE, "100");
         defaults.put(NET_DEFAULT_INPUT_BUFFER_SIZE, "5000");

@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http.layered;
 
+import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.*;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
@@ -19,7 +20,7 @@ public abstract class LayeredContext<L extends LayerInterface,
     public LayeredContext(String layerGroupName, String resourceName) {
         super("^/" + (layerGroupName == null ? resourceName : (layerGroupName + "/" + resourceName)) + ".*");
         if(resourceName == null) {
-            throw new NullPointerException("Resource name can't be null");
+            throw new NullPointerException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_LAYERED_1));
         }
         this.layerGroupName = layerGroupName;
         this.resourceName = resourceName;

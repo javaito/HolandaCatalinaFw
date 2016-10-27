@@ -1,6 +1,7 @@
 package org.hcjf.encoding;
 
 import com.google.gson.*;
+import org.hcjf.errors.Errors;
 import org.hcjf.layers.query.Evaluator;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
@@ -24,7 +25,7 @@ public class JsonEncoding extends EncodingImpl {
     }
 
     /**
-     * @param decodedPackages
+     * @param decodedPackage
      * @return
      */
     @Override
@@ -75,7 +76,7 @@ public class JsonEncoding extends EncodingImpl {
                 }
             }
         } else {
-            throw new UnsupportedOperationException("Only support crud packages");
+            throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_3));
         }
 
         return gson.toJson(jsonObject).getBytes();
@@ -154,7 +155,8 @@ public class JsonEncoding extends EncodingImpl {
                 element = map;
                 break;
             }
-            case BYTE_BUFFER: throw new UnsupportedOperationException("Byte buffer type is not supported for 'HCJF' json encoding");
+            case BYTE_BUFFER: throw new UnsupportedOperationException(
+                    Errors.getMessage(Errors.ORG_HCJF_ENCODING_4));
         }
 
         return element;
@@ -185,7 +187,7 @@ public class JsonEncoding extends EncodingImpl {
         JsonParser parser = new JsonParser();
         JsonElement jsonElement = parser.parse(new String(data, Charset.forName(charset)));
         if(!jsonElement.isJsonObject()) {
-            throw new IllegalArgumentException("The HCJF json implementation expected a json object like data");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_5));
         }
         JsonObject jsonData = (JsonObject) jsonElement;
 
@@ -205,10 +207,10 @@ public class JsonEncoding extends EncodingImpl {
                     }
                     decodedObject = resultList;
                 } else {
-                    throw new IllegalArgumentException("The json field " + BODY_JSON_FIELD + " must be json object or json array");
+                    throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_6, BODY_JSON_FIELD));
                 }
             } else {
-                throw new IllegalArgumentException("Unable to create instance of " + objectClass + " because body field not found in json object");
+                throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_7, objectClass));
             }
         }
 
@@ -245,19 +247,19 @@ public class JsonEncoding extends EncodingImpl {
                     if(actionJsonObject.has(EVALUATOR_ACTION_FIELD)) {
                         actionName = actionJsonObject.get(EVALUATOR_ACTION_FIELD).getAsString();
                     } else {
-                        throw new IllegalArgumentException("The evaluator action json object must has field 'a' as string");
+                        throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_8));
                     }
 
                     if(actionJsonObject.has(EVALUATOR_FIELD_FIELD)) {
                         actionFieldName = actionJsonObject.get(EVALUATOR_FIELD_FIELD).getAsString();
                     } else {
-                        throw new IllegalArgumentException("The evaluator action json object must has field 'f' as string");
+                        throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_9));
                     }
 
                     if(actionJsonObject.has(EVALUATOR_VALUE_FIELD)) {
                         actionValue = getValue(EVALUATOR_VALUE_FIELD, actionJsonObject.get(EVALUATOR_VALUE_FIELD));
                     } else {
-                        throw new IllegalArgumentException("The evaluator action json object must has field 'v' as typed object");
+                        throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_10));
                     }
 
                     switch(actionName) {
@@ -270,7 +272,7 @@ public class JsonEncoding extends EncodingImpl {
                         case EVALUATOR_NOT_IN : decodedQuery.notIn(actionFieldName, actionValue); break;
                         case EVALUATOR_SMALLER_THAN : decodedQuery.smallerThan(actionFieldName, actionValue); break;
                         case EVALUATOR_SMALLER_THAN_OR_EQUALS : decodedQuery.smallerThanOrEqual(actionFieldName, actionValue); break;
-                        default: throw new IllegalArgumentException("Not implemented evaluation action: " + actionFieldName);
+                        default: throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_11, actionFieldName));
                     }
                 }
             }
@@ -286,11 +288,11 @@ public class JsonEncoding extends EncodingImpl {
                     } else if(entry.getValue().isJsonPrimitive()) {
                         decodedParameters.put(entry.getKey(), entry.getValue().getAsString());
                     } else {
-                        throw new IllegalArgumentException("The HCJF json implementation expected parameter values as json object or as json primitive");
+                        throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_12));
                     }
                 }
             } else {
-                throw new IllegalArgumentException("The HCJF json implementation expected " + PARAMETERS_JSON_FIELD + " field as json object");
+                throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_13, PARAMETERS_JSON_FIELD));
             }
         }
 
@@ -310,7 +312,7 @@ public class JsonEncoding extends EncodingImpl {
             try {
                 result = objectClass.newInstance();
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Unable to create instance of " + objectClass, ex);
+                throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_14, objectClass), ex);
             }
 
             Map<String, Introspection.Setter> setters = Introspection.getSetters(objectClass);
@@ -319,12 +321,12 @@ public class JsonEncoding extends EncodingImpl {
                     try {
                         setters.get(fieldName).set(result, getValue(fieldName, jsonObject.get(fieldName)));
                     } catch (Exception ex) {
-                        throw new IllegalArgumentException("Unable to add field " + fieldName, ex);
+                        throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_15, fieldName), ex);
                     }
                 }
             }
         } else {
-            throw new IllegalArgumentException("The HCJF json implementation expected " + BODY_JSON_FIELD + " field as json object");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_16, BODY_JSON_FIELD));
         }
         return result;
     }
@@ -345,12 +347,12 @@ public class JsonEncoding extends EncodingImpl {
             try {
                 encodingType = EncodingType.fromId(jsonObject.get(TYPE_PARAMETER_FIELD).getAsByte());
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Unsupported encoding type for field " + fieldName);
+                throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_17, fieldName));
             }
             JsonElement value = jsonObject.get(VALUE_PARAMETER_FIELD);
             result = getValue(fieldName, encodingType, value);
         } else {
-            throw new IllegalArgumentException("The field " + fieldName + " expected as json array of json object, with internal format '{t:typeByte,v:value}'");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_18, fieldName));
         }
         return result;
     }
@@ -376,7 +378,7 @@ public class JsonEncoding extends EncodingImpl {
                     }
                     result = resultList;
                 } else {
-                    throw new IllegalArgumentException("The field " + fieldName + " expected as json array");
+                    throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_19, fieldName));
                 }
                 break;
             }
@@ -389,22 +391,22 @@ public class JsonEncoding extends EncodingImpl {
                     }
                     result = resultMap;
                 } else {
-                    throw new IllegalArgumentException("The field " + fieldName + " expected as json object");
+                    throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_20, fieldName));
                 }
                 break;
             }
-            case BOOLEAN: try { result = jsonElement.getAsBoolean(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as boolean", ex);} ;break;
-            case BYTE: try { result = jsonElement.getAsByte(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as byte", ex);} ;break;
-            case DATE: try { result = new Date(jsonElement.getAsLong()); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as date", ex);} ;break;
-            case DOUBLE: try { result = jsonElement.getAsDouble(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as double", ex);} ; break;
-            case FLOAT: try { result = jsonElement.getAsFloat(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as float", ex);} ; break;
-            case INTEGER: try { result = jsonElement.getAsInt(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as integer", ex);} ; break;
-            case LONG: try { result = jsonElement.getAsLong(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as long", ex);} ; break;
-            case SHORT: try { result = jsonElement.getAsShort(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as short", ex);} ; break;
-            case STRING: try { result = jsonElement.getAsString(); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
-            case UUID: try { result = UUID.fromString(jsonElement.getAsString()); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
-            case REGEX: try { result = Pattern.compile(jsonElement.getAsString()); } catch (Exception ex) {throw new IllegalArgumentException("The field " + fieldName + " expected as string", ex);} ; break;
-            case BYTE_BUFFER: throw new UnsupportedOperationException("Byte buffer type is not supported for 'HCJF' json encoding");
+            case BOOLEAN: try { result = jsonElement.getAsBoolean(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, boolean.class.getName()), ex);} ;break;
+            case BYTE: try { result = jsonElement.getAsByte(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, byte.class.getName()), ex);} ;break;
+            case DATE: try { result = new Date(jsonElement.getAsLong()); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, Date.class.getSimpleName()), ex);} ;break;
+            case DOUBLE: try { result = jsonElement.getAsDouble(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, double.class.getName()), ex);} ; break;
+            case FLOAT: try { result = jsonElement.getAsFloat(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, float.class.getName()), ex);} ; break;
+            case INTEGER: try { result = jsonElement.getAsInt(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, int.class.getName()), ex);} ; break;
+            case LONG: try { result = jsonElement.getAsLong(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, long.class.getName()), ex);} ; break;
+            case SHORT: try { result = jsonElement.getAsShort(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, short.class.getName()), ex);} ; break;
+            case STRING: try { result = jsonElement.getAsString(); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, String.class.getSimpleName()), ex);} ; break;
+            case UUID: try { result = UUID.fromString(jsonElement.getAsString()); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, String.class.getSimpleName()), ex);} ; break;
+            case REGEX: try { result = Pattern.compile(jsonElement.getAsString()); } catch (Exception ex) {throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_21, fieldName, String.class.getSimpleName()), ex);} ; break;
+            case BYTE_BUFFER: throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_22));
         }
 
         return result;

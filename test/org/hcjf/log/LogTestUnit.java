@@ -13,7 +13,7 @@ import java.io.PrintStream;
  */
 public class LogTestUnit {
 
-    @Test
+
     public void testLog() {
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -14,12 +14,12 @@ import java.net.URL;
  */
 public class HttpClientStressTest {
 
-    @Test(timeout = 30000)
+    @Test(timeout = 50000)
     public void test() throws Exception {
         HttpClient client = new HttpClient(new URL("http://rest-service.guides.spring.io/greeting"));
         long startTime;
         HttpResponse response;
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             startTime = System.currentTimeMillis();
             response = client.request();
             Log.d("TEST", "Http client stress %d", (System.currentTimeMillis() - startTime));

@@ -35,6 +35,17 @@ public abstract class Service<C extends ServiceConsumer> {
             throw new IllegalArgumentException("The service name (" + serviceName + ") is already register");
         }
 
+
+        /**
+         * this.serviceExecutor = new ThreadPoolExecutor(
+         SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_CORE_SIZE),
+         SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_MAX_SIZE),
+         SystemProperties.getLong(SystemProperties.SERVICE_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS,
+         new PriorityBlockingQueue<>(SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_CORE_SIZE),
+         new RunnableWrapperComparator()),
+         serviceThreadFactory);
+         */
+
         this.serviceName = serviceName;
         this.priority = priority;
         this.serviceThreadFactory = createThreadFactory();
@@ -331,18 +342,37 @@ public abstract class Service<C extends ServiceConsumer> {
     }
 
     /**
+     * This comparator gets priority to service runnable.
+     */
+    public static class RunnableWrapperComparator implements Comparator<Runnable> {
+
+        @Override
+        public int compare(Runnable o1, Runnable o2) {
+            int result = (int)(((RunnableWrapper)o1).creationTime - ((RunnableWrapper)o2).creationTime) * -1;
+
+            if(result == 0) {
+                result = o1.hashCode() - o2.hashCode();
+            }
+
+            return result;
+        }
+    }
+
+    /**
      * This wrapper encapsulate any other runnable in order to set the environment
      * session on the service thread.
      */
-    private class RunnableWrapper implements Runnable {
+    private static class RunnableWrapper implements Runnable {
 
         private final Runnable runnable;
         private final ServiceSession session;
         private final Map<String, Object> invokerProperties;
+        private final long creationTime;
 
         public RunnableWrapper(Runnable runnable, ServiceSession session, Map<String, Object> invokerProperties) {
             this.runnable = runnable;
             this.invokerProperties = invokerProperties;
+            this.creationTime = System.currentTimeMillis();
             if(session != null) {
                 this.session = session;
             } else {
@@ -368,13 +398,14 @@ public abstract class Service<C extends ServiceConsumer> {
                 ((ServiceThread) Thread.currentThread()).setSession(null);
             }
         }
+
     }
 
     /**
      * This wrapper encapsulate any other callable in order to set the environment
      * session on the service thread.
      */
-    private class CallableWrapper<O extends Object> implements Callable<O> {
+    private static class CallableWrapper<O extends Object> implements Callable<O> {
 
         private final Callable<O> callable;
         private final ServiceSession session;

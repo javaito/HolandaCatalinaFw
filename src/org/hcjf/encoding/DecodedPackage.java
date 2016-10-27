@@ -1,5 +1,6 @@
 package org.hcjf.encoding;
 
+import org.hcjf.errors.Errors;
 import org.hcjf.layers.query.Query;
 
 import java.util.Map;
@@ -16,7 +17,7 @@ public class DecodedPackage {
 
     public DecodedPackage(Object object, Map<String, Object> parameters) {
         if(parameters == null) {
-            throw new IllegalArgumentException("Parameters map can't be null");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_1));
         }
         this.object = object;
         this.parameters = parameters;

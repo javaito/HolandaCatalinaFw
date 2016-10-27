@@ -1,6 +1,7 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.encoding.MimeType;
+import org.hcjf.errors.Errors;
 import org.hcjf.properties.SystemProperties;
 
 import java.io.File;
@@ -35,11 +36,11 @@ public class FolderContext extends Context {
         super(START_CONTEXT + URI_FOLDER_SEPARATOR + name + END_CONTEXT);
 
         if(baseFolder == null) {
-            throw new NullPointerException("Folder location can't be null");
+            throw new NullPointerException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_1));
         }
 
         if(!baseFolder.toFile().exists()) {
-            throw new IllegalArgumentException("The base folder doesn't exist");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_2));
         }
 
         this.name = name;
@@ -65,7 +66,7 @@ public class FolderContext extends Context {
         for(String forbidden : FORBIDDEN_CHARACTERS) {
             for(String element : elements) {
                 if (element.contains(forbidden)) {
-                    throw new IllegalArgumentException("Forbidden path (" + forbidden + "):" + request.getContext());
+                    throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_3, forbidden, request.getContext()));
                 }
             }
         }
@@ -116,18 +117,18 @@ public class FolderContext extends Context {
                     try {
                         response.setBody(Files.readAllBytes(file.toPath()));
                     } catch (IOException ex) {
-                        throw new RuntimeException("Unable to read file: " + Paths.get(request.getContext(), file.getName()), ex);
+                        throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
                     }
                 } else {
                     try {
                         response.setBody(Files.readAllBytes(file.toPath()));
                     } catch (IOException ex) {
-                        throw new RuntimeException("Unable to read file: " + Paths.get(request.getContext(), file.getName()), ex);
+                        throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
                     }
                 }
             }
         } else {
-            throw new IllegalArgumentException("File not found: " + request.getContext());
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_5, request.getContext()));
         }
 
         return response;

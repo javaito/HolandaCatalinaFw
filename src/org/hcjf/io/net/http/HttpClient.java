@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.errors.Errors;
 import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetService;
@@ -164,7 +165,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             engine.beginHandshake();
             return engine;
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Unsupported ssl engine", ex);
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_6), ex);
         }
     }
 

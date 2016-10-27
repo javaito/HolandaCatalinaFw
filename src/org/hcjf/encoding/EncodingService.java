@@ -1,5 +1,6 @@
 package org.hcjf.encoding;
 
+import org.hcjf.errors.Errors;
 import org.hcjf.service.Service;
 
 import java.util.HashMap;
@@ -67,7 +68,7 @@ public final class EncodingService extends Service<EncodingImpl> {
         }
 
         if(encoding == null) {
-            throw new IllegalArgumentException("EncodingService implementation not found: " + mimeType + "@" + impl);
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_ENCODING_2, mimeType, impl));
         }
 
         return encoding;

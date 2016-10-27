@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http.proxy;
 
+import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.Context;
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.HttpResponse;
@@ -54,7 +55,7 @@ public class HttpProxy extends HttpServer {
      */
     public final void addRule(HttpProxyRule rule) {
         if(rule == null) {
-            throw new NullPointerException("Null http proxy rule");
+            throw new NullPointerException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_PROXY_1));
         }
         rules.add(rule);
     }
@@ -67,7 +68,7 @@ public class HttpProxy extends HttpServer {
      */
     @Override
     public final synchronized void addContext(Context context) {
-        throw new UnsupportedOperationException("This kind of http server not support add custom context");
+        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_PROXY_2));
     }
 
     /**

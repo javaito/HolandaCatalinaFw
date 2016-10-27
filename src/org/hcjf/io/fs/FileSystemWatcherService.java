@@ -1,5 +1,6 @@
 package org.hcjf.io.fs;
 
+import org.hcjf.errors.Errors;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -62,7 +63,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     @Override
     public void registerConsumer(FileSystemWatcherConsumer consumer) {
         if(consumer == null) {
-            throw new NullPointerException("File system consumer null");
+            throw new NullPointerException(Errors.getMessage(Errors.ORG_HCJF_IO_FS_1));
         }
 
         synchronized (this) {

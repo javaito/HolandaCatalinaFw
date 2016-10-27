@@ -495,9 +495,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
                 }
 
-                SocketChannel sChannel = (SocketChannel) channel;
-                if (sChannel.isConnected()) {
-                    sChannel.close();
+                if (channel.isConnected()) {
+                    channel.close();
                 }
             } catch (Exception ex) {
                 Log.d(NET_SERVICE_LOG_TAG, "Destroy method exception", ex);

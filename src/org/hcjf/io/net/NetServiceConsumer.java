@@ -1,6 +1,5 @@
 package org.hcjf.io.net;
 
-import org.hcjf.io.net.ssl.SSLHelper;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceConsumer;

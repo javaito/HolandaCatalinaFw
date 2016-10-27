@@ -1,5 +1,7 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.errors.Errors;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -125,11 +127,11 @@ public class HttpHeader {
      */
     public final String getParameter(String groupName, String parameterName) {
         if(groupName == null) {
-            throw new IllegalArgumentException("Parameter 'groupName' can't be null");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_7));
         }
 
         if(parameterName == null) {
-            throw new IllegalArgumentException("Parameter 'parameterName' can't be null");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_8));
         }
 
         return headerGroups.get(groupName).get(parameterName);

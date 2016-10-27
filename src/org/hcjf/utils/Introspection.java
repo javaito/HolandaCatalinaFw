@@ -27,24 +27,6 @@ public final class Introspection {
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
 
     /**
-     * Returns the subclass of the class specified as a parameter whose simple name
-     * is also indicated as a parameter
-     * @param className Capitalized or uncapitalized simple name of the founded subclass.
-     * @param superClass Super class of this king of implementations.
-     * @return Sub class funded.
-     */
-    public static Class classForName(String className, Class superClass) {
-        String name = superClass.getName();
-        String packageName = name.substring(0, name.lastIndexOf(".") + 1);
-        String subClassName = Strings.capitalize(className);
-        try {
-            return Class.forName(packageName + subClassName);
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Sub class of " + superClass.getName() + " called " + className + " not found", ex);
-        }
-    }
-
-    /**
      * Return a map with all the methods founded in the class applying the filter, indexed
      * by the filter definition.
      * @param clazz Class to be inspected.

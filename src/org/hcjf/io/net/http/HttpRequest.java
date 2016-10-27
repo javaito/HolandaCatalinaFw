@@ -43,50 +43,94 @@ public class HttpRequest extends HttpPackage {
         this(null, null);
     }
 
+    /**
+     * Return the request path
+     * @return Request path.
+     */
     public String getPath() {
         return path;
     }
 
+    /**
+     * Set the request path.
+     * @param path Request path.
+     */
     public void setPath(String path) {
         this.path = path;
     }
 
+    /**
+     * Return the request context.
+     * @return Request context.
+     */
     public String getContext() {
         return context;
     }
 
+    /**
+     * Set the request context.
+     * @param context Request context.
+     */
     public void setContext(String context) {
         this.context = context;
         this.path = context;
     }
 
+    /**
+     * Return the request method.
+     * @return Request method.
+     */
     public HttpMethod getMethod() {
         return method;
     }
 
+    /**
+     * Set the request method.
+     * @param method Request method.
+     */
     public void setMethod(HttpMethod method) {
         this.method = method;
     }
 
+    /**
+     * Return the request parameters.
+     * @return Request parameters.
+     */
     public Map<String, String> getParameters() {
         return Collections.unmodifiableMap(parameters);
     }
 
+    /**
+     * Return the parameter indexed by the argument name.
+     * @param parameterName Name of the founding parameter.
+     * @return Return the parameter.
+     */
     public String getParameter(String parameterName) {
         return parameters.get(parameterName);
     }
 
+    /**
+     * Add parameter.
+     * @param parameterName Parameter name.
+     * @param parameterValue Parameter value.
+     */
     public void addHttpParameter(String parameterName, String parameterValue) {
         parameters.put(parameterName, parameterValue);
     }
 
+    /**
+     * Return a list with all the parts of the request path.
+     * If the path is /path1/path2/pathN, then the method response with
+     * a list ad [path1,path2,pathN]
+     * @return List with all the parts of the request path.
+     */
     public List<String> getPathParts() {
         return pathParts;
     }
 
     /**
-     * @param body
-     * @return
+     * This method process the body of the complete request.
+     * @param body Body of the request.
      */
     @Override
     protected void processBody(byte[] body) {
@@ -94,8 +138,6 @@ public class HttpRequest extends HttpPackage {
         if(contentType != null &&
                 contentType.getHeaderValue().equals(HttpHeader.APPLICATION_X_WWW_FORM_URLENCODED)) {
             parseHttpParameters(new String(body));
-        } else {
-
         }
     }
 

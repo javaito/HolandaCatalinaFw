@@ -1,5 +1,7 @@
 package org.hcjf.io.net.http.rest;
 
+import org.hcjf.errors.Errors;
+import org.hcjf.io.net.http.HttpMethod;
 import org.hcjf.io.net.http.layered.*;
 import org.hcjf.layers.LayerInterface;
 
@@ -53,7 +55,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @return
      */
     protected Object get(P layeredRequest) {
-        throw new UnsupportedOperationException("GET method is not implemented on the REST interface");
+        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.GET.toString()));
     }
 
     /**
@@ -62,7 +64,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @return
      */
     protected Object post(P layeredRequest) {
-        throw new UnsupportedOperationException("POST method is not implemented on the REST interface");
+        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.POST.toString()));
     }
 
     /**
@@ -71,7 +73,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @return
      */
     protected Object put(P layeredRequest) {
-        throw new UnsupportedOperationException("PUT method is not implemented on the REST interface");
+        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.PUT.toString()));
     }
 
     /**
@@ -80,7 +82,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @return
      */
     protected Object delete(P layeredRequest) {
-        throw new UnsupportedOperationException("DELETE method is not implemented on the REST interface");
+        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.DELETE.toString()));
     }
 
 }

@@ -1,6 +1,7 @@
 package org.hcjf.io.net.http.rest;
 
 import org.hcjf.encoding.CrudDecodedPackage;
+import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.*;
 import org.hcjf.io.net.http.layered.LayeredRequest;
 import org.hcjf.io.net.http.layered.LayeredResponse;
@@ -36,7 +37,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
     @Override
     protected CrudRequest decode(HttpRequest request) {
         if(request.getPathParts().size() <= CRUD_RESOURCE_NAME_INDEX) {
-            throw new IllegalArgumentException("Resource name parameter not found");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_1));
         }
 
         String resourceName = request.getPathParts().get(CRUD_RESOURCE_NAME_INDEX);
@@ -54,7 +55,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
                 if(request.getPathParts().size() > CRUD_QUERY_ID_INDEX) {
                     id = request.getPathParts().get(CRUD_QUERY_ID_INDEX);
                 } else {
-                    throw new IllegalArgumentException("Resource query parameter not found.");
+                    throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_2));
                 }
             } else {
                 //In this case the 3 path is the id of the resource.
@@ -135,7 +136,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         if(crudRequest.getResourceAction() == null) {
             result = layerInterface.create(crudRequest.getAttach(), crudRequest.getCrudParameters());
         } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
-            throw new IllegalArgumentException("The resources can't be created using a query like a parameter.");
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_3));
         } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.createQuery((Query) crudRequest.getAttach(), crudRequest.getCrudParameters());
         }
