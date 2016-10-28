@@ -195,7 +195,7 @@ public class HttpRequest extends HttpPackage {
             } else {
                 String[] keyValue = param.split(HTTP_FIELD_ASSIGNATION);
                 key = keyValue[0];
-                value = keyValue[1];
+                value = keyValue.length==2 ? keyValue[1] : null;
             }
 
             try {
