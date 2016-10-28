@@ -1344,10 +1344,10 @@ public final class MimeType {
         typesBySuffix.put(CPT, APPLICATION_MAC_COMPACTPRO);
         typesBySuffix.put(CRL, APPLICATION_PKCS_CRL);
         typesBySuffix.put(CSH, APPLICATION_X_CSH);
-        typesBySuffix.put(CSS, APPLICATION_X_POINTPLUS);
+        typesBySuffix.put(CSS, TEXT_CSS);
         typesBySuffix.put(DCR, APPLICATION_X_DIRECTOR);
         typesBySuffix.put(DEEPV, APPLICATION_X_DEEPV);
-        typesBySuffix.put(DIF, VIDEO_X_DV);
+        typesBySuffix.put(DIF, VIDEO_X_DV);`
         typesBySuffix.put(DL, VIDEO_DL);
         typesBySuffix.put(DOC, APPLICATION_MSWORD);
         typesBySuffix.put(DP, APPLICATION_COMMONGROUND);
