@@ -1347,7 +1347,7 @@ public final class MimeType {
         typesBySuffix.put(CSS, TEXT_CSS);
         typesBySuffix.put(DCR, APPLICATION_X_DIRECTOR);
         typesBySuffix.put(DEEPV, APPLICATION_X_DEEPV);
-        typesBySuffix.put(DIF, VIDEO_X_DV);`
+        typesBySuffix.put(DIF, VIDEO_X_DV);
         typesBySuffix.put(DL, VIDEO_DL);
         typesBySuffix.put(DOC, APPLICATION_MSWORD);
         typesBySuffix.put(DP, APPLICATION_COMMONGROUND);
