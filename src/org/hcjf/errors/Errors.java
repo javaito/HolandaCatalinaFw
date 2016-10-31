@@ -60,49 +60,49 @@ public final class Errors {
     static {
         instance = new Errors();
 
-        instance.addDefault(ORG_HCJF_ENCODING_1, "Parameters map can't be null");
-        instance.addDefault(ORG_HCJF_ENCODING_2, "EncodingService implementation not found: %s@%s");
-        instance.addDefault(ORG_HCJF_ENCODING_3, "Only support crud packages");
-        instance.addDefault(ORG_HCJF_ENCODING_4, "Byte buffer type is not supported for 'HCJF' json encoding");
-        instance.addDefault(ORG_HCJF_ENCODING_5, "The HCJF json implementation expected a json object like data");
-        instance.addDefault(ORG_HCJF_ENCODING_6, "The json field %s must be json object or json array");
-        instance.addDefault(ORG_HCJF_ENCODING_7, "Unable to create instance of %s because body field not found in json object");
-        instance.addDefault(ORG_HCJF_ENCODING_8, "The evaluator action json object must has field 'a' as string");
-        instance.addDefault(ORG_HCJF_ENCODING_9, "The evaluator action json object must has field 'f' as string");
-        instance.addDefault(ORG_HCJF_ENCODING_10, "The evaluator action json object must has field 'v' as typed object");
-        instance.addDefault(ORG_HCJF_ENCODING_11, "Not implemented evaluation action: %s");
-        instance.addDefault(ORG_HCJF_ENCODING_12, "The HCJF json implementation expected parameter values as json object or as json primitive");
-        instance.addDefault(ORG_HCJF_ENCODING_13, "The HCJF json implementation expected %s field as json object");
-        instance.addDefault(ORG_HCJF_ENCODING_14, "Unable to create instance of %s");
-        instance.addDefault(ORG_HCJF_ENCODING_15, "Unable to add field %s");
-        instance.addDefault(ORG_HCJF_ENCODING_16, "The HCJF json implementation expected %s field as json object");
-        instance.addDefault(ORG_HCJF_ENCODING_17, "Unsupported encoding type for field %s");
-        instance.addDefault(ORG_HCJF_ENCODING_18, "The field %s expected as json array of json object, with internal format '{t:typeByte,v:value}'");
-        instance.addDefault(ORG_HCJF_ENCODING_19, "The field %s expected as json array");
-        instance.addDefault(ORG_HCJF_ENCODING_20, "The field %s expected as json object");
-        instance.addDefault(ORG_HCJF_ENCODING_21, "The field %s expected as %s");
-        instance.addDefault(ORG_HCJF_ENCODING_22, "Byte buffer type is not supported for 'HCJF' json encoding");
+        addDefault(ORG_HCJF_ENCODING_1, "Parameters map can't be null");
+        addDefault(ORG_HCJF_ENCODING_2, "EncodingService implementation not found: %s@%s");
+        addDefault(ORG_HCJF_ENCODING_3, "Only support crud packages");
+        addDefault(ORG_HCJF_ENCODING_4, "Byte buffer type is not supported for 'HCJF' json encoding");
+        addDefault(ORG_HCJF_ENCODING_5, "The HCJF json implementation expected a json object like data");
+        addDefault(ORG_HCJF_ENCODING_6, "The json field %s must be json object or json array");
+        addDefault(ORG_HCJF_ENCODING_7, "Unable to create instance of %s because body field not found in json object");
+        addDefault(ORG_HCJF_ENCODING_8, "The evaluator action json object must has field 'a' as string");
+        addDefault(ORG_HCJF_ENCODING_9, "The evaluator action json object must has field 'f' as string");
+        addDefault(ORG_HCJF_ENCODING_10, "The evaluator action json object must has field 'v' as typed object");
+        addDefault(ORG_HCJF_ENCODING_11, "Not implemented evaluation action: %s");
+        addDefault(ORG_HCJF_ENCODING_12, "The HCJF json implementation expected parameter values as json object or as json primitive");
+        addDefault(ORG_HCJF_ENCODING_13, "The HCJF json implementation expected %s field as json object");
+        addDefault(ORG_HCJF_ENCODING_14, "Unable to create instance of %s");
+        addDefault(ORG_HCJF_ENCODING_15, "Unable to add field %s");
+        addDefault(ORG_HCJF_ENCODING_16, "The HCJF json implementation expected %s field as json object");
+        addDefault(ORG_HCJF_ENCODING_17, "Unsupported encoding type for field %s");
+        addDefault(ORG_HCJF_ENCODING_18, "The field %s expected as json array of json object, with internal format '{t:typeByte,v:value}'");
+        addDefault(ORG_HCJF_ENCODING_19, "The field %s expected as json array");
+        addDefault(ORG_HCJF_ENCODING_20, "The field %s expected as json object");
+        addDefault(ORG_HCJF_ENCODING_21, "The field %s expected as %s");
+        addDefault(ORG_HCJF_ENCODING_22, "Byte buffer type is not supported for 'HCJF' json encoding");
 
-        instance.addDefault(ORG_HCJF_IO_FS_1, "File system consumer null");
+        addDefault(ORG_HCJF_IO_FS_1, "File system consumer null");
 
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_1, "Folder location can't be null");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_2, "The base folder doesn't exist");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_3, "Forbidden path (%s):%s");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_4, "Unable to read file: %s");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_5, "File not found: %s");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_6, "Unsupported ssl engine");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_7, "Parameter 'groupName' can't be null");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_8, "Parameter 'parameterName' can't be null");
+        addDefault(ORG_HCJF_IO_NET_HTTP_1, "Folder location can't be null");
+        addDefault(ORG_HCJF_IO_NET_HTTP_2, "The base folder doesn't exist");
+        addDefault(ORG_HCJF_IO_NET_HTTP_3, "Forbidden path (%s):%s");
+        addDefault(ORG_HCJF_IO_NET_HTTP_4, "Unable to read file: %s");
+        addDefault(ORG_HCJF_IO_NET_HTTP_5, "File not found: %s");
+        addDefault(ORG_HCJF_IO_NET_HTTP_6, "Unsupported ssl engine");
+        addDefault(ORG_HCJF_IO_NET_HTTP_7, "Parameter 'groupName' can't be null");
+        addDefault(ORG_HCJF_IO_NET_HTTP_8, "Parameter 'parameterName' can't be null");
 
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_LAYERED_1, "Resource name can't be null");
+        addDefault(ORG_HCJF_IO_NET_HTTP_LAYERED_1, "Resource name can't be null");
 
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_PROXY_1, "Null http proxy rule");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_PROXY_2, "This kind of http server not support add custom context");
+        addDefault(ORG_HCJF_IO_NET_HTTP_PROXY_1, "Null http proxy rule");
+        addDefault(ORG_HCJF_IO_NET_HTTP_PROXY_2, "This kind of http server not support add custom context");
 
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_REST_1, "Resource name parameter not found");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_REST_2, "Resource query parameter not found.");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_REST_3, "The resources can't be created using a query like a parameter.");
-        instance.addDefault(ORG_HCJF_IO_NET_HTTP_REST_4, "%s method is not implemented on the REST interface");
+        addDefault(ORG_HCJF_IO_NET_HTTP_REST_1, "Resource name parameter not found");
+        addDefault(ORG_HCJF_IO_NET_HTTP_REST_2, "Resource query parameter not found.");
+        addDefault(ORG_HCJF_IO_NET_HTTP_REST_3, "The resources can't be created using a query like a parameter.");
+        addDefault(ORG_HCJF_IO_NET_HTTP_REST_4, "%s method is not implemented on the REST interface");
     }
 
     private final Map<String, String> defaultMessages;
