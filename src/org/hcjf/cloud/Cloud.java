@@ -89,12 +89,4 @@ public final class Cloud {
         getInstance().impl.unlock(resourceName);
     }
 
-    /**
-     * This method replicates the property add operation over the cloud.
-     * @param propertyName Property name.
-     * @param propertyValue Property value.
-     */
-    public static final void setProperty(String propertyName, String propertyValue) {
-        getInstance().impl.setProperty(propertyName, propertyValue);
-    }
 }
