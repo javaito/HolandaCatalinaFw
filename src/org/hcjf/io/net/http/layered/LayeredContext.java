@@ -18,12 +18,17 @@ public abstract class LayeredContext<L extends LayerInterface,
     private final String resourceName;
 
     public LayeredContext(String layerGroupName, String resourceName) {
-        super("^/" + (layerGroupName == null ? resourceName : (layerGroupName + "/" + resourceName)) + ".*");
+        super("^/" + ((layerGroupName == null || layerGroupName.isEmpty()) ?
+                resourceName : (layerGroupName + "/" + resourceName)) + ".*");
         if(resourceName == null) {
             throw new NullPointerException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_LAYERED_1));
         }
         this.layerGroupName = layerGroupName;
         this.resourceName = resourceName;
+    }
+
+    public LayeredContext(String resourceName) {
+        this(null, resourceName);
     }
 
     /**
