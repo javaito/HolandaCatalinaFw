@@ -2,8 +2,6 @@ package org.hcjf.encoding;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * @author javaito
@@ -1600,26 +1598,70 @@ public final class MimeType {
         this.text = text;
     }
 
+    protected MimeType(String text, String... suffixes) {
+        this(text);
+        types.put(text, this);
+        for(String suffix : suffixes) {
+            typesBySuffix.put(suffix, this);
+        }
+    }
+
     @Override
     public String toString() {
         return text;
     }
 
     /**
-     *
-     * @param suffix
-     * @return
+     * Return the type indexed by the suffix
+     * @param suffix Suffix to find the type.
+     * @return Mime type founded.
      */
     public static MimeType fromSuffix(String suffix) {
         return typesBySuffix.get(suffix);
     }
 
     /**
-     *
-     * @param text
-     * @return
+     * Return the type indexed by the suffix
+     * @param suffix Suffix to find the type.
+     * @return Mime type founded.
+     */
+    public static MimeType fromSuffixIgnoreCase(String suffix) {
+        MimeType result = null;
+
+        for(String suffixKey : typesBySuffix.keySet()) {
+            if(suffixKey.equalsIgnoreCase(suffix)) {
+                result = typesBySuffix.get(suffixKey);
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Return the type indexed by the text.
+     * @param text Text to find the type.
+     * @return Mime type founded.
      */
     public static MimeType fromString(String text) {
         return types.get(text);
+    }
+
+    /**
+     * Return the type indexed by the text.
+     * @param text Text to find the type.
+     * @return Mime type founded.
+     */
+    public static MimeType fromStringIgnoreCase(String text) {
+        MimeType result = null;
+
+        for(String textKey : types.keySet()) {
+            if(textKey.equalsIgnoreCase(text)) {
+                result = types.get(textKey);
+                break;
+            }
+        }
+
+        return result;
     }
 }
