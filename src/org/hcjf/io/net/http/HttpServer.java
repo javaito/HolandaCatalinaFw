@@ -22,7 +22,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     public static final String HTTP_SERVER_LOG_TAG = "HTTP_SERVER";
 
     private Map<NetSession, HttpRequest> requestBuffers;
-    private Set<Context> contexts;
+    private List<Context> contexts;
     private HttpSessionFactory sessionFactory;
 
     public HttpServer() {
@@ -32,8 +32,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     public HttpServer(Integer port) {
         super(port, NetService.TransportLayerProtocol.TCP, false, true);
         requestBuffers = new HashMap<>();
-        contexts = new TreeSet<>((context, newContext) ->
-                context.getContextRegex().compareTo(newContext.getContextRegex()));
+        contexts = new ArrayList<>();
     }
 
     /**
