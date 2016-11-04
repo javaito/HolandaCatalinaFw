@@ -12,7 +12,7 @@ import java.util.*;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public class Query {
+public class Query extends EvaluatorCollection {
 
     public static final String QUERY_LOG_TAG = "QUERY";
 
@@ -114,14 +114,6 @@ public class Query {
     }
 
     /**
-     * Return the unmodifiable set with evaluators.
-     * @return Evaluators.
-     */
-    public Set<Evaluator> getEvaluators() {
-        return Collections.unmodifiableSet(evaluators);
-    }
-
-    /**
      * Add a name of the field for order the data collection. This name must be exist
      * like a setter/getter method in the instances of the data collection.
      * @param orderField Name of the pair getter/setter.
@@ -130,125 +122,6 @@ public class Query {
     public final Query addOrderField(String orderField) {
         orderFields.add(orderField);
         return this;
-    }
-
-    /**
-     * Add an instance of the evaluator object that evaluate if some instance of the
-     * data collection must be in the result add or not.
-     * @param evaluator Evaluator instance.
-     * @return Return the same instance of this class.
-     * @throws IllegalArgumentException If the instance of the evaluator is null.
-     */
-    public final Query addEvaluator(Evaluator evaluator) {
-        if(evaluator == null) {
-            throw new IllegalArgumentException("Null evaluator");
-        }
-
-        if(!evaluators.contains(evaluator)) {
-            evaluators.add(evaluator);
-        } else {
-            Log.w(QUERY_LOG_TAG, "Duplicate evaluator: $s", evaluator);
-        }
-        return this;
-    }
-
-    /**
-     * Add a particular evaluator that implements 'distinct' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query distinct(String fieldName, Object value) {
-        return addEvaluator(new Distinct(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'equals' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query equals(String fieldName, Object value) {
-        return addEvaluator(new Equals(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'greater than' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query greaterThan(String fieldName, Object value) {
-        return addEvaluator(new GreaterThan(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'greater than or equals' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query greaterThanOrEquals(String fieldName, Object value) {
-        return addEvaluator(new GreaterThanOrEqual(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'in' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query in(String fieldName, Object value) {
-        return addEvaluator(new In(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'not in' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query notIn(String fieldName, Object value) {
-        return addEvaluator(new NotIn(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'smaller than' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query smallerThan(String fieldName, Object value) {
-        return addEvaluator(new SmallerThan(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'smaller than or equals' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query smallerThanOrEqual(String fieldName, Object value) {
-        return addEvaluator(new SmallerThanOrEqual(fieldName, value));
-    }
-
-    /**
-     * Add a particular evaluator that implements 'like' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
-     * @return Return the same instance of this class.
-     */
-    public final Query like(String fieldName, Object value) {
-        return addEvaluator(new Like(fieldName, value));
     }
 
     /**

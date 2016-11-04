@@ -11,7 +11,7 @@ public class NotIn extends In {
     }
 
     @Override
-    protected boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer) {
         return !super.evaluate(object, consumer);
     }
 }

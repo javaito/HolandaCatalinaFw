@@ -5,7 +5,7 @@ package org.hcjf.layers.query;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public class Equals extends Evaluator {
+public class Equals extends FieldEvaluator {
 
     public Equals(String fieldName, Object value) {
         super(fieldName, value);
@@ -22,7 +22,7 @@ public class Equals extends Evaluator {
      * with introspection.
      */
     @Override
-    protected boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer) {
         boolean result;
         try {
             result = getValue().equals(consumer.get(object, getFieldName()));

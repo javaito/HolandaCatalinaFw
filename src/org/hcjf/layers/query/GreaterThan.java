@@ -1,14 +1,12 @@
 package org.hcjf.layers.query;
 
-import org.hcjf.utils.Introspection;
-
 /**
  * Evaluate if the field's value of the instance is greater than the
  * parameter value.
  * @author javaito
  * @mail javaito@gmail.com
  */
-public class GreaterThan extends Evaluator {
+public class GreaterThan extends FieldEvaluator {
 
     private final boolean orEquals;
 
@@ -34,7 +32,7 @@ public class GreaterThan extends Evaluator {
      * <li> If the parameter value and field's valur are incompatible: 'Incompatible types between value and field's value'</li>
      */
     @Override
-    protected boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer) {
         boolean result;
         try {
             Object fieldValue = consumer.get(object, getFieldName());

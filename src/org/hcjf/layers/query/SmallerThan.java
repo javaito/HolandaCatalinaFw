@@ -4,7 +4,7 @@ package org.hcjf.layers.query;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public class SmallerThan extends Evaluator {
+public class SmallerThan extends FieldEvaluator {
 
     private final boolean orEquals;
 
@@ -18,7 +18,7 @@ public class SmallerThan extends Evaluator {
     }
 
     @Override
-    protected boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer) {
         boolean result;
         try {
             Object fieldValue = consumer.get(object, getFieldName());
