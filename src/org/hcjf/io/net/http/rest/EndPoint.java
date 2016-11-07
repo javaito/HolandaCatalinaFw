@@ -25,8 +25,8 @@ public abstract class EndPoint<L extends LayerInterface,
      * @return Return an object with all the response information.
      */
     @Override
-    public final Object onAction(P request) {
-        Object result = null;
+    public final R onAction(P request) {
+        R result = null;
         switch (request.getMethod()) {
             case GET: {
                 result = get(request);
@@ -54,7 +54,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @param layeredRequest
      * @return
      */
-    protected Object get(P layeredRequest) {
+    protected R get(P layeredRequest) {
         throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.GET.toString()));
     }
 
@@ -63,7 +63,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @param layeredRequest
      * @return
      */
-    protected Object post(P layeredRequest) {
+    protected R post(P layeredRequest) {
         throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.POST.toString()));
     }
 
@@ -72,7 +72,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @param layeredRequest
      * @return
      */
-    protected Object put(P layeredRequest) {
+    protected R put(P layeredRequest) {
         throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.PUT.toString()));
     }
 
@@ -81,7 +81,7 @@ public abstract class EndPoint<L extends LayerInterface,
      * @param layeredRequest
      * @return
      */
-    protected Object delete(P layeredRequest) {
+    protected R delete(P layeredRequest) {
         throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.DELETE.toString()));
     }
 

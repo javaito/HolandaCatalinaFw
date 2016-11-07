@@ -102,17 +102,18 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
     }
 
     /**
-     * @param object
+     * @param crudResponse
      * @param request
      * @return
      */
     @Override
-    protected CrudResponse encode(Object object, CrudRequest request) {
+    protected HttpResponse encode(CrudResponse crudResponse, CrudRequest request) {
         HttpHeader contentTypeHeader = request.getHeader(HttpHeader.ACCEPT);
         String implName = contentTypeHeader.getParameter(
                 contentTypeHeader.getGroups().iterator().next(), HttpHeader.PARAM_IMPL);
         MimeType type = MimeType.fromString(contentTypeHeader.getGroups().iterator().next());
-        byte[] body = EncodingService.encode(type, implName, new CrudDecodedPackage(object, null, new HashMap<String, Object>()));
+        byte[] body = EncodingService.encode(type, implName, new CrudDecodedPackage(
+                crudResponse.getLayerResponse(), null, new HashMap<>()));
 
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.OK);
@@ -121,7 +122,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, type.toString()));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
-        return new CrudResponse(response);
+        return response;
     }
 
     /**
@@ -130,7 +131,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
      * @return
      */
     @Override
-    protected final Object post(CrudRequest crudRequest) {
+    protected final CrudResponse post(CrudRequest crudRequest) {
         Object result = null;
         CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
         if(crudRequest.getResourceAction() == null) {
@@ -140,7 +141,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.createQuery((Query) crudRequest.getAttach(), crudRequest.getCrudParameters());
         }
-        return result;
+        return new CrudResponse(result);
     }
 
     /**
@@ -149,7 +150,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
      * @return
      */
     @Override
-    protected final Object get(CrudRequest crudRequest) {
+    protected final CrudResponse get(CrudRequest crudRequest) {
         Object result = null;
         CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
         if(crudRequest.getResourceAction() == null) {
@@ -163,7 +164,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.readQuery(new Query.QueryId(UUID.fromString(crudRequest.getId())));
         }
-        return result;
+        return new CrudResponse(result);
     }
 
     /**
@@ -172,7 +173,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
      * @return
      */
     @Override
-    protected final Object put(CrudRequest crudRequest) {
+    protected final CrudResponse put(CrudRequest crudRequest) {
         Object result = null;
         CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
         if(crudRequest.getResourceAction() == null) {
@@ -182,7 +183,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.updateQuery((Query) crudRequest.getAttach(), crudRequest.getCrudParameters());
         }
-        return result;
+        return new CrudResponse(result);
     }
 
     /**
@@ -191,7 +192,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
      * @return
      */
     @Override
-    protected final Object delete(CrudRequest crudRequest) {
+    protected final CrudResponse delete(CrudRequest crudRequest) {
         Object result = null;
         CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
         if(crudRequest.getResourceAction() == null) {
@@ -201,6 +202,6 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
             result = layerInterface.deleteQuery(new Query.QueryId(UUID.fromString(crudRequest.getId())));
         }
-        return result;
+        return new CrudResponse(result);
     }
 }

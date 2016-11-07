@@ -8,6 +8,7 @@ import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.io.net.http.HttpResponseCode;
 import org.hcjf.layers.view.ViewCrudLayerInterface;
+import org.hcjf.view.ViewComponent;
 import org.hcjf.view.components.ViewDataSet;
 
 import java.util.HashMap;
@@ -25,6 +26,11 @@ public class ViewCrudContext extends  ViewContext<ViewCrudLayerInterface, ViewRe
 
     public ViewCrudContext(String groupName, String resourceName) {
         super(groupName, resourceName);
+    }
+
+    @Override
+    protected ViewResponse createViewResponse(ViewComponent component) {
+        return new ViewResponse(component);
     }
 
     @Override
@@ -57,11 +63,13 @@ public class ViewCrudContext extends  ViewContext<ViewCrudLayerInterface, ViewRe
     }
 
     @Override
-    protected ViewResponse encode(Object object, ViewRequest request) {
+    protected HttpResponse encode(ViewResponse viewResponse, ViewRequest request) {
 
-        byte[] body = EncodingService.encode(MimeType.TEXT_HTML, request.getEncodingImplementation(), new DecodedPackage(object,new HashMap<String, Object>()));
+        byte[] body = EncodingService.encode(MimeType.TEXT_HTML, request.getEncodingImplementation(),
+                new DecodedPackage(viewResponse.getLayerResponse(), new HashMap<String, Object>()));
 
-        MimeType mimeType = object instanceof ViewDataSet ? MimeType.APPLICATION_JSON : MimeType.TEXT_HTML;
+        MimeType mimeType = viewResponse.getLayerResponse() instanceof ViewDataSet ?
+                MimeType.APPLICATION_JSON : MimeType.TEXT_HTML;
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.OK);
         response.setReasonPhrase("VIEW Success");
@@ -70,6 +78,6 @@ public class ViewCrudContext extends  ViewContext<ViewCrudLayerInterface, ViewRe
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, mimeType.toString()));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
-        return new ViewResponse(response);
+        return response;
     }
 }

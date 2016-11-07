@@ -71,8 +71,7 @@ public abstract class LayeredContext<L extends LayerInterface,
     @Override
     public final HttpResponse onContext(HttpRequest request) {
         P layeredRequest = decode(request);
-        Object actionResponse = onAction(layeredRequest);
-        return encode(actionResponse, layeredRequest);
+        return encode(onAction(layeredRequest), layeredRequest);
     }
 
     /**
@@ -80,7 +79,7 @@ public abstract class LayeredContext<L extends LayerInterface,
      * @param request
      * @return
      */
-    protected abstract Object onAction(P request);
+    protected abstract R onAction(P request);
 
     /**
      * This method is called when there are any error on the context execution.
@@ -104,9 +103,9 @@ public abstract class LayeredContext<L extends LayerInterface,
     protected abstract P decode(HttpRequest request);
 
     /**
-     * @param object
+     * @param response
      * @param request
      * @return
      */
-    protected abstract R encode(Object object, P request);
+    protected abstract HttpResponse encode(R response, P request);
 }

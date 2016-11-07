@@ -9,8 +9,8 @@ import org.hcjf.io.net.http.layered.LayeredResponse;
  */
 public class CrudResponse extends EndPointResponse {
 
-    public CrudResponse(HttpResponse httpResponse) {
-        super(httpResponse);
+    public CrudResponse(Object layerResponse) {
+        super(layerResponse);
     }
 
 }

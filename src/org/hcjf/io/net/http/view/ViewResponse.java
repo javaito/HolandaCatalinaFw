@@ -8,7 +8,8 @@ import org.hcjf.io.net.http.layered.LayeredResponse;
  * @email armedina@gmail.com
  */
 public class ViewResponse extends LayeredResponse {
-    public ViewResponse(HttpResponse httpResponse) {
-        super(httpResponse);
+
+    public ViewResponse(Object layerResponse) {
+        super(layerResponse);
     }
 }

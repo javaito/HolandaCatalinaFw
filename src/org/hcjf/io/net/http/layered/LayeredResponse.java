@@ -8,8 +8,14 @@ import org.hcjf.io.net.http.HttpResponse;
  */
 public class LayeredResponse extends HttpResponse {
 
-    public LayeredResponse(HttpResponse httpResponse) {
-        super(httpResponse);
+    private final Object layerResponse;
+
+    public LayeredResponse(Object layerResponse) {
+        this.layerResponse = layerResponse;
+    }
+
+    public final Object getLayerResponse() {
+        return layerResponse;
     }
 
 }

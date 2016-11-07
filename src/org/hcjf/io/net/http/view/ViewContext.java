@@ -4,6 +4,7 @@ import org.hcjf.io.net.http.layered.LayeredContext;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.view.ViewCrudLayerInterface;
 import org.hcjf.layers.view.ViewLayerInterface;
+import org.hcjf.view.ViewComponent;
 
 /**
  * @mail armedina@gmail.com
@@ -16,8 +17,8 @@ public abstract class ViewContext<L extends ViewCrudLayerInterface,
     }
 
     @Override
-    protected final Object onAction(P request) {
-        Object result = null;
+    protected final R onAction(P request) {
+        R result = null;
         switch (request.getMethod()) {
             case GET: {
                 result = onViewAction(request);
@@ -32,9 +33,10 @@ public abstract class ViewContext<L extends ViewCrudLayerInterface,
         return result;
     }
 
-    private Object onViewAction(P request) {
+    private R onViewAction(P request) {
         L layer = getLayerInterface(request.getResourceName());
-        return layer.onAction(request.getAction(),request.getViewParameters());
+        return createViewResponse(layer.onAction(request.getAction(),request.getViewParameters()));
     }
 
+    protected abstract R createViewResponse(ViewComponent component);
 }

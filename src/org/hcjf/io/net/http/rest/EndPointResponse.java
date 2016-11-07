@@ -9,8 +9,8 @@ import org.hcjf.io.net.http.layered.LayeredResponse;
  */
 public class EndPointResponse extends LayeredResponse {
 
-    public EndPointResponse(HttpResponse httpResponse) {
-        super(httpResponse);
+    public EndPointResponse(Object layerResponse) {
+        super(layerResponse);
     }
 
 }
