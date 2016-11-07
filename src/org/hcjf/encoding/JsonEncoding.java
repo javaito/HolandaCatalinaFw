@@ -3,6 +3,7 @@ package org.hcjf.encoding;
 import com.google.gson.*;
 import org.hcjf.errors.Errors;
 import org.hcjf.layers.query.Evaluator;
+import org.hcjf.layers.query.FieldEvaluator;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
@@ -54,12 +55,15 @@ public class JsonEncoding extends EncodingImpl {
                 queryObject.add(QUERY_ORDER_FIELDS_FIELD, orderArray);
                 JsonArray evaluatorArray = new JsonArray();
                 for (Evaluator evaluator : crudDecodedPackage.getQuery().getEvaluators()) {
-                    JsonObject evaluatorJsonObject = new JsonObject();
-                    evaluatorJsonObject.add(EVALUATOR_ACTION_FIELD,
-                            new JsonPrimitive(Strings.uncapitalize(evaluator.getClass().getSimpleName())));
-                    evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(evaluator.getFieldName()));
-                    evaluatorJsonObject.add(EVALUATOR_VALUE_FIELD, createTypedObject(evaluator.getValue()));
-                    evaluatorArray.add(evaluatorJsonObject);
+                    if(evaluator instanceof FieldEvaluator) {
+                        FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+                        JsonObject evaluatorJsonObject = new JsonObject();
+                        evaluatorJsonObject.add(EVALUATOR_ACTION_FIELD,
+                                new JsonPrimitive(Strings.uncapitalize(evaluator.getClass().getSimpleName())));
+                        evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(fieldEvaluator.getFieldName()));
+                        evaluatorJsonObject.add(EVALUATOR_VALUE_FIELD, createTypedObject(fieldEvaluator.getValue()));
+                        evaluatorArray.add(evaluatorJsonObject);
+                    }
                 }
                 jsonObject.add(QUERY_JSON_FIELD, queryObject);
             }
