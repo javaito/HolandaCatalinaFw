@@ -46,6 +46,9 @@ public final class Introspection {
                         InvokerEntry<I> entry = filter.filter(method);
                         if(entry != null) {
                             result.put(entry.getKey(), entry.getInvoker());
+                            for(String alias : entry.getAliases()) {
+                                result.put(alias, entry.getInvoker());
+                            }
                         }
                     }
                     if(!clazz.getSuperclass().equals(Objects.class)) {
@@ -375,10 +378,12 @@ public final class Introspection {
 
         private final String key;
         private final I invoker;
+        private final String[] aliases;
 
-        public InvokerEntry(String key, I invoker) {
+        public InvokerEntry(String key, I invoker, String... aliases) {
             this.key = key;
             this.invoker = invoker;
+            this.aliases = aliases;
         }
 
         /**
@@ -395,6 +400,14 @@ public final class Introspection {
          */
         public I getInvoker() {
             return invoker;
+        }
+
+        /**
+         * Return the aliases array.
+         * @return Aliases array.
+         */
+        public String[] getAliases() {
+            return aliases;
         }
     }
 }
