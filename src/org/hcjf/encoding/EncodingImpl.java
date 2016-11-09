@@ -2,11 +2,7 @@ package org.hcjf.encoding;
 
 import org.hcjf.service.ServiceConsumer;
 
-import java.nio.ByteBuffer;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * @author javaito
