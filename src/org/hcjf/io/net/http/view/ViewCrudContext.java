@@ -65,8 +65,9 @@ public class ViewCrudContext extends  ViewContext<ViewCrudLayerInterface, ViewRe
     @Override
     protected HttpResponse encode(ViewResponse viewResponse, ViewRequest request) {
 
-        byte[] body = EncodingService.encode(MimeType.TEXT_HTML, request.getEncodingImplementation(),
-                new DecodedPackage(viewResponse.getLayerResponse(), new HashMap<String, Object>()));
+        byte[] body = new byte[0];
+//        EncodingService.encode(MimeType.TEXT_HTML, request.getEncodingImplementation(),
+//                new DecodedPackage(viewResponse.getLayerResponse(), new HashMap<String, Object>()));
 
         MimeType mimeType = viewResponse.getLayerResponse() instanceof ViewDataSet ?
                 MimeType.APPLICATION_JSON : MimeType.TEXT_HTML;

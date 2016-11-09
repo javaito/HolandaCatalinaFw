@@ -67,7 +67,7 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         Class resourceType = getLayerInterface(resourceName).getResourceType();
         Object object = null;
         Map<String, Object> parameters = new HashMap<>();
-        DecodedPackage decodedPackage = decode(request, resourceType);
+        CrudDecodedPackage decodedPackage = decode(request, resourceType);
         object = decodedPackage.getObject();
         parameters.putAll(decodedPackage.getParameters());
         parameters.putAll(request.getParameters());
@@ -83,8 +83,8 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
      * @param resourceType
      * @return
      */
-    private DecodedPackage decode(HttpRequest request, Class resourceType) {
-        DecodedPackage result;
+    private CrudDecodedPackage decode(HttpRequest request, Class resourceType) {
+        CrudDecodedPackage result;
         if(request.getMethod().equals(HttpMethod.GET) || request.getMethod().equals(HttpMethod.DELETE)) {
             Map<String, Object> parameters = new HashMap<>();
             parameters.putAll(request.getParameters());
@@ -96,7 +96,8 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
             MimeType type = MimeType.fromString(contentTypeHeader.getGroups().iterator().next());
             Map<String, Object> parameters = new HashMap<>();
             parameters.putAll(request.getParameters());
-            result = EncodingService.decode(type, implName, resourceType, request.getBody(), parameters);
+            result = (CrudDecodedPackage) EncodingService.decode(
+                    type, implName, resourceType, request.getBody(), parameters);
         }
         return result;
     }

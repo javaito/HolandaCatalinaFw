@@ -137,7 +137,7 @@ public final class SSLHelper implements Runnable {
 //                synchronized (this) {
 //                    wait();
 //                }
-//            } catch (InterruptedException e) {}
+//            } catch (InterruptedException e) }
 //        }
 
 //        if(result instanceof Exception) {

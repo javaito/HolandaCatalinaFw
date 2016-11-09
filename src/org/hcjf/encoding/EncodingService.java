@@ -1,6 +1,7 @@
 package org.hcjf.encoding;
 
 import org.hcjf.errors.Errors;
+import org.hcjf.io.net.http.rest.CrudJsonEncoding;
 import org.hcjf.service.Service;
 
 import java.util.HashMap;
@@ -28,7 +29,7 @@ public final class EncodingService extends Service<EncodingImpl> {
     private EncodingService() {
         super(SERIALIZATION_SERVICE_NAME, 1);
         implementations = new HashMap<>();
-        registerConsumer(new JsonEncoding());
+        registerConsumer(new CrudJsonEncoding());
     }
 
     /**
