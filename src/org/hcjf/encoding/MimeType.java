@@ -7,7 +7,7 @@ import java.util.Map;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public final class MimeType {
+public class MimeType {
 
     public static final MimeType APPLICATION_ACAD = new MimeType("application/acad");
     public static final MimeType APPLICATION_ARJ = new MimeType("application/arj");
@@ -1607,7 +1607,7 @@ public final class MimeType {
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return text;
     }
 
