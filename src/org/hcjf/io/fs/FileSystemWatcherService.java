@@ -100,7 +100,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     }
 
     /**
-     * Star thre main thread of the service.
+     * Start the main thread of the service.
      */
     @Override
     protected void init() {
@@ -119,7 +119,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     }
 
     /**
-     *
+     * Shutdown implementation for the file system watcher service.
      */
     @Override
     protected void shutdown(ShutdownStage stage) {

@@ -5,6 +5,7 @@ import org.hcjf.service.ServiceConsumer;
 import java.util.Map;
 
 /**
+ * Encoding implementation base class.
  * @author javaito
  * @mail javaito@gmail.com
  */
@@ -19,30 +20,33 @@ public abstract class EncodingImpl<P extends DecodedPackage> implements ServiceC
     }
 
     /**
-     *
-     * @return
+     * Return the mime type associated to the encoding.
+     * @return Mime type.
      */
     public MimeType getMimeType() {
         return mimeType;
     }
 
     /**
-     *
-     * @return
+     * Return the name of the implementation.
+     * @return Implementation name.
      */
     public String getImplementationName() {
         return implementationName;
     }
 
     /**
-     *
-     * @param decodedPackage
-     * @return
+     * The implementation of this method must encode
+     * some kind of decoded package.
+     * @param decodedPackage Decoded package.
+     * @return Return the byte array that represents
+     * the decoded package's encoding.
      */
     public abstract byte[] encode(P decodedPackage);
 
     /**
-     *
+     * Decode a byte array in order to generate an instance of the some
+     * decode package.
      * @param objectClass
      * @param data
      * @return

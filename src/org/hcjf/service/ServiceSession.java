@@ -20,7 +20,7 @@ public class ServiceSession implements Comparable {
 
     private final UUID id;
     private final String sessionName;
-    private final Map<Long, Queue<Class<? extends Layer>>> layerStack;
+    private final Map<Long, List<Class<? extends Layer>>> layerStack;
     private final Map<Long, Map<String, Object>> properties;
 
     public ServiceSession(UUID id, String sessionName) {
@@ -46,7 +46,7 @@ public class ServiceSession implements Comparable {
      *
      */
     public synchronized void startThread() {
-        layerStack.put(Thread.currentThread().getId(), new PriorityQueue<>());
+        layerStack.put(Thread.currentThread().getId(), new ArrayList<>());
         properties.put(Thread.currentThread().getId(), new HashMap<>());
         onStartThread();
     }
@@ -98,14 +98,14 @@ public class ServiceSession implements Comparable {
      * @param layerClass Layer class.
      */
     public final void putLayer(Class<? extends Layer> layerClass) {
-        layerStack.get(Thread.currentThread().getId()).add(layerClass);
+        layerStack.get(Thread.currentThread().getId()).add(0, layerClass);
     }
 
     /**
      * Remove the head of the layer stack.
      */
     public final void removeLayer() {
-        layerStack.get(Thread.currentThread().getId()).remove();
+        layerStack.get(Thread.currentThread().getId()).remove(0);
     }
 
     /**

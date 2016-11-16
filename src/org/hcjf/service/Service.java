@@ -35,17 +35,6 @@ public abstract class Service<C extends ServiceConsumer> {
             throw new IllegalArgumentException("The service name (" + serviceName + ") is already register");
         }
 
-
-        /**
-         * this.serviceExecutor = new ThreadPoolExecutor(
-         SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_CORE_SIZE),
-         SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_MAX_SIZE),
-         SystemProperties.getLong(SystemProperties.SERVICE_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS,
-         new PriorityBlockingQueue<>(SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_CORE_SIZE),
-         new RunnableWrapperComparator()),
-         serviceThreadFactory);
-         */
-
         this.serviceName = serviceName;
         this.priority = priority;
         this.serviceThreadFactory = createThreadFactory();

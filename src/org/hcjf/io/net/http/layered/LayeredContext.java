@@ -8,6 +8,8 @@ import org.hcjf.layers.Layers;
 import java.lang.reflect.ParameterizedType;
 
 /**
+ * This kind of context publish an http interface for
+ * som kind of layer.
  * @author javaito
  * @mail javaito@gmail.com
  */
@@ -75,9 +77,10 @@ public abstract class LayeredContext<L extends LayerInterface,
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * The implementation of this method must resolve the
+     * interface with the layer.
+     * @param request Request package.
+     * @return Response package.
      */
     protected abstract R onAction(P request);
 
@@ -97,15 +100,18 @@ public abstract class LayeredContext<L extends LayerInterface,
     }
 
     /**
-     * @param request
-     * @return
+     * This implementation must create request package from http request.
+     * @param request Http request.
+     * @return Layered request package.
      */
     protected abstract P decode(HttpRequest request);
 
     /**
-     * @param response
-     * @param request
-     * @return
+     * This implementation must create a http response package from
+     * response layered package and request layered package.
+     * @param response Layered response.
+     * @param request Layered request.
+     * @return Http response.
      */
     protected abstract HttpResponse encode(R response, P request);
 }

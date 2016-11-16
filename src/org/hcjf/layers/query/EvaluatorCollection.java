@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Collection of evaluator components.
  * @author javaito
  * @email javaito@gmail.com
  */
