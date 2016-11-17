@@ -28,6 +28,13 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
     public O create(O object, Map<String, Object> parameters);
 
     /**
+     * This method implements the creation of the resource.
+     * @param object Object to represents an instance of the resource.
+     * @return The instance of the resource.
+     */
+    public O create(O object);
+
+    /**
      * This method implements the read operation to find an instance of
      * the resource using only it's id.
      * @param id Id to found the instance.
@@ -46,6 +53,14 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
     public O update(O object, Map<String, Object> parameters);
 
     /**
+     * This method implements the update of the resource.
+     * @param object Instance of the resource that gonna be updated.
+     *               This instance must have an id to identify the updatable data.
+     * @return The instance updated.
+     */
+    public O update(O object);
+
+    /**
      * This method implements the delete operation over the resource.
      * @param id Id of the instance that gonna be deleted.
      * @return Instance of the resource that was deleted.
@@ -57,6 +72,14 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
      * @return List with all the instances of the resource.
      */
     public Collection<O> read();
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query.
+     * @param query Query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<O> read(Query query);
 
     /**
      * This method implements the read operation using the filters
