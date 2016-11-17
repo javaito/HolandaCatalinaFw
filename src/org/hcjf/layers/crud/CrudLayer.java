@@ -43,6 +43,16 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
     }
 
     /**
+     * This method implements the creation of the resource.
+     * @param object Object to represents an instance of the resource.
+     * @return The instance of the resource.
+     */
+    @Override
+    public O create(O object) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * This method implements the read operation to find an instance of
      * the resource using only it's id.
      *
@@ -69,6 +79,17 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
     }
 
     /**
+     * This method implements the update of the resource.
+     * @param object Instance of the resource that gonna be updated.
+     *               This instance must have an id to identify the updatable data.
+     * @return The instance updated.
+     */
+    @Override
+    public O update(O object) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * This method implements the delete operation over the resource.
      *
      * @param id Id of the instance that gonna be deleted.
@@ -76,6 +97,17 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
      */
     @Override
     public O delete(Object id) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query.
+     * @param query Query.
+     * @return Return the list with the instances founded.
+     */
+    @Override
+    public Collection<O> read(Query query) {
         throw new UnsupportedOperationException();
     }
 
