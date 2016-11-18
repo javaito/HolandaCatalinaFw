@@ -13,6 +13,7 @@ import javax.net.ssl.SSLEngine;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
@@ -111,6 +112,14 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     public final void setReadTimeout(Long readTimeout) {
         this.readTimeout = readTimeout;
+    }
+
+    /**
+     * Add the context over base context of the constructor URI.
+     * @param context Adding context.
+     */
+    public void setContext(String context) {
+        this.request.setContext(this.request.getContext() + context);
     }
 
     /**
