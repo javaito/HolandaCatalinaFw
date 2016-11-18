@@ -1,5 +1,7 @@
 package org.hcjf.errors;
 
+import org.hcjf.utils.Messages;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -8,9 +10,8 @@ import java.util.regex.Pattern;
  * @author javaito
  * @email javaito@gmail.com
  */
-public final class Errors {
+public final class Errors extends Messages {
 
-    private static final Pattern ERROR_CODE_PATTERN = Pattern.compile("^((([A-Z]|[a-z])*)(\\.(([A-Z]|[a-z])*))*)*@[1-9].*");
     private static final Errors instance;
 
     public static final String ORG_HCJF_ENCODING_1 = "org.hcjf.encoding@1";
@@ -105,39 +106,26 @@ public final class Errors {
         addDefault(ORG_HCJF_IO_NET_HTTP_REST_4, "%s method is not implemented on the REST interface");
     }
 
-    private final Map<String, String> defaultMessages;
-
     private Errors() {
-        defaultMessages = new HashMap<>();
     }
 
     /**
-     *
-     * @param errorCode
-     * @param params
-     * @return
+     * Returnt he message associated to the error code.
+     * @param errorCode Error code.
+     * @param params Parameters to complete the message.
+     * @return Message complete and translated.
      */
     public static String getMessage(String errorCode, Object... params) {
-        String result = instance.defaultMessages.get(errorCode);
-
-        if(result == null) {
-            result = errorCode;
-        } else {
-            //TODO: Translate message
-        }
-
-        return String.format(result, params);
+        return instance.getInternalMessage(errorCode, params);
     }
 
     /**
-     *
-     * @param errorCode
-     * @param defaultMessage
+     * Add the default value associated to error code.
+     * @param errorCode Error code.
+     * @param defaultMessage Default message.
      */
     public static void addDefault(String errorCode, String defaultMessage) {
-        if(ERROR_CODE_PATTERN.matcher(errorCode).matches()) {
-            instance.defaultMessages.put(errorCode, defaultMessage);
-        }
+        instance.addInternalDefault(errorCode, defaultMessage);
     }
 
 }
