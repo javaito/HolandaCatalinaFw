@@ -458,6 +458,31 @@ public final class SystemProperties extends Properties {
     }
 
     /**
+     * This method return the value of the property as instance of set.
+     * @param propertyName Name of the property that contains the json array representation.
+     * @return Set instance.
+     */
+    public static Set<String> getSet(String propertyName) {
+        String propertyValue = get(propertyName);
+        Set<String> result = new TreeSet<>();
+        if(instance.instancesCache.containsKey(propertyName)) {
+            result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
+        } else {
+            try {
+                JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
+                array.forEach(A -> result.add(A.getAsString()));
+                List<String> cachedResult = new ArrayList<>();
+                cachedResult.addAll(result);
+                instance.instancesCache.put(propertyName, cachedResult);
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("The property value has not a json array valid format: '"
+                        + propertyName + ":" + propertyValue + "'", ex);
+            }
+        }
+        return result;
+    }
+
+    /**
      * This method return the value of the property as instance of map.
      * @param propertyName The name of the property that contains the json object representation.
      * @return Map instance.
