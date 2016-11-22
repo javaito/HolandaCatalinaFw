@@ -16,12 +16,12 @@ public abstract class HttpPackage {
 
     private static final byte LINE_SEPARATOR_CR = '\r';
     private static final byte LINE_SEPARATOR_LF = '\n';
-    protected static final String STRING_LINE_SEPARATOR = "\r\n";
-    protected static final String LINE_FIELD_SEPARATOR = " ";
-    protected static final String HTTP_FIELD_START = "?";
-    protected static final String HTTP_FIELD_SEPARATOR = "&";
-    protected static final String HTTP_FIELD_ASSIGNATION = "=";
-    protected static final String HTTP_CONTEXT_SEPARATOR = "/";
+    public static final String STRING_LINE_SEPARATOR = "\r\n";
+    public static final String LINE_FIELD_SEPARATOR = " ";
+    public static final String HTTP_FIELD_START = "?";
+    public static final String HTTP_FIELD_SEPARATOR = "&";
+    public static final String HTTP_FIELD_ASSIGNATION = "=";
+    public static final String HTTP_CONTEXT_SEPARATOR = "/";
 
     private String httpVersion;
     private final Map<String, HttpHeader> headers;

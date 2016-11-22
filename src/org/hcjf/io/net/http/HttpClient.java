@@ -11,9 +11,9 @@ import org.hcjf.properties.SystemProperties;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
@@ -115,11 +115,16 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     }
 
     /**
-     * Add the context over base context of the constructor URI.
-     * @param context Adding context.
+     * Add path over base context of the constructor URI.
+     * @param paths Adding paths.
      */
-    public void setContext(String context) {
-        this.request.setContext(this.request.getContext() + context);
+    public void addPath(String... paths) {
+        StringBuilder newPath = new StringBuilder();
+        newPath.append(this.request.getContext());
+        for(String path : paths) {
+            newPath.append(HttpPackage.HTTP_CONTEXT_SEPARATOR).append(path);
+        }
+        this.request.setContext(newPath.toString());
     }
 
     /**
