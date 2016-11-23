@@ -71,9 +71,10 @@ public final class Layers {
      * This method publish the layers in order to be used by anyone
      * that has the credentials to use the layer.
      * @param layerClass
+     * @return Implementation name.
      * @throws IllegalArgumentException
      */
-    public static synchronized void publishLayer(Class<? extends Layer> layerClass) {
+    public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
         if(layerClass == null) {
             throw new IllegalArgumentException("Unable to publish a null class");
         }
@@ -112,5 +113,6 @@ public final class Layers {
             instance.layerImplementations.put(layerInterfaceClass, new HashMap<>());
         }
         instance.layerImplementations.get(layerInterfaceClass).put(layerInstance.getImplName(), layerClass);
+        return layerInstance.getImplName();
     }
 }
