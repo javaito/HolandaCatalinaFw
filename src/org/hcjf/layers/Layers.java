@@ -109,6 +109,10 @@ public final class Layers {
                     " because fail to create a new instance", ex);
         }
 
+        if(layerInstance.getImplName() == null) {
+            throw new IllegalArgumentException("Unable to publish " + layerClass +
+                    " because the implementation is not name declared");
+        }
         if(!instance.layerImplementations.containsKey(layerInterfaceClass)) {
             instance.layerImplementations.put(layerInterfaceClass, new HashMap<>());
         }

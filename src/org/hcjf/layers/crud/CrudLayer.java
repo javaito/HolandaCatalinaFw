@@ -18,6 +18,9 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
         super(implName);
     }
 
+    public CrudLayer() {
+    }
+
     /**
      * This method return the resource class of the layer.
      * @return Resource class.

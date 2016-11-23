@@ -18,9 +18,6 @@ public abstract class Layer implements LayerInterface {
     private final boolean stateful;
 
     public Layer(String implName, boolean stateful) {
-        if(implName == null) {
-            throw new IllegalArgumentException("Implementation name can't be null");
-        }
         this.implName = implName;
         this.stateful = stateful;
     }
@@ -29,12 +26,20 @@ public abstract class Layer implements LayerInterface {
         this(implName, true);
     }
 
+    public Layer(boolean stateful) {
+        this(null, stateful);
+    }
+
+    public Layer(){
+        this(null, true);
+    }
+
     /**
      * Return the layer implementation name.
      * @return Layer implementation name.
      */
     @Override
-    public final String getImplName() {
+    public String getImplName() {
         return implName;
     }
 
