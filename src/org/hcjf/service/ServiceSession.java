@@ -22,12 +22,14 @@ public class ServiceSession implements Comparable {
     private final String sessionName;
     private final Map<Long, List<Class<? extends Layer>>> layerStack;
     private final Map<Long, Map<String, Object>> properties;
+    private final Map<Long, Long> systemTimeByThread;
 
     public ServiceSession(UUID id, String sessionName) {
         this.id = id;
         this.sessionName = sessionName;
         properties = new HashMap<>();
         layerStack = Collections.synchronizedMap(new HashMap<>());
+        systemTimeByThread = new HashMap<>();
     }
 
     public UUID getId() {
@@ -43,51 +45,56 @@ public class ServiceSession implements Comparable {
     }
 
     /**
-     *
+     * Start some thread over this session.
      */
     public synchronized void startThread() {
+        systemTimeByThread.put(Thread.currentThread().getId(), System.currentTimeMillis());
         layerStack.put(Thread.currentThread().getId(), new ArrayList<>());
         properties.put(Thread.currentThread().getId(), new HashMap<>());
         onStartThread();
     }
 
+    /**
+     * Call to hook of the starts thread.
+     */
     protected void onStartThread() {}
 
     /**
-     *
+     * End some thread over this session.
      */
     public synchronized void endThread() {
         layerStack.remove(Thread.currentThread().getId());
         properties.remove(Thread.currentThread().getId());
+        addThreadTime(System.currentTimeMillis() - systemTimeByThread.remove(Thread.currentThread().getId()));
         onEndThread();
     }
 
     /**
-     *
+     * Call to hook of the ends thread.
      */
     protected void onEndThread(){}
 
     /**
-     *
-     * @param properties
+     * Put all the properties over the session.
+     * @param properties Properties.
      */
     public void putAll(Map<String, Object> properties) {
         this.properties.get(Thread.currentThread().getId()).putAll(properties);
     }
 
     /**
-     *
-     * @param propertyName
-     * @param propertyValue
+     * Put a property over the session.
+     * @param propertyName Property name.
+     * @param propertyValue Property value.
      */
     public void put(String propertyName, Object propertyValue) {
         properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
     }
 
     /**
-     *
-     * @param propertyName
-     * @return
+     * Return a session property.
+     * @param propertyName Property name.
+     * @return Session value.
      */
     public <O extends Object> O get(String propertyName) {
         return (O) properties.get(Thread.currentThread().getId()).get(propertyName);
@@ -109,16 +116,16 @@ public class ServiceSession implements Comparable {
     }
 
     /**
-     *
-     * @return
+     * Return the layer stack of the session.
+     * @return Layer stack.
      */
     public Class[] getLayerStack() {
         return layerStack.get(Thread.currentThread().getId()).toArray(new Class[]{});
     }
 
     /**
-     *
-     * @return
+     * Return the instance of the guest session.
+     * @return Guest session.
      */
     public static final ServiceSession getGuestSession() {
         return guestSession;
@@ -140,6 +147,13 @@ public class ServiceSession implements Comparable {
             }
         }
         return result;
+    }
+
+    /**
+     * Add system use time to specific session.
+     * @param time System use time.
+     */
+    protected void addThreadTime(long time){
     }
 
     /**
