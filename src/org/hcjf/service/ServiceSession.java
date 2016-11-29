@@ -4,6 +4,8 @@ import org.hcjf.io.net.NetSession;
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.*;
 
 /**
@@ -23,6 +25,7 @@ public class ServiceSession implements Comparable {
     private final Map<Long, List<Class<? extends Layer>>> layerStack;
     private final Map<Long, Map<String, Object>> properties;
     private final Map<Long, Long> systemTimeByThread;
+    private final ThreadMXBean threadMXBean;
 
     public ServiceSession(UUID id, String sessionName) {
         this.id = id;
@@ -30,6 +33,7 @@ public class ServiceSession implements Comparable {
         properties = new HashMap<>();
         layerStack = Collections.synchronizedMap(new HashMap<>());
         systemTimeByThread = new HashMap<>();
+        threadMXBean = ManagementFactory.getThreadMXBean();
     }
 
     public UUID getId() {
@@ -48,7 +52,8 @@ public class ServiceSession implements Comparable {
      * Start some thread over this session.
      */
     public synchronized void startThread() {
-        systemTimeByThread.put(Thread.currentThread().getId(), System.currentTimeMillis());
+        systemTimeByThread.put(Thread.currentThread().getId(),
+                threadMXBean.getThreadUserTime(Thread.currentThread().getId()));
         layerStack.put(Thread.currentThread().getId(), new ArrayList<>());
         properties.put(Thread.currentThread().getId(), new HashMap<>());
         onStartThread();
@@ -65,7 +70,8 @@ public class ServiceSession implements Comparable {
     public synchronized void endThread() {
         layerStack.remove(Thread.currentThread().getId());
         properties.remove(Thread.currentThread().getId());
-        addThreadTime(System.currentTimeMillis() - systemTimeByThread.remove(Thread.currentThread().getId()));
+        addThreadTime(System.currentTimeMillis() -
+                threadMXBean.getThreadUserTime(Thread.currentThread().getId()));
         onEndThread();
     }
 
