@@ -50,4 +50,11 @@ public abstract class NetSession extends ServiceSession {
         return locked;
     }
 
+    /**
+     * Add system use time to specific session.
+     * @param time System use time.
+     */
+    public void addThreadTime(long time){
+    }
+
 }
