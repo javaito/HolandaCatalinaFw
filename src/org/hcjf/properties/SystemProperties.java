@@ -337,6 +337,26 @@ public final class SystemProperties extends Properties {
     }
 
     /**
+     * This method return the value of the system property as class.
+     * @param propertyName Name of the find property.
+     * @param <O> Type of the class instance expected.
+     * @return Class instance.
+     */
+    public static <O extends Object> Class<O> getClass(String propertyName) {
+        Class<O> result;
+
+        String propertyValue = get(propertyName);
+        try {
+            result = (Class<O>) Class.forName(propertyValue);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("The property value has not a class name valid format: '"
+                    + propertyName + ":" + propertyValue + "'", ex);
+        }
+
+        return result;
+    }
+
+    /**
      * Return the default charset of the JVM instance.
      * @return Default charset.
      */
