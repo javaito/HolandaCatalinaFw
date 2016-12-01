@@ -121,8 +121,11 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     public void addPath(String... paths) {
         StringBuilder newPath = new StringBuilder();
         newPath.append(this.request.getContext());
+        String separator = this.request.getContext().endsWith(
+                HttpPackage.HTTP_CONTEXT_SEPARATOR) ? "" : HttpPackage.HTTP_CONTEXT_SEPARATOR;
         for(String path : paths) {
-            newPath.append(HttpPackage.HTTP_CONTEXT_SEPARATOR).append(path);
+            newPath.append(separator).append(path);
+            separator = HttpPackage.HTTP_CONTEXT_SEPARATOR;
         }
         this.request.setContext(newPath.toString());
     }
