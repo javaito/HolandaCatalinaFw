@@ -9,7 +9,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Date;
 
 /**
  * This class publish
@@ -31,6 +34,7 @@ public class FolderContext extends Context {
     private final String name;
     private final String defaultFile;
     private final String[] names;
+    private final MessageDigest messageDigest;
 
     public FolderContext(String name, Path baseFolder, String defaultFile) {
         super(START_CONTEXT + URI_FOLDER_SEPARATOR + name + END_CONTEXT);
@@ -47,6 +51,12 @@ public class FolderContext extends Context {
         this.baseFolder = baseFolder;
         this.defaultFile = defaultFile;
         this.names = name.split(URI_FOLDER_SEPARATOR);
+        try {
+            this.messageDigest = MessageDigest.getInstance(
+                    SystemProperties.get(SystemProperties.HTTP_DEFAULT_FILE_CHECKSUM_ALGORITHM));
+        } catch (Exception ex) {
+            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_9), ex);
+        }
     }
 
     public FolderContext(String name, Path baseFolder) {
@@ -104,27 +114,38 @@ public class FolderContext extends Context {
                 response.setResponseCode(HttpResponseCode.OK);
                 response.setBody(body);
             } else {
+                byte[] body;
+                String checksum;
+                try {
+                    body = Files.readAllBytes(file.toPath());
+                    checksum = new String(Base64.getEncoder().encode(messageDigest.digest(body)));
+                    messageDigest.reset();
+                } catch (IOException ex) {
+                    throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
+                }
+
+                Integer responseCode = HttpResponseCode.OK;
+                HttpHeader ifNonMatch = request.getHeader(HttpHeader.IF_NONE_MATCH);
+                if(ifNonMatch != null) {
+                    if(checksum.equals(ifNonMatch.getHeaderValue())) {
+                        responseCode = HttpResponseCode.NOT_MODIFIED;
+                    }
+                }
+
                 String[] nameExtension = file.getName().split(FILE_EXTENSION_REGEX);
                 String extension = nameExtension.length == 2 ? nameExtension[1] : MimeType.BIN;
-                long fileSize = file.length();
+                response.setResponseCode(responseCode);
                 response.setReasonPhrase(file.getName());
-                response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(fileSize)));
                 MimeType mimeType = MimeType.fromSuffix(extension);
                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, mimeType == null ? MimeType.BIN : mimeType.toString()));
-                response.setResponseCode(HttpResponseCode.OK);
+                response.addHeader(new HttpHeader(HttpHeader.E_TAG, checksum));
+                response.addHeader(new HttpHeader(HttpHeader.LAST_MODIFIED,
+                        SystemProperties.getDateFormat(SystemProperties.HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE).
+                                format(new Date(file.lastModified()))));
 
-                if (fileSize > SystemProperties.getLong(SystemProperties.HTTP_STREAMING_LIMIT_FILE_SIZE)) {
-                    try {
-                        response.setBody(Files.readAllBytes(file.toPath()));
-                    } catch (IOException ex) {
-                        throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
-                    }
-                } else {
-                    try {
-                        response.setBody(Files.readAllBytes(file.toPath()));
-                    } catch (IOException ex) {
-                        throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
-                    }
+                if(responseCode.equals(HttpResponseCode.OK)) {
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(file.length())));
+                    response.setBody(body);
                 }
             }
         } else {

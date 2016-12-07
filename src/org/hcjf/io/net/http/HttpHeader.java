@@ -40,6 +40,7 @@ public class HttpHeader {
     public static final String DATE = "Date";
     public static final String LAST_MODIFIED = "Last-Modified";
     public static final String CONNECTION = "Connection";
+    public static final String E_TAG = "ETag";
 
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";

@@ -47,6 +47,7 @@ public final class Errors extends Messages {
     public static final String ORG_HCJF_IO_NET_HTTP_6 = "org.hcjf.io.net.http@6";
     public static final String ORG_HCJF_IO_NET_HTTP_7 = "org.hcjf.io.net.http@7";
     public static final String ORG_HCJF_IO_NET_HTTP_8 = "org.hcjf.io.net.http@8";
+    public static final String ORG_HCJF_IO_NET_HTTP_9 = "org.hcjf.io.net.http@9";
 
     public static final String ORG_HCJF_IO_NET_HTTP_LAYERED_1 = "org.hcjf.io.net.http.layered@1";
 
@@ -94,6 +95,7 @@ public final class Errors extends Messages {
         addDefault(ORG_HCJF_IO_NET_HTTP_6, "Unsupported ssl engine");
         addDefault(ORG_HCJF_IO_NET_HTTP_7, "Parameter 'groupName' can't be null");
         addDefault(ORG_HCJF_IO_NET_HTTP_8, "Parameter 'parameterName' can't be null");
+        addDefault(ORG_HCJF_IO_NET_HTTP_9, "File checksum algorithm not found");
 
         addDefault(ORG_HCJF_IO_NET_HTTP_LAYERED_1, "Resource name can't be null");
 

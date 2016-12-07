@@ -36,6 +36,7 @@ public abstract class HttpPackage {
     public HttpPackage() {
         this.httpVersion = HttpVersion.VERSION_1_1;
         this.headers = new HashMap<>();
+        this.body = new byte[0];
     }
 
     protected HttpPackage(HttpPackage httpPackage) {

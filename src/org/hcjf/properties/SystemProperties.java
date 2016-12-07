@@ -72,6 +72,7 @@ public final class SystemProperties extends Properties {
     public static final String HTTP_DEFAULT_CLIENT_READ_TIMEOUT = "hcjf.http.default.client.read.timeout";
     public static final String HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.http.default.client.write.timeout";
     public static final String HTTP_DEFAULT_GUEST_SESSION_NAME = "hcjf.http.default.guest.session.name";
+    public static final String HTTP_DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.http.default.file.checksum.algorithm";
 
     public static final String HTTPS_DEFAULT_SERVER_PORT = "hcjf.https.default.server.port";
     public static final String HTTPS_DEFAULT_CLIENT_PORT = "hcjf.https.default.server.port";
@@ -155,6 +156,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HTTP_DEFAULT_CLIENT_READ_TIMEOUT, "10000");
         defaults.put(HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT, "10000");
         defaults.put(HTTP_DEFAULT_GUEST_SESSION_NAME, "Http guest session");
+        defaults.put(HTTP_DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
 
         defaults.put(HTTPS_DEFAULT_SERVER_PORT, "443");
         defaults.put(HTTPS_DEFAULT_CLIENT_PORT, "443");
