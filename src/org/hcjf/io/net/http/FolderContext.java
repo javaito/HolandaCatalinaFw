@@ -118,8 +118,10 @@ public class FolderContext extends Context {
                 String checksum;
                 try {
                     body = Files.readAllBytes(file.toPath());
-                    checksum = new String(Base64.getEncoder().encode(messageDigest.digest(body)));
-                    messageDigest.reset();
+                    synchronized (this) {
+                        checksum = new String(Base64.getEncoder().encode(messageDigest.digest(body)));
+                        messageDigest.reset();
+                    }
                 } catch (IOException ex) {
                     throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
                 }
