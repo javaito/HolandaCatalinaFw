@@ -36,6 +36,7 @@ public class HttpHeader {
     public static final String USER_AGENT = "User-Agent";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String CONTENT_LENGTH = "Content-Length";
+    public static final String CONTENT_ENCODING = "Content-Encoding";
     public static final String SERVER = "Server";
     public static final String DATE = "Date";
     public static final String LAST_MODIFIED = "Last-Modified";
@@ -46,6 +47,9 @@ public class HttpHeader {
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String CLOSED = "Closed";
     public static final String DEFAULT_USER_AGENT = "HCJF";
+    public static final String DEFLATE = "deflate";
+    public static final String GZIP = "gzip";
+    public static final String IDENTITY = "identity";
 
     private static final String HEADER_ASSIGNATION = ":";
     private static final String HEADER_GROUPS_SEPARATOR = ",";
@@ -143,7 +147,8 @@ public class HttpHeader {
      */
     private void parse() {
         if(headerName.equalsIgnoreCase(ACCEPT) ||
-                headerName.equalsIgnoreCase(CONTENT_TYPE)) {
+                headerName.equalsIgnoreCase(CONTENT_TYPE) ||
+                headerName.equalsIgnoreCase(ACCEPT_ENCODING)) {
             parseStandardGroup();
         }
     }

@@ -4,6 +4,7 @@ import org.hcjf.encoding.MimeType;
 import org.hcjf.errors.Errors;
 import org.hcjf.properties.SystemProperties;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,9 +14,11 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipOutputStream;
 
 /**
- * This class publish
+ * This class publish some local folder in the web environment.
  * @author javaito
  * @email javaito@gmail.com
  */
@@ -146,8 +149,37 @@ public class FolderContext extends Context {
                                 format(new Date(file.lastModified()))));
 
                 if(responseCode.equals(HttpResponseCode.OK)) {
-                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(file.length())));
-                    response.setBody(body);
+                    HttpHeader acceptEncodingHeader = request.getHeader(HttpHeader.ACCEPT_ENCODING);
+                    if(acceptEncodingHeader != null) {
+                        if(acceptEncodingHeader.getGroups().contains(HttpHeader.DEFLATE)) {
+                            try (ByteArrayOutputStream out = new ByteArrayOutputStream(); ZipOutputStream zipOutputStream = new ZipOutputStream(out)) {
+                                zipOutputStream.write(body);
+                                zipOutputStream.flush();
+                                body = out.toByteArray();
+                                response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.DEFLATE));
+                            } catch (Exception ex) {
+                                response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
+                            }
+                        } else if(acceptEncodingHeader.getGroups().contains(HttpHeader.GZIP)) {
+                            try (ByteArrayOutputStream out = new ByteArrayOutputStream(); GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out)) {
+                                gzipOutputStream.write(body);
+                                gzipOutputStream.flush();
+                                body = out.toByteArray();
+                                response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.GZIP));
+                            } catch (Exception ex) {
+                                response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
+                            }
+                        } else if(acceptEncodingHeader.getGroups().contains(HttpHeader.IDENTITY)) {
+                            response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.IDENTITY));
+                        } else {
+                            response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
+                        }
+                    }
+
+                    if(responseCode.equals(HttpResponseCode.OK)) {
+                        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(file.length())));
+                        response.setBody(body);
+                    }
                 }
             }
         } else {
