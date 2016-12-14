@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -153,7 +154,10 @@ public class FolderContext extends Context {
                     if(acceptEncodingHeader != null) {
                         if(acceptEncodingHeader.getGroups().contains(HttpHeader.DEFLATE)) {
                             try (ByteArrayOutputStream out = new ByteArrayOutputStream(); ZipOutputStream zipOutputStream = new ZipOutputStream(out)) {
+                                zipOutputStream.putNextEntry(new ZipEntry(file.getName()));
                                 zipOutputStream.write(body);
+                                zipOutputStream.closeEntry();
+                                zipOutputStream.finish();
                                 zipOutputStream.flush();
                                 body = out.toByteArray();
                                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.DEFLATE));
