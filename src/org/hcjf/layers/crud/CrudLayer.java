@@ -2,12 +2,12 @@ package org.hcjf.layers.crud;
 
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.query.Query;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * This layer implements the {@link CrudLayerInterface}
@@ -38,9 +38,14 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
         }
 
         if(genericSuperClass instanceof ParameterizedType) {
-            resourceClass = (Class<O>)
-                    ((ParameterizedType)genericSuperClass).
-                            getActualTypeArguments()[0];
+
+            Type actualType = ((ParameterizedType)genericSuperClass).
+                    getActualTypeArguments()[0];
+            if(actualType instanceof ParameterizedTypeImpl) {
+                resourceClass = (Class<O>) ((ParameterizedTypeImpl)actualType).getOwnerType();
+            } else {
+                resourceClass = (Class<O>) actualType;
+            }
         } else {
             throw new IllegalArgumentException();
         }
