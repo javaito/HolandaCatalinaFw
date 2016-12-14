@@ -4,8 +4,10 @@ import org.hcjf.layers.Layer;
 import org.hcjf.layers.query.Query;
 
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * This layer implements the {@link CrudLayerInterface}
@@ -26,9 +28,23 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
      * @return Resource class.
      */
     public final Class<O> getResourceType() {
-        Class<O> resourceClass = (Class<O>)
-                ((ParameterizedType)getClass().getGenericSuperclass()).
-                        getActualTypeArguments()[0];
+        Class<O> resourceClass;
+        Class currentClass = getClass();
+        Type genericSuperClass = currentClass.getGenericSuperclass();
+        while(currentClass != Object.class &&
+                !(genericSuperClass instanceof ParameterizedType)) {
+            currentClass = currentClass.getSuperclass();
+            genericSuperClass = currentClass.getGenericSuperclass();
+        }
+
+        if(genericSuperClass instanceof ParameterizedType) {
+            resourceClass = (Class<O>)
+                    ((ParameterizedType)genericSuperClass).
+                            getActualTypeArguments()[0];
+        } else {
+            throw new IllegalArgumentException();
+        }
+
         return resourceClass;
     }
 
