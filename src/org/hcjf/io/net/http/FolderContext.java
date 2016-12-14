@@ -181,7 +181,7 @@ public class FolderContext extends Context {
                     }
 
                     if(responseCode.equals(HttpResponseCode.OK)) {
-                        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(file.length())));
+                        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
                         response.setBody(body);
                     }
                 }
