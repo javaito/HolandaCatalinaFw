@@ -16,6 +16,8 @@ import java.util.Map;
  */
 public abstract class CrudLayer<O extends Object> extends Layer implements CrudLayerInterface<O> {
 
+    private Class<O> resourceType;
+
     public CrudLayer(String implName) {
         super(implName);
     }
@@ -27,30 +29,31 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
      * This method return the resource class of the layer.
      * @return Resource class.
      */
-    public final Class<O> getResourceType() {
-        Class<O> resourceClass;
-        Class currentClass = getClass();
-        Type genericSuperClass = currentClass.getGenericSuperclass();
-        while(currentClass != Object.class &&
-                !(genericSuperClass instanceof ParameterizedType)) {
-            currentClass = currentClass.getSuperclass();
-            genericSuperClass = currentClass.getGenericSuperclass();
-        }
-
-        if(genericSuperClass instanceof ParameterizedType) {
-
-            Type actualType = ((ParameterizedType)genericSuperClass).
-                    getActualTypeArguments()[0];
-            if(actualType instanceof ParameterizedTypeImpl) {
-                resourceClass = (Class<O>) ((ParameterizedTypeImpl)actualType).getRawType();
-            } else {
-                resourceClass = (Class<O>) actualType;
+    public synchronized final Class<O> getResourceType() {
+        if(resourceType == null) {
+            Class currentClass = getClass();
+            Type genericSuperClass = currentClass.getGenericSuperclass();
+            while (currentClass != Object.class &&
+                    !(genericSuperClass instanceof ParameterizedType)) {
+                currentClass = currentClass.getSuperclass();
+                genericSuperClass = currentClass.getGenericSuperclass();
             }
-        } else {
-            throw new IllegalArgumentException();
+
+            if (genericSuperClass instanceof ParameterizedType) {
+
+                Type actualType = ((ParameterizedType) genericSuperClass).
+                        getActualTypeArguments()[0];
+                if (actualType instanceof ParameterizedTypeImpl) {
+                    resourceType = (Class<O>) ((ParameterizedTypeImpl) actualType).getRawType();
+                } else {
+                    resourceType = (Class<O>) actualType;
+                }
+            } else {
+                throw new IllegalArgumentException();
+            }
         }
 
-        return resourceClass;
+        return resourceType;
     }
 
     /**
