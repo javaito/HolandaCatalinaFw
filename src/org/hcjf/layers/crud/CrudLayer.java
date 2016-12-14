@@ -42,7 +42,7 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
             Type actualType = ((ParameterizedType)genericSuperClass).
                     getActualTypeArguments()[0];
             if(actualType instanceof ParameterizedTypeImpl) {
-                resourceClass = (Class<O>) ((ParameterizedTypeImpl)actualType).getOwnerType();
+                resourceClass = (Class<O>) ((ParameterizedTypeImpl)actualType).getRawType();
             } else {
                 resourceClass = (Class<O>) actualType;
             }
