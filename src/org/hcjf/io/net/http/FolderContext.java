@@ -152,30 +152,28 @@ public class FolderContext extends Context {
                 if(responseCode.equals(HttpResponseCode.OK)) {
                     HttpHeader acceptEncodingHeader = request.getHeader(HttpHeader.ACCEPT_ENCODING);
                     if(acceptEncodingHeader != null) {
-                        if(acceptEncodingHeader.getGroups().contains(HttpHeader.DEFLATE)) {
-                            try (ByteArrayOutputStream out = new ByteArrayOutputStream(); ZipOutputStream zipOutputStream = new ZipOutputStream(out)) {
-                                zipOutputStream.putNextEntry(new ZipEntry(file.getName()));
-                                zipOutputStream.write(body);
-                                zipOutputStream.closeEntry();
-                                zipOutputStream.finish();
-                                zipOutputStream.flush();
-                                body = out.toByteArray();
-                                response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.DEFLATE));
-                            } catch (Exception ex) {
-                                response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
+                        boolean notAcceptable = true;
+                        for(String group : acceptEncodingHeader.getGroups()) {
+                            if (group.equalsIgnoreCase(HttpHeader.GZIP) || group.equalsIgnoreCase(HttpHeader.DEFLATE)) {
+                                try (ByteArrayOutputStream out = new ByteArrayOutputStream(); GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out)) {
+                                    gzipOutputStream.write(body);
+                                    gzipOutputStream.flush();
+                                    gzipOutputStream.finish();
+                                    body = out.toByteArray();
+                                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.GZIP));
+                                    notAcceptable = false;
+                                } catch (Exception ex) {
+                                    //TODO: Log.w();
+                                }
+                                break;
+                            } else if (group.equalsIgnoreCase(HttpHeader.IDENTITY)) {
+                                response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.IDENTITY));
+                                notAcceptable = false;
+                                break;
                             }
-                        } else if(acceptEncodingHeader.getGroups().contains(HttpHeader.GZIP)) {
-                            try (ByteArrayOutputStream out = new ByteArrayOutputStream(); GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out)) {
-                                gzipOutputStream.write(body);
-                                gzipOutputStream.flush();
-                                body = out.toByteArray();
-                                response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.GZIP));
-                            } catch (Exception ex) {
-                                response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
-                            }
-                        } else if(acceptEncodingHeader.getGroups().contains(HttpHeader.IDENTITY)) {
-                            response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.IDENTITY));
-                        } else {
+                        }
+
+                        if (notAcceptable) {
                             response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
                         }
                     }
