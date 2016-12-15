@@ -162,10 +162,10 @@ public class FolderContext extends Context {
                                     body = out.toByteArray();
                                     response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.GZIP));
                                     notAcceptable = false;
+                                    break;
                                 } catch (Exception ex) {
                                     //TODO: Log.w();
                                 }
-                                break;
                             } else if (group.equalsIgnoreCase(HttpHeader.IDENTITY)) {
                                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.IDENTITY));
                                 notAcceptable = false;

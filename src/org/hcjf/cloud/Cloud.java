@@ -77,7 +77,7 @@ public final class Cloud {
      * This method is blocked until you can get the lock.
      * @param resourceName The name of the resource to lock.
      */
-    public static final void lock(String resourceName) {
+    public static final void lock(String resourceName) throws InterruptedException {
         getInstance().impl.lock(resourceName);
     }
 
@@ -85,7 +85,7 @@ public final class Cloud {
      * This method unlocks a previously locked resource.
      * @param resourceName The name of the resource locked.
      */
-    public static final void unlock(String resourceName) {
+    public static final void unlock(String resourceName) throws InterruptedException {
         getInstance().impl.unlock(resourceName);
     }
 

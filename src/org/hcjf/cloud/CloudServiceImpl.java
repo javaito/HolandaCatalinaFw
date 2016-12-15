@@ -36,12 +36,12 @@ public interface CloudServiceImpl {
      * This method is blocked until you can get the lock.
      * @param resourceName The name of the resource to lock.
      */
-    public void lock(String resourceName);
+    public void lock(String resourceName) throws InterruptedException;
 
     /**
      * This method unlocks a previously locked resource.
      * @param resourceName The name of the resource locked.
      */
-    public void unlock(String resourceName);
+    public void unlock(String resourceName) throws InterruptedException;
 
 }
