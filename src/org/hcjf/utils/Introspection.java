@@ -27,6 +27,44 @@ public final class Introspection {
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
 
     /**
+     * Creates a mpa using all the getters method of the class.
+     * @param instance Instance to transform.
+     * @return Map
+     */
+    public static Map<String, Object> toMap(Object instance) {
+        Map<String, Object> result = new HashMap<>();
+        Map<String, Getter> getters = getGetters(instance.getClass());
+        for(String name : getters.keySet()) {
+            try {
+                result.put(name, getters.get(name).get(instance));
+            } catch (Exception e){}
+        }
+        return result;
+    }
+
+    /**
+     * Create an instance of the class from a map.
+     * @param map Map with values.
+     * @param clazz Instance class.
+     * @param <O> Expected type.
+     * @return Instance.
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     */
+    public static <O extends Object> O toInstance(Map<String, Object> map, Class<O> clazz) throws IllegalAccessException, InstantiationException {
+        O result = clazz.newInstance();
+        Map<String, Setter> setters = getSetters(clazz);
+        for(String name : setters.keySet()) {
+            if(map.containsKey(name)) {
+                try {
+                    setters.get(name).set(result, map.get(name));
+                } catch (Exception ex){}
+            }
+        }
+        return result;
+    }
+
+    /**
      * Return a map with all the methods founded in the class applying the filter, indexed
      * by the filter definition.
      * @param clazz Class to be inspected.
