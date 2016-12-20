@@ -33,6 +33,9 @@ public final class SystemProperties extends Properties {
     public static final String SERVICE_GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
     public static final String SERVICE_SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
 
+    public static final String EVENT_SERVICE_NAME = "hcjf.event.service.name";
+    public static final String EVENT_SERVICE_PRIORITY = "hcjf.event.service.priority";
+
     public static final String LOG_FILE_PREFIX = "hcfj.log.file.prefix";
     public static final String LOG_ERROR_FILE = "hcfj.log.error.file";
     public static final String LOG_WARNING_FILE = "hcfj.log.warning.file";
@@ -116,6 +119,9 @@ public final class SystemProperties extends Properties {
         defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(SERVICE_GUEST_SESSION_NAME, "Guest");
         defaults.put(SERVICE_SHUTDOWN_TIME_OUT, "200");
+
+        defaults.put(EVENT_SERVICE_NAME, "Events");
+        defaults.put(EVENT_SERVICE_PRIORITY, "0");
 
         defaults.put(LOG_FILE_PREFIX, "hcfj");
         defaults.put(LOG_ERROR_FILE, "false");

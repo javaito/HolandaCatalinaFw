@@ -59,6 +59,8 @@ public final class Errors extends Messages {
     public static final String ORG_HCJF_IO_NET_HTTP_REST_3 = "org.hcjf.io.net.http.rest@3";
     public static final String ORG_HCJF_IO_NET_HTTP_REST_4 = "org.hcjf.io.net.http.rest@4";
 
+    public static final String ORG_HCJF_EVENTS_1 = "org.hcjf.events@1";
+
     static {
         instance = new Errors();
 
@@ -106,6 +108,8 @@ public final class Errors extends Messages {
         addDefault(ORG_HCJF_IO_NET_HTTP_REST_2, "Resource query parameter not found.");
         addDefault(ORG_HCJF_IO_NET_HTTP_REST_3, "The resources can't be created using a query like a parameter.");
         addDefault(ORG_HCJF_IO_NET_HTTP_REST_4, "%s method is not implemented on the REST interface");
+
+        addDefault(ORG_HCJF_EVENTS_1, "Consumer null");
     }
 
     private Errors() {
