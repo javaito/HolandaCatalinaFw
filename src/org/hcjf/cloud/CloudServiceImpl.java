@@ -2,6 +2,7 @@ package org.hcjf.cloud;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.locks.Lock;
 
 /**
  * This clas must be implemented in order to create an
@@ -43,5 +44,12 @@ public interface CloudServiceImpl {
      * @param resourceName The name of the resource locked.
      */
     public void unlock(String resourceName) throws InterruptedException;
+
+    /**
+     * Return the implementation of the Lock interface distributed.
+     * @param lockName Name of the lock.
+     * @return Distributed lock implementation.
+     */
+    public Lock getLock(String lockName);
 
 }
