@@ -4,6 +4,7 @@ import org.hcjf.properties.SystemProperties;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.locks.Lock;
 
 /**
  * This class is a singleton that provides the generics
@@ -56,7 +57,7 @@ public final class Cloud {
      * @param <V> Type of the map's values.
      * @return Return the instance of the distributed map.
      */
-    public static final <K extends Object, V extends Object> Map<K, V> getMap(String mapName) {
+    public static <K extends Object, V extends Object> Map<K, V> getMap(String mapName) {
         return getInstance().impl.getMap(mapName);
     }
 
@@ -67,7 +68,7 @@ public final class Cloud {
      * @param <V> Type of the queue's values.
      * @return Return the instance of the distributed queue.
      */
-    public static final <V extends Object> Queue<V> getQueue(String queueName) {
+    public static <V extends Object> Queue<V> getQueue(String queueName) {
         return getInstance().impl.getQueue(queueName);
     }
 
@@ -77,7 +78,7 @@ public final class Cloud {
      * This method is blocked until you can get the lock.
      * @param resourceName The name of the resource to lock.
      */
-    public static final void lock(String resourceName) throws InterruptedException {
+    public static void lock(String resourceName) throws InterruptedException {
         getInstance().impl.lock(resourceName);
     }
 
@@ -85,8 +86,16 @@ public final class Cloud {
      * This method unlocks a previously locked resource.
      * @param resourceName The name of the resource locked.
      */
-    public static final void unlock(String resourceName) throws InterruptedException {
+    public static void unlock(String resourceName) throws InterruptedException {
         getInstance().impl.unlock(resourceName);
     }
 
+    /**
+     * Return the implementation of the Lock interface distributed.
+     * @param lockName Name of the lock.
+     * @return Distributed lock implementation.
+     */
+    public static Lock getLock(String lockName) {
+        return getInstance().impl.getLock(lockName);
+    }
 }
