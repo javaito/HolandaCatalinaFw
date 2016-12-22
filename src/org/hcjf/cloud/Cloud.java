@@ -4,6 +4,7 @@ import org.hcjf.properties.SystemProperties;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -97,5 +98,15 @@ public final class Cloud {
      */
     public static Lock getLock(String lockName) {
         return getInstance().impl.getLock(lockName);
+    }
+
+    /**
+     * Return the distributed lock condition over specific lock object.
+     * @param conditionName Lock condition name.
+     * @param lock Specific lock object.
+     * @return Return the lock condition.
+     */
+    public static Condition getCondition(String conditionName, Lock lock) {
+        return getInstance().impl.getCondition(conditionName, lock);
     }
 }

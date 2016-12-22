@@ -2,6 +2,7 @@ package org.hcjf.cloud;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -52,4 +53,11 @@ public interface CloudServiceImpl {
      */
     public Lock getLock(String lockName);
 
+    /**
+     * Return the distributed lock condition over specific lock object.
+     * @param conditionName Lock condition name.
+     * @param lock Specific lock object.
+     * @return Return the lock condition.
+     */
+    public Condition getCondition(String conditionName, Lock lock);
 }
