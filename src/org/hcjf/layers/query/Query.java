@@ -5,6 +5,9 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
 import java.util.*;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This class contains all the parameter needed to create a query.
@@ -17,18 +20,21 @@ public class Query extends EvaluatorCollection {
     public static final String QUERY_LOG_TAG = "QUERY";
 
     private final QueryId id;
+    private String resourceName;
     private Integer limit;
     private Object pageStart;
     private boolean desc;
     private final List<String> orderFields;
-    private final Set<Evaluator> evaluators;
+    private final List<String> returnFields;
+    private final Map<String, Query> joinQueries;
 
     public Query(QueryId id) {
         this.id = id;
-        desc = SystemProperties.getBoolean(SystemProperties.QUERY_DEFAULT_DESC_ORDER);
-        limit = SystemProperties.getInteger(SystemProperties.QUERY_DEFAULT_LIMIT);
+        desc = SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER);
+        limit = SystemProperties.getInteger(SystemProperties.Query.DEFAULT_LIMIT);
         orderFields = new ArrayList<>();
-        evaluators = new HashSet<>();
+        returnFields = new ArrayList<>();
+        joinQueries = new HashMap<>();
     }
 
     public Query(){
@@ -36,14 +42,18 @@ public class Query extends EvaluatorCollection {
     }
 
     private Query(Query source) {
+        super(source);
         this.id = new QueryId();
+        this.resourceName = source.resourceName;
         this.limit = source.limit;
         this.pageStart = source.pageStart;
         this.desc = source.desc;
         this.orderFields = new ArrayList<>();
         this.orderFields.addAll(source.orderFields);
-        this.evaluators = new HashSet<>();
-        this.evaluators.addAll(source.evaluators);
+        this.returnFields = new ArrayList<>();
+        this.returnFields.addAll(source.returnFields);
+        this.joinQueries = new HashMap<>();
+        this.joinQueries.putAll(source.joinQueries);
     }
 
     /**
@@ -52,6 +62,22 @@ public class Query extends EvaluatorCollection {
      */
     public final QueryId getId() {
         return id;
+    }
+
+    /**
+     * Return the resource name.
+     * @return Resource name.
+     */
+    public final String getResourceName() {
+        return resourceName;
+    }
+
+    /**
+     * Set the resource name.
+     * @param resourceName Resource name.
+     */
+    public final void setResourceName(String resourceName) {
+        this.resourceName = resourceName;
     }
 
     /**
@@ -109,7 +135,7 @@ public class Query extends EvaluatorCollection {
      * Return the unmodifiable list with order fields.
      * @return Order fields.
      */
-    public List<String> getOrderFields() {
+    public final List<String> getOrderFields() {
         return Collections.unmodifiableList(orderFields);
     }
 
@@ -125,6 +151,24 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
+     * Return an unmodifiable list with the return fields.
+     * @return Return fields.
+     */
+    public final List<String> getReturnFields() {
+        return Collections.unmodifiableList(returnFields);
+    }
+
+    /**
+     * Add the name of the field to be returned in the result set.
+     * @param returnField Field name.
+     * @return Return the same instance of this class.
+     */
+    public final Query addReturnField(String returnField) {
+        returnFields.add(returnField);
+        return this;
+    }
+
+    /**
      * This method evaluate each object of the collection and sort filtered
      * object to create a result add with the object filtered and sorted.
      * If there are order fields added then the result implementation is a
@@ -135,7 +179,7 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public <O extends Object> Set<O> evaluate(Collection<O> objects) {
+    public final <O extends Object> Set<O> evaluate(Collection<O> objects) {
         Set<O> result;
 
         if(objects.size() > 0) {
@@ -159,7 +203,7 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public <O extends Object> Set<O> evaluate(Collection<O> objects, Consumer<O> consumer) {
+    public final <O extends Object> Set<O> evaluate(Collection<O> objects, Consumer<O> consumer) {
         Set<O> result;
 
         if(orderFields.size() > 0) {
@@ -191,7 +235,7 @@ public class Query extends EvaluatorCollection {
         boolean add;
         for(O object : objects) {
             add = true;
-            for(Evaluator evaluator : evaluators) {
+            for(Evaluator evaluator : getEvaluators()) {
                 add = evaluator.evaluate(object, consumer);
                 if(!add) {
                     break;
@@ -217,15 +261,46 @@ public class Query extends EvaluatorCollection {
      */
     public final Query reduce(Collection<Evaluator> evaluators, Collection<String> orderFields) {
         Query copy = new Query(this);
-        if(evaluators != null) {
+
+        if(evaluators != null && !evaluators.isEmpty()) {
             copy.evaluators.removeAll(evaluators);
         }
 
-        if(orderFields != null) {
+        if(orderFields != null && !orderFields.isEmpty()) {
             copy.orderFields.removeAll(orderFields);
         }
 
         return copy;
+    }
+
+    /**
+     * Create a query instance from sql definition.
+     * @param sql Sql definition.
+     * @return Query instance.
+     */
+    public static Query compile(String sql) {
+        Pattern pattern = SystemProperties.getPattern(SystemProperties.Query.SELECT_REGULAR_EXPRESSION);
+        Matcher matcher = pattern.matcher(sql);
+
+        if(matcher.matches()) {
+            String selectBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.SELECT_GROUP_INDEX));
+            String fromBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.FROM_GROUP_INDEX));
+            String conditionalBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
+
+            Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
+            System.out.println(conditionalPatter.matcher(conditionalBody).matches());
+            String[] conditionalElements = conditionalPatter.split(conditionalBody);
+            for (int i = 0; i < conditionalElements.length; i++) {
+                switch (conditionalElements[i++]) {
+
+                }
+            }
+        } else {
+            MatchResult mr = matcher.toMatchResult();
+            throw new IllegalArgumentException();
+        }
+
+        return null;
     }
 
     /**
@@ -312,5 +387,9 @@ public class Query extends EvaluatorCollection {
             }
             return (R) result;
         }
+    }
+
+    public static void main(String[] args) {
+        Query.compile("SELECT * FROM resource JOIN resource2 ON resource.id = resource2.id WHERE resource.id > 34 ORDER BY resource.name LIMIT 100");
     }
 }

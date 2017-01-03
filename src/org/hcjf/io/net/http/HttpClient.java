@@ -42,12 +42,12 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
     public HttpClient(URL url) {
         super(url.getHost(), url.getPort() != -1 ? url.getPort() :
-                SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_CLIENT_PORT),
+                SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_CLIENT_PORT),
                 url.getProtocol().equals(HTTPS_PROTOCOL) ? NetService.TransportLayerProtocol.TCP_SSL : NetService.TransportLayerProtocol.TCP);
         this.url = url;
-        this.connectTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT);
-        this.writeTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT);
-        this.readTimeout = SystemProperties.getLong(SystemProperties.HTTP_DEFAULT_CLIENT_READ_TIMEOUT);
+        this.connectTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_CONNECT_TIMEOUT);
+        this.writeTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_WRITE_TIMEOUT);
+        this.readTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT);
         init();
     }
 

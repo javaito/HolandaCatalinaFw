@@ -68,8 +68,8 @@ public final class NetService extends Service<NetServiceConsumer> {
         this.timer = new Timer();
         this.selectorMonitor = new Object();
 
-        this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.NET_CONNECTION_TIMEOUT_AVAILABLE);
-        this.creationTimeout = SystemProperties.getLong(SystemProperties.NET_CONNECTION_TIMEOUT);
+        this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.Net.CONNECTION_TIMEOUT_AVAILABLE);
+        this.creationTimeout = SystemProperties.getLong(SystemProperties.Net.CONNECTION_TIMEOUT);
         if(creationTimeoutAvailable && creationTimeout <= 0){
             throw new IllegalArgumentException("Illegal creation timeout value: " + creationTimeout);
         }
@@ -150,7 +150,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             }
             try {
                 Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
+                        SystemProperties.Service.SHUTDOWN_TIME_OUT));
             } catch (InterruptedException e) {
             }
         }
@@ -159,7 +159,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         while(!executor.isTerminated()) {
             try {
                 Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
+                        SystemProperties.Service.SHUTDOWN_TIME_OUT));
             } catch (InterruptedException e) {
             }
         }

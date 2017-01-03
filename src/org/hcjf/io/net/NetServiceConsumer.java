@@ -36,16 +36,16 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         this.port = port;
         this.protocol = protocol;
         ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
-        ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+        ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
         if(this instanceof NetClient) {
             ioExecutor.setMaximumPoolSize(1);
         } else {
-            ioExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_CORE_SIZE));
-            ioExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.NET_IO_THREAD_POOL_MAX_SIZE));
+            ioExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE));
+            ioExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_MAX_SIZE));
         }
-        inputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_INPUT_BUFFER_SIZE);
-        outputBufferSize = SystemProperties.getInteger(SystemProperties.NET_DEFAULT_OUTPUT_BUFFER_SIZE);
-        writeWaitForTimeout = SystemProperties.getLong(SystemProperties.NET_WRITE_TIMEOUT);
+        inputBufferSize = SystemProperties.getInteger(SystemProperties.Net.DEFAULT_INPUT_BUFFER_SIZE);
+        outputBufferSize = SystemProperties.getInteger(SystemProperties.Net.DEFAULT_OUTPUT_BUFFER_SIZE);
+        writeWaitForTimeout = SystemProperties.getLong(SystemProperties.Net.WRITE_TIMEOUT);
         waitForMap = new HashMap<>();
     }
 
@@ -317,7 +317,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
 
         public NetIOThread(Runnable target) {
             super(target, "Net IO");
-            if(SystemProperties.getBoolean(SystemProperties.NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
+            if(SystemProperties.getBoolean(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
                 inputBuffer = ByteBuffer.allocateDirect(getInputBufferSize());
                 outputBuffer = ByteBuffer.allocateDirect(getOutputBufferSize());
             } else {

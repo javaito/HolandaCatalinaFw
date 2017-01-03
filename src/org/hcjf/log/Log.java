@@ -50,7 +50,7 @@ public final class Log extends Service<LogPrinter> {
         super(NAME, 0);
         this.printers = new ArrayList<>();
         this.queue = new PriorityBlockingQueue<>(
-                SystemProperties.getInteger(SystemProperties.LOG_QUEUE_INITIAL_SIZE),
+                SystemProperties.getInteger(SystemProperties.Log.QUEUE_INITIAL_SIZE),
                 (o1, o2) -> (int)(o1.getDate().getTime() - o2.getDate().getTime()));
         this.logMonitor = new Object();
     }
@@ -61,7 +61,7 @@ public final class Log extends Service<LogPrinter> {
     @Override
     protected void init() {
         future = fork(new LogRunnable());
-        List<String> logConsumers = SystemProperties.getList(SystemProperties.LOG_CONSUMERS);
+        List<String> logConsumers = SystemProperties.getList(SystemProperties.Log.CONSUMERS);
         logConsumers.forEach(S -> {
             try {
                 LogPrinter printer = (LogPrinter) Class.forName(S).newInstance();
@@ -135,7 +135,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void d(String tag, String message, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message, params));
         }
@@ -151,7 +151,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void d(String tag, String message, Throwable throwable, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message, throwable, params));
         }
@@ -166,7 +166,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void i(String tag, String message, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.INFO, tag, message, params));
         }
@@ -181,7 +181,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void in(String tag, String message, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.INPUT, tag, message, params));
         }
@@ -196,7 +196,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void out(String tag, String message, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.OUTPUT, tag, message, params));
         }
@@ -211,7 +211,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void w(String tag, String message, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message, params));
         }
@@ -227,7 +227,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void w(String tag, String message, Throwable throwable, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message, throwable, params));
         }
@@ -242,7 +242,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void e(String tag, String message, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message, params));
         }
@@ -258,7 +258,7 @@ public final class Log extends Service<LogPrinter> {
      * @param params Parameters for the places in the message.
      */
     public static void e(String tag, String message, Throwable throwable, Object... params) {
-        if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED) ||
+        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message, throwable, params));
         }
@@ -292,11 +292,11 @@ public final class Log extends Service<LogPrinter> {
          * @param record Record to print.
          */
         private void writeRecord(LogRecord record) {
-            if(record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.LOG_LEVEL)) {
+            if(record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.Log.LEVEL)) {
                 printers.forEach(printer -> printer.print(record));
             }
 
-            if(SystemProperties.getBoolean(SystemProperties.LOG_SYSTEM_OUT_ENABLED)) {
+            if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED)) {
                 System.out.println(record.toString());
                 System.out.flush();
             }
@@ -328,7 +328,7 @@ public final class Log extends Service<LogPrinter> {
             this.date = new Date();
             this.group = group;
             this.tag = tag;
-            this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.LOG_DATE_FORMAT));
+            this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.Log.DATE_FORMAT));
             this.message = createMessage(message, throwable, params);
         }
 
@@ -356,8 +356,8 @@ public final class Log extends Service<LogPrinter> {
 
             String group = getGroup().getGroup();
             String tag = getTag();
-            if(SystemProperties.getBoolean(SystemProperties.LOG_TRUNCATE_TAG)) {
-                int truncateSize = SystemProperties.getInteger(SystemProperties.LOG_TRUNCATE_TAG_SIZE);
+            if(SystemProperties.getBoolean(SystemProperties.Log.TRUNCATE_TAG)) {
+                int truncateSize = SystemProperties.getInteger(SystemProperties.Log.TRUNCATE_TAG_SIZE);
                 if(truncateSize > tag.length()) {
                     tag = Strings.rightPad(tag, truncateSize);
                 } else if(truncateSize < tag.length()) {

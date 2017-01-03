@@ -23,8 +23,8 @@ public final class Events extends Service<EventListener> {
     public final List<EventListener> listeners;
 
     private Events() {
-        super(SystemProperties.get(SystemProperties.EVENT_SERVICE_NAME),
-                SystemProperties.getInteger(SystemProperties.EVENT_SERVICE_PRIORITY));
+        super(SystemProperties.get(SystemProperties.Event.SERVICE_NAME),
+                SystemProperties.getInteger(SystemProperties.Event.SERVICE_PRIORITY));
         listeners = new ArrayList<>();
     }
 

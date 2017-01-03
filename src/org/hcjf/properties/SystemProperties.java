@@ -9,6 +9,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * This class overrides the system properties default implementation adding
@@ -27,66 +28,100 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_XML = "hcjf.default.properties.file.xml";
 
-    public static final String SERVICE_THREAD_POOL_CORE_SIZE = "hcjf.service.thread.pool.core.size";
-    public static final String SERVICE_THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
-    public static final String SERVICE_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
-    public static final String SERVICE_GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
-    public static final String SERVICE_SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
+    public static final class Service {
+        public static final String THREAD_POOL_CORE_SIZE = "hcjf.service.thread.pool.core.size";
+        public static final String THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
+        public static final String THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
+        public static final String GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
+        public static final String SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
+    }
 
-    public static final String EVENT_SERVICE_NAME = "hcjf.event.service.name";
-    public static final String EVENT_SERVICE_PRIORITY = "hcjf.event.service.priority";
+    public static final class Event {
+        public static final String SERVICE_NAME = "hcjf.event.service.name";
+        public static final String SERVICE_PRIORITY = "hcjf.event.service.priority";
+    }
 
-    public static final String LOG_FILE_PREFIX = "hcfj.log.file.prefix";
-    public static final String LOG_ERROR_FILE = "hcfj.log.error.file";
-    public static final String LOG_WARNING_FILE = "hcfj.log.warning.file";
-    public static final String LOG_INFO_FILE = "hcfj.log.info.file";
-    public static final String LOG_DEBUG_FILE = "hcfj.log.debug.file";
-    public static final String LOG_LEVEL= "hcfj.log.level";
-    public static final String LOG_DATE_FORMAT = "hcfj.log.date.format";
-    public static final String LOG_CONSUMERS = "hcjf.log.consumers";
-    public static final String LOG_SYSTEM_OUT_ENABLED = "hcjf.log.system.out.enabled";
-    public static final String LOG_QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
-    public static final String LOG_TRUNCATE_TAG = "hcjf.log.truncate.tag";
-    public static final String LOG_TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
+    public static final class Log {
+        public static final String FILE_PREFIX = "hcfj.log.file.prefix";
+        public static final String ERROR_FILE = "hcfj.log.error.file";
+        public static final String WARNING_FILE = "hcfj.log.warning.file";
+        public static final String INFO_FILE = "hcfj.log.info.file";
+        public static final String DEBUG_FILE = "hcfj.log.debug.file";
+        public static final String LEVEL = "hcfj.log.level";
+        public static final String DATE_FORMAT = "hcfj.log.date.format";
+        public static final String CONSUMERS = "hcjf.log.consumers";
+        public static final String SYSTEM_OUT_ENABLED = "hcjf.log.system.out.enabled";
+        public static final String QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
+        public static final String TRUNCATE_TAG = "hcjf.log.truncate.tag";
+        public static final String TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
+    }
 
-    public static final String NET_INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
-    public static final String NET_OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
-    public static final String NET_DISCONNECT_AND_REMOVE = "hcfj.net.disconnect.and.remove";
-    public static final String NET_CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
-    public static final String NET_CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
-    public static final String NET_WRITE_TIMEOUT = "hcjf.net.write.timeout";
-    public static final String NET_IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
-    public static final String NET_IO_THREAD_POOL_MAX_SIZE = "hcjf.net.io.thread.pool.max.size";
-    public static final String NET_IO_THREAD_POOL_CORE_SIZE = "hcjf.net.io.thread.pool.core.size";
-    public static final String NET_DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
-    public static final String NET_DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
-    public static final String NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
-    public static final String NET_SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
+    public static final class Net {
+        public static final String INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
+        public static final String OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
+        public static final String DISCONNECT_AND_REMOVE = "hcfj.net.disconnect.and.remove";
+        public static final String CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
+        public static final String CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
+        public static final String WRITE_TIMEOUT = "hcjf.net.write.timeout";
+        public static final String IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
+        public static final String IO_THREAD_POOL_MAX_SIZE = "hcjf.net.io.thread.pool.max.size";
+        public static final String IO_THREAD_POOL_CORE_SIZE = "hcjf.net.io.thread.pool.core.size";
+        public static final String DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
+        public static final String DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
+        public static final String IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
+        public static final String SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
 
-    public static final String HTTP_SERVER_NAME = "hcjf.http.server.name";
-    public static final String HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
-    public static final String HTTP_INPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.input.log.body.max.length";
-    public static final String HTTP_OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
-    public static final String HTTP_DEFAULT_SERVER_PORT = "hcjf.http.default.server.port";
-    public static final String HTTP_DEFAULT_CLIENT_PORT = "hcjf.http.default.client.port";
-    public static final String HTTP_STREAMING_LIMIT_FILE_SIZE = "hcjf.http.streaming.limit.file.size";
-    public static final String HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.http.default.error.format.show.stack";
-    public static final String HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.http.default.client.connect.timeout";
-    public static final String HTTP_DEFAULT_CLIENT_READ_TIMEOUT = "hcjf.http.default.client.read.timeout";
-    public static final String HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.http.default.client.write.timeout";
-    public static final String HTTP_DEFAULT_GUEST_SESSION_NAME = "hcjf.http.default.guest.session.name";
-    public static final String HTTP_DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.http.default.file.checksum.algorithm";
+        public static final class Http {
+            public static final String SERVER_NAME = "hcjf.http.server.name";
+            public static final String RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
+            public static final String INPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.input.log.body.max.length";
+            public static final String OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
+            public static final String DEFAULT_SERVER_PORT = "hcjf.http.default.server.port";
+            public static final String DEFAULT_CLIENT_PORT = "hcjf.http.default.client.port";
+            public static final String STREAMING_LIMIT_FILE_SIZE = "hcjf.http.streaming.limit.file.size";
+            public static final String DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.http.default.error.format.show.stack";
+            public static final String DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.http.default.client.connect.timeout";
+            public static final String DEFAULT_CLIENT_READ_TIMEOUT = "hcjf.http.default.client.read.timeout";
+            public static final String DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.http.default.client.write.timeout";
+            public static final String DEFAULT_GUEST_SESSION_NAME = "hcjf.http.default.guest.session.name";
+            public static final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.http.default.file.checksum.algorithm";
+        }
 
-    public static final String HTTPS_DEFAULT_SERVER_PORT = "hcjf.https.default.server.port";
-    public static final String HTTPS_DEFAULT_CLIENT_PORT = "hcjf.https.default.server.port";
+        public static final class Https {
+            public static final String DEFAULT_SERVER_PORT = "hcjf.https.default.server.port";
+            public static final String DEFAULT_CLIENT_PORT = "hcjf.https.default.server.port";
+        }
 
-    public static final String REST_DEFAULT_MIME_TYPE = "hcjf.rest.default.mime.type";
-    public static final String REST_DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
-    public static final String REST_QUERY_PATH = "hcjf.rest.query.path";
-    public static final String REST_QUERY_PARAMETER_PATH = "hcjf.rest.query.parameter.path";
+        public static final class Rest {
+            public static final String DEFAULT_MIME_TYPE = "hcjf.rest.default.mime.type";
+            public static final String DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
+            public static final String QUERY_PATH = "hcjf.rest.query.path";
+            public static final String QUERY_PARAMETER_PATH = "hcjf.rest.query.parameter.path";
+        }
+    }
 
-    public static final String QUERY_DEFAULT_LIMIT = "hcjf.query.default.limit";
-    public static final String QUERY_DEFAULT_DESC_ORDER = "hcjf.query.default.desc.order";
+    public static final class Query {
+        public static final String DEFAULT_LIMIT = "hcjf.query.default.limit";
+        public static final String DEFAULT_DESC_ORDER = "hcjf.query.default.desc.order";
+        public static final String SELECT_REGULAR_EXPRESSION = "hcjf.query.select.regular.expression";
+        public static final String CONDITIONAL_REGULAR_EXPRESSION = "hcjf.query.conditional.regular.expression";
+        public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
+        public static final String FROM_GROUP_INDEX = "hcjf.query.from.group.index";
+        public static final String CONDITIONAL_GROUP_INDEX = "hcjf.query.conditional.group.index";
+
+        public static final class ReservedWord {
+            public static final String SELECT = "hcjf.query.select.reserved.word";
+            public static final String FROM = "hcjf.query.from.reserved.word";
+            public static final String JOIN = "hcjf.query.join.reserved.word";
+            public static final String INNER_JOIN = "hcjf.query.inner.join.reserved.word";
+            public static final String LEFT_JOIN = "hcjf.query.left.join.reserved.word";
+            public static final String RIGHT_JOIN = "hcjf.query.right.join.reserved.word";
+            public static final String WHERE = "hcjf.query.where.reserved.word";
+            public static final String ORDER_BY = "hcjf.query.order.by.reserved.word";
+            public static final String LIMIT = "hcjf.query.limit.reserved.word";
+        }
+
+    }
 
     public static final String CLOUD_IMPL = "hcjf.cloud.impl";
 
@@ -114,66 +149,80 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_LOCALE, "EN");
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
 
-        defaults.put(SERVICE_THREAD_POOL_CORE_SIZE, "100");
-        defaults.put(SERVICE_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
-        defaults.put(SERVICE_THREAD_POOL_KEEP_ALIVE_TIME, "10");
-        defaults.put(SERVICE_GUEST_SESSION_NAME, "Guest");
-        defaults.put(SERVICE_SHUTDOWN_TIME_OUT, "200");
+        defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
+        defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
+        defaults.put(Service.THREAD_POOL_KEEP_ALIVE_TIME, "10");
+        defaults.put(Service.GUEST_SESSION_NAME, "Guest");
+        defaults.put(Service.SHUTDOWN_TIME_OUT, "200");
 
-        defaults.put(EVENT_SERVICE_NAME, "Events");
-        defaults.put(EVENT_SERVICE_PRIORITY, "0");
+        defaults.put(Event.SERVICE_NAME, "Events");
+        defaults.put(Event.SERVICE_PRIORITY, "0");
 
-        defaults.put(LOG_FILE_PREFIX, "hcfj");
-        defaults.put(LOG_ERROR_FILE, "false");
-        defaults.put(LOG_WARNING_FILE, "false");
-        defaults.put(LOG_INFO_FILE, "false");
-        defaults.put(LOG_DEBUG_FILE, "false");
-        defaults.put(LOG_LEVEL, "1");
-        defaults.put(LOG_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss,SSS");
-        defaults.put(LOG_CONSUMERS, "[]");
-        defaults.put(LOG_SYSTEM_OUT_ENABLED, "false");
-        defaults.put(LOG_QUEUE_INITIAL_SIZE, "10000");
-        defaults.put(LOG_TRUNCATE_TAG, "false");
-        defaults.put(LOG_TRUNCATE_TAG_SIZE, "35");
+        defaults.put(Log.FILE_PREFIX, "hcfj");
+        defaults.put(Log.ERROR_FILE, "false");
+        defaults.put(Log.WARNING_FILE, "false");
+        defaults.put(Log.INFO_FILE, "false");
+        defaults.put(Log.DEBUG_FILE, "false");
+        defaults.put(Log.LEVEL, "1");
+        defaults.put(Log.DATE_FORMAT, "yyyy-MM-dd HH:mm:ss,SSS");
+        defaults.put(Log.CONSUMERS, "[]");
+        defaults.put(Log.SYSTEM_OUT_ENABLED, "false");
+        defaults.put(Log.QUEUE_INITIAL_SIZE, "10000");
+        defaults.put(Log.TRUNCATE_TAG, "false");
+        defaults.put(Log.TRUNCATE_TAG_SIZE, "35");
 
-        defaults.put(NET_INPUT_BUFFER_SIZE, "1024");
-        defaults.put(NET_OUTPUT_BUFFER_SIZE, "1024");
-        defaults.put(NET_CONNECTION_TIMEOUT_AVAILABLE, "true");
-        defaults.put(NET_CONNECTION_TIMEOUT, "30000");
-        defaults.put(NET_DISCONNECT_AND_REMOVE, "true");
-        defaults.put(NET_WRITE_TIMEOUT, "100");
-        defaults.put(NET_IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
-        defaults.put(NET_IO_THREAD_POOL_MAX_SIZE, "10000");
-        defaults.put(NET_IO_THREAD_POOL_CORE_SIZE, "100");
-        defaults.put(NET_DEFAULT_INPUT_BUFFER_SIZE, "5000");
-        defaults.put(NET_DEFAULT_OUTPUT_BUFFER_SIZE, "5000");
-        defaults.put(NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
-        defaults.put(NET_SSL_MAX_IO_THREAD_POOL_SIZE, "2");
+        defaults.put(Net.INPUT_BUFFER_SIZE, "1024");
+        defaults.put(Net.OUTPUT_BUFFER_SIZE, "1024");
+        defaults.put(Net.CONNECTION_TIMEOUT_AVAILABLE, "true");
+        defaults.put(Net.CONNECTION_TIMEOUT, "30000");
+        defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
+        defaults.put(Net.WRITE_TIMEOUT, "100");
+        defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
+        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "10000");
+        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "100");
+        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "5000");
+        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "5000");
+        defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
+        defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
 
-        defaults.put(HTTP_SERVER_NAME, "HCJF Web Server");
-        defaults.put(HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
-        defaults.put(HTTP_INPUT_LOG_BODY_MAX_LENGTH, "128");
-        defaults.put(HTTP_OUTPUT_LOG_BODY_MAX_LENGTH, "128");
-        defaults.put(HTTP_DEFAULT_SERVER_PORT, "80");
-        defaults.put(HTTP_DEFAULT_CLIENT_PORT, "80");
-        defaults.put(HTTP_STREAMING_LIMIT_FILE_SIZE, "10240");
-        defaults.put(HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK, "true");
-        defaults.put(HTTP_DEFAULT_CLIENT_CONNECT_TIMEOUT, "10000");
-        defaults.put(HTTP_DEFAULT_CLIENT_READ_TIMEOUT, "10000");
-        defaults.put(HTTP_DEFAULT_CLIENT_WRITE_TIMEOUT, "10000");
-        defaults.put(HTTP_DEFAULT_GUEST_SESSION_NAME, "Http guest session");
-        defaults.put(HTTP_DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
+        defaults.put(Net.Http.SERVER_NAME, "HCJF Web Server");
+        defaults.put(Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
+        defaults.put(Net.Http.INPUT_LOG_BODY_MAX_LENGTH, "128");
+        defaults.put(Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, "128");
+        defaults.put(Net.Http.DEFAULT_SERVER_PORT, "80");
+        defaults.put(Net.Http.DEFAULT_CLIENT_PORT, "80");
+        defaults.put(Net.Http.STREAMING_LIMIT_FILE_SIZE, "10240");
+        defaults.put(Net.Http.DEFAULT_ERROR_FORMAT_SHOW_STACK, "true");
+        defaults.put(Net.Http.DEFAULT_CLIENT_CONNECT_TIMEOUT, "10000");
+        defaults.put(Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "10000");
+        defaults.put(Net.Http.DEFAULT_CLIENT_WRITE_TIMEOUT, "10000");
+        defaults.put(Net.Http.DEFAULT_GUEST_SESSION_NAME, "Http guest session");
+        defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
 
-        defaults.put(HTTPS_DEFAULT_SERVER_PORT, "443");
-        defaults.put(HTTPS_DEFAULT_CLIENT_PORT, "443");
+        defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
+        defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
 
-        defaults.put(REST_DEFAULT_MIME_TYPE, "application/json");
-        defaults.put(REST_DEFAULT_ENCODING_IMPL, "hcjf");
-        defaults.put(REST_QUERY_PATH, "query");
-        defaults.put(REST_QUERY_PARAMETER_PATH, "q");
+        defaults.put(Net.Rest.DEFAULT_MIME_TYPE, "application/json");
+        defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");
+        defaults.put(Net.Rest.QUERY_PATH, "query");
+        defaults.put(Net.Rest.QUERY_PARAMETER_PATH, "q");
 
-        defaults.put(QUERY_DEFAULT_LIMIT, "1000");
-        defaults.put(QUERY_DEFAULT_DESC_ORDER, "false");
+        defaults.put(Query.DEFAULT_LIMIT, "1000");
+        defaults.put(Query.DEFAULT_DESC_ORDER, "false");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[ ]{1,}[a-zA-Z_0-9,.* ]{1,})([ ]?(FROM|from)[ ]{1,}[a-zA-Z_0-9.]{1,}[ ]?)([a-zA-Z_0-9'=,.* ?<>!]{1,})?");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "((?<=(((innner|left|right)?join)|where|limit|order by))|(?=(((innner|left|right)?join)|where|limit|order by)))");
+        defaults.put(Query.SELECT_GROUP_INDEX, "1");
+        defaults.put(Query.FROM_GROUP_INDEX, "3");
+        defaults.put(Query.CONDITIONAL_GROUP_INDEX, "5");
+        defaults.put(Query.ReservedWord.SELECT, "SELECT");
+        defaults.put(Query.ReservedWord.FROM, "FROM");
+        defaults.put(Query.ReservedWord.JOIN, "JOIN");
+        defaults.put(Query.ReservedWord.INNER_JOIN, "INNER[ ]{1,}JOIN");
+        defaults.put(Query.ReservedWord.LEFT_JOIN, "LEFT[ ]{1,}JOIN");
+        defaults.put(Query.ReservedWord.RIGHT_JOIN, "RIGHT[ ]{1,}JOIN");
+        defaults.put(Query.ReservedWord.WHERE, "WHERE");
+        defaults.put(Query.ReservedWord.ORDER_BY, "ORDER[ ]{1,}BY");
+        defaults.put(Query.ReservedWord.LIMIT, "LIMIT");
 
         Properties system = System.getProperties();
         putAll(system);
@@ -238,7 +287,7 @@ public final class SystemProperties extends Properties {
         String result = System.getProperty(propertyName);
 
         if(result == null) {
-            Log.d("Property not found: $1",  propertyName);
+            org.hcjf.log.Log.d("Property not found: $1",  propertyName);
         }
 
         if(validator != null) {
@@ -468,18 +517,20 @@ public final class SystemProperties extends Properties {
     public static List<String> getList(String propertyName) {
         String propertyValue = get(propertyName);
         List<String> result = new ArrayList<>();
-        if(instance.instancesCache.containsKey(propertyName)) {
-            result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
-        } else {
-            try {
-                JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
-                array.forEach(A -> result.add(A.getAsString()));
-                List<String> cachedResult = new ArrayList<>();
-                cachedResult.addAll(result);
-                instance.instancesCache.put(propertyName, cachedResult);
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("The property value has not a json array valid format: '"
-                        + propertyName + ":" + propertyValue + "'", ex);
+        synchronized (instance.instancesCache) {
+            if (instance.instancesCache.containsKey(propertyName)) {
+                result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
+            } else {
+                try {
+                    JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
+                    array.forEach(A -> result.add(A.getAsString()));
+                    List<String> cachedResult = new ArrayList<>();
+                    cachedResult.addAll(result);
+                    instance.instancesCache.put(propertyName, cachedResult);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a json array valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
         }
         return result;
@@ -493,18 +544,20 @@ public final class SystemProperties extends Properties {
     public static Set<String> getSet(String propertyName) {
         String propertyValue = get(propertyName);
         Set<String> result = new TreeSet<>();
-        if(instance.instancesCache.containsKey(propertyName)) {
-            result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
-        } else {
-            try {
-                JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
-                array.forEach(A -> result.add(A.getAsString()));
-                List<String> cachedResult = new ArrayList<>();
-                cachedResult.addAll(result);
-                instance.instancesCache.put(propertyName, cachedResult);
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("The property value has not a json array valid format: '"
-                        + propertyName + ":" + propertyValue + "'", ex);
+        synchronized (instance.instancesCache) {
+            if (instance.instancesCache.containsKey(propertyName)) {
+                result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
+            } else {
+                try {
+                    JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
+                    array.forEach(A -> result.add(A.getAsString()));
+                    List<String> cachedResult = new ArrayList<>();
+                    cachedResult.addAll(result);
+                    instance.instancesCache.put(propertyName, cachedResult);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a json array valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
         }
         return result;
@@ -518,20 +571,51 @@ public final class SystemProperties extends Properties {
     public static Map<String, String> getMap(String propertyName) {
         String propertyValue = get(propertyName);
         Map<String, String> result = new HashMap<>();
-        if(instance.instancesCache.containsKey(propertyName)) {
-            result.putAll((Map<String, String>) instance.instancesCache.get(propertyName));
-        } else {
-            try {
-                JsonObject object = (JsonObject) instance.jsonParser.parse(propertyValue);
-                object.entrySet().forEach(S -> result.put(S.getKey(), object.get(S.getKey()).getAsString()));
-                Map<String, String> cachedResult = new HashMap<>();
-                cachedResult.putAll(result);
-                instance.instancesCache.put(propertyName, cachedResult);
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("The property value has not a json object valid format: '"
-                        + propertyName + ":" + propertyValue + "'", ex);
+        synchronized (instance.instancesCache) {
+            if (instance.instancesCache.containsKey(propertyName)) {
+                result.putAll((Map<String, String>) instance.instancesCache.get(propertyName));
+            } else {
+                try {
+                    JsonObject object = (JsonObject) instance.jsonParser.parse(propertyValue);
+                    object.entrySet().forEach(S -> result.put(S.getKey(), object.get(S.getKey()).getAsString()));
+                    Map<String, String> cachedResult = new HashMap<>();
+                    cachedResult.putAll(result);
+                    instance.instancesCache.put(propertyName, cachedResult);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a json object valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
         }
         return result;
     }
+
+    public static Pattern getPattern(String propertyName) {
+        return getPattern(propertyName, 0);
+    }
+
+    /**
+     * Return the compiled pattern from the property value.
+     * @param propertyName Name of the property.
+     * @return Compiled pattern.
+     */
+    public static Pattern getPattern(String propertyName, int flags) {
+        String propertyValue = get(propertyName);
+        Pattern result;
+        synchronized (instance.instancesCache) {
+            if(instance.instancesCache.containsKey(propertyName)) {
+                result = (Pattern) instance.instancesCache.get(propertyName);
+            } else {
+                try {
+                    result = Pattern.compile(propertyValue, flags);
+                    instance.instancesCache.put(propertyName, result);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a regex valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
+            }
+        }
+        return result;
+    }
+
 }

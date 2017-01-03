@@ -1,6 +1,5 @@
 package org.hcjf.service;
 
-import org.hcjf.io.net.NetSession;
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 
@@ -168,7 +167,7 @@ public class ServiceSession implements Comparable {
     private static class GuestSession extends ServiceSession {
 
         public GuestSession() {
-            super(UUID.randomUUID(), SystemProperties.get(SystemProperties.SERVICE_GUEST_SESSION_NAME));
+            super(UUID.randomUUID(), SystemProperties.get(SystemProperties.Service.GUEST_SESSION_NAME));
         }
     }
 }

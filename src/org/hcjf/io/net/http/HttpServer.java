@@ -26,7 +26,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     private HttpSessionFactory sessionFactory;
 
     public HttpServer() {
-        this(SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_SERVER_PORT));
+        this(SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_SERVER_PORT));
     }
 
     public HttpServer(Integer port) {
@@ -193,9 +193,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
                 response.addHeader(new HttpHeader(HttpHeader.DATE,
                         SystemProperties.getDateFormat(
-                                SystemProperties.HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
+                                SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
                 response.addHeader(new HttpHeader(HttpHeader.SERVER,
-                        SystemProperties.get(SystemProperties.HTTP_SERVER_NAME)));
+                        SystemProperties.get(SystemProperties.Net.Http.SERVER_NAME)));
 
             } catch (Throwable throwable) {
                 response = createDefaulErrorResponse(throwable);
@@ -227,7 +227,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
 
         byte[] body;
-        if(SystemProperties.getBoolean(SystemProperties.HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK)) {
+        if(SystemProperties.getBoolean(SystemProperties.Net.Http.DEFAULT_ERROR_FORMAT_SHOW_STACK)) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PrintStream printer = new PrintStream(out);
             throwable.printStackTrace(printer);

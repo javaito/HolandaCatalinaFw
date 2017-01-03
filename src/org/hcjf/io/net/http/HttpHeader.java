@@ -143,7 +143,7 @@ public class HttpHeader {
     }
 
     /**
-     *
+     * Take the value of the header and parse it to obtain the header groups.
      */
     private void parse() {
         if(headerName.equalsIgnoreCase(ACCEPT) ||
@@ -154,7 +154,7 @@ public class HttpHeader {
     }
 
     /**
-     *
+     * Parse the standard header group.
      */
     private void parseStandardGroup() {
         String[] groups = headerValue.split(HEADER_GROUPS_SEPARATOR);

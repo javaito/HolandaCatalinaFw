@@ -38,17 +38,17 @@ public final class SSLHelper implements Runnable {
         this.selectableChannel = selectableChannel;
         this.ioExecutor = Executors.newSingleThreadExecutor();
         this.engineTaskExecutor = Executors.newFixedThreadPool(
-                SystemProperties.getInteger(SystemProperties.NET_SSL_MAX_IO_THREAD_POOL_SIZE));
-        if(SystemProperties.getBoolean(SystemProperties.NET_IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
-            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
-            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
-            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
-            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
+                SystemProperties.getInteger(SystemProperties.Net.SSL_MAX_IO_THREAD_POOL_SIZE));
+        if(SystemProperties.getBoolean(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
+            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
+            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
+            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
+            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
         } else {
-            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
-            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_OUTPUT_BUFFER_SIZE) * 32);
-            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
-            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.NET_INPUT_BUFFER_SIZE) * 32);
+            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
+            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
+            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
+            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
         }
         srcUnwrap.limit(0);
         status = SSLHelperStatus.WAITING;

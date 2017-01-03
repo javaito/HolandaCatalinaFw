@@ -53,7 +53,7 @@ public abstract class Context {
         response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
 
         byte[] body;
-        if(SystemProperties.getBoolean(SystemProperties.HTTP_DEFAULT_ERROR_FORMAT_SHOW_STACK)) {
+        if(SystemProperties.getBoolean(SystemProperties.Net.Http.DEFAULT_ERROR_FORMAT_SHOW_STACK)) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PrintStream printer = new PrintStream(out);
             throwable.printStackTrace(printer);

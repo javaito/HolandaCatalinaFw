@@ -39,9 +39,9 @@ public abstract class Service<C extends ServiceConsumer> {
         this.priority = priority;
         this.serviceThreadFactory = createThreadFactory();
         this.serviceExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(this.serviceThreadFactory);
-        this.serviceExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_CORE_SIZE));
-        this.serviceExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.SERVICE_THREAD_POOL_MAX_SIZE));
-        this.serviceExecutor.setKeepAliveTime(SystemProperties.getLong(SystemProperties.SERVICE_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+        this.serviceExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.Service.THREAD_POOL_CORE_SIZE));
+        this.serviceExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.Service.THREAD_POOL_MAX_SIZE));
+        this.serviceExecutor.setKeepAliveTime(SystemProperties.getLong(SystemProperties.Service.THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
         this.registeredExecutors = new HashSet<>();
         init();
         if(!getClass().equals(Log.class)) {
@@ -293,7 +293,7 @@ public abstract class Service<C extends ServiceConsumer> {
                 while(!service.serviceExecutor.isTerminated()) {
                     try {
                         Thread.sleep(SystemProperties.getLong(
-                                SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
+                                SystemProperties.Service.SHUTDOWN_TIME_OUT));
                     } catch (InterruptedException e) {}
                 }
                 Log.i(Service.SERVICE_LOG_TAG, "Main service executor finalized");
@@ -306,7 +306,7 @@ public abstract class Service<C extends ServiceConsumer> {
                 while(!((Service)log).serviceExecutor.isTerminated()) {
                     try {
                         Thread.sleep(SystemProperties.getLong(
-                                SystemProperties.SERVICE_SHUTDOWN_TIME_OUT));
+                                SystemProperties.Service.SHUTDOWN_TIME_OUT));
                     } catch (InterruptedException e) {}
                 }
                 ((Service)log).shutdown(ShutdownStage.END);

@@ -3,6 +3,7 @@ package org.hcjf.utils;
 import java.util.*;
 
 /**
+ * This class contains utils methods to work with strings.
  * @author javaito
  * @mail javaito@gmail.com
  */
@@ -102,7 +103,7 @@ public final class Strings {
      * @return
      */
     public static Set<Integer> allIndexOf(String value, String foundedValue, boolean desc) {
-        Set<Integer> result = new TreeSet<>((o1, o2) -> (01 - 02) * (desc ? 1 : -1));
+        TreeSet<Integer> result = new TreeSet<>((o1, o2) -> (01 - 02) * (desc ? 1 : -1));
 
         int index = value.indexOf(foundedValue);
         while(index >= 0) {
@@ -125,13 +126,13 @@ public final class Strings {
     }
 
     private static List<String> group(String value, List<String> groups, Set<Integer> startIndexes, Set<Integer> endIndexes) {
+        List<String> result = new ArrayList<>();
         Integer start = null;
         Integer end = null;
         Iterator<Integer> startIterator = startIndexes.iterator();
-        Iterator<Integer> endIterator = endIndexes.iterator();
-        int index = 1;
         while(startIterator.hasNext()) {
             start = startIterator.next();
+            Iterator<Integer> endIterator = endIndexes.iterator();
             while(endIterator.hasNext()) {
                 end = endIterator.next();
                 if(start < end) {
@@ -145,15 +146,17 @@ public final class Strings {
                 throw new IllegalArgumentException("");
             }
 
-
+            result.add(value.substring(start + 1, end));
         }
 
-        return null;
+        return result;
     }
 
     public static void main(String[] args) {
-        String s = "SELECT * FROM holder WHERE holderid IN (SELECT (hola) asdljfh (chau))";
+        String s = "SELECT * FROM holder WHERE holderid IN (bal or (a & b)) AND (SELECT (hola) asdljfh (chau))";
         System.out.println(allIndexOf(s, "(", true));
         System.out.println(allIndexOf(s, ")"));
+
+        System.out.println(group(s));
     }
 }

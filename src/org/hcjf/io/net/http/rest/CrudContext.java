@@ -45,12 +45,12 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         String id = null;
         if(request.getPathParts().size() > CRUD_RESOURCE_ACTION_INDEX) {
             resourceAction = request.getPathParts().get(CRUD_RESOURCE_ACTION_INDEX);
-            if(resourceAction.equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+            if(resourceAction.equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PATH))) {
                 //In this case the action is over the resource's query
                 if(request.getPathParts().size() > CRUD_QUERY_ID_INDEX) {
                     id = request.getPathParts().get(CRUD_QUERY_ID_INDEX);
                 }
-            } else if(resourceAction.equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))){
+            } else if(resourceAction.equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH))){
                 //In this case the action is over the resource object.
                 if(request.getPathParts().size() > CRUD_QUERY_ID_INDEX) {
                     id = request.getPathParts().get(CRUD_QUERY_ID_INDEX);
@@ -137,9 +137,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
         if(crudRequest.getResourceAction() == null) {
             result = layerInterface.create(crudRequest.getAttach(), crudRequest.getCrudParameters());
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH))) {
             throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_3));
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PATH))) {
             result = layerInterface.createQuery((Query) crudRequest.getAttach(), crudRequest.getCrudParameters());
         }
         return new CrudResponse(result);
@@ -160,9 +160,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
             } else {
                 result = layerInterface.read(crudRequest.getId());
             }
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH))) {
             result = layerInterface.read(UUID.fromString(crudRequest.getId()));
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PATH))) {
             result = layerInterface.readQuery(new Query.QueryId(UUID.fromString(crudRequest.getId())));
         }
         return new CrudResponse(result);
@@ -179,9 +179,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
         if(crudRequest.getResourceAction() == null) {
             result = layerInterface.update(crudRequest.getAttach(), crudRequest.getCrudParameters());
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH))) {
             result = layerInterface.update(new Query.QueryId(UUID.fromString(crudRequest.getId())), crudRequest.getCrudParameters());
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PATH))) {
             result = layerInterface.updateQuery((Query) crudRequest.getAttach(), crudRequest.getCrudParameters());
         }
         return new CrudResponse(result);
@@ -198,9 +198,9 @@ public class CrudContext extends EndPoint<CrudLayerInterface, CrudRequest, CrudR
         CrudLayerInterface layerInterface = getLayerInterface(crudRequest.getResourceName());
         if(crudRequest.getResourceAction() == null) {
             result = layerInterface.delete(crudRequest.getId());
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PARAMETER_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH))) {
             result = layerInterface.delete(new Query.QueryId(UUID.fromString(crudRequest.getId())));
-        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.REST_QUERY_PATH))) {
+        } else if(crudRequest.getResourceAction().equals(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PATH))) {
             result = layerInterface.deleteQuery(new Query.QueryId(UUID.fromString(crudRequest.getId())));
         }
         return new CrudResponse(result);

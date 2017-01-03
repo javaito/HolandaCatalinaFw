@@ -242,7 +242,7 @@ public class HttpRequest extends HttpPackage {
         StringBuilder builder = new StringBuilder();
         builder.append(toStringProtocolHeader());
         if(getBody() != null) {
-            int maxLength = SystemProperties.getInteger(SystemProperties.HTTP_INPUT_LOG_BODY_MAX_LENGTH);
+            int maxLength = SystemProperties.getInteger(SystemProperties.Net.Http.INPUT_LOG_BODY_MAX_LENGTH);
             if(maxLength > 0) {
                 if (getBody().length > maxLength) {
                     builder.append(new String(getBody(), 0, maxLength));

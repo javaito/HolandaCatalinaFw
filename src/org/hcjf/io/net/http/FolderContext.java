@@ -57,7 +57,7 @@ public class FolderContext extends Context {
         this.names = name.split(URI_FOLDER_SEPARATOR);
         try {
             this.messageDigest = MessageDigest.getInstance(
-                    SystemProperties.get(SystemProperties.HTTP_DEFAULT_FILE_CHECKSUM_ALGORITHM));
+                    SystemProperties.get(SystemProperties.Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM));
         } catch (Exception ex) {
             throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_9), ex);
         }
@@ -146,7 +146,7 @@ public class FolderContext extends Context {
                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, mimeType == null ? MimeType.BIN : mimeType.toString()));
                 response.addHeader(new HttpHeader(HttpHeader.E_TAG, checksum));
                 response.addHeader(new HttpHeader(HttpHeader.LAST_MODIFIED,
-                        SystemProperties.getDateFormat(SystemProperties.HTTP_RESPONSE_DATE_HEADER_FORMAT_VALUE).
+                        SystemProperties.getDateFormat(SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).
                                 format(new Date(file.lastModified()))));
 
                 if(responseCode.equals(HttpResponseCode.OK)) {

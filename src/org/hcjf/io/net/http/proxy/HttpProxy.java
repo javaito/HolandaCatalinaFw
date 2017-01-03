@@ -45,7 +45,7 @@ public class HttpProxy extends HttpServer {
     }
 
     public HttpProxy() {
-        this(SystemProperties.getInteger(SystemProperties.HTTP_DEFAULT_SERVER_PORT));
+        this(SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_SERVER_PORT));
     }
 
     /**

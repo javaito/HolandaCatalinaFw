@@ -34,9 +34,13 @@ public final class Introspection {
     public static Map<String, Object> toMap(Object instance) {
         Map<String, Object> result = new HashMap<>();
         Map<String, Getter> getters = getGetters(instance.getClass());
+        Object value;
         for(String name : getters.keySet()) {
             try {
-                result.put(name, getters.get(name).get(instance));
+                value = getters.get(name).get(instance);
+                if(value != null) {
+                    result.put(name, value);
+                }
             } catch (Exception e){}
         }
         return result;

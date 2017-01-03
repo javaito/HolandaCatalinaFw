@@ -40,7 +40,7 @@ public interface HttpSessionFactory {
         @Override
         public HttpSession createSession(HttpServer server, HttpRequest httpPackage) {
             return new HttpSession(UUID.randomUUID(),
-                    SystemProperties.get(SystemProperties.SERVICE_GUEST_SESSION_NAME),
+                    SystemProperties.get(SystemProperties.Service.GUEST_SESSION_NAME),
                     server, httpPackage);
         }
     }

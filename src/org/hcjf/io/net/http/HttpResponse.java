@@ -122,7 +122,7 @@ public class HttpResponse extends HttpPackage {
         StringBuilder builder = new StringBuilder();
         builder.append(toStringProtocolHeader());
         if(getBody() != null) {
-            int maxLength = SystemProperties.getInteger(SystemProperties.HTTP_OUTPUT_LOG_BODY_MAX_LENGTH);
+            int maxLength = SystemProperties.getInteger(SystemProperties.Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH);
             if(maxLength > 0) {
                 if (getBody().length > maxLength) {
                     builder.append(new String(getBody(), 0, maxLength));

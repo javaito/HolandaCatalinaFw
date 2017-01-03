@@ -13,7 +13,7 @@ import java.util.Set;
  */
 public abstract class EvaluatorCollection {
 
-    private final Set<Evaluator> evaluators;
+    protected final Set<Evaluator> evaluators;
     private final EvaluatorCollection parent;
 
     public EvaluatorCollection() {
@@ -22,6 +22,9 @@ public abstract class EvaluatorCollection {
 
     public EvaluatorCollection(EvaluatorCollection parent) {
         this.evaluators = new HashSet<>();
+        if(parent != null) {
+            this.evaluators.addAll(parent.evaluators);
+        }
         this.parent = parent;
     }
 
