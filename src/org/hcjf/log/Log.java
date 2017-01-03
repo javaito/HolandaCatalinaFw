@@ -429,7 +429,7 @@ public final class Log extends Service<LogPrinter> {
     /**
      * This enum contains all the possible groups for the records
      */
-    private static enum LogGroup {
+    public static enum LogGroup {
 
         DEBUG("D", 0),
 
