@@ -3,7 +3,6 @@ package org.hcjf.properties;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.hcjf.log.Log;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -42,6 +41,8 @@ public final class SystemProperties extends Properties {
     }
 
     public static final class Log {
+        public static final String SERVICE_NAME = "hcjf.log.service.name";
+        public static final String SERVICE_PRIORITY = "hcjf.log.service.priority";
         public static final String FILE_PREFIX = "hcfj.log.file.prefix";
         public static final String ERROR_FILE = "hcfj.log.error.file";
         public static final String WARNING_FILE = "hcfj.log.warning.file";
@@ -54,6 +55,17 @@ public final class SystemProperties extends Properties {
         public static final String QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
         public static final String TRUNCATE_TAG = "hcjf.log.truncate.tag";
         public static final String TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
+    }
+
+    public static final class Encoding {
+        public static final String SERVICE_NAME = "hcjf.encoding.service.name";
+        public static final String SERVICE_PRIORITY = "hcjf.encoding.service.priority";
+    }
+
+    public static final class FileSystem {
+        public static final String SERVICE_NAME = "hcjf.file.system.service.name";
+        public static final String SERVICE_PRIORITY = "hcjf.file.system.service.priority";
+        public static final String LOG_TAG = "hcjf.file.system.log.tag";
     }
 
     public static final class Net {
@@ -101,10 +113,13 @@ public final class SystemProperties extends Properties {
     }
 
     public static final class Query {
+        public static final String LOG_TAG = "hcjf.query.log.tag";
         public static final String DEFAULT_LIMIT = "hcjf.query.default.limit";
         public static final String DEFAULT_DESC_ORDER = "hcjf.query.default.desc.order";
         public static final String SELECT_REGULAR_EXPRESSION = "hcjf.query.select.regular.expression";
         public static final String CONDITIONAL_REGULAR_EXPRESSION = "hcjf.query.conditional.regular.expression";
+        public static final String WHERE_REGULAR_EXPRESSION = "hcjf.query.where.regular.expression";
+        public static final String JOIN_REGULAR_EXPRESSION = "hcjf.query.join.regular.expression";
         public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
         public static final String FROM_GROUP_INDEX = "hcjf.query.from.group.index";
         public static final String CONDITIONAL_GROUP_INDEX = "hcjf.query.conditional.group.index";
@@ -116,9 +131,23 @@ public final class SystemProperties extends Properties {
             public static final String INNER_JOIN = "hcjf.query.inner.join.reserved.word";
             public static final String LEFT_JOIN = "hcjf.query.left.join.reserved.word";
             public static final String RIGHT_JOIN = "hcjf.query.right.join.reserved.word";
+            public static final String ON = "hcjf.query.on.reserved.word";
             public static final String WHERE = "hcjf.query.where.reserved.word";
             public static final String ORDER_BY = "hcjf.query.order.by.reserved.word";
+            public static final String DESC = "hcjf.query.desc.reserved.word";
             public static final String LIMIT = "hcjf.query.limit.reserved.word";
+            public static final String ARGUMENT_SEPARATOR = "hcjf.query.argument.separator";
+            public static final String EQUALS = "hcjf.query.equals.reserved.word";
+            public static final String DISTINCT = "hcjf.query.distinct.reserved.word";
+            public static final String GREATER_THAN = "hcjf.query.greater.than.reserved.word";
+            public static final String GREATER_THAN_OR_EQUALS = "hcjf.query.greater.than.or.equals.reserved.word";
+            public static final String SMALLER_THAN = "hcjf.query.smaller.than.reserved.word";
+            public static final String SMALLER_THAN_OR_EQUALS = "hcjf.query.smaller.than.or.equals.reserved.word";
+            public static final String IN = "hcjf.query.in.reserved.word";
+            public static final String NOT_IN = "hcjf.query.not.in.reserved.word";
+            public static final String LIKE = "hcjf.query.like.reserved.word";
+            public static final String AND = "hcjf.query.and.reserved.word";
+            public static final String OR = "hcjf.query.or.reserved.word";
         }
 
     }
@@ -158,6 +187,15 @@ public final class SystemProperties extends Properties {
         defaults.put(Event.SERVICE_NAME, "Events");
         defaults.put(Event.SERVICE_PRIORITY, "0");
 
+        defaults.put(Encoding.SERVICE_NAME, "EncodingService");
+        defaults.put(Encoding.SERVICE_PRIORITY, "1");
+
+        defaults.put(FileSystem.SERVICE_NAME, "FileSystemWatcherService");
+        defaults.put(FileSystem.SERVICE_PRIORITY, "1");
+        defaults.put(FileSystem.LOG_TAG, "FILE_SYSTEM_WATCHER_SERVICE");
+
+        defaults.put(Log.SERVICE_NAME, "LogService");
+        defaults.put(Log.SERVICE_PRIORITY, "0");
         defaults.put(Log.FILE_PREFIX, "hcfj");
         defaults.put(Log.ERROR_FILE, "false");
         defaults.put(Log.WARNING_FILE, "false");
@@ -209,20 +247,36 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[ ]{1,}[a-zA-Z_0-9,.* ]{1,})([ ]?(FROM|from)[ ]{1,}[a-zA-Z_0-9.]{1,}[ ]?)([a-zA-Z_0-9'=,.* ?<>!]{1,})?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "((?<=(((innner|left|right)?join)|where|limit|order by))|(?=(((innner|left|right)?join)|where|limit|order by)))");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[ ]{1,}[a-zA-Z_0-9,.* ]{1,})([ ]?(FROM|from)[ ]{1,}[a-zA-Z_0-9.]{1,}[ ]?)([a-zA-Z_0-9'=,.* ?<>!()]{1,})?");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by | desc )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by | desc ))");
+        defaults.put(Query.WHERE_REGULAR_EXPRESSION, "((?<=( and | or ))|(?=( and | or )))");
+        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "((?<=( ON |=))|(?=( ON |=)))");
         defaults.put(Query.SELECT_GROUP_INDEX, "1");
         defaults.put(Query.FROM_GROUP_INDEX, "3");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "5");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");
-        defaults.put(Query.ReservedWord.INNER_JOIN, "INNER[ ]{1,}JOIN");
-        defaults.put(Query.ReservedWord.LEFT_JOIN, "LEFT[ ]{1,}JOIN");
-        defaults.put(Query.ReservedWord.RIGHT_JOIN, "RIGHT[ ]{1,}JOIN");
+        defaults.put(Query.ReservedWord.INNER_JOIN, "INNER JOIN");
+        defaults.put(Query.ReservedWord.LEFT_JOIN, "LEFT JOIN");
+        defaults.put(Query.ReservedWord.RIGHT_JOIN, "RIGHT JOIN");
+        defaults.put(Query.ReservedWord.ON, "ON");
         defaults.put(Query.ReservedWord.WHERE, "WHERE");
-        defaults.put(Query.ReservedWord.ORDER_BY, "ORDER[ ]{1,}BY");
+        defaults.put(Query.ReservedWord.ORDER_BY, "ORDER BY");
+        defaults.put(Query.ReservedWord.DESC, "DESC");
         defaults.put(Query.ReservedWord.LIMIT, "LIMIT");
+        defaults.put(Query.ReservedWord.ARGUMENT_SEPARATOR, ",");
+        defaults.put(Query.ReservedWord.EQUALS, "=");
+        defaults.put(Query.ReservedWord.DISTINCT, "<>");
+        defaults.put(Query.ReservedWord.GREATER_THAN, ">");
+        defaults.put(Query.ReservedWord.GREATER_THAN_OR_EQUALS, ">=");
+        defaults.put(Query.ReservedWord.SMALLER_THAN, "<");
+        defaults.put(Query.ReservedWord.SMALLER_THAN_OR_EQUALS, "<=");
+        defaults.put(Query.ReservedWord.IN, "IN");
+        defaults.put(Query.ReservedWord.NOT_IN, "NOT IN");
+        defaults.put(Query.ReservedWord.LIKE, "LIKE");
+        defaults.put(Query.ReservedWord.AND, "AND");
+        defaults.put(Query.ReservedWord.OR, "OR");
 
         Properties system = System.getProperties();
         putAll(system);

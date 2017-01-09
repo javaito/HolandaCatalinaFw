@@ -9,9 +9,12 @@ import java.util.*;
  */
 public final class Strings {
 
-    private static final String DEFAULT_PADDING_VALUE = " ";
-    private static final String START_GROUP = "(";
-    private static final String END_GROUP = ")";
+    public static final String DEFAULT_PADDING_VALUE = " ";
+    public static final String START_GROUP = "(";
+    public static final String END_GROUP = ")";
+    public static final String REPLACEABLE_GROUP = "$";
+    public static final String EMPTY_STRING = "";
+    public static final String WHITE_SPACE = " ";
 
     /**
      *
@@ -152,11 +155,40 @@ public final class Strings {
         return result;
     }
 
+    public static final List<String> replaceableGroup(String value) {
+        List<String> groups = Strings.group(value);
+        List<Integer> withSubGroups = new ArrayList<>();
+        Iterator<Integer> iterator;
+        String replacedValue = value;
+        Integer groupIndex;
+        String group;
+        String groupCopy;
+        for (int j = groups.size() -1; j >= 0; j--) {
+            group = groups.get(j);
+            replacedValue = replacedValue.replace(START_GROUP+group+END_GROUP, REPLACEABLE_GROUP+j);
+            iterator = withSubGroups.iterator();
+            while(iterator.hasNext()) {
+                groupIndex = iterator.next();
+                groupCopy = groups.remove(groupIndex.intValue()).replace(START_GROUP+group+END_GROUP, REPLACEABLE_GROUP+j);
+                groups.add(groupIndex, groupCopy);
+                if(!groupCopy.contains(Strings.END_GROUP)) {
+                    iterator.remove();
+                }
+            }
+
+            if(group.contains(Strings.END_GROUP)) {
+                withSubGroups.add(j);
+            }
+        }
+        groups.add(replacedValue);
+        return groups;
+    }
+
     public static void main(String[] args) {
-        String s = "SELECT * FROM holder WHERE holderid IN (bal or (a & b)) AND (SELECT (hola) asdljfh (chau))";
+        String s = "SELECT * FROM holder WHERE holderid IN (bal or (a & b)) AND (SELECT (hola (holis)) asdljfh (chau))";
         System.out.println(allIndexOf(s, "(", true));
         System.out.println(allIndexOf(s, ")"));
 
-        System.out.println(group(s));
+        System.out.println(replaceableGroup(s));
     }
 }

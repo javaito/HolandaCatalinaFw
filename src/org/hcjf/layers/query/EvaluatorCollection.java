@@ -1,6 +1,7 @@
 package org.hcjf.layers.query;
 
 import org.hcjf.log.Log;
+import org.hcjf.properties.SystemProperties;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -22,9 +23,6 @@ public abstract class EvaluatorCollection {
 
     public EvaluatorCollection(EvaluatorCollection parent) {
         this.evaluators = new HashSet<>();
-        if(parent != null) {
-            this.evaluators.addAll(parent.evaluators);
-        }
         this.parent = parent;
     }
 
@@ -42,7 +40,11 @@ public abstract class EvaluatorCollection {
      * @return Parent of the collection, could be null.
      */
     public final EvaluatorCollection up() {
-        return parent;
+        EvaluatorCollection result = parent;
+        if(result == null) {
+            result = this;
+        }
+        return result;
     }
 
     /**
@@ -60,7 +62,8 @@ public abstract class EvaluatorCollection {
         if(!evaluators.contains(evaluator)) {
             evaluators.add(evaluator);
         } else {
-            Log.w(Query.QUERY_LOG_TAG, "Duplicate evaluator: $s", evaluator);
+            Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
+                    "Duplicate evaluator: $s", evaluator);
         }
         return this;
     }

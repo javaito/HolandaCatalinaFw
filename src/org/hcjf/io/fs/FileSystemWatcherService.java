@@ -23,9 +23,6 @@ import java.util.concurrent.Future;
  */
 public final class FileSystemWatcherService extends Service<FileSystemWatcherConsumer> {
 
-    private static final String FILE_SYSTEM_WATCHER_SERVICE_NAME = "File System Watcher Service";
-    public static final String FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG = "FILE_SYSTEM_WATCHER_SERVICE";
-
     private static final FileSystemWatcherService instance;
 
     static {
@@ -38,7 +35,8 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     private Future future;
 
     private FileSystemWatcherService() {
-        super(FILE_SYSTEM_WATCHER_SERVICE_NAME, 1);
+        super(SystemProperties.get(SystemProperties.FileSystem.SERVICE_NAME),
+                SystemProperties.getInteger(SystemProperties.FileSystem.SERVICE_PRIORITY));
         keys = new HashMap<>();
         consumers = new HashMap<>();
 
@@ -69,7 +67,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
         synchronized (this) {
             while(watcher == null) {
                 try {
-                    Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "Waiting file system watcher init");
+                    Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "Waiting file system watcher init");
                     wait(5000);
                 } catch (InterruptedException e) {}
             }
@@ -86,10 +84,10 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                     consumers.put(key, new ArrayList<>());
                 }
                 consumers.get(key).add(consumer);
-                Log.i(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File system watcher registered %s", absolutePath);
+                Log.i(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "File system watcher registered %s", absolutePath);
             }
         } catch (IOException ex) {
-            Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG,
+            Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
                     "Unable to register file system watcher consumer, '$1'", ex, consumer.getBasePath());
         }
     }
@@ -112,7 +110,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                 FileSystemWatcherService.this.notifyAll();
             }
         } catch (Throwable ex) {
-            Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File System Watcher init fail", ex);
+            Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "File System Watcher init fail", ex);
         }
 
         future = fork(new FileSystemWatcherTask());
@@ -177,7 +175,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
 
                         boolean valid = key.reset();
                         if (!valid) {
-                            Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG,
+                            Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
                                     "Inaccessible path '$1', consumer unregistered", consumer.getBasePath());
                         }
                     }
@@ -187,7 +185,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                     watcher.close();
                 } catch (Exception ex){}
 
-                Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "File system watcher service stopped");
+                Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "File system watcher service stopped");
             }
         }
     }
@@ -245,9 +243,9 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                             new FileInputStream(file));
                 }
             } catch (IOException ex) {
-                Log.w(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "Unable to load properties file", ex);
+                Log.w(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "Unable to load properties file", ex);
             }
-            Log.d(FILE_SYSTEM_WATCHER_SERVICE_LOG_TAG, "Properties reloaded");
+            Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "Properties reloaded");
         }
     }
 }

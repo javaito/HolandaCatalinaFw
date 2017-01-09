@@ -3,6 +3,7 @@ package org.hcjf.layers.query;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
+import org.hcjf.utils.Strings;
 
 import java.util.*;
 import java.util.regex.MatchResult;
@@ -16,8 +17,6 @@ import java.util.regex.Pattern;
  * @mail javaito@gmail.com
  */
 public class Query extends EvaluatorCollection {
-
-    public static final String QUERY_LOG_TAG = "QUERY";
 
     private final QueryId id;
     private String resourceName;
@@ -279,20 +278,48 @@ public class Query extends EvaluatorCollection {
      * @return Query instance.
      */
     public static Query compile(String sql) {
+        Query query = new Query();
         Pattern pattern = SystemProperties.getPattern(SystemProperties.Query.SELECT_REGULAR_EXPRESSION);
         Matcher matcher = pattern.matcher(sql);
 
         if(matcher.matches()) {
             String selectBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.SELECT_GROUP_INDEX));
+            selectBody = selectBody.replaceFirst(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT), Strings.EMPTY_STRING);
             String fromBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.FROM_GROUP_INDEX));
+            fromBody = fromBody.replaceFirst(SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
             String conditionalBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
 
-            Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
-            System.out.println(conditionalPatter.matcher(conditionalBody).matches());
-            String[] conditionalElements = conditionalPatter.split(conditionalBody);
-            for (int i = 0; i < conditionalElements.length; i++) {
-                switch (conditionalElements[i++]) {
+            for(String returnFields : selectBody.split(SystemProperties.get(
+                    SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                query.addReturnField(returnFields);
+            }
 
+            query.setResourceName(fromBody.trim());
+
+            Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
+            String[] conditionalElements = conditionalPatter.split(conditionalBody);
+            String element;
+            String elementValue;
+            for (int i = 0; i < conditionalElements.length; i++) {
+                element = conditionalElements[i++];
+                elementValue = conditionalElements[i].trim();
+                if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
+                        element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER_JOIN)) ||
+                        element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT_JOIN)) ||
+                        element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT_JOIN))) {
+
+                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
+                    List<String> groups = Strings.replaceableGroup(elementValue);
+                    completeWhere(groups, query, groups.size() - 1);
+                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
+                    for(String orderField : elementValue.split(SystemProperties.get(
+                            SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                        query.addOrderField(orderField);
+                    }
+                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
+                    query.setDesc(true);
+                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
+                    query.setLimit(Integer.parseInt(elementValue));
                 }
             }
         } else {
@@ -300,7 +327,82 @@ public class Query extends EvaluatorCollection {
             throw new IllegalArgumentException();
         }
 
-        return null;
+        return query;
+    }
+
+    private static final void completeWhere(List<String> groups, EvaluatorCollection parentCollection, int definitionIndex) {
+        Pattern wherePatter = SystemProperties.getPattern(SystemProperties.Query.WHERE_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
+        String[] evaluatorDefinitions = wherePatter.split(groups.get(definitionIndex));
+        String[] evaluatorValues;
+        String fieldValue;
+        String operator;
+        String value;
+        Evaluator evaluator = null;
+        EvaluatorCollection collection = null;
+        for(String definition : evaluatorDefinitions) {
+            definition = definition.trim();
+            if (definition.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.AND))) {
+                if(collection == null) {
+                    collection = parentCollection.and();
+                } else if(collection instanceof Or) {
+                    collection = collection.and();
+                }
+
+                collection.addEvaluator(evaluator);
+                evaluator = null;
+            } else if (definition.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.OR))) {
+                if(collection == null) {
+                    collection = parentCollection.or();
+                } else if(collection instanceof And) {
+                    collection = collection.or();
+                }
+
+                collection.addEvaluator(evaluator);
+                evaluator = null;
+            } else if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
+                Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
+                completeWhere(groups, collection == null ? parentCollection : collection, index);
+            } else {
+                evaluatorValues = definition.split(Strings.WHITE_SPACE, 0);
+                if (evaluatorValues.length == 3) {
+                    fieldValue = evaluatorValues[0].trim();
+                    operator = evaluatorValues[1].trim();
+                    value = evaluatorValues[2].trim();
+
+                    if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
+                        evaluator = new Distinct(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))) {
+                        evaluator = new Equals(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))) {
+                        evaluator = new GreaterThan(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))) {
+                        evaluator = new GreaterThanOrEqual(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))) {
+                        evaluator = new In(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))) {
+                        evaluator = new Like(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))) {
+                        evaluator = new NotIn(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))) {
+                        evaluator = new SmallerThan(fieldValue, value);
+                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
+                        evaluator = new SmallerThanOrEqual(fieldValue, value);
+                    } else {
+                        throw new IllegalArgumentException();
+                    }
+                } else {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+
+        if(evaluator != null) {
+            if(collection != null) {
+                collection.addEvaluator(evaluator);
+            } else {
+                parentCollection.addEvaluator(evaluator);
+            }
+        }
     }
 
     /**
@@ -380,7 +482,8 @@ public class Query extends EvaluatorCollection {
                 if(getter != null) {
                     result = getter.get(instance);
                 } else {
-                    Log.w(QUERY_LOG_TAG, "Order field not found: %s", fieldName);
+                    Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
+                            "Order field not found: %s", fieldName);
                 }
             } catch (Exception ex) {
                 throw new IllegalArgumentException("Unable to obtain order field value", ex);
@@ -390,6 +493,10 @@ public class Query extends EvaluatorCollection {
     }
 
     public static void main(String[] args) {
-        Query.compile("SELECT * FROM resource JOIN resource2 ON resource.id = resource2.id WHERE resource.id > 34 ORDER BY resource.name LIMIT 100");
+
+
+        System.out.println(Arrays.toString("comowhereasdf".split("((?<=((( innner | left | right )? join )| where | limit | order by | desc ))|(?=((( innner | left | right )? join )| where | limit | order by | desc )))")));
+
+        Query.compile("SELECT * FROM holder WHERE holderid IN (bal) AND (field2 = bla OR field3 = bla)");
     }
 }

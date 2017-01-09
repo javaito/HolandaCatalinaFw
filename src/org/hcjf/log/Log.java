@@ -30,8 +30,6 @@ import java.util.stream.Stream;
  */
 public final class Log extends Service<LogPrinter> {
 
-    public static final String NAME = "LogService";
-
     private static final Log instance;
 
     static {
@@ -47,7 +45,8 @@ public final class Log extends Service<LogPrinter> {
      * Private constructor
      */
     private Log() {
-        super(NAME, 0);
+        super(SystemProperties.get(SystemProperties.Log.SERVICE_NAME),
+                SystemProperties.getInteger(SystemProperties.Log.SERVICE_PRIORITY));
         this.printers = new ArrayList<>();
         this.queue = new PriorityBlockingQueue<>(
                 SystemProperties.getInteger(SystemProperties.Log.QUEUE_INITIAL_SIZE),

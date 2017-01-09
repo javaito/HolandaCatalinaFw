@@ -2,6 +2,7 @@ package org.hcjf.encoding;
 
 import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.rest.CrudJsonEncoding;
+import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 
 import java.util.HashMap;
@@ -12,8 +13,6 @@ import java.util.Map;
  * @mail javaito@gmail.com
  */
 public final class EncodingService extends Service<EncodingImpl> {
-
-    private static final String SERIALIZATION_SERVICE_NAME = "EncodingService";
 
     private static final EncodingService instance;
 
@@ -27,7 +26,8 @@ public final class EncodingService extends Service<EncodingImpl> {
      * Service constructor.
      */
     private EncodingService() {
-        super(SERIALIZATION_SERVICE_NAME, 1);
+        super(SystemProperties.get(SystemProperties.Encoding.SERVICE_NAME),
+                SystemProperties.getInteger(SystemProperties.Encoding.SERVICE_PRIORITY));
         implementations = new HashMap<>();
         registerConsumer(new CrudJsonEncoding());
     }
