@@ -83,6 +83,14 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
 
     /**
      * This method implements the read operation using the filters
+     * specified in the query and return a collection of maps.
+     * @param queryId Id of the query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<Map<String, Object>> readRows(Query.QueryId queryId);
+
+    /**
+     * This method implements the read operation using the filters
      * specified in the query.
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
