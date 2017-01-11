@@ -20,15 +20,14 @@ public class ServiceSession implements Comparable {
     }
 
     private final UUID id;
-    private final String sessionName;
+    private String sessionName;
     private final Map<Long, List<Class<? extends Layer>>> layerStack;
     private final Map<Long, Map<String, Object>> properties;
     private final Map<Long, Long> systemTimeByThread;
     private final ThreadMXBean threadMXBean;
 
-    public ServiceSession(UUID id, String sessionName) {
+    public ServiceSession(UUID id) {
         this.id = id;
-        this.sessionName = sessionName;
         properties = new HashMap<>();
         layerStack = Collections.synchronizedMap(new HashMap<>());
         systemTimeByThread = new HashMap<>();
@@ -37,6 +36,10 @@ public class ServiceSession implements Comparable {
 
     public UUID getId() {
         return id;
+    }
+
+    public void setSessionName(String sessionName) {
+        this.sessionName = sessionName;
     }
 
     public String getSessionName() {
@@ -167,7 +170,8 @@ public class ServiceSession implements Comparable {
     private static class GuestSession extends ServiceSession {
 
         public GuestSession() {
-            super(UUID.randomUUID(), SystemProperties.get(SystemProperties.Service.GUEST_SESSION_NAME));
+            super(UUID.randomUUID());
+            setSessionName(SystemProperties.get(SystemProperties.Service.GUEST_SESSION_NAME));
         }
     }
 }

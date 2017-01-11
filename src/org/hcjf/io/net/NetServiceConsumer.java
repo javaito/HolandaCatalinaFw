@@ -236,7 +236,8 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param netPackage Net package.
      */
     public final void onRead(NetPackage netPackage) {
-        onRead((S)netPackage.getSession(), decode(netPackage), netPackage);
+        onRead(checkSession((S)netPackage.getSession(), decode(netPackage), netPackage),
+                decode(netPackage), netPackage);
     }
 
     /**
@@ -286,6 +287,15 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param session Net session to be destroyed
      */
     public abstract void destroySession(NetSession session);
+
+    /**
+     * Check the channel session.
+     * @param session Created session.
+     * @param payLoad Decoded package.
+     * @param netPackage Net package.
+     * @return Updated session.
+     */
+    public abstract S checkSession(S session, D payLoad, NetPackage netPackage);
 
     /**
      * Return the socket options of the implementation.

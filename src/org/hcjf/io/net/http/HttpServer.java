@@ -23,7 +23,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     private Map<NetSession, HttpRequest> requestBuffers;
     private List<Context> contexts;
-    private HttpSessionFactory sessionFactory;
+    private HttpSessionManager sessionFactory;
 
     public HttpServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_SERVER_PORT));
@@ -39,7 +39,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * Return the instance of the session factory.
      * @return Session factory.
      */
-    public final HttpSessionFactory getSessionFactory() {
+    public final HttpSessionManager getSessionManager() {
         return sessionFactory;
     }
 
@@ -47,25 +47,39 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * Set the instance of the session factory.
      * @param sessionFactory Session factory.
      */
-    public final void setSessionFactory(HttpSessionFactory sessionFactory) {
+    public final void setSessionManager(HttpSessionManager sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
 
     /**
      * This method must implements the session creation based on
      * the net package that incoming.
-     *
-     * @param payLoad    Data to create the session.
      * @param netPackage Net package.
      * @return Return the session based on the package.
      */
     @Override
-    protected HttpSession createSession(HttpPackage payLoad, NetPackage netPackage) {
-        HttpSessionFactory factory = getSessionFactory();
-        if(factory == null) {
-            factory = HttpSessionFactory.DEFAULT;
+    public final HttpSession createSession(NetPackage netPackage) {
+        HttpSessionManager sessionManager = getSessionManager();
+        if(sessionManager == null) {
+            sessionManager = HttpSessionManager.DEFAULT;
         }
-        return factory.createSession(this, (HttpRequest) payLoad);
+        return sessionManager.createSession(this, netPackage);
+    }
+
+    /**
+     * This method must update the http session with all the information of the request.
+     * @param session Current session.
+     * @param payLoad Decoded package.
+     * @param netPackage Net package.
+     * @return Updated http session.
+     */
+    @Override
+    public HttpSession checkSession(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
+        HttpSessionManager sessionManager = getSessionManager();
+        if(sessionManager == null) {
+            sessionManager = HttpSessionManager.DEFAULT;
+        }
+        return sessionManager.checkSession(session, (HttpRequest) payLoad);
     }
 
     /**
@@ -152,7 +166,11 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     public void destroySession(NetSession session) {
-        Log.d(HTTP_SERVER_LOG_TAG, "Do something to destroy session: %s", session.getId());
+        HttpSessionManager sessionManager = getSessionManager();
+        if(sessionManager == null) {
+            sessionManager = HttpSessionManager.DEFAULT;
+        }
+        sessionManager.destorySession((HttpSession) session);
     }
 
     /**

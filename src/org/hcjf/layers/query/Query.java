@@ -205,6 +205,9 @@ public class Query extends EvaluatorCollection {
     public final <O extends Object> Set<O> evaluate(Collection<O> objects, Consumer<O> consumer) {
         Set<O> result;
 
+        //TODO: Aggregation functions
+
+
         if(orderFields.size() > 0) {
             result = new TreeSet<>((o1, o2) -> {
                 int compareResult = 0;
@@ -260,6 +263,7 @@ public class Query extends EvaluatorCollection {
      */
     public final Query reduce(Collection<Evaluator> evaluators, Collection<String> orderFields) {
         Query copy = new Query(this);
+        copy.evaluators.addAll(this.evaluators);
 
         if(evaluators != null && !evaluators.isEmpty()) {
             copy.evaluators.removeAll(evaluators);

@@ -196,6 +196,11 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         return session;
     }
 
+    @Override
+    public HttpSession checkSession(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
+        return session;
+    }
+
     /**
      * This method decode the implementation data.
      * @param payLoad Implementation data.
@@ -275,7 +280,9 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      * @return Http response package.
      */
     public final HttpResponse request() {
-        session = new HttpSession(UUID.randomUUID(), SESSION_NAME, this, request);
+        session = new HttpSession(UUID.randomUUID(), this);
+        session.setRequest(request);
+        session.setSessionName(SESSION_NAME);
         Integer errorCode = null;
         String errorPhrase = null;
 

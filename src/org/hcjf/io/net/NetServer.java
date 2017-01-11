@@ -19,22 +19,12 @@ public abstract class NetServer<S extends NetSession, D extends Object> extends 
     }
 
     /**
-     * Public interface to create a session.
-     * @param netPackage Package from the net
-     * @return Net session created.
-     */
-    public final S createSession(NetPackage netPackage) {
-        return createSession(decode(netPackage), netPackage);
-    }
-
-    /**
      * This method must implements the session creation based on
      * the net package that incoming.
-     * @param payLoad Data to create the session.
      * @param netPackage Net package.
      * @return Return the session based on the package.
      */
-    protected abstract S createSession(D payLoad, NetPackage netPackage);
+    public abstract S createSession(NetPackage netPackage);
 
     /**
      * This method return a flag to indicate if the

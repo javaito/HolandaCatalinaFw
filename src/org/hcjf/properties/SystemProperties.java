@@ -209,8 +209,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Log.TRUNCATE_TAG, "false");
         defaults.put(Log.TRUNCATE_TAG_SIZE, "35");
 
-        defaults.put(Net.INPUT_BUFFER_SIZE, "1024");
-        defaults.put(Net.OUTPUT_BUFFER_SIZE, "1024");
+        defaults.put(Net.INPUT_BUFFER_SIZE, "10240");
+        defaults.put(Net.OUTPUT_BUFFER_SIZE, "10240");
         defaults.put(Net.CONNECTION_TIMEOUT_AVAILABLE, "true");
         defaults.put(Net.CONNECTION_TIMEOUT, "30000");
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
@@ -218,8 +218,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "10000");
         defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "100");
-        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "5000");
-        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "5000");
+        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "10240");
+        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "10240");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
 

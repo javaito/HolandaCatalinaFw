@@ -14,8 +14,8 @@ public abstract class NetSession extends ServiceSession {
     private final NetServiceConsumer consumer;
     private boolean locked;
 
-    public NetSession(UUID id, String sessionName, NetServiceConsumer consumer) {
-        super(id, sessionName);
+    public NetSession(UUID id, NetServiceConsumer consumer) {
+        super(id);
         this.consumer = consumer;
         this.locked = false;
     }

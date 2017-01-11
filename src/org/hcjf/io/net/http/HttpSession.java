@@ -10,10 +10,13 @@ import java.util.UUID;
  */
 public class HttpSession extends NetSession {
 
-    private final HttpRequest request;
+    private HttpRequest request;
 
-    public HttpSession(UUID id, String sessionName, NetServiceConsumer consumer, HttpRequest request) {
-        super(id, sessionName, consumer);
+    public HttpSession(UUID id, NetServiceConsumer consumer) {
+        super(id, consumer);
+    }
+
+    public void setRequest(HttpRequest request) {
         this.request = request;
     }
 
