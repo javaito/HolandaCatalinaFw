@@ -1,13 +1,9 @@
 package org.hcjf.io.net.http.rest;
 
-import org.hcjf.encoding.CrudDecodedPackage;
 import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.*;
-import org.hcjf.io.net.http.layered.LayeredRequest;
-import org.hcjf.io.net.http.layered.LayeredResponse;
 import org.hcjf.layers.query.Query;
 import org.hcjf.layers.crud.CrudLayerInterface;
-import org.hcjf.encoding.DecodedPackage;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.encoding.EncodingService;
 import org.hcjf.properties.SystemProperties;

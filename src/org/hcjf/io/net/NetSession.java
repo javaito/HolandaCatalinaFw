@@ -13,6 +13,7 @@ public abstract class NetSession extends ServiceSession {
 
     private final NetServiceConsumer consumer;
     private boolean locked;
+    private boolean checked;
 
     public NetSession(UUID id, NetServiceConsumer consumer) {
         super(id);
@@ -50,4 +51,19 @@ public abstract class NetSession extends ServiceSession {
         return locked;
     }
 
+    /**
+     * Return a value to indicate if the session is checked.
+     * @return True if the session is checked and false in otherwise
+     */
+    public final boolean isChecked() {
+        return checked;
+    }
+
+    /**
+     * Set a value to indicate if the session is chacked.
+     * @param checked Checked value.
+     */
+    public final void setChecked(boolean checked) {
+        this.checked = checked;
+    }
 }

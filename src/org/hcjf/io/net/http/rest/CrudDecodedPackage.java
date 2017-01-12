@@ -1,5 +1,6 @@
-package org.hcjf.encoding;
+package org.hcjf.io.net.http.rest;
 
+import org.hcjf.encoding.DecodedPackage;
 import org.hcjf.errors.Errors;
 import org.hcjf.layers.query.Query;
 

@@ -207,7 +207,6 @@ public class Query extends EvaluatorCollection {
 
         //TODO: Aggregation functions
 
-
         if(orderFields.size() > 0) {
             result = new TreeSet<>((o1, o2) -> {
                 int compareResult = 0;
@@ -496,11 +495,4 @@ public class Query extends EvaluatorCollection {
         }
     }
 
-    public static void main(String[] args) {
-
-
-        System.out.println(Arrays.toString("comowhereasdf".split("((?<=((( innner | left | right )? join )| where | limit | order by | desc ))|(?=((( innner | left | right )? join )| where | limit | order by | desc )))")));
-
-        Query.compile("SELECT * FROM holder WHERE holderid IN (bal) AND (field2 = bla OR field3 = bla)");
-    }
 }

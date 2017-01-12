@@ -184,11 +184,4 @@ public final class Strings {
         return groups;
     }
 
-    public static void main(String[] args) {
-        String s = "SELECT * FROM holder WHERE holderid IN (bal or (a & b)) AND (SELECT (hola (holis)) asdljfh (chau))";
-        System.out.println(allIndexOf(s, "(", true));
-        System.out.println(allIndexOf(s, ")"));
-
-        System.out.println(replaceableGroup(s));
-    }
 }

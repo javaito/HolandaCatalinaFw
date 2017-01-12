@@ -187,7 +187,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             HttpRequest request = (HttpRequest) payLoad;
             Log.in(HTTP_SERVER_LOG_TAG, "Request\r\n%s", request.toString());
             try {
-                if (request.isComplete()) {
+                if(netPackage.getSession().isChecked()) {
                     Context context = findContext(request.getContext());
                     if (context != null) {
                         try {
@@ -196,25 +196,27 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         } catch (Throwable throwable) {
                             Log.e(HTTP_SERVER_LOG_TAG, "Exception on context %s", throwable, context.getContextRegex());
                             response = context.onError(request, throwable);
-                            if(response == null) {
+                            if (response == null) {
                                 response = createDefaulErrorResponse(throwable);
                             }
                         }
                     } else {
                         response = onContextNotFound(request);
                     }
+
+                    if (response == null) {
+                        response = onUnresponsiveContext(request);
+                    }
+
+                    response.addHeader(new HttpHeader(HttpHeader.DATE,
+
+                            SystemProperties.getDateFormat(
+                                    SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
+                    response.addHeader(new HttpHeader(HttpHeader.SERVER,
+                            SystemProperties.get(SystemProperties.Net.Http.SERVER_NAME)));
+                } else {
+                    response = onNotCheckedSession(request);
                 }
-
-                if(response == null) {
-                    response = onUnresponsiveContext(request);
-                }
-
-                response.addHeader(new HttpHeader(HttpHeader.DATE,
-                        SystemProperties.getDateFormat(
-                                SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
-                response.addHeader(new HttpHeader(HttpHeader.SERVER,
-                        SystemProperties.get(SystemProperties.Net.Http.SERVER_NAME)));
-
             } catch (Throwable throwable) {
                 response = createDefaulErrorResponse(throwable);
             }
@@ -291,6 +293,19 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+        return response;
+    }
+
+    /**
+     *
+     * @param request
+     * @return
+     */
+    protected HttpResponse onNotCheckedSession(HttpRequest request) {
+        HttpResponse response = new HttpResponse();
+        response.setResponseCode(HttpResponseCode.UNAUTHORIZED);
+        response.setReasonPhrase("Unchecked session: " + request.getContext());
+        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         return response;
     }
 

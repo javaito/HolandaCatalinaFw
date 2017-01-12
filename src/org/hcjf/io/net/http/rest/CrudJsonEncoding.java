@@ -1,7 +1,6 @@
 package org.hcjf.io.net.http.rest;
 
 import com.google.gson.*;
-import org.hcjf.encoding.CrudDecodedPackage;
 import org.hcjf.encoding.EncodingImpl;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.errors.Errors;

@@ -240,8 +240,10 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         D decodedPackage = decode(netPackage);
         try {
             session = checkSession(session, decodedPackage, netPackage);
+            session.setChecked(true);
         } catch (Exception ex){
             Log.w(NetService.NET_SERVICE_LOG_TAG, "Check session fail", ex);
+            session.setChecked(false);
         }
 
         onRead(session, decodedPackage, netPackage);
