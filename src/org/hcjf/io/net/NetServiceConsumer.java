@@ -236,8 +236,15 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param netPackage Net package.
      */
     public final void onRead(NetPackage netPackage) {
-        onRead(checkSession((S)netPackage.getSession(), decode(netPackage), netPackage),
-                decode(netPackage), netPackage);
+        S session = (S) netPackage.getSession();
+        D decodedPackage = decode(netPackage);
+        try {
+            session = checkSession(session, decodedPackage, netPackage);
+        } catch (Exception ex){
+            Log.w(NetService.NET_SERVICE_LOG_TAG, "Check session fail", ex);
+        }
+
+        onRead(session, decodedPackage, netPackage);
     }
 
     /**
