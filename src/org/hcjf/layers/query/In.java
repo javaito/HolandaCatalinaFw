@@ -26,8 +26,12 @@ public class In extends FieldEvaluator {
                 result = ((Collection)fieldValue).contains(getValue());
             } else if(fieldValue.getClass().isArray()) {
                 result = Arrays.binarySearch((Object[])fieldValue, getValue()) >= 0;
-            } else if(String.class.isAssignableFrom(fieldValue.getClass())) {
-                result = ((String)fieldValue).contains(getValue().toString());
+            } else if (Map.class.isAssignableFrom(getValue().getClass())) {
+                result = ((Map)getValue()).containsKey(fieldValue);
+            } else if(Collection.class.isAssignableFrom(getValue().getClass())) {
+                result = ((Collection)getValue()).contains(fieldValue);
+            } else if(getValue().getClass().isArray()) {
+                result = Arrays.binarySearch((Object[])getValue(), fieldValue) >= 0;
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("In evaluator fail", ex);
