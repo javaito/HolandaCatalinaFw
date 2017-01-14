@@ -1,11 +1,13 @@
 package org.hcjf.layers;
 
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * This class manage all the published layers.
  * @author javaito
  * @email javaito@gmail.com
  */

@@ -52,6 +52,31 @@ public final class Introspection {
     }
 
     /**
+     * Creates a mpa (String key and String value) using all the getters method of the class.
+     * @param instance Instance to transform.
+     * @return Map
+     */
+    public static Map<String, String> toStringsMap(Object instance) {
+        Map<String, String> result = new HashMap<>();
+        if(instance instanceof Map) {
+            result = (Map<String, String>) instance;
+        } else {
+            Map<String, Getter> getters = getGetters(instance.getClass());
+            Object value;
+            for (String name : getters.keySet()) {
+                try {
+                    value = getters.get(name).get(instance);
+                    if (value != null) {
+                        result.put(name, value.toString());
+                    }
+                } catch (Exception e) {
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
      * Create an instance of the class from a map.
      * @param map Map with values.
      * @param clazz Instance class.

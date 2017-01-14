@@ -19,17 +19,17 @@ public class Main extends TestSuite {
 
     @Test
     public static void main(String[] args) {
-//        System.setProperty(SystemProperties.LOG_SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+
+        HttpServer server = new HttpServer(8080);
+        server.addContext(new EnumContext("enums"));
+        server.start();
+
+//        Events.addEventListener(new TestEventListener());
+//        Events.addEventListener(new TestEventListener2());
 //
-//        HttpServer server = new HttpServer(8080);
-//        server.addContext(new FolderContext("public", Paths.get("/home/javaito/")));
-//        server.start();
-
-        Events.addEventListener(new TestEventListener());
-        Events.addEventListener(new TestEventListener2());
-
-        Events.sendEvent(new TestEvent());
-        Events.sendEvent(new TestEvent2());
+//        Events.sendEvent(new TestEvent());
+//        Events.sendEvent(new TestEvent2());
     }
 
 }

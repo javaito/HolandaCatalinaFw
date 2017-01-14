@@ -92,6 +92,20 @@ public abstract class Layer implements LayerInterface {
     }
 
     /**
+     * Return the layer proxy of the layer or null by default.
+     * @return Layer proxy instance.
+     */
+    public LayerProxy getProxy() {
+        return new LayerProxy() {
+            @Override
+            public void onBeforeInvoke(Method method, Object... params) {}
+
+            @Override
+            public void onAfterInvoke(Method method, Object result, Object... params) {}
+        };
+    }
+
+    /**
      * This method intercepts the call to layer implementation and
      * save some information about the thread behavior.
      * @param proxy Object to be called.
@@ -125,7 +139,9 @@ public abstract class Layer implements LayerInterface {
 
         Object result;
         try {
+            getProxy().onBeforeInvoke(method, args);
             result = method.invoke(this, args);
+            getProxy().onAfterInvoke(method, result, args);
         } finally {
             if(serviceThread != null) {
                 serviceThread.removeLayer();

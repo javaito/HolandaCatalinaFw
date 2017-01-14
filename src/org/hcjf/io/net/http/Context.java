@@ -13,6 +13,10 @@ import java.io.PrintStream;
  */
 public abstract class Context {
 
+    protected static final String START_CONTEXT = "^";
+    protected static final String END_CONTEXT = ".*";
+    protected static final String URI_FOLDER_SEPARATOR = "/";
+
     private final String contextRegex;
 
     /**

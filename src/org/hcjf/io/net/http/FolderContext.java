@@ -14,6 +14,7 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -25,9 +26,6 @@ import java.util.zip.ZipOutputStream;
  */
 public class FolderContext extends Context {
 
-    private static final String START_CONTEXT = "^";
-    private static final String END_CONTEXT = ".*";
-    private static final String URI_FOLDER_SEPARATOR = "/";
     private static final String[] FORBIDDEN_CHARACTERS = {"..", "~"};
     private static final String FILE_EXTENSION_REGEX = "\\.(?=[^\\.]+$)";
     private static final String FOLDER_DEFAULT_HTML_DOCUMENT = "<!DOCTYPE html><html><head><title>%s</title><body>%s</body></html></head>";
@@ -76,7 +74,7 @@ public class FolderContext extends Context {
      */
     @Override
     public HttpResponse onContext(HttpRequest request) {
-        String[] elements = request.getContext().split(URI_FOLDER_SEPARATOR);
+        List<String> elements = request.getPathParts();
         for(String forbidden : FORBIDDEN_CHARACTERS) {
             for(String element : elements) {
                 if (element.contains(forbidden)) {

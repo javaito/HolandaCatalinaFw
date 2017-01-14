@@ -15,6 +15,7 @@ public final class Strings {
     public static final String REPLACEABLE_GROUP = "$";
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";
+    public static final String CLASS_SEPARATOR = ".";
 
     /**
      *
