@@ -32,23 +32,7 @@ public final class Introspection {
      * @return Map
      */
     public static Map<String, Object> toMap(Object instance) {
-        Map<String, Object> result = new HashMap<>();
-        if(instance instanceof Map) {
-            result = (Map<String, Object>) instance;
-        } else {
-            Map<String, Getter> getters = getGetters(instance.getClass());
-            Object value;
-            for (String name : getters.keySet()) {
-                try {
-                    value = getters.get(name).get(instance);
-                    if (value != null) {
-                        result.put(name, value);
-                    }
-                } catch (Exception e) {
-                }
-            }
-        }
-        return result;
+        return toMap(instance, (O)->O);
     }
 
     /**
@@ -57,9 +41,20 @@ public final class Introspection {
      * @return Map
      */
     public static Map<String, String> toStringsMap(Object instance) {
-        Map<String, String> result = new HashMap<>();
+        return toMap(instance, (O)->O.toString());
+    }
+
+    /**
+     * Creates a mpa using all the getters method of the class.
+     * @param instance Instance to transform.
+     * @param consumer Instance of the consumer to transform the values of the
+     *                 instance to the expected values into the map.
+     * @return Map
+     */
+    public static <O extends Object> Map<String, O> toMap(Object instance, Consumer consumer) {
+        Map<String, O> result = new HashMap<>();
         if(instance instanceof Map) {
-            result = (Map<String, String>) instance;
+            result = (Map<String, O>) instance;
         } else {
             Map<String, Getter> getters = getGetters(instance.getClass());
             Object value;
@@ -67,7 +62,7 @@ public final class Introspection {
                 try {
                     value = getters.get(name).get(instance);
                     if (value != null) {
-                        result.put(name, value.toString());
+                        result.put(name, (O) consumer.consume(value));
                     }
                 } catch (Exception e) {
                 }
@@ -481,5 +476,21 @@ public final class Introspection {
         public String[] getAliases() {
             return aliases;
         }
+    }
+
+    /**
+     * This interface represents a possible implementation of the way to consume
+     * a getter method of the some kind of object.
+     */
+    public interface Consumer {
+
+        /**
+         * The implementation of this method consume the value a return
+         * the same value or other instance based on this value.
+         * @return Return a new representation of the value or the same object
+         * depends the consumer implementation.
+         */
+        public Object consume(Object value);
+
     }
 }
