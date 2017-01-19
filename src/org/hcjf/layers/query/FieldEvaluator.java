@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.utils.Strings;
+
 /**
  * This abstract class define the structure of the evaluating. The evaluator
  * is the implementation of a method to decide if an object is part of the result
@@ -10,11 +12,18 @@ package org.hcjf.layers.query;
 public abstract class FieldEvaluator implements Evaluator {
 
     private final String fieldName;
+    private final String resourceName;
     private final Object value;
 
     public FieldEvaluator(String fieldName, Object value) {
         this.fieldName = fieldName;
         this.value = value;
+
+        if(fieldName.contains(Strings.CLASS_SEPARATOR)) {
+            resourceName = fieldName.substring(fieldName.lastIndexOf(Strings.CLASS_SEPARATOR) + 1);
+        } else {
+            resourceName = null;
+        }
     }
 
     /**
@@ -44,6 +53,14 @@ public abstract class FieldEvaluator implements Evaluator {
      */
     public final String getFieldName() {
         return fieldName;
+    }
+
+    /**
+     * Return the name of the resource associated to the field name.
+     * @return Resource name or null if not defined.
+     */
+    public final String getResourceName() {
+        return resourceName;
     }
 
     /**

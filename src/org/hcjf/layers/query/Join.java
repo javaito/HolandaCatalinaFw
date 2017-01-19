@@ -6,19 +6,17 @@ import java.util.*;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class Join {
+public class Join implements Comparable<Join> {
 
     private final String resourceName;
     private final String leftField;
     private final String rightField;
-    private final Query query;
     private final JoinType type;
 
-    public Join(String resourceName, String leftField, String rightField, Query query, JoinType type) {
+    public Join(String resourceName, String leftField, String rightField, JoinType type) {
         this.resourceName = resourceName;
         this.leftField = leftField;
         this.rightField = rightField;
-        this.query = query;
         this.type = type;
     }
 
@@ -75,6 +73,25 @@ public class Join {
         }
 
         return null;
+    }
+
+    @Override
+    public int compareTo(Join join) {
+        return join.getResourceName().compareTo(getResourceName()) +
+                join.getLeftField().compareTo(getLeftField()) +
+                join.getRightField().compareTo(getRightField());
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        boolean result = false;
+        if(object.getClass().equals(getClass())) {
+            Join join = (Join) object;
+            result = join.getResourceName().equals(getResourceName()) &&
+                    join.getLeftField().equals(getLeftField()) &&
+                    join.getRightField().equals(getRightField());
+        }
+        return result;
     }
 
     public enum JoinType {

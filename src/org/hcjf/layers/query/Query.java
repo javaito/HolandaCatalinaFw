@@ -25,7 +25,7 @@ public class Query extends EvaluatorCollection {
     private boolean desc;
     private final List<String> orderFields;
     private final List<String> returnFields;
-    private final Map<String, Query> joinQueries;
+    private final List<Join> joins;
 
     public Query(QueryId id) {
         this.id = id;
@@ -33,7 +33,7 @@ public class Query extends EvaluatorCollection {
         limit = SystemProperties.getInteger(SystemProperties.Query.DEFAULT_LIMIT);
         orderFields = new ArrayList<>();
         returnFields = new ArrayList<>();
-        joinQueries = new HashMap<>();
+        joins = new ArrayList<>();
     }
 
     public Query(){
@@ -51,8 +51,8 @@ public class Query extends EvaluatorCollection {
         this.orderFields.addAll(source.orderFields);
         this.returnFields = new ArrayList<>();
         this.returnFields.addAll(source.returnFields);
-        this.joinQueries = new HashMap<>();
-        this.joinQueries.putAll(source.joinQueries);
+        this.joins = new ArrayList<>();
+        this.joins.addAll(source.joins);
     }
 
     /**
@@ -168,26 +168,17 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     * This method evaluate each object of the collection and sort filtered
-     * object to create a result add with the object filtered and sorted.
-     * If there are order fields added then the result implementation is a
-     * {@link TreeSet} implementation else the result implementation is a
-     * {@link LinkedHashSet} implementation in order to guarantee the data order
-     * from the source
-     * @param objects Data collection.
-     * @param <O> Kind of instances of the data collection.
-     * @return Result add filtered and sorted.
+     * Add join instance to the query.
+     * @param join Join instance.
      */
-    public final <O extends Object> Set<O> evaluate(Collection<O> objects) {
-        Set<O> result;
-
-        if(objects.size() > 0) {
-            result = evaluate(objects, new IntrospectionConsumer<>(objects.iterator().next().getClass()));
+    public final void addJoin(Join join) {
+        if(join != null && !joins.contains(join)) {
+            joins.add(join);
         } else {
-            result = Collections.EMPTY_SET;
+            if(join == null) {
+                throw new IllegalArgumentException("Null join instance");
+            }
         }
-
-        return result;
     }
 
     /**
@@ -197,17 +188,33 @@ public class Query extends EvaluatorCollection {
      * {@link TreeSet} implementation else the result implementation is a
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
-     * @param objects Data collection.
+     * @param dataSource Data source to evaluate the query.
+     * @param <O> Kind of instances of the data collection.
+     * @return Result add filtered and sorted.
+     */
+    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource) {
+        return evaluate(dataSource, new IntrospectionConsumer<>());
+    }
+
+    /**
+     * This method evaluate each object of the collection and sort filtered
+     * object to create a result add with the object filtered and sorted.
+     * If there are order fields added then the result implementation is a
+     * {@link TreeSet} implementation else the result implementation is a
+     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * from the source
+     * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(Collection<O> objects, Consumer<O> consumer) {
+    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer) {
         Set<O> result;
 
-        //TODO: Aggregation functions
-
+        //Creating result data collection.
         if(orderFields.size() > 0) {
+            //If the query has order fields then creates a tree set with
+            //a comparator using the order fields.
             result = new TreeSet<>((o1, o2) -> {
                 int compareResult = 0;
 
@@ -230,11 +237,26 @@ public class Query extends EvaluatorCollection {
                 return compareResult * (isDesc() ? -1 : 1);
             });
         } else {
+            //If the query has not order fields then creates a linked hash set to
+            //manteins the natural order of the data.
             result = new LinkedHashSet<>();
         }
 
+        //Getting data from data dource.
+        Collection<O> data;
+        if(joins.size() > 0) {
+            //If the query has joins then data source must return the joined data
+            //collection using all the resources
+            data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
+        } else {
+            //If the query has not joins then data source must return data from
+            //resource of the query.
+            data = dataSource.getResourceData(getResourceName(), evaluators);
+        }
+
+        //Filtering data
         boolean add;
-        for(O object : objects) {
+        for(O object : data) {
             add = true;
             for(Evaluator evaluator : getEvaluators()) {
                 add = evaluator.evaluate(object, consumer);
@@ -248,6 +270,65 @@ public class Query extends EvaluatorCollection {
             if(result.size() == getLimit()) {
                 break;
             }
+        }
+
+        return result;
+    }
+
+    /**
+     * Create a joined data from data source using the joins instances stored in the query.
+     * @param dataSource Data souce.
+     * @param consumer Consumer.
+     * @return Joined data collection.
+     */
+    private final Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
+        Collection<Joinable> result = new ArrayList<>();
+
+        Collection<Joinable> leftJoinables = dataSource.getResourceData(getResourceName(), evaluators);
+        Collection<Joinable> rightJoinables;
+        Map<Object, Set<Joinable>> indexedJoineables;
+        In in;
+        Collection<Evaluator> joinEvaluators = new ArrayList<>();
+        for(Join join : joins) {
+            indexedJoineables = index(leftJoinables, join.getLeftField(), consumer);
+            in = new In(join.getRightField(), indexedJoineables.keySet());
+            joinEvaluators.add(in);
+            joinEvaluators.addAll(evaluators);
+            rightJoinables = dataSource.getResourceData(join.getResourceName(), joinEvaluators);
+            leftJoinables.clear();
+            for(Joinable rightJoinable : rightJoinables) {
+                for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField()))) {
+                    leftJoinables.add(leftJoinable.join(rightJoinable));
+                }
+            }
+            result.addAll(leftJoinables);
+        }
+
+        return result;
+    }
+
+    /**
+     * This method evaluate all the values of the collection and put each of values
+     * into a map indexed by the value of the parameter field.
+     * @param objects Collection of data to evaluate.
+     * @param fieldIndex Field to index result.
+     * @param <J> Expected kind of values into the data collection.
+     * @param consumer Implementation to get the value from the collection
+     * @return Return the filtered data indexed by value of the parameter field.
+     */
+    private final <J extends Joinable> Map<Object, Set<J>> index(Collection<J> objects, String fieldIndex, Consumer<J> consumer) {
+        Map<Object, Set<J>> result = new HashMap<>();
+
+        Object key;
+        Set<J> set;
+        for(J joinable : objects) {
+            key = consumer.get(joinable, fieldIndex);
+            set = result.get(key);
+            if(set == null) {
+                set = new TreeSet<>();
+                result.put(key, set);
+            }
+            set.add(joinable);
         }
 
         return result;
@@ -310,7 +391,13 @@ public class Query extends EvaluatorCollection {
                         element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER_JOIN)) ||
                         element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT_JOIN)) ||
                         element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT_JOIN))) {
-
+                    String[] joinElements =  elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
+                    Join join = new Join(
+                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)],
+                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)],
+                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)],
+                            Join.JoinType.valueOf(element));
+                    query.addJoin(join);
                 } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
                     List<String> groups = Strings.replaceableGroup(elementValue);
                     completeWhere(groups, query, groups.size() - 1);
@@ -333,6 +420,12 @@ public class Query extends EvaluatorCollection {
         return query;
     }
 
+    /**
+     * Complete the evaluator collections with all the evaluator definitions in the groups.
+     * @param groups Where groups.
+     * @param parentCollection Parent collection.
+     * @param definitionIndex Definition index into the groups.
+     */
     private static final void completeWhere(List<String> groups, EvaluatorCollection parentCollection, int definitionIndex) {
         Pattern wherePatter = SystemProperties.getPattern(SystemProperties.Query.WHERE_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
         String[] evaluatorDefinitions = wherePatter.split(groups.get(definitionIndex));
@@ -455,20 +548,6 @@ public class Query extends EvaluatorCollection {
      */
     private static class IntrospectionConsumer<O extends Object> implements Consumer<O> {
 
-        private final Map<String, Introspection.Getter> getterMap;
-
-        public IntrospectionConsumer(Class clazz) {
-            getterMap = Introspection.getGetters(clazz);
-        }
-
-        /**
-         *
-         * @return
-         */
-        protected final Map<String, Introspection.Getter> getGetterMap() {
-            return getterMap;
-        }
-
         /**
          * Get naming information from an instance.
          *
@@ -481,7 +560,7 @@ public class Query extends EvaluatorCollection {
         public <R extends Object> R get(O instance, String fieldName) {
             Object result = null;
             try {
-                Introspection.Getter getter = getterMap.get(fieldName);
+                Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
                 if(getter != null) {
                     result = getter.get(instance);
                 } else {
@@ -495,4 +574,19 @@ public class Query extends EvaluatorCollection {
         }
     }
 
+    /**
+     * This interface must implements a provider to obtain the data collection
+     * for diferents resources.
+     */
+    public interface DataSource<O extends Object> {
+
+        /**
+         * This method musr return the data of diferents resources using some query.
+         * @param resourceName Name of the resource.
+         * @param evaluators List with the evaluators to filter the resource data.
+         * @return Data collection from the resource.
+         */
+        public Collection<O> getResourceData(String resourceName, Collection<Evaluator> evaluators);
+
+    }
 }
