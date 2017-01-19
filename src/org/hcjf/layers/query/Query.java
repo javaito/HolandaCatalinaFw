@@ -312,16 +312,15 @@ public class Query extends EvaluatorCollection {
      * into a map indexed by the value of the parameter field.
      * @param objects Collection of data to evaluate.
      * @param fieldIndex Field to index result.
-     * @param <J> Expected kind of values into the data collection.
      * @param consumer Implementation to get the value from the collection
      * @return Return the filtered data indexed by value of the parameter field.
      */
-    private final <J extends Joinable> Map<Object, Set<J>> index(Collection<J> objects, String fieldIndex, Consumer<J> consumer) {
-        Map<Object, Set<J>> result = new HashMap<>();
+    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, String fieldIndex, Consumer<Joinable> consumer) {
+        Map<Object, Set<Joinable>> result = new HashMap<>();
 
         Object key;
-        Set<J> set;
-        for(J joinable : objects) {
+        Set<Joinable> set;
+        for(Joinable joinable : objects) {
             key = consumer.get(joinable, fieldIndex);
             set = result.get(key);
             if(set == null) {
