@@ -312,6 +312,7 @@ public final class Log extends Service<LogPrinter> {
         private final Date date;
         private final LogGroup group;
         private final String tag;
+        private final String originalMessage;
         private final String message;
         private final SimpleDateFormat dateFormat;
 
@@ -328,6 +329,7 @@ public final class Log extends Service<LogPrinter> {
             this.group = group;
             this.tag = tag;
             this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.Log.DATE_FORMAT));
+            this.originalMessage = message;
             this.message = createMessage(message, throwable, params);
         }
 
@@ -413,6 +415,14 @@ public final class Log extends Service<LogPrinter> {
          */
         public String getMessage() {
             return message;
+        }
+
+        /**
+         * Return the original message.
+         * @return Original message.
+         */
+        public String getOriginalMessage() {
+            return originalMessage;
         }
 
         /**
