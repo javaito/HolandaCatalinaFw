@@ -21,7 +21,7 @@ public class Query extends EvaluatorCollection {
     private final QueryId id;
     private String resourceName;
     private Integer limit;
-    private Object pageStart;
+    private Object start;
     private boolean desc;
     private final List<String> orderFields;
     private final List<String> returnFields;
@@ -45,7 +45,7 @@ public class Query extends EvaluatorCollection {
         this.id = new QueryId();
         this.resourceName = source.resourceName;
         this.limit = source.limit;
-        this.pageStart = source.pageStart;
+        this.start = source.start;
         this.desc = source.desc;
         this.orderFields = new ArrayList<>();
         this.orderFields.addAll(source.orderFields);
@@ -96,20 +96,19 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     * Return an object that identify the first element of
-     * the next page.
-     * @return
+     * Return the object that represents the first element of the result.
+     * @return Firts object of the result.
      */
-    public final Object getPageStart() {
-        return pageStart;
+    public final Object getStart() {
+        return start;
     }
 
     /**
-     *
-     * @param pageStart
+     * Set the first object of the result.
+     * @param start First object of the result.
      */
-    public final void setPageStart(Object pageStart) {
-        this.pageStart = pageStart;
+    public final void setStart(Object start) {
+        this.start = start;
     }
 
     /**
@@ -179,6 +178,21 @@ public class Query extends EvaluatorCollection {
                 throw new IllegalArgumentException("Null join instance");
             }
         }
+    }
+
+    /**
+     * This method evaluate each object of the collection and sort filtered
+     * object to create a result add with the object filtered and sorted.
+     * If there are order fields added then the result implementation is a
+     * {@link TreeSet} implementation else the result implementation is a
+     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * from the source
+     * @param dataSource Data source to evaluate the query.
+     * @param <O> Kind of instances of the data collection.
+     * @return Result add filtered and sorted.
+     */
+    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource) {
+        return evaluate((resourceName, evaluators) -> dataSource, new IntrospectionConsumer<>());
     }
 
     /**
