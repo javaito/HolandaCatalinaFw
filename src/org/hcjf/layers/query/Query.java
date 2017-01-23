@@ -203,6 +203,22 @@ public class Query extends EvaluatorCollection {
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
+     * @param consumer Data source consumer.
+     * @param <O> Kind of instances of the data collection.
+     * @return Result add filtered and sorted.
+     */
+    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer) {
+        return evaluate((resourceName, evaluators) -> dataSource, consumer);
+    }
+
+    /**
+     * This method evaluate each object of the collection and sort filtered
+     * object to create a result add with the object filtered and sorted.
+     * If there are order fields added then the result implementation is a
+     * {@link TreeSet} implementation else the result implementation is a
+     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * from the source
+     * @param dataSource Data source to evaluate the query.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
