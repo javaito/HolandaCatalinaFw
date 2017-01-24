@@ -1,6 +1,7 @@
 package org.hcjf.layers.crud;
 
 import org.hcjf.layers.Layer;
+import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
@@ -144,7 +145,17 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    public Collection<Map<String, Object>> readRows(Query.QueryId queryId) {
+    public Collection<JoinableMap> readRows(Query.QueryId queryId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query and return a collection of maps.
+     * @param query Query to read data.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<JoinableMap> readRows(Query query) {
         throw new UnsupportedOperationException();
     }
 
