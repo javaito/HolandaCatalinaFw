@@ -414,7 +414,7 @@ public class Query extends EvaluatorCollection {
             String element;
             String elementValue;
             for (int i = 0; i < conditionalElements.length; i++) {
-                element = conditionalElements[i++];
+                element = conditionalElements[i++].trim();
                 elementValue = conditionalElements[i].trim();
                 if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
                         element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER_JOIN)) ||
@@ -422,9 +422,9 @@ public class Query extends EvaluatorCollection {
                         element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT_JOIN))) {
                     String[] joinElements =  elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
                     Join join = new Join(
-                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)],
-                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)],
-                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)],
+                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim(),
+                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim(),
+                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim(),
                             Join.JoinType.valueOf(element));
                     query.addJoin(join);
                 } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {

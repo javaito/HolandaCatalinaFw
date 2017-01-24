@@ -253,7 +253,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[ ]{1,}[a-zA-Z_0-9,.* ]{1,})([ ]?(FROM|from)[ ]{1,}[a-zA-Z_0-9.]{1,}[ ]?)([a-zA-Z_0-9'=,.* ?<>!()]{1,})?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by | desc )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by | desc ))");
         defaults.put(Query.WHERE_REGULAR_EXPRESSION, "((?<=( and | or ))|(?=( and | or )))");
-        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "( ON |=)");
+        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "( ON |\\=)");
         defaults.put(Query.SELECT_GROUP_INDEX, "1");
         defaults.put(Query.FROM_GROUP_INDEX, "3");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "5");

@@ -62,24 +62,24 @@ public abstract class HttpPackage {
     }
 
     /**
-     *
-     * @return
+     * Return the version of the http protocol
+     * @return Http protocol version.
      */
     public final String getHttpVersion() {
         return httpVersion;
     }
 
     /**
-     *
-     * @param httpVersion
+     * Set the version of the http protocol
+     * @param httpVersion Version of the http protocol
      */
     public final void setHttpVersion(String httpVersion) {
         this.httpVersion = httpVersion;
     }
 
     /**
-     *
-     * @return
+     * Return true if the http package is complete.
+     * @return Trus if the package is complete and false in the otherwise.
      */
     public final boolean isComplete() {
         return complete;

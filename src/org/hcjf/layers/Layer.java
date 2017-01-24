@@ -2,6 +2,7 @@ package org.hcjf.layers;
 
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.storage.StorageLayerInterface;
+import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
 import java.lang.reflect.Method;
@@ -148,6 +149,14 @@ public abstract class Layer implements LayerInterface {
             }
         }
         return result;
+    }
+
+    /**
+     * Return the session associated to the execution thread.
+     * @return Service session.
+     */
+    protected final ServiceSession getSession() {
+        return ((ServiceThread)Thread.currentThread()).getSession();
     }
 
     /**

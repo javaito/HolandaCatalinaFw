@@ -78,7 +78,7 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
                 queryObject.add(QUERY_ID_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().getId().toString()));
                 queryObject.add(QUERY_LIMIT_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().getLimit()));
                 queryObject.add(QUERY_DESC_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().isDesc()));
-                queryObject.add(QUERY_PAGE_START_FIELD, createTypedObject(crudDecodedPackage.getQuery().getPageStart()));
+                queryObject.add(QUERY_PAGE_START_FIELD, createTypedObject(crudDecodedPackage.getQuery().getStart()));
                 JsonArray orderArray = new JsonArray();
                 crudDecodedPackage.getQuery().getOrderFields().forEach(orderArray::add);
                 queryObject.add(QUERY_ORDER_FIELDS_FIELD, orderArray);
@@ -262,7 +262,7 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
                 decodedQuery.setDesc(queryJsonObject.get(QUERY_DESC_FIELD).getAsBoolean());
             }
             if(queryJsonObject.has(QUERY_PAGE_START_FIELD)) {
-                decodedQuery.setPageStart(getValue(QUERY_PAGE_START_FIELD, queryJsonObject.get(QUERY_PAGE_START_FIELD)));
+                decodedQuery.setStart(getValue(QUERY_PAGE_START_FIELD, queryJsonObject.get(QUERY_PAGE_START_FIELD)));
             }
             if(queryJsonObject.has(QUERY_ORDER_FIELDS_FIELD)) {
                 JsonArray ordersJasonArray = queryJsonObject.getAsJsonArray(QUERY_ORDER_FIELDS_FIELD);

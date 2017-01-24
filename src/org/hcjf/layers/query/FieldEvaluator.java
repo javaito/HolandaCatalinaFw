@@ -17,12 +17,13 @@ public abstract class FieldEvaluator implements Evaluator {
 
     public FieldEvaluator(String fieldName, Object value) {
         this.fieldName = fieldName;
-        this.value = value;
 
         if(fieldName.contains(Strings.CLASS_SEPARATOR)) {
-            resourceName = fieldName.substring(fieldName.lastIndexOf(Strings.CLASS_SEPARATOR) + 1);
+            resourceName = fieldName.substring(0, fieldName.lastIndexOf(Strings.CLASS_SEPARATOR));
+            this.value = fieldName.substring(fieldName.lastIndexOf(Strings.CLASS_SEPARATOR) + 1);
         } else {
             resourceName = null;
+            this.value = value;
         }
     }
 
