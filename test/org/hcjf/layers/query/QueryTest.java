@@ -45,7 +45,11 @@ public class QueryTest {
         query.addOrderField("name");
         query.greaterThan("date", calendar.getTime()).smallerThanOrEqual("number", 500);
 
-        System.out.println(Arrays.toString(query.evaluate(data).toArray()));
+//        System.out.println(Arrays.toString(query.evaluate(data).toArray()));
+
+        query = Query.compile("SELECT * FROM car JOIN CarModel ON CarModel.carId = car.id WHERE car.id = 34 OR car.id >= 40");
+        System.out.printf("");
+
     }
 
     public static class TestModel {
