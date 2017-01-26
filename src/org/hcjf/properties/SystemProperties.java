@@ -3,6 +3,7 @@ package org.hcjf.properties;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.hcjf.layers.locale.DefaultLocaleLayer;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -24,6 +25,8 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
     public static final String HCJF_DEFAULT_GROUPING_SEPARATOR = "hcjf.default.grouping.separator";
     public static final String HCJF_DEFAULT_LOCALE = "hcjf.default.locale";
+    public static final String HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION = "hcjf.default.locale.layer.implementation";
+    public static final String HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME = "hcjf.default.locale.layer.implementation.name";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_XML = "hcjf.default.properties.file.xml";
 
@@ -178,7 +181,9 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_NUMBER_FORMAT, "0.000");
         defaults.put(HCJF_DEFAULT_DECIMAL_SEPARATOR, ".");
         defaults.put(HCJF_DEFAULT_GROUPING_SEPARATOR, ",");
-        defaults.put(HCJF_DEFAULT_LOCALE, "EN");
+        defaults.put(HCJF_DEFAULT_LOCALE, Locale.getDefault().toLanguageTag());
+        defaults.put(HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION, DefaultLocaleLayer.class.getName());
+        defaults.put(HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, "default.locale.layer");
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
 
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");

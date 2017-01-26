@@ -1,5 +1,6 @@
 package org.hcjf.service;
 
+import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
@@ -213,6 +214,10 @@ public abstract class Service<C extends ServiceConsumer> {
         private SystemServices() {
             services = new HashMap<>();
 
+            //Publishing default layers
+            Layers.publishLayer(SystemProperties.getClass(SystemProperties.HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION));
+
+            //Adding service shutdown hook
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
                 public void run() {

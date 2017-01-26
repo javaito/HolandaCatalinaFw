@@ -23,7 +23,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     private Map<NetSession, HttpRequest> requestBuffers;
     private List<Context> contexts;
-    private HttpSessionManager sessionFactory;
+    private HttpSessionManager sessionManager;
 
     public HttpServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_SERVER_PORT));
@@ -40,15 +40,15 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @return Session factory.
      */
     public final HttpSessionManager getSessionManager() {
-        return sessionFactory;
+        return sessionManager;
     }
 
     /**
      * Set the instance of the session factory.
-     * @param sessionFactory Session factory.
+     * @param sessionManager Session factory.
      */
-    public final void setSessionManager(HttpSessionManager sessionFactory) {
-        this.sessionFactory = sessionFactory;
+    public final void setSessionManager(HttpSessionManager sessionManager) {
+        this.sessionManager = sessionManager;
     }
 
     /**

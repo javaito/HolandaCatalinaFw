@@ -25,6 +25,7 @@ public class ServiceSession implements Comparable {
     private final Map<Long, Map<String, Object>> properties;
     private final Map<Long, Long> systemTimeByThread;
     private final ThreadMXBean threadMXBean;
+    private Locale locale;
 
     public ServiceSession(UUID id) {
         this.id = id;
@@ -32,6 +33,7 @@ public class ServiceSession implements Comparable {
         layerStack = Collections.synchronizedMap(new HashMap<>());
         systemTimeByThread = new HashMap<>();
         threadMXBean = ManagementFactory.getThreadMXBean();
+        locale = SystemProperties.getLocale();
     }
 
     public UUID getId() {
@@ -137,6 +139,22 @@ public class ServiceSession implements Comparable {
      */
     public static final ServiceSession getGuestSession() {
         return guestSession;
+    }
+
+    /**
+     * Return locale of the session.
+     * @return Session locale.
+     */
+    public Locale getLocale() {
+        return locale;
+    }
+
+    /**
+     * Set locale of the session.
+     * @param locale Session locale.
+     */
+    public void setLocale(Locale locale) {
+        this.locale = locale;
     }
 
     /**
