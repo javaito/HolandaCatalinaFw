@@ -175,7 +175,7 @@ public class Query extends EvaluatorCollection {
             joins.add(join);
         } else {
             if(join == null) {
-                throw new IllegalArgumentException("Null join instance");
+                throw new NullPointerException("Null join instance");
             }
         }
     }
@@ -191,8 +191,8 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource) {
-        return evaluate((resourceName, evaluators) -> dataSource, new IntrospectionConsumer<>());
+    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Object... parameters) {
+        return evaluate((resourceName, evaluators) -> dataSource, new IntrospectionConsumer<>(), parameters);
     }
 
     /**
@@ -207,8 +207,8 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer) {
-        return evaluate((resourceName, evaluators) -> dataSource, consumer);
+    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer, Object... parameters) {
+        return evaluate((resourceName, evaluators) -> dataSource, consumer, parameters);
     }
 
     /**
@@ -222,8 +222,8 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource) {
-        return evaluate(dataSource, new IntrospectionConsumer<>());
+    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Object... parameters) {
+        return evaluate(dataSource, new IntrospectionConsumer<>(), parameters);
     }
 
     /**
@@ -238,7 +238,7 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer) {
+    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer, Object... parameters) {
         Set<O> result;
 
         //Creating result data collection.
@@ -289,7 +289,7 @@ public class Query extends EvaluatorCollection {
         for(O object : data) {
             add = true;
             for(Evaluator evaluator : getEvaluators()) {
-                add = evaluator.evaluate(object, consumer);
+                add = evaluator.evaluate(object, consumer, parameters);
                 if(!add) {
                     break;
                 }
@@ -383,6 +383,72 @@ public class Query extends EvaluatorCollection {
         }
 
         return copy;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+
+        //Print select
+        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));
+        result.append(Strings.WHITE_SPACE);
+        String separator = Strings.EMPTY_STRING;
+        for(String field : getReturnFields()) {
+            result.append(separator).append(field);
+            separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+        }
+
+        //Print from
+        result.append(Strings.WHITE_SPACE);
+        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.FROM));
+        result.append(Strings.WHITE_SPACE);
+        result.append(getResourceName());
+        result.append(Strings.WHITE_SPACE);
+
+        //Print joins
+        for(Join join : joins) {
+            if(!(join.getType() == Join.JoinType.JOIN)) {
+                result.append(join.getType());
+                result.append(Strings.WHITE_SPACE);
+            }
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)).append(Strings.WHITE_SPACE);
+            result.append(join.getResourceName()).append(Strings.WHITE_SPACE);
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ON)).append(Strings.WHITE_SPACE);
+            result.append(join.getLeftField()).append(Strings.WHITE_SPACE);
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
+            result.append(join.getRightField()).append(Strings.WHITE_SPACE);
+        }
+
+        if(evaluators.size() > 0) {
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE)).append(Strings.WHITE_SPACE);
+            toStringEvaluatorCollection(result, this);
+        }
+
+        return super.toString();
+    }
+
+    private void toStringEvaluatorCollection(StringBuilder result, EvaluatorCollection collection) {
+        String separator = Strings.EMPTY_STRING;
+        String separatorValue = collection instanceof Or ?
+                SystemProperties.get(SystemProperties.Query.ReservedWord.OR) :
+                SystemProperties.get(SystemProperties.Query.ReservedWord.AND);
+        for(Evaluator evaluator : collection.getEvaluators()) {
+            result.append(separator);
+            if(evaluator instanceof Or) {
+                result.append(Strings.START_GROUP);
+                toStringEvaluatorCollection(result, (Or)evaluator);
+                result.append(Strings.END_GROUP);
+            } else if(evaluator instanceof And) {
+                result.append(Strings.START_GROUP);
+                toStringEvaluatorCollection(result, (And)evaluator);
+                result.append(Strings.END_GROUP);
+            } else if(evaluator instanceof FieldEvaluator) {
+                result.append(((FieldEvaluator)evaluator).getCompleteName());
+                //TODO: Print operator
+                //TODO: Print value
+            }
+            separator = separatorValue;
+        }
     }
 
     /**

@@ -11,7 +11,7 @@ public class Or extends EvaluatorCollection implements Evaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
         boolean result = false;
 
         for(Evaluator evaluator : getEvaluators()) {

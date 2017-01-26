@@ -13,17 +13,18 @@ public class Like extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
         boolean result = false;
 
         try {
+            Object value = getValue(parameters);
             Object fieldValue = consumer.get(object, getFieldName());
             if(fieldValue instanceof String) {
-                if(getValue() instanceof Pattern) {
-                    result = ((Pattern)getValue()).matcher((String)fieldValue).matches();
-                } else if(getValue() instanceof String) {
+                if(value instanceof Pattern) {
+                    result = ((Pattern)value).matcher((String)fieldValue).matches();
+                } else if(value instanceof String) {
                     String stringFieldValue = (String) fieldValue;
-                    String stringValue = (String) getValue();
+                    String stringValue = (String) value;
                     result = stringFieldValue.contains(stringValue);
                 }
             }

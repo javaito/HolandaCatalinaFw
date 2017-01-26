@@ -22,10 +22,10 @@ public class Equals extends FieldEvaluator {
      * with introspection.
      */
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
-            result = getValue().equals(consumer.get(object, getFieldName()));
+            result = getValue(parameters).equals(consumer.get(object, getFieldName()));
         } catch (Exception ex) {
             throw new IllegalArgumentException("Equals evaluator fail", ex);
         }

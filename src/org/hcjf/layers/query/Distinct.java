@@ -22,7 +22,7 @@ public class Distinct extends Equals {
      * with introspection.
      */
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
         return !super.evaluate(object, consumer);
     }
 

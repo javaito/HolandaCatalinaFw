@@ -15,23 +15,24 @@ public class In extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
         boolean result = false;
 
         try {
+            Object value = getValue(parameters);
             Object fieldValue = consumer.get(object, getFieldName());
             if(Map.class.isAssignableFrom(fieldValue.getClass())) {
-                result = ((Map)fieldValue).containsKey(getValue());
+                result = ((Map)fieldValue).containsKey(value);
             } else if(Collection.class.isAssignableFrom(fieldValue.getClass())) {
-                result = ((Collection)fieldValue).contains(getValue());
+                result = ((Collection)fieldValue).contains(value);
             } else if(fieldValue.getClass().isArray()) {
-                result = Arrays.binarySearch((Object[])fieldValue, getValue()) >= 0;
-            } else if (Map.class.isAssignableFrom(getValue().getClass())) {
-                result = ((Map)getValue()).containsKey(fieldValue);
-            } else if(Collection.class.isAssignableFrom(getValue().getClass())) {
-                result = ((Collection)getValue()).contains(fieldValue);
-            } else if(getValue().getClass().isArray()) {
-                result = Arrays.binarySearch((Object[])getValue(), fieldValue) >= 0;
+                result = Arrays.binarySearch((Object[])fieldValue, value) >= 0;
+            } else if (Map.class.isAssignableFrom(value.getClass())) {
+                result = ((Map)value).containsKey(fieldValue);
+            } else if(Collection.class.isAssignableFrom(value.getClass())) {
+                result = ((Collection)value).contains(fieldValue);
+            } else if(value.getClass().isArray()) {
+                result = Arrays.binarySearch((Object[])value, fieldValue) >= 0;
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("In evaluator fail", ex);

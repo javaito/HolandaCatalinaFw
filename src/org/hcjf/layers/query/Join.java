@@ -1,8 +1,7 @@
 package org.hcjf.layers.query;
 
-import java.util.*;
-
 /**
+ * This class represent a join operation
  * @author javaito
  * @email javaito@gmail.com
  */
@@ -20,61 +19,43 @@ public class Join implements Comparable<Join> {
         this.type = type;
     }
 
+    /**
+     * Return the resource name to join.
+     * @return Resource name.
+     */
     public String getResourceName() {
         return resourceName;
     }
 
+    /**
+     * Return the left field of the join operation.
+     * @return Left field.
+     */
     public String getLeftField() {
         return leftField;
     }
 
+    /**
+     * Return the right field of the join operation.
+     * @return Right field.
+     */
     public String getRightField() {
         return rightField;
     }
 
+    /**
+     * Return the join operation type.
+     * @return Join type.
+     */
     public JoinType getType() {
         return type;
     }
 
-    public Collection<Map<String,Object>> evaluate(
-            String leftField, Collection<Object> leftSource, Query.Consumer leftConsumer,
-            String rightField, Query.Consumer rightConsumer){
-
-        Map<Object, List<Object>> leftMap = new HashMap<>();
-        Map<Object, List<Object>> rightMap = new HashMap<>();
-
-        Object leftValue;
-        for(Object srcLeftObject : leftSource) {
-            leftValue = leftConsumer.get(srcLeftObject, leftField);
-            if(leftMap.containsKey(leftValue)) {
-                leftMap.put(leftValue, new ArrayList<>());
-            }
-            leftMap.get(leftValue).add(srcLeftObject);
-        }
-
-
-
-        switch (getType()) {
-            case JOIN: case INNER: {
-                for(Object srcLeftObject : leftSource) {
-                    leftValue = leftConsumer.get(srcLeftObject, leftField);
-                    if(leftValue != null) {
-
-                    }
-                }
-                break;
-            }
-            case LEFT: {
-                break;
-            }
-            case RIGHT: {
-                break;
-            }
-        }
-
-        return null;
-    }
-
+    /**
+     * Compare two instances of joins.
+     * @param join Other join to compare.
+     * @return Return int value that represents the difference between two instances.
+     */
     @Override
     public int compareTo(Join join) {
         return join.getResourceName().compareTo(getResourceName()) +
@@ -82,6 +63,11 @@ public class Join implements Comparable<Join> {
                 join.getRightField().compareTo(getRightField());
     }
 
+    /**
+     * Verify if this instance of join is equals that other object.
+     * @param object Object to verify.
+     * @return Return true if the join is equals.
+     */
     @Override
     public boolean equals(Object object) {
         boolean result = false;
@@ -94,6 +80,9 @@ public class Join implements Comparable<Join> {
         return result;
     }
 
+    /**
+     * Join types.
+     */
     public enum JoinType {
 
         JOIN,

@@ -32,25 +32,26 @@ public class GreaterThan extends FieldEvaluator {
      * <li> If the parameter value and field's valur are incompatible: 'Incompatible types between value and field's value'</li>
      */
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
+            Object value = getValue(parameters);
             Object fieldValue = consumer.get(object, getFieldName());
-            if(Comparable.class.isAssignableFrom(getValue().getClass()) &&
+            if(Comparable.class.isAssignableFrom(value.getClass()) &&
                     Comparable.class.isAssignableFrom(fieldValue.getClass())) {
-                if(fieldValue.getClass().isAssignableFrom(getValue().getClass()) ||
-                        getValue().getClass().isAssignableFrom(fieldValue.getClass())) {
+                if(fieldValue.getClass().isAssignableFrom(value.getClass()) ||
+                        value.getClass().isAssignableFrom(fieldValue.getClass())) {
                     if(orEquals) {
-                        result = ((Comparable)fieldValue).compareTo(getValue()) >= 0;
+                        result = ((Comparable)fieldValue).compareTo(value) >= 0;
                     } else {
-                        result = ((Comparable)fieldValue).compareTo(getValue()) > 0;
+                        result = ((Comparable)fieldValue).compareTo(value) > 0;
                     }
                 } else {
                     throw new IllegalArgumentException("Incompatible types between value and field's value ("
-                            + getFieldName() + "): " + getValue().getClass() + " != " + fieldValue.getClass());
+                            + getFieldName() + "): " + value.getClass() + " != " + fieldValue.getClass());
                 }
             } else {
-                throw new IllegalArgumentException("Unsupported evaluator type: " + getValue().getClass());
+                throw new IllegalArgumentException("Unsupported evaluator type: " + value.getClass());
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Greater than evaluator fail", ex);

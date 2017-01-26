@@ -11,19 +11,21 @@ import org.hcjf.utils.Strings;
  */
 public abstract class FieldEvaluator implements Evaluator {
 
+    private final String completeName;
     private final String fieldName;
     private final String resourceName;
     private final Object value;
 
     public FieldEvaluator(String fieldName, Object value) {
-        this.fieldName = fieldName;
+        this.value = value;
+        completeName = fieldName;
 
         if(fieldName.contains(Strings.CLASS_SEPARATOR)) {
             resourceName = fieldName.substring(0, fieldName.lastIndexOf(Strings.CLASS_SEPARATOR));
-            this.value = fieldName.substring(fieldName.lastIndexOf(Strings.CLASS_SEPARATOR) + 1);
+            this.fieldName = fieldName.substring(fieldName.lastIndexOf(Strings.CLASS_SEPARATOR) + 1);
         } else {
             resourceName = null;
-            this.value = value;
+            this.fieldName = fieldName;
         }
     }
 
@@ -48,6 +50,14 @@ public abstract class FieldEvaluator implements Evaluator {
     }
 
     /**
+     * Return the resource name and the field name in the same string.
+     * @return Complete name.
+     */
+    public String getCompleteName() {
+        return completeName;
+    }
+
+    /**
      * Return the name of the field (pair getter/setter) in the objects of the
      * data collection.
      * @return Name of the field.
@@ -69,8 +79,12 @@ public abstract class FieldEvaluator implements Evaluator {
      * instance.
      * @return Object value.
      */
-    public final Object getValue() {
-        return value;
+    public final Object getValue(Object... parameters) {
+        Object result = value;
+        if(result instanceof UnprocessedValue) {
+            result = ((UnprocessedValue)value).process(parameters);
+        }
+        return result;
     }
 
     /**
@@ -80,6 +94,46 @@ public abstract class FieldEvaluator implements Evaluator {
     @Override
     public String toString() {
         return getClass() + "[" + fieldName + "," + value + "]";
+    }
+
+    /**
+     * This kind of values take the true value in the execution time of the query.
+     */
+    public interface UnprocessedValue {
+
+        /**
+         * Return the processed value.
+         * @param parameters Evaluation parameters.
+         * @return Processed value.
+         */
+        public Object process(Object... parameters);
+
+    }
+
+    /**
+     * Return the object that is in the specific position into the parameters array.
+     */
+    public static class ReplaceableValue implements UnprocessedValue {
+
+        private final Integer place;
+
+        public ReplaceableValue(Integer place) {
+            this.place = place;
+        }
+
+        /**
+         * Return the processed value.
+         * @param parameters Evaluation parameters.
+         * @return Processed value.
+         */
+        @Override
+        public Object process(Object... parameters) {
+            if(parameters.length <= place) {
+                throw new IllegalArgumentException("Non-specified replaceable value, index " + place);
+            }
+
+            return parameters[place];
+        }
     }
 
 }
