@@ -305,6 +305,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.AND, "AND");
         defaults.put(Query.ReservedWord.OR, "OR");
         defaults.put(Query.ReservedWord.STATEMENT_END, ";");
+        defaults.put(Query.ReservedWord.REPLACEABLE_VALUE, "?");
 
         Properties system = System.getProperties();
         putAll(system);
