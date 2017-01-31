@@ -141,9 +141,10 @@ public abstract class StorageAction<S extends StorageSession> {
 
     /**
      * This method must be implemented for each action implementation
+     * @param params Set of parameters to execute the action.
      * @return Return the storage response for the action.
      */
-    public abstract <R extends ResultSet> R execute() throws StorageAccessException;
+    public abstract <R extends ResultSet> R execute(Object... params) throws StorageAccessException;
 
     /**
      * Implementation of the {@link StorageValue} that contains all the information
