@@ -60,4 +60,19 @@ public interface CloudServiceImpl {
      * @return Return the lock condition.
      */
     public Condition getCondition(String conditionName, Lock lock);
+
+    /**
+     * Creates a instance of cache into the cloud using the specific strategy to
+     * specify the behavior of the cache instance.
+     * @param cacheName Name of the cache instance.
+     * @param strategy Cache strategy.
+     */
+    public void createCache(String cacheName, CloudCacheStrategy strategy);
+
+    /**
+     * Return the instance of cache named with specific name.
+     * @param cacheName Name of the instance of cache.
+     * @return Instance of cache.
+     */
+    public CloudCache getCache(String cacheName);
 }

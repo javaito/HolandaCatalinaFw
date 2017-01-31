@@ -24,7 +24,7 @@ public final class Cloud {
      * Private constructor
      */
     private Cloud() {
-        String implClassName = SystemProperties.get(SystemProperties.CLOUD_IMPL);
+        String implClassName = SystemProperties.get(SystemProperties.Cloud.CLOUD_IMPL);
         if(implClassName == null) {
             throw new IllegalArgumentException("Implementation cloud class is null, see the system property 'hcjf.cloud.impl'");
         }
@@ -108,5 +108,24 @@ public final class Cloud {
      */
     public static Condition getCondition(String conditionName, Lock lock) {
         return getInstance().impl.getCondition(conditionName, lock);
+    }
+
+    /**
+     * Creates a instance of cache into the cloud using the specific strategy to
+     * specify the behavior of the cache instance.
+     * @param cacheName Name of the cache instance.
+     * @param strategy Cache strategy.
+     */
+    public static void createCache(String cacheName, CloudCacheStrategy strategy) {
+        getInstance().impl.createCache(cacheName, strategy);
+    }
+
+    /**
+     * Return the instance of cache named with specific name.
+     * @param cacheName Name of the instance of cache.
+     * @return Instance of cache.
+     */
+    public static CloudCache getCache(String cacheName) {
+        return getInstance().impl.getCache(cacheName);
     }
 }
