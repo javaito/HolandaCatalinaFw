@@ -22,6 +22,9 @@ public class Messages {
 
     protected Messages() {
         defaultMessages = new HashMap<>();
+
+        //Publishing default layers
+        Layers.publishLayer(SystemProperties.getClass(SystemProperties.HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION));
     }
 
     /**

@@ -214,9 +214,6 @@ public abstract class Service<C extends ServiceConsumer> {
         private SystemServices() {
             services = new HashMap<>();
 
-            //Publishing default layers
-            Layers.publishLayer(SystemProperties.getClass(SystemProperties.HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION));
-
             //Adding service shutdown hook
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
