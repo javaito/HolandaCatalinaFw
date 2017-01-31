@@ -467,6 +467,7 @@ public class Query extends EvaluatorCollection {
             String fromBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.FROM_GROUP_INDEX));
             fromBody = fromBody.replaceFirst(SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
             String conditionalBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
+            conditionalBody.replace(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END), Strings.EMPTY_STRING);
 
             for(String returnFields : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
