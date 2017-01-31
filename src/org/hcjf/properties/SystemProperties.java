@@ -93,6 +93,7 @@ public final class SystemProperties extends Properties {
             public static final String OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
             public static final String DEFAULT_SERVER_PORT = "hcjf.http.default.server.port";
             public static final String DEFAULT_CLIENT_PORT = "hcjf.http.default.client.port";
+            public static final String DEFAULT_SSL_CLIENT_PORT = "hcjf.http.default.ssl.client.port";
             public static final String STREAMING_LIMIT_FILE_SIZE = "hcjf.http.streaming.limit.file.size";
             public static final String DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.http.default.error.format.show.stack";
             public static final String DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.http.default.client.connect.timeout";
@@ -154,11 +155,24 @@ public final class SystemProperties extends Properties {
             public static final String LIKE = "hcjf.query.like.reserved.word";
             public static final String AND = "hcjf.query.and.reserved.word";
             public static final String OR = "hcjf.query.or.reserved.word";
+            public static final String STATEMENT_END = "hcjf.query.statement.end.reserved.word";
         }
 
     }
 
-    public static final String CLOUD_IMPL = "hcjf.cloud.impl";
+    public static class Cloud {
+
+        public static final String CLOUD_IMPL = "hcjf.cloud.impl";
+        public static final String CLOUD_TIMER_TASK_MAP_NAME = "hcjf.cloud.timer.task.map.name";
+        public static final String CLOUD_TIMER_TASK_LOCK_NAME = "hcjf.cloud.timer.task.lock.name";
+
+        public static class ReservedWord {
+
+            public static final String CLOUD_TIMER_TASK_CONDITIONAL_SUFFIX_NAME = "hcjf.cloud.timer.task.conditional.suffix.name";
+
+        }
+
+    }
 
     //Java property names
     public static final String FILE_ENCODING = "file.encoding";
@@ -217,8 +231,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Log.TRUNCATE_TAG, "false");
         defaults.put(Log.TRUNCATE_TAG_SIZE, "35");
 
-        defaults.put(Net.INPUT_BUFFER_SIZE, "10240");
-        defaults.put(Net.OUTPUT_BUFFER_SIZE, "10240");
+        defaults.put(Net.INPUT_BUFFER_SIZE, "102400");
+        defaults.put(Net.OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.CONNECTION_TIMEOUT_AVAILABLE, "true");
         defaults.put(Net.CONNECTION_TIMEOUT, "30000");
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
@@ -226,8 +240,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "10000");
         defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "100");
-        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "10240");
-        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "10240");
+        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
+        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
 
@@ -237,6 +251,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, "128");
         defaults.put(Net.Http.DEFAULT_SERVER_PORT, "80");
         defaults.put(Net.Http.DEFAULT_CLIENT_PORT, "80");
+        defaults.put(Net.Http.DEFAULT_SSL_CLIENT_PORT, "443");
         defaults.put(Net.Http.STREAMING_LIMIT_FILE_SIZE, "10240");
         defaults.put(Net.Http.DEFAULT_ERROR_FORMAT_SHOW_STACK, "true");
         defaults.put(Net.Http.DEFAULT_CLIENT_CONNECT_TIMEOUT, "10000");
@@ -255,7 +270,7 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[ ]{1,}[a-zA-Z_0-9,.* ]{1,})([ ]?(FROM|from)[ ]{1,}[a-zA-Z_0-9.]{1,}[ ]?)([a-zA-Z_0-9'=,.* ?<>!()]{1,})?");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[  ]{1,}[a-zA-Z_0-9,.* ]{1,})([  ]?(FROM|from)[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?<>!()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by | desc )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by | desc ))");
         defaults.put(Query.WHERE_REGULAR_EXPRESSION, "((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "( ON |\\=)");
@@ -288,6 +303,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.LIKE, "LIKE");
         defaults.put(Query.ReservedWord.AND, "AND");
         defaults.put(Query.ReservedWord.OR, "OR");
+        defaults.put(Query.ReservedWord.STATEMENT_END, ";");
 
         Properties system = System.getProperties();
         putAll(system);
