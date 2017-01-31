@@ -156,6 +156,7 @@ public final class SystemProperties extends Properties {
             public static final String AND = "hcjf.query.and.reserved.word";
             public static final String OR = "hcjf.query.or.reserved.word";
             public static final String STATEMENT_END = "hcjf.query.statement.end.reserved.word";
+            public static final String REPLACEABLE_VALUE = "hcjf.query.statement.replaceable.value";
         }
 
     }
