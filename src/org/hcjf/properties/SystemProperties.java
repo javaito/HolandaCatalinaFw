@@ -130,6 +130,8 @@ public final class SystemProperties extends Properties {
         public static final String JOIN_RESOURCE_NAME_INDEX = "hcjf.query.join.resource.name.index";
         public static final String JOIN_LEFT_FIELD_INDEX = "hcjf.query.join.left.field.index";
         public static final String JOIN_RIGHT_FIELD_INDEX = "hcjf.query.join.right.field.index";
+        public static final String DATE_FORMAT = "hcjf.query.date.format";
+        public static final String DECIMAL_FORMAT = "hcjf.query.decimal.format";
 
         public static final class ReservedWord {
             public static final String SELECT = "hcjf.query.select.reserved.word";
@@ -156,19 +158,21 @@ public final class SystemProperties extends Properties {
             public static final String AND = "hcjf.query.and.reserved.word";
             public static final String OR = "hcjf.query.or.reserved.word";
             public static final String STATEMENT_END = "hcjf.query.statement.end.reserved.word";
-            public static final String REPLACEABLE_VALUE = "hcjf.query.statement.replaceable.value";
+            public static final String REPLACEABLE_VALUE = "hcjf.query.replaceable.value.reserved.word";
+            public static final String STRING_DELIMITER = "hcjf.query.string.delimiter.reserved.word";
+            public static final String NULL = "hcjf.query.null.reserved.word";
+            public static final String TRUE = "hcjf.query.true.reserved.word";
+            public static final String FALSE = "hcjf.query.false.reserved.word";
         }
 
     }
 
     public static class Cloud {
-
         public static final String CLOUD_IMPL = "hcjf.cloud.impl";
         public static final String CLOUD_TIMER_TASK_MAP_NAME = "hcjf.cloud.timer.task.map.name";
         public static final String CLOUD_TIMER_TASK_LOCK_NAME = "hcjf.cloud.timer.task.lock.name";
 
         public static class ReservedWord {
-
             public static final String CLOUD_TIMER_TASK_CONDITIONAL_SUFFIX_NAME = "hcjf.cloud.timer.task.conditional.suffix.name";
 
         }
@@ -281,6 +285,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.JOIN_RESOURCE_NAME_INDEX, "0");
         defaults.put(Query.JOIN_LEFT_FIELD_INDEX, "1");
         defaults.put(Query.JOIN_RIGHT_FIELD_INDEX, "2");
+        defaults.put(Query.DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(Query.DECIMAL_FORMAT, "0.000");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");
@@ -306,6 +312,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.OR, "OR");
         defaults.put(Query.ReservedWord.STATEMENT_END, ";");
         defaults.put(Query.ReservedWord.REPLACEABLE_VALUE, "?");
+        defaults.put(Query.ReservedWord.STRING_DELIMITER, "'");
+        defaults.put(Query.ReservedWord.NULL, "NULL");
+        defaults.put(Query.ReservedWord.TRUE, "TRUE");
+        defaults.put(Query.ReservedWord.FALSE, "FALSE");
 
         Properties system = System.getProperties();
         putAll(system);

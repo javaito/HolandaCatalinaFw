@@ -5,7 +5,10 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -496,7 +499,7 @@ public class Query extends EvaluatorCollection {
                     query.addJoin(join);
                 } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
                     List<String> groups = Strings.replaceableGroup(elementValue);
-                    completeWhere(groups, query, groups.size() - 1);
+                    completeWhere(groups, query, groups.size() - 1, new AtomicInteger(0));
                 } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                     for(String orderField : elementValue.split(SystemProperties.get(
                             SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
@@ -522,13 +525,14 @@ public class Query extends EvaluatorCollection {
      * @param parentCollection Parent collection.
      * @param definitionIndex Definition index into the groups.
      */
-    private static final void completeWhere(List<String> groups, EvaluatorCollection parentCollection, int definitionIndex) {
+    private static final void completeWhere(List<String> groups, EvaluatorCollection parentCollection, Integer definitionIndex, AtomicInteger placesIndex) {
         Pattern wherePatter = SystemProperties.getPattern(SystemProperties.Query.WHERE_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
         String[] evaluatorDefinitions = wherePatter.split(groups.get(definitionIndex));
         String[] evaluatorValues;
         String fieldValue;
         String operator;
-        String value;
+        Object value;
+        String stringValue;
         Evaluator evaluator = null;
         EvaluatorCollection collection = null;
         for(String definition : evaluatorDefinitions) {
@@ -553,13 +557,16 @@ public class Query extends EvaluatorCollection {
                 evaluator = null;
             } else if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
                 Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
-                completeWhere(groups, collection == null ? parentCollection : collection, index);
+                completeWhere(groups, collection == null ? parentCollection : collection, index, placesIndex);
             } else {
                 evaluatorValues = definition.split(Strings.WHITE_SPACE, 0);
                 if (evaluatorValues.length == 3) {
                     fieldValue = evaluatorValues[0].trim();
                     operator = evaluatorValues[1].trim();
-                    value = evaluatorValues[2].trim();
+
+                    //Check the different types of parameters
+                    stringValue = evaluatorValues[2].trim();
+                    value = processStringValue(stringValue, placesIndex);
 
                     if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
                         evaluator = new Distinct(fieldValue, value);
@@ -595,6 +602,54 @@ public class Query extends EvaluatorCollection {
                 parentCollection.addEvaluator(evaluator);
             }
         }
+    }
+
+    private static Object processStringValue(String stringValue, AtomicInteger placesIndex) {
+        Object result;
+        if(stringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
+            //If the string value is equals than "?" then the value object is an instance of ReplaceableValue.
+            result = new FieldEvaluator.ReplaceableValue(placesIndex.getAndAdd(1));
+        } else if(stringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL))) {
+            result = null;
+        } else if(stringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.TRUE))) {
+            result = true;
+        } else if(stringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FALSE))) {
+            result = false;
+        } else if(stringValue.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
+            if(stringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
+                //If the string value start and end with "'" then the value can be a string or a date object.
+                stringValue = stringValue.substring(1, stringValue.length() - 1);
+                try {
+                    result = SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).parse(stringValue);
+                } catch (Exception ex) {
+                    //The value is not a date
+                    result = stringValue;
+                }
+            } else {
+                throw new IllegalArgumentException("");
+            }
+        } else if(stringValue.startsWith(Strings.START_GROUP)) {
+            if(stringValue.endsWith(Strings.END_GROUP)) {
+                //If the string value start with "(" and end with ")" then the value is a collection.
+                Collection<Object> collection = new ArrayList<>();
+                stringValue = stringValue.substring(1, stringValue.length() - 1);
+                for(String subStringValue : stringValue.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                    collection.add(processStringValue(subStringValue, placesIndex));
+                }
+                result = collection;
+            } else {
+                throw new IllegalArgumentException();
+            }
+        } else {
+            //The last chance is the value be a number
+            try {
+                result = NumberFormat.getInstance().parse(stringValue);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException();
+            }
+        }
+
+        return result;
     }
 
     /**
