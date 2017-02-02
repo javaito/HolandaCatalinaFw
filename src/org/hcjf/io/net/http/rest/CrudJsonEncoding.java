@@ -77,10 +77,8 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
                 JsonObject queryObject = new JsonObject();
                 queryObject.add(QUERY_ID_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().getId().toString()));
                 queryObject.add(QUERY_LIMIT_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().getLimit()));
-                queryObject.add(QUERY_DESC_FIELD, new JsonPrimitive(crudDecodedPackage.getQuery().isDesc()));
                 queryObject.add(QUERY_PAGE_START_FIELD, createTypedObject(crudDecodedPackage.getQuery().getStart()));
                 JsonArray orderArray = new JsonArray();
-                crudDecodedPackage.getQuery().getOrderFields().forEach(orderArray::add);
                 queryObject.add(QUERY_ORDER_FIELDS_FIELD, orderArray);
                 JsonArray evaluatorArray = new JsonArray();
                 for (Evaluator evaluator : crudDecodedPackage.getQuery().getEvaluators()) {
@@ -89,7 +87,7 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
                         JsonObject evaluatorJsonObject = new JsonObject();
                         evaluatorJsonObject.add(EVALUATOR_ACTION_FIELD,
                                 new JsonPrimitive(Strings.uncapitalize(evaluator.getClass().getSimpleName())));
-                        evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(fieldEvaluator.getFieldName()));
+                        evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(fieldEvaluator.getQueryField().toString()));
                         evaluatorJsonObject.add(EVALUATOR_VALUE_FIELD, createTypedObject(fieldEvaluator.getValue()));
                         evaluatorArray.add(evaluatorJsonObject);
                     }
@@ -257,9 +255,6 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
             }
             if(queryJsonObject.has(QUERY_LIMIT_FIELD)) {
                 decodedQuery.setLimit(queryJsonObject.get(QUERY_LIMIT_FIELD).getAsInt());
-            }
-            if(queryJsonObject.has(QUERY_DESC_FIELD)) {
-                decodedQuery.setDesc(queryJsonObject.get(QUERY_DESC_FIELD).getAsBoolean());
             }
             if(queryJsonObject.has(QUERY_PAGE_START_FIELD)) {
                 decodedQuery.setStart(getValue(QUERY_PAGE_START_FIELD, queryJsonObject.get(QUERY_PAGE_START_FIELD)));
