@@ -88,6 +88,14 @@ public abstract class FieldEvaluator implements Evaluator {
     }
 
     /**
+     * Return the class of the original value.
+     * @return Class of the original value.
+     */
+    public final Class getValueType() {
+        return value.getClass();
+    }
+
+    /**
      * Return the string representation of the evaluator.
      * @return Format: ClassName[fieldName,value]
      */

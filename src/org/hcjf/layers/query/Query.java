@@ -25,14 +25,12 @@ public class Query extends EvaluatorCollection {
     private String resourceName;
     private Integer limit;
     private Object start;
-    private boolean desc;
-    private final List<String> orderFields;
+    private final List<OrderField> orderFields;
     private final List<String> returnFields;
     private final List<Join> joins;
 
     public Query(QueryId id) {
         this.id = id;
-        desc = SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER);
         limit = SystemProperties.getInteger(SystemProperties.Query.DEFAULT_LIMIT);
         orderFields = new ArrayList<>();
         returnFields = new ArrayList<>();
@@ -49,7 +47,6 @@ public class Query extends EvaluatorCollection {
         this.resourceName = source.resourceName;
         this.limit = source.limit;
         this.start = source.start;
-        this.desc = source.desc;
         this.orderFields = new ArrayList<>();
         this.orderFields.addAll(source.orderFields);
         this.returnFields = new ArrayList<>();
@@ -115,28 +112,10 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     * Return the way of the sorted method.
-     * @return Way of the sorted method. Return true if the the first element
-     * is the smaller and the last one is bigger
-     */
-    public final boolean isDesc() {
-        return desc;
-    }
-
-    /**
-     * Set the way of the sorted method.
-     * @param desc Way of the sorted method. Set true for the first element
-     * be the smaller and the last be the bigger.
-     */
-    public final void setDesc(boolean desc) {
-        this.desc = desc;
-    }
-
-    /**
      * Return the unmodifiable list with order fields.
      * @return Order fields.
      */
-    public final List<String> getOrderFields() {
+    public final List<OrderField> getOrderFields() {
         return Collections.unmodifiableList(orderFields);
     }
 
@@ -147,7 +126,19 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField) {
-        orderFields.add(orderField);
+        orderFields.add(new OrderField(orderField, SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER)));
+        return this;
+    }
+
+    /**
+     * Add a name of the field for order the data collection. This name must be exist
+     * like a setter/getter method in the instances of the data collection.
+     * @param orderField Name of the pair getter/setter.
+     * @param desc Desc property.
+     * @return Return the same instance of this class.
+     */
+    public final Query addOrderField(String orderField, boolean desc) {
+        orderFields.add(new OrderField(orderField, desc));
         return this;
     }
 
@@ -253,21 +244,21 @@ public class Query extends EvaluatorCollection {
 
                 Comparable<Object> comparable1;
                 Comparable<Object> comparable2;
-                for (String orderField : orderFields) {
+                for (OrderField orderField : orderFields) {
                     try {
-                        comparable1 = consumer.get(o1, orderField);
-                        comparable2 = consumer.get(o2, orderField);
+                        comparable1 = consumer.get(o1, orderField.getName());
+                        comparable2 = consumer.get(o2, orderField.getName());
                     } catch (ClassCastException ex) {
                         throw new IllegalArgumentException("Order field must be comparable");
                     }
-                    compareResult = comparable1.compareTo(comparable2);
+                    compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
                 }
 
                 if (compareResult == 0) {
                     compareResult = o1.hashCode() - o2.hashCode();
                 }
 
-                return compareResult * (isDesc() ? -1 : 1);
+                return compareResult;
             });
         } else {
             //If the query has not order fields then creates a linked hash set to
@@ -427,7 +418,22 @@ public class Query extends EvaluatorCollection {
             toStringEvaluatorCollection(result, this);
         }
 
-        return super.toString();
+        if(orderFields.size() > 0) {
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
+            separator = Strings.EMPTY_STRING;
+            for(OrderField orderField : orderFields) {
+                result.append(separator).append(orderField.getName());
+                if(orderField.isDesc()) {
+                    result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
+                }
+                separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+            }
+        }
+
+        result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
+        result.append(Strings.WHITE_SPACE).append(getLimit());
+
+        return result.toString();
     }
 
     private void toStringEvaluatorCollection(StringBuilder result, EvaluatorCollection collection) {
@@ -442,16 +448,70 @@ public class Query extends EvaluatorCollection {
                 toStringEvaluatorCollection(result, (Or)evaluator);
                 result.append(Strings.END_GROUP);
             } else if(evaluator instanceof And) {
-                result.append(Strings.START_GROUP);
-                toStringEvaluatorCollection(result, (And)evaluator);
-                result.append(Strings.END_GROUP);
+                if(collection instanceof Query) {
+                    toStringEvaluatorCollection(result, (And) evaluator);
+                } else {
+                    result.append(Strings.START_GROUP);
+                    toStringEvaluatorCollection(result, (And) evaluator);
+                    result.append(Strings.END_GROUP);
+                }
             } else if(evaluator instanceof FieldEvaluator) {
-                result.append(((FieldEvaluator)evaluator).getCompleteName());
-                //TODO: Print operator
-                //TODO: Print value
+                FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+                result.append(fieldEvaluator.getCompleteName()).append(Strings.WHITE_SPACE);
+                if (fieldEvaluator instanceof Distinct) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof Equals) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof GreaterThanOrEqual) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof GreaterThan) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof In) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.IN)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof Like) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof NotIn) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof SmallerThanOrEqual) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof SmallerThan) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN)).append(Strings.WHITE_SPACE);
+                }
+                if(fieldEvaluator.getValue() == null) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
+                } else {
+                    result = toStringFieldEvaluatorValue(fieldEvaluator.getValue(), fieldEvaluator.getValueType(), result);
+                }
+                result.append(Strings.WHITE_SPACE);
             }
-            separator = separatorValue;
+            separator = separatorValue + Strings.WHITE_SPACE;
         }
+    }
+
+    private static StringBuilder toStringFieldEvaluatorValue(Object value, Class type, StringBuilder result) {
+        if(FieldEvaluator.ReplaceableValue.class.isAssignableFrom(type)) {
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE));
+        } else if(String.class.isAssignableFrom(type)) {
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+            result.append(value);
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+        } else if(Date.class.isAssignableFrom(type)) {
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+            result.append(SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).format((Date)value));
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+        } else if(Collection.class.isAssignableFrom(type)) {
+            result.append(Strings.START_GROUP);
+            String separator = Strings.EMPTY_STRING;
+            for(Object object : (Collection)value) {
+                result.append(separator);
+                result = toStringFieldEvaluatorValue(object, object.getClass(), result);
+                separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+            }
+            result.append(Strings.END_GROUP);
+        } else {
+            result.append(value.toString());
+        }
+        return result;
     }
 
     /**
@@ -503,10 +563,13 @@ public class Query extends EvaluatorCollection {
                 } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                     for(String orderField : elementValue.split(SystemProperties.get(
                             SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                        query.addOrderField(orderField);
+                        boolean desc = SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER);
+                        if(orderField.toUpperCase().contains(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
+                            desc = true;
+                            orderField = orderField.replaceAll("(?i)" + SystemProperties.get(SystemProperties.Query.ReservedWord.DESC), Strings.EMPTY_STRING).trim();
+                        }
+                        query.addOrderField(orderField, desc);
                     }
-                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
-                    query.setDesc(true);
                 } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                     query.setLimit(Integer.parseInt(elementValue));
                 }
@@ -629,17 +692,19 @@ public class Query extends EvaluatorCollection {
                 throw new IllegalArgumentException("");
             }
         } else if(stringValue.startsWith(Strings.START_GROUP)) {
-            if(stringValue.endsWith(Strings.END_GROUP)) {
+            if (stringValue.endsWith(Strings.END_GROUP)) {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 stringValue = stringValue.substring(1, stringValue.length() - 1);
-                for(String subStringValue : stringValue.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                for (String subStringValue : stringValue.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                     collection.add(processStringValue(subStringValue, placesIndex));
                 }
                 result = collection;
             } else {
                 throw new IllegalArgumentException();
             }
+        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
+            result = UUID.fromString(stringValue);
         } else {
             //The last chance is the value be a number
             try {
@@ -739,5 +804,35 @@ public class Query extends EvaluatorCollection {
          */
         public Collection<O> getResourceData(String resourceName, Collection<Evaluator> evaluators);
 
+    }
+
+    /**
+     * This class represents a order field with desc property
+     */
+    public static class OrderField {
+
+        private final String name;
+        private final boolean desc;
+
+        public OrderField(String name, boolean desc) {
+            this.name = name;
+            this.desc = desc;
+        }
+
+        /**
+         * Return the name of the order field.
+         * @return Name of the field.
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * Return the desc property.
+         * @return Desc property.
+         */
+        public boolean isDesc() {
+            return desc;
+        }
     }
 }
