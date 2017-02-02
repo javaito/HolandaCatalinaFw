@@ -15,9 +15,6 @@ import java.util.regex.Pattern;
  */
 public class Messages {
 
-    protected static final Pattern MESSAGE_CODE_PATTERN =
-            Pattern.compile("^((([A-Z]|[a-z])*)(\\.(([A-Z]|[a-z])*))*)*@[1-9].*");
-
     private final Map<String, String> defaultMessages;
 
     protected Messages() {
@@ -52,9 +49,7 @@ public class Messages {
      * @param defaultMessage Default message.
      */
     protected void addInternalDefault(String errorCode, String defaultMessage) {
-        if(MESSAGE_CODE_PATTERN.matcher(errorCode).matches()) {
-            defaultMessages.put(errorCode, defaultMessage);
-        }
+        defaultMessages.put(errorCode, defaultMessage);
     }
 
 }
