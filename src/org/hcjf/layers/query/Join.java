@@ -7,16 +7,24 @@ package org.hcjf.layers.query;
  */
 public class Join implements Comparable<Join> {
 
-    private final String resourceName;
-    private final String leftField;
-    private final String rightField;
+    private final Query.QueryResource resource;
+    private final Query.QueryField leftField;
+    private final Query.QueryField rightField;
     private final JoinType type;
 
-    public Join(String resourceName, String leftField, String rightField, JoinType type) {
-        this.resourceName = resourceName;
+    public Join(String resourceName, Query.QueryField leftField, Query.QueryField rightField, JoinType type) {
+        this.resource = new Query.QueryResource(resourceName);
         this.leftField = leftField;
         this.rightField = rightField;
         this.type = type;
+    }
+
+    /**
+     * Return the resource of the join.
+     * @return Join's resource
+     */
+    public Query.QueryResource getResource() {
+        return resource;
     }
 
     /**
@@ -24,14 +32,14 @@ public class Join implements Comparable<Join> {
      * @return Resource name.
      */
     public String getResourceName() {
-        return resourceName;
+        return resource.getResourceName();
     }
 
     /**
      * Return the left field of the join operation.
      * @return Left field.
      */
-    public String getLeftField() {
+    public Query.QueryField getLeftField() {
         return leftField;
     }
 
@@ -39,7 +47,7 @@ public class Join implements Comparable<Join> {
      * Return the right field of the join operation.
      * @return Right field.
      */
-    public String getRightField() {
+    public Query.QueryField getRightField() {
         return rightField;
     }
 

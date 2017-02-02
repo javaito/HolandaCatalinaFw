@@ -12,6 +12,8 @@ public final class Strings {
     public static final String DEFAULT_PADDING_VALUE = " ";
     public static final String START_GROUP = "(";
     public static final String END_GROUP = ")";
+    public static final String START_SUB_GROUP = "[";
+    public static final String END_SUB_GROUP = "]";
     public static final String REPLACEABLE_GROUP = "$";
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";

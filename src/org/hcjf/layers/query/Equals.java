@@ -8,7 +8,7 @@ package org.hcjf.layers.query;
 public class Equals extends FieldEvaluator {
 
     public Equals(String fieldName, Object value) {
-        super(fieldName, value);
+        super(new Query.QueryField(fieldName), value);
     }
 
     /**
@@ -25,7 +25,7 @@ public class Equals extends FieldEvaluator {
     public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
-            result = getValue(parameters).equals(consumer.get(object, getFieldName()));
+            result = getValue(parameters).equals(consumer.get(object, getQueryField().toString()));
         } catch (Exception ex) {
             throw new IllegalArgumentException("Equals evaluator fail", ex);
         }

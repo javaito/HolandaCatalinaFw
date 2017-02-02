@@ -11,22 +11,12 @@ import org.hcjf.utils.Strings;
  */
 public abstract class FieldEvaluator implements Evaluator {
 
-    private final String completeName;
-    private final String fieldName;
-    private final String resourceName;
+    private final Query.QueryField queryField;
     private final Object value;
 
-    public FieldEvaluator(String fieldName, Object value) {
+    public FieldEvaluator(Query.QueryField queryField, Object value) {
+        this.queryField = queryField;
         this.value = value;
-        completeName = fieldName;
-
-        if(fieldName.contains(Strings.CLASS_SEPARATOR)) {
-            resourceName = fieldName.substring(0, fieldName.lastIndexOf(Strings.CLASS_SEPARATOR));
-            this.fieldName = fieldName.substring(fieldName.lastIndexOf(Strings.CLASS_SEPARATOR) + 1);
-        } else {
-            resourceName = null;
-            this.fieldName = fieldName;
-        }
     }
 
     /**
@@ -42,7 +32,7 @@ public abstract class FieldEvaluator implements Evaluator {
 
         if(obj.getClass().equals(getClass())) {
             FieldEvaluator fieldEvaluator = (FieldEvaluator) obj;
-            result = this.fieldName.equals(fieldEvaluator.fieldName) &&
+            result = this.queryField.equals(fieldEvaluator.queryField) &&
                     this.value.equals(fieldEvaluator.value);
         }
 
@@ -50,28 +40,11 @@ public abstract class FieldEvaluator implements Evaluator {
     }
 
     /**
-     * Return the resource name and the field name in the same string.
-     * @return Complete name.
+     * Return the query field associated to the evaluator.
+     * @return Query field.
      */
-    public String getCompleteName() {
-        return completeName;
-    }
-
-    /**
-     * Return the name of the field (pair getter/setter) in the objects of the
-     * data collection.
-     * @return Name of the field.
-     */
-    public final String getFieldName() {
-        return fieldName;
-    }
-
-    /**
-     * Return the name of the resource associated to the field name.
-     * @return Resource name or null if not defined.
-     */
-    public final String getResourceName() {
-        return resourceName;
+    public Query.QueryField getQueryField() {
+        return queryField;
     }
 
     /**
@@ -101,7 +74,7 @@ public abstract class FieldEvaluator implements Evaluator {
      */
     @Override
     public String toString() {
-        return getClass() + "[" + fieldName + "," + value + "]";
+        return getClass() + "[" + queryField + "," + value + "]";
     }
 
     /**

@@ -11,7 +11,7 @@ import java.util.Map;
 public class In extends FieldEvaluator {
 
     public In(String fieldName, Object value) {
-        super(fieldName, value);
+        super(new Query.QueryField(fieldName), value);
     }
 
     @Override
@@ -20,7 +20,7 @@ public class In extends FieldEvaluator {
 
         try {
             Object value = getValue(parameters);
-            Object fieldValue = consumer.get(object, getFieldName());
+            Object fieldValue = consumer.get(object, getQueryField().toString());
             if(Map.class.isAssignableFrom(fieldValue.getClass())) {
                 result = ((Map)fieldValue).containsKey(value);
             } else if(Collection.class.isAssignableFrom(fieldValue.getClass())) {

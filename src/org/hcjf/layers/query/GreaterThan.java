@@ -11,7 +11,7 @@ public class GreaterThan extends FieldEvaluator {
     private final boolean orEquals;
 
     protected GreaterThan(String fieldName, Object value, boolean orEquals) {
-        super(fieldName, value);
+        super(new Query.QueryField(fieldName), value);
         this.orEquals = orEquals;
     }
 
@@ -36,7 +36,7 @@ public class GreaterThan extends FieldEvaluator {
         boolean result;
         try {
             Object value = getValue(parameters);
-            Object fieldValue = consumer.get(object, getFieldName());
+            Object fieldValue = consumer.get(object, getQueryField().toString());
             if(Comparable.class.isAssignableFrom(value.getClass()) &&
                     Comparable.class.isAssignableFrom(fieldValue.getClass())) {
                 if(fieldValue.getClass().isAssignableFrom(value.getClass()) ||
@@ -48,7 +48,7 @@ public class GreaterThan extends FieldEvaluator {
                     }
                 } else {
                     throw new IllegalArgumentException("Incompatible types between value and field's value ("
-                            + getFieldName() + "): " + value.getClass() + " != " + fieldValue.getClass());
+                            + getQueryField().toString() + "): " + value.getClass() + " != " + fieldValue.getClass());
                 }
             } else {
                 throw new IllegalArgumentException("Unsupported evaluator type: " + value.getClass());

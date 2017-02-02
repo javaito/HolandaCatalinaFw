@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public class Like extends FieldEvaluator {
 
     public Like(String fieldName, Object value) {
-        super(fieldName, value);
+        super(new Query.QueryField(fieldName), value);
     }
 
     @Override
@@ -18,7 +18,7 @@ public class Like extends FieldEvaluator {
 
         try {
             Object value = getValue(parameters);
-            Object fieldValue = consumer.get(object, getFieldName());
+            Object fieldValue = consumer.get(object, getQueryField().toString());
             if(fieldValue instanceof String) {
                 if(value instanceof Pattern) {
                     result = ((Pattern)value).matcher((String)fieldValue).matches();

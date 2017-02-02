@@ -22,11 +22,11 @@ import java.util.regex.Pattern;
 public class Query extends EvaluatorCollection {
 
     private final QueryId id;
-    private String resourceName;
+    private QueryResource resource;
     private Integer limit;
     private Object start;
     private final List<OrderField> orderFields;
-    private final List<String> returnFields;
+    private final List<QueryField> returnFields;
     private final List<Join> joins;
 
     public Query(QueryId id) {
@@ -44,7 +44,7 @@ public class Query extends EvaluatorCollection {
     private Query(Query source) {
         super(source);
         this.id = new QueryId();
-        this.resourceName = source.resourceName;
+        this.resource = source.resource;
         this.limit = source.limit;
         this.start = source.start;
         this.orderFields = new ArrayList<>();
@@ -64,11 +64,27 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
+     * Return the list of joins.
+     * @return Joins.
+     */
+    public List<Join> getJoins() {
+        return Collections.unmodifiableList(joins);
+    }
+
+    /**
+     * Return the resource query object.
+     * @return Resource query.
+     */
+    public QueryResource getResource() {
+        return resource;
+    }
+
+    /**
      * Return the resource name.
      * @return Resource name.
      */
     public final String getResourceName() {
-        return resourceName;
+        return resource.getResourceName();
     }
 
     /**
@@ -76,7 +92,7 @@ public class Query extends EvaluatorCollection {
      * @param resourceName Resource name.
      */
     public final void setResourceName(String resourceName) {
-        this.resourceName = resourceName;
+        this.resource = new QueryResource(resourceName);
     }
 
     /**
@@ -126,7 +142,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField) {
-        orderFields.add(new OrderField(orderField, SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER)));
+        addOrderField(orderField, SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER));
         return this;
     }
 
@@ -138,7 +154,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField, boolean desc) {
-        orderFields.add(new OrderField(orderField, desc));
+        orderFields.add(new OrderField(new QueryField(orderField), desc));
         return this;
     }
 
@@ -146,7 +162,7 @@ public class Query extends EvaluatorCollection {
      * Return an unmodifiable list with the return fields.
      * @return Return fields.
      */
-    public final List<String> getReturnFields() {
+    public final List<QueryField> getReturnFields() {
         return Collections.unmodifiableList(returnFields);
     }
 
@@ -156,7 +172,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addReturnField(String returnField) {
-        returnFields.add(returnField);
+        returnFields.add(new QueryField(returnField));
         return this;
     }
 
@@ -246,8 +262,8 @@ public class Query extends EvaluatorCollection {
                 Comparable<Object> comparable2;
                 for (OrderField orderField : orderFields) {
                     try {
-                        comparable1 = consumer.get(o1, orderField.getName());
-                        comparable2 = consumer.get(o2, orderField.getName());
+                        comparable1 = consumer.get(o1, orderField.toString());
+                        comparable2 = consumer.get(o2, orderField.toString());
                     } catch (ClassCastException ex) {
                         throw new IllegalArgumentException("Order field must be comparable");
                     }
@@ -314,14 +330,14 @@ public class Query extends EvaluatorCollection {
         In in;
         Collection<Evaluator> joinEvaluators = new ArrayList<>();
         for(Join join : joins) {
-            indexedJoineables = index(leftJoinables, join.getLeftField(), consumer);
-            in = new In(join.getRightField(), indexedJoineables.keySet());
+            indexedJoineables = index(leftJoinables, join.getLeftField().toString(), consumer);
+            in = new In(join.getRightField().toString(), indexedJoineables.keySet());
             joinEvaluators.add(in);
             joinEvaluators.addAll(evaluators);
             rightJoinables = dataSource.getResourceData(join.getResourceName(), joinEvaluators);
             leftJoinables.clear();
             for(Joinable rightJoinable : rightJoinables) {
-                for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField()))) {
+                for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField().toString()))) {
                     leftJoinables.add(leftJoinable.join(rightJoinable));
                 }
             }
@@ -387,7 +403,7 @@ public class Query extends EvaluatorCollection {
         result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));
         result.append(Strings.WHITE_SPACE);
         String separator = Strings.EMPTY_STRING;
-        for(String field : getReturnFields()) {
+        for(QueryField field : getReturnFields()) {
             result.append(separator).append(field);
             separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
         }
@@ -422,7 +438,7 @@ public class Query extends EvaluatorCollection {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
             separator = Strings.EMPTY_STRING;
             for(OrderField orderField : orderFields) {
-                result.append(separator).append(orderField.getName());
+                result.append(separator).append(orderField);
                 if(orderField.isDesc()) {
                     result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
                 }
@@ -457,7 +473,7 @@ public class Query extends EvaluatorCollection {
                 }
             } else if(evaluator instanceof FieldEvaluator) {
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-                result.append(fieldEvaluator.getCompleteName()).append(Strings.WHITE_SPACE);
+                result.append(fieldEvaluator).append(Strings.WHITE_SPACE);
                 if (fieldEvaluator instanceof Distinct) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof Equals) {
@@ -553,8 +569,8 @@ public class Query extends EvaluatorCollection {
                     String[] joinElements =  elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
                     Join join = new Join(
                             joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim(),
-                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim(),
-                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim(),
+                            new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim()),
+                            new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim()),
                             Join.JoinType.valueOf(element));
                     query.addJoin(join);
                 } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
@@ -811,20 +827,20 @@ public class Query extends EvaluatorCollection {
      */
     public static class OrderField {
 
-        private final String name;
+        private final QueryField queryField;
         private final boolean desc;
 
-        public OrderField(String name, boolean desc) {
-            this.name = name;
+        public OrderField(QueryField queryField, boolean desc) {
+            this.queryField = queryField;
             this.desc = desc;
         }
 
         /**
-         * Return the name of the order field.
-         * @return Name of the field.
+         * Return the query field
+         * @return Query field
          */
-        public String getName() {
-            return name;
+        public QueryField getQueryField() {
+            return queryField;
         }
 
         /**
@@ -833,6 +849,126 @@ public class Query extends EvaluatorCollection {
          */
         public boolean isDesc() {
             return desc;
+        }
+    }
+
+    /**
+     * Group all the query components.
+     */
+    public interface QueryComponent {}
+
+    /**
+     * Represents any kind of resource.
+     */
+    public static class QueryResource implements Comparable<QueryResource>, QueryComponent {
+
+        private final String resourceName;
+
+        public QueryResource(String resourceName) {
+            this.resourceName = resourceName;
+        }
+
+        /**
+         * Return the resource name.
+         * @return Resource name.
+         */
+        public String getResourceName() {
+            return resourceName;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return resourceName.equals(obj);
+        }
+
+        @Override
+        public int compareTo(QueryResource o) {
+            return resourceName.compareTo(o.getResourceName());
+        }
+
+        @Override
+        public String toString() {
+            return getResourceName();
+        }
+    }
+
+    /**
+     * This class represents any kind of query fields.
+     */
+    public static class QueryField implements Comparable<QueryField>, QueryComponent {
+
+        private final QueryResource resource;
+        private final String fieldName;
+        private final String index;
+        private final String originalValue;
+
+        public QueryField(String field) {
+            if(field.contains(Strings.CLASS_SEPARATOR)) {
+                resource = new QueryResource(field.substring(0, field.lastIndexOf(Strings.CLASS_SEPARATOR)));
+                this.fieldName = field.substring(field.lastIndexOf(Strings.CLASS_SEPARATOR) + 1);
+            } else {
+                resource = null;
+                this.fieldName = field;
+            }
+
+            if(fieldName.contains(Strings.START_SUB_GROUP)) {
+                index = field.substring(field.indexOf(Strings.START_SUB_GROUP) + 1, field.indexOf(Strings.END_SUB_GROUP));
+            } else {
+                index = null;
+            }
+            this.originalValue = field;
+        }
+
+        /**
+         * Return the resource associated to the field.
+         * @return Resource name, can be null.
+         */
+        public QueryResource getResource() {
+            return resource;
+        }
+
+        /**
+         * Return the field name without associated resource or index.
+         * @return Field name.
+         */
+        public String getFieldName() {
+            return fieldName;
+        }
+
+        /**
+         * Return the index associated to the field.
+         * @return Index, can be null.
+         */
+        public String getIndex() {
+            return index;
+        }
+
+        /**
+         * Return the original representation of the field.
+         * @return Original representation.
+         */
+        @Override
+        public String toString() {
+            return originalValue;
+        }
+
+        /**
+         * Compare the original value of the fields.
+         * @param obj Other field.
+         * @return True if the fields are equals.
+         */
+        @Override
+        public boolean equals(Object obj) {
+            boolean result = false;
+            if(obj instanceof QueryField) {
+                result = toString().equals(obj.toString());
+            }
+            return result;
+        }
+
+        @Override
+        public int compareTo(QueryField o) {
+            return toString().compareTo(o.toString());
         }
     }
 }
