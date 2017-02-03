@@ -202,7 +202,7 @@ public class Query extends EvaluatorCollection {
      * @return Result add filtered and sorted.
      */
     public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Object... parameters) {
-        return evaluate((resourceName, evaluators) -> dataSource, new IntrospectionConsumer<>(), parameters);
+        return evaluate((resourceName, returnFields, evaluators) -> dataSource, new IntrospectionConsumer<>(), parameters);
     }
 
     /**
@@ -218,7 +218,7 @@ public class Query extends EvaluatorCollection {
      * @return Result add filtered and sorted.
      */
     public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer, Object... parameters) {
-        return evaluate((resourceName, evaluators) -> dataSource, consumer, parameters);
+        return evaluate((resourceName, returnFields, evaluators) -> dataSource, consumer, parameters);
     }
 
     /**
@@ -291,7 +291,7 @@ public class Query extends EvaluatorCollection {
         } else {
             //If the query has not joins then data source must return data from
             //resource of the query.
-            data = dataSource.getResourceData(getResourceName(), evaluators);
+            data = dataSource.getResourceData(getResource(), getReturnFields(), evaluators);
         }
 
         //Filtering data
@@ -324,7 +324,7 @@ public class Query extends EvaluatorCollection {
     private final Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
         Collection<Joinable> result = new ArrayList<>();
 
-        Collection<Joinable> leftJoinables = dataSource.getResourceData(getResourceName(), evaluators);
+        Collection<Joinable> leftJoinables = dataSource.getResourceData(getResource(), getReturnFields(), evaluators);
         Collection<Joinable> rightJoinables;
         Map<Object, Set<Joinable>> indexedJoineables;
         In in;
@@ -334,7 +334,7 @@ public class Query extends EvaluatorCollection {
             in = new In(join.getRightField().toString(), indexedJoineables.keySet());
             joinEvaluators.add(in);
             joinEvaluators.addAll(evaluators);
-            rightJoinables = dataSource.getResourceData(join.getResourceName(), joinEvaluators);
+            rightJoinables = dataSource.getResourceData(join.getResource(), getReturnFields(), joinEvaluators);
             leftJoinables.clear();
             for(Joinable rightJoinable : rightJoinables) {
                 for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField().toString()))) {
@@ -546,7 +546,9 @@ public class Query extends EvaluatorCollection {
             String fromBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.FROM_GROUP_INDEX));
             fromBody = fromBody.replaceFirst(("(?i)") + SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
             String conditionalBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
-            conditionalBody.replace(("(?i)") + SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END), Strings.EMPTY_STRING);
+            if(conditionalBody != null && conditionalBody.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))) {
+                conditionalBody = conditionalBody.substring(0, conditionalBody.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))-1);
+            }
 
             for(String returnFields : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
@@ -555,39 +557,41 @@ public class Query extends EvaluatorCollection {
 
             query.setResourceName(fromBody.trim());
 
-            Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
-            String[] conditionalElements = conditionalPatter.split(conditionalBody);
-            String element;
-            String elementValue;
-            for (int i = 0; i < conditionalElements.length; i++) {
-                element = conditionalElements[i++].trim();
-                elementValue = conditionalElements[i].trim();
-                if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
-                        element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER_JOIN)) ||
-                        element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT_JOIN)) ||
-                        element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT_JOIN))) {
-                    String[] joinElements =  elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
-                    Join join = new Join(
-                            joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim(),
-                            new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim()),
-                            new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim()),
-                            Join.JoinType.valueOf(element));
-                    query.addJoin(join);
-                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
-                    List<String> groups = Strings.replaceableGroup(elementValue);
-                    completeWhere(groups, query, groups.size() - 1, new AtomicInteger(0));
-                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
-                    for(String orderField : elementValue.split(SystemProperties.get(
-                            SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                        boolean desc = SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER);
-                        if(orderField.toUpperCase().contains(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
-                            desc = true;
-                            orderField = orderField.replaceAll("(?i)" + SystemProperties.get(SystemProperties.Query.ReservedWord.DESC), Strings.EMPTY_STRING).trim();
+            if(conditionalBody != null) {
+                Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
+                String[] conditionalElements = conditionalPatter.split(conditionalBody);
+                String element;
+                String elementValue;
+                for (int i = 0; i < conditionalElements.length; i++) {
+                    element = conditionalElements[i++].trim();
+                    elementValue = conditionalElements[i].trim();
+                    if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER_JOIN)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT_JOIN)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT_JOIN))) {
+                        String[] joinElements = elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
+                        Join join = new Join(
+                                joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim(),
+                                new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim()),
+                                new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim()),
+                                Join.JoinType.valueOf(element));
+                        query.addJoin(join);
+                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
+                        List<String> groups = Strings.replaceableGroup(elementValue);
+                        completeWhere(groups, query, groups.size() - 1, new AtomicInteger(0));
+                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
+                        for (String orderField : elementValue.split(SystemProperties.get(
+                                SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                            boolean desc = SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER);
+                            if (orderField.toUpperCase().contains(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
+                                desc = true;
+                                orderField = orderField.replaceAll("(?i)" + SystemProperties.get(SystemProperties.Query.ReservedWord.DESC), Strings.EMPTY_STRING).trim();
+                            }
+                            query.addOrderField(orderField, desc);
                         }
-                        query.addOrderField(orderField, desc);
+                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
+                        query.setLimit(Integer.parseInt(elementValue));
                     }
-                } else if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
-                    query.setLimit(Integer.parseInt(elementValue));
                 }
             }
         } else {
@@ -840,11 +844,12 @@ public class Query extends EvaluatorCollection {
 
         /**
          * This method musr return the data of diferents resources using some query.
-         * @param resourceName Name of the resource.
+         * @param resource Resource to get data.
+         * @param returnFields Fields to be returned.
          * @param evaluators List with the evaluators to filter the resource data.
          * @return Data collection from the resource.
          */
-        public Collection<O> getResourceData(String resourceName, Collection<Evaluator> evaluators);
+        public Collection<O> getResourceData(QueryResource resource, Collection<QueryField> returnFields, Collection<Evaluator> evaluators);
 
     }
 
@@ -999,6 +1004,12 @@ public class Query extends EvaluatorCollection {
     }
 
     public static void main(String[] args) {
+
+        Query query = Query.compile("SELECT * FROM holder LIMIT 10");
+        query = Query.compile(query.toString());
+
+        System.out.printf(query.toString());
+
         Query.compile("SELECT * FROM posicion_part_2017_01_01 WHERE holderid = 17603 AND fechaposicion > '2017-01-01 00:00:00' AND fechaposicion < '2017-01-08 00:00:00'");
     }
 }
