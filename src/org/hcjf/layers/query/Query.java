@@ -639,12 +639,40 @@ public class Query extends EvaluatorCollection {
                 completeWhere(groups, collection == null ? parentCollection : collection, index, placesIndex);
             } else {
                 evaluatorValues = definition.split(Strings.WHITE_SPACE, 0);
-                if (evaluatorValues.length == 3) {
-                    fieldValue = evaluatorValues[0].trim();
-                    operator = evaluatorValues[1].trim();
+                if (evaluatorValues.length >= 3) {
+
+                    boolean operatorDone = false;
+                    fieldValue = "";
+                    stringValue = "";
+                    operator = null;
+                    for(String evaluatorValue : evaluatorValues) {
+                        if (!operatorDone && (evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))
+                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)))) {
+                            operator = evaluatorValue.trim();
+                            operatorDone = true;
+                        } else if(operatorDone) {
+                            stringValue += evaluatorValue + Strings.WHITE_SPACE;
+                        } else {
+                            fieldValue += evaluatorValue + Strings.WHITE_SPACE;
+                        }
+                    }
+
+                    if(operator == null) {
+                        throw new IllegalArgumentException("Operator not found for expression: " + definition);
+                    }
+
+                    fieldValue = fieldValue.trim();
+                    operator = operator.trim();
 
                     //Check the different types of parameters
-                    stringValue = evaluatorValues[2].trim();
+                    stringValue = stringValue.trim();
                     value = processStringValue(stringValue, placesIndex);
 
                     if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
@@ -665,11 +693,9 @@ public class Query extends EvaluatorCollection {
                         evaluator = new SmallerThan(fieldValue, value);
                     } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
                         evaluator = new SmallerThanOrEqual(fieldValue, value);
-                    } else {
-                        throw new IllegalArgumentException();
                     }
                 } else {
-                    throw new IllegalArgumentException();
+                    throw new IllegalArgumentException("Syntax error for expression: " + definition + ", expected {field} {operator} {value}");
                 }
             }
         }
@@ -970,5 +996,9 @@ public class Query extends EvaluatorCollection {
         public int compareTo(QueryField o) {
             return toString().compareTo(o.toString());
         }
+    }
+
+    public static void main(String[] args) {
+        Query.compile("SELECT * FROM posicion_part_2017_01_01 WHERE holderid = 17603 AND fechaposicion > '2017-01-01 00:00:00' AND fechaposicion < '2017-01-08 00:00:00'");
     }
 }
