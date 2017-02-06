@@ -18,10 +18,10 @@ public class SmallerThan extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
-            Object value = getValue(parameters);
+            Object value = getValue(dataSource, consumer, parameters);
             Object fieldValue = consumer.get(object, getQueryField().toString());
             if(Comparable.class.isAssignableFrom(value.getClass())) {
                 if(fieldValue.getClass().isAssignableFrom(value.getClass()) ||

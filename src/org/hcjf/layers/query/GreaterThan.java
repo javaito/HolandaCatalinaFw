@@ -32,10 +32,10 @@ public class GreaterThan extends FieldEvaluator {
      * <li> If the parameter value and field's valur are incompatible: 'Incompatible types between value and field's value'</li>
      */
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
-            Object value = getValue(parameters);
+            Object value = getValue(dataSource, consumer, parameters);
             Object fieldValue = consumer.get(object, getQueryField().toString());
             if(Comparable.class.isAssignableFrom(value.getClass()) &&
                     Comparable.class.isAssignableFrom(fieldValue.getClass())) {

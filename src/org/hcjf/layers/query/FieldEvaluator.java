@@ -1,6 +1,8 @@
 package org.hcjf.layers.query;
 
-import org.hcjf.utils.Strings;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * This abstract class define the structure of the evaluating. The evaluator
@@ -52,12 +54,20 @@ public abstract class FieldEvaluator implements Evaluator {
      * instance.
      * @return Object value.
      */
-    public final Object getValue(Object... parameters) {
+    public final Object getValue(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         Object result = value;
         if(result instanceof UnprocessedValue) {
-            result = ((UnprocessedValue)value).process(parameters);
+            result = ((UnprocessedValue)value).process(dataSource, consumer, parameters);
         }
         return result;
+    }
+
+    /**
+     * Return the raw value container into the evaluator.
+     * @return Raw value.
+     */
+    public final Object getRawValue() {
+        return value;
     }
 
     /**
@@ -87,7 +97,7 @@ public abstract class FieldEvaluator implements Evaluator {
          * @param parameters Evaluation parameters.
          * @return Processed value.
          */
-        public Object process(Object... parameters);
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters);
 
     }
 
@@ -108,7 +118,7 @@ public abstract class FieldEvaluator implements Evaluator {
          * @return Processed value.
          */
         @Override
-        public Object process(Object... parameters) {
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
             if(parameters.length <= place) {
                 throw new IllegalArgumentException("Non-specified replaceable value, index " + place);
             }
@@ -117,4 +127,61 @@ public abstract class FieldEvaluator implements Evaluator {
         }
     }
 
+    /**
+     * This kind of query value represents a sub-query.
+     */
+    public static class QueryValue implements UnprocessedValue {
+
+        private final Query query;
+
+        public QueryValue(Query query) {
+            this.query = query;
+        }
+
+        /**
+         * Return the sub-query instance.
+         * @return Sub-query instance.
+         */
+        public Query getQuery() {
+            return query;
+        }
+
+        /**
+         * Evaluate the sub-query a return the collection result set as value.
+         * The first value of the parameters array (parameters[0]) is the instance of data source to evaluate the sub-query.
+         * The second value of the parameters array (parameters[1]) is the instance of the consumer to evaluate the sub-query.
+         * The rest of the parameters are the parameter to evaluate the sub-query.
+         * @param parameters Evaluation parameters.
+         * @return If the return fields size is one then the result will be a a list of values, else if the return fields
+         * size is greater than one then the result will be a collection with object instance.
+         */
+        @Override
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
+            Object result;
+            Collection<Object> collection;
+            Collection<Object> subQueryResult = query.evaluate(dataSource, consumer, parameters);
+            if(query.getReturnFields().size() == 1){
+                List<Object> listResult = new ArrayList<>();
+                for(Object element : subQueryResult) {
+                    listResult.add(consumer.get(element, query.getReturnFields().get(0).getFieldName()));
+                }
+                collection = listResult;
+            } else {
+                collection = subQueryResult;
+            }
+
+            if(collection.size() == 0) {
+                //If the size of the collection result is zero then the result will be null.
+                result = null;
+            } else if(collection.size() == 1) {
+                //If the size of the collection result is one then the result will be the unique instance of the collection.
+                result = collection.iterator().next();
+            } else {
+                //If the size of the collection result is greater than one then the result is the collection.
+                result = collection;
+            }
+
+            return result;
+        }
+    }
 }

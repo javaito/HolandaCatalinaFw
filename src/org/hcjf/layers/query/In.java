@@ -15,11 +15,11 @@ public class In extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         boolean result = false;
 
         try {
-            Object value = getValue(parameters);
+            Object value = getValue(dataSource, consumer, parameters);
             Object fieldValue = consumer.get(object, getQueryField().toString());
             if(Map.class.isAssignableFrom(fieldValue.getClass())) {
                 result = ((Map)fieldValue).containsKey(value);
@@ -33,6 +33,10 @@ public class In extends FieldEvaluator {
                 result = ((Collection)value).contains(fieldValue);
             } else if(value.getClass().isArray()) {
                 result = Arrays.binarySearch((Object[])value, fieldValue) >= 0;
+            } else {
+                //If the field value is not any kind of collection then the method evaluate equals condition between
+                //the field value and the value.
+                result = value.equals(fieldValue);
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("In evaluator fail", ex);

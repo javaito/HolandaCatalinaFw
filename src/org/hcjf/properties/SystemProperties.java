@@ -277,7 +277,7 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[  ]{1,}[a-zA-Z_0-9,.* ]{1,})([  ]?(FROM|from)[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?(FROM|from)[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by ))");
         defaults.put(Query.WHERE_REGULAR_EXPRESSION, "((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "( ON |\\=)");

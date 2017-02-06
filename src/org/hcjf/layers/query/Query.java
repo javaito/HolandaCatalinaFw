@@ -31,7 +31,6 @@ public class Query extends EvaluatorCollection {
 
     public Query(QueryId id) {
         this.id = id;
-        limit = SystemProperties.getInteger(SystemProperties.Query.DEFAULT_LIMIT);
         orderFields = new ArrayList<>();
         returnFields = new ArrayList<>();
         joins = new ArrayList<>();
@@ -299,7 +298,7 @@ public class Query extends EvaluatorCollection {
         for(O object : data) {
             add = true;
             for(Evaluator evaluator : getEvaluators()) {
-                add = evaluator.evaluate(object, consumer, parameters);
+                add = evaluator.evaluate(object, dataSource, consumer, parameters);
                 if(!add) {
                     break;
                 }
@@ -446,8 +445,10 @@ public class Query extends EvaluatorCollection {
             }
         }
 
-        result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
-        result.append(Strings.WHITE_SPACE).append(getLimit());
+        if(getLimit() != null) {
+            result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
+            result.append(Strings.WHITE_SPACE).append(getLimit());
+        }
 
         return result.toString();
     }
@@ -473,7 +474,7 @@ public class Query extends EvaluatorCollection {
                 }
             } else if(evaluator instanceof FieldEvaluator) {
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-                result.append(fieldEvaluator).append(Strings.WHITE_SPACE);
+                result.append(fieldEvaluator.getQueryField()).append(Strings.WHITE_SPACE);
                 if (fieldEvaluator instanceof Distinct) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof Equals) {
@@ -493,10 +494,10 @@ public class Query extends EvaluatorCollection {
                 } else if (fieldEvaluator instanceof SmallerThan) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN)).append(Strings.WHITE_SPACE);
                 }
-                if(fieldEvaluator.getValue() == null) {
+                if(fieldEvaluator.getRawValue() == null) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
                 } else {
-                    result = toStringFieldEvaluatorValue(fieldEvaluator.getValue(), fieldEvaluator.getValueType(), result);
+                    result = toStringFieldEvaluatorValue(fieldEvaluator.getRawValue(), fieldEvaluator.getValueType(), result);
                 }
                 result.append(Strings.WHITE_SPACE);
             }
@@ -507,6 +508,10 @@ public class Query extends EvaluatorCollection {
     private static StringBuilder toStringFieldEvaluatorValue(Object value, Class type, StringBuilder result) {
         if(FieldEvaluator.ReplaceableValue.class.isAssignableFrom(type)) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE));
+        } else if(FieldEvaluator.QueryValue.class.isAssignableFrom(type)) {
+            result.append(Strings.START_GROUP);
+            result.append(((FieldEvaluator.QueryValue)value).getQuery().toString());
+            result.append(Strings.END_GROUP);
         } else if(String.class.isAssignableFrom(type)) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
             result.append(value);
@@ -536,9 +541,20 @@ public class Query extends EvaluatorCollection {
      * @return Query instance.
      */
     public static Query compile(String sql) {
+        List<String> groups = Strings.replaceableGroup(sql);
+        return compile(groups, groups.size() -1);
+    }
+
+    /**
+     * Create a query instance from sql definition.
+     * @param groups
+     * @param startGroup
+     * @return Query instance.
+     */
+    private static Query compile(List<String> groups, Integer startGroup) {
         Query query = new Query();
         Pattern pattern = SystemProperties.getPattern(SystemProperties.Query.SELECT_REGULAR_EXPRESSION);
-        Matcher matcher = pattern.matcher(sql);
+        Matcher matcher = pattern.matcher(groups.get(startGroup));
 
         if(matcher.matches()) {
             String selectBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.SELECT_GROUP_INDEX));
@@ -577,8 +593,7 @@ public class Query extends EvaluatorCollection {
                                 Join.JoinType.valueOf(element));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
-                        List<String> groups = Strings.replaceableGroup(elementValue);
-                        completeWhere(groups, query, groups.size() - 1, new AtomicInteger(0));
+                        completeWhere(elementValue, groups, query, 0, new AtomicInteger(0));
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
@@ -608,9 +623,14 @@ public class Query extends EvaluatorCollection {
      * @param parentCollection Parent collection.
      * @param definitionIndex Definition index into the groups.
      */
-    private static final void completeWhere(List<String> groups, EvaluatorCollection parentCollection, Integer definitionIndex, AtomicInteger placesIndex) {
+    private static final void completeWhere(String startElement, List<String> groups, EvaluatorCollection parentCollection, Integer definitionIndex, AtomicInteger placesIndex) {
         Pattern wherePatter = SystemProperties.getPattern(SystemProperties.Query.WHERE_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
-        String[] evaluatorDefinitions = wherePatter.split(groups.get(definitionIndex));
+        String[] evaluatorDefinitions;
+        if(startElement != null) {
+            evaluatorDefinitions = wherePatter.split(startElement);
+        } else {
+            evaluatorDefinitions = wherePatter.split(groups.get(definitionIndex));
+        }
         String[] evaluatorValues;
         String fieldValue;
         String operator;
@@ -640,7 +660,7 @@ public class Query extends EvaluatorCollection {
                 evaluator = null;
             } else if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
                 Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
-                completeWhere(groups, collection == null ? parentCollection : collection, index, placesIndex);
+                completeWhere(null, groups, collection == null ? parentCollection : collection, index, placesIndex);
             } else {
                 evaluatorValues = definition.split(Strings.WHITE_SPACE, 0);
                 if (evaluatorValues.length >= 3) {
@@ -677,7 +697,7 @@ public class Query extends EvaluatorCollection {
 
                     //Check the different types of parameters
                     stringValue = stringValue.trim();
-                    value = processStringValue(stringValue, placesIndex);
+                    value = processStringValue(groups, stringValue, placesIndex);
 
                     if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
                         evaluator = new Distinct(fieldValue, value);
@@ -713,7 +733,7 @@ public class Query extends EvaluatorCollection {
         }
     }
 
-    private static Object processStringValue(String stringValue, AtomicInteger placesIndex) {
+    private static Object processStringValue(List<String> groups, String stringValue, AtomicInteger placesIndex) {
         Object result;
         if(stringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
             //If the string value is equals than "?" then the value object is an instance of ReplaceableValue.
@@ -725,7 +745,7 @@ public class Query extends EvaluatorCollection {
         } else if(stringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FALSE))) {
             result = false;
         } else if(stringValue.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
-            if(stringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
+            if (stringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
                 //If the string value start and end with "'" then the value can be a string or a date object.
                 stringValue = stringValue.substring(1, stringValue.length() - 1);
                 try {
@@ -737,13 +757,23 @@ public class Query extends EvaluatorCollection {
             } else {
                 throw new IllegalArgumentException("");
             }
+        } else if(stringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
+//            String replaceableString = stringValue.substring(stringValue.indexOf(Strings.REPLACEABLE_GROUP),
+//                    stringValue.indexOf(Strings.WHITE_SPACE, stringValue.indexOf(Strings.REPLACEABLE_GROUP)));s
+            Integer index = Integer.parseInt(stringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
+            String group = groups.get(index);
+            if(group.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
+                result = new FieldEvaluator.QueryValue(Query.compile(groups, index));
+            } else {
+                throw new IllegalArgumentException();
+            }
         } else if(stringValue.startsWith(Strings.START_GROUP)) {
             if (stringValue.endsWith(Strings.END_GROUP)) {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 stringValue = stringValue.substring(1, stringValue.length() - 1);
                 for (String subStringValue : stringValue.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(subStringValue, placesIndex));
+                    collection.add(processStringValue(groups, subStringValue, placesIndex));
                 }
                 result = collection;
             } else {
@@ -929,7 +959,7 @@ public class Query extends EvaluatorCollection {
     public static class QueryField implements Comparable<QueryField>, QueryComponent {
 
         private final QueryResource resource;
-        private final String fieldName;
+        private String fieldName;
         private final String index;
         private final String originalValue;
 
@@ -943,7 +973,8 @@ public class Query extends EvaluatorCollection {
             }
 
             if(fieldName.contains(Strings.START_SUB_GROUP)) {
-                index = field.substring(field.indexOf(Strings.START_SUB_GROUP) + 1, field.indexOf(Strings.END_SUB_GROUP));
+                fieldName = fieldName.substring(0, field.indexOf(Strings.START_SUB_GROUP));
+                index = fieldName.substring(field.indexOf(Strings.START_SUB_GROUP) + 1, field.indexOf(Strings.END_SUB_GROUP));
             } else {
                 index = null;
             }
@@ -1001,15 +1032,5 @@ public class Query extends EvaluatorCollection {
         public int compareTo(QueryField o) {
             return toString().compareTo(o.toString());
         }
-    }
-
-    public static void main(String[] args) {
-
-        Query query = Query.compile("SELECT * FROM holder LIMIT 10");
-        query = Query.compile(query.toString());
-
-        System.out.printf(query.toString());
-
-        Query.compile("SELECT * FROM posicion_part_2017_01_01 WHERE holderid = 17603 AND fechaposicion > '2017-01-01 00:00:00' AND fechaposicion < '2017-01-08 00:00:00'");
     }
 }

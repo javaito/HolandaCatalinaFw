@@ -11,11 +11,11 @@ public class And extends EvaluatorCollection implements Evaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Object... parameters) {
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         boolean result = true;
 
         for(Evaluator evaluator : getEvaluators()) {
-            result &= evaluator.evaluate(object, consumer);
+            result &= evaluator.evaluate(object, dataSource, consumer);
             if(!result) {
                 break;
             }
