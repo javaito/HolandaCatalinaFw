@@ -758,8 +758,6 @@ public class Query extends EvaluatorCollection {
                 throw new IllegalArgumentException("");
             }
         } else if(stringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
-//            String replaceableString = stringValue.substring(stringValue.indexOf(Strings.REPLACEABLE_GROUP),
-//                    stringValue.indexOf(Strings.WHITE_SPACE, stringValue.indexOf(Strings.REPLACEABLE_GROUP)));s
             Integer index = Integer.parseInt(stringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
             if(group.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
