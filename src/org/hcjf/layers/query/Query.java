@@ -201,7 +201,7 @@ public class Query extends EvaluatorCollection {
      * @return Result add filtered and sorted.
      */
     public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Object... parameters) {
-        return evaluate((resourceName, returnFields, evaluators) -> dataSource, new IntrospectionConsumer<>(), parameters);
+        return evaluate((query) -> dataSource, new IntrospectionConsumer<>(), parameters);
     }
 
     /**
@@ -217,7 +217,7 @@ public class Query extends EvaluatorCollection {
      * @return Result add filtered and sorted.
      */
     public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer, Object... parameters) {
-        return evaluate((resourceName, returnFields, evaluators) -> dataSource, consumer, parameters);
+        return evaluate((query) -> dataSource, consumer, parameters);
     }
 
     /**
@@ -290,7 +290,7 @@ public class Query extends EvaluatorCollection {
         } else {
             //If the query has not joins then data source must return data from
             //resource of the query.
-            data = dataSource.getResourceData(getResource(), getReturnFields(), evaluators);
+            data = dataSource.getResourceData(this);
         }
 
         //Filtering data
@@ -323,17 +323,24 @@ public class Query extends EvaluatorCollection {
     private final Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
         Collection<Joinable> result = new ArrayList<>();
 
-        Collection<Joinable> leftJoinables = dataSource.getResourceData(getResource(), getReturnFields(), evaluators);
+        Collection<Joinable> leftJoinables = dataSource.getResourceData(this);
         Collection<Joinable> rightJoinables;
         Map<Object, Set<Joinable>> indexedJoineables;
         In in;
         Collection<Evaluator> joinEvaluators = new ArrayList<>();
+        Query joinQuery;
         for(Join join : joins) {
+            joinQuery = new Query(this);
+            joinQuery.setResourceName(join.getResourceName());
+            joinQuery.evaluators.clear();
             indexedJoineables = index(leftJoinables, join.getLeftField().toString(), consumer);
-            in = new In(join.getRightField().toString(), indexedJoineables.keySet());
-            joinEvaluators.add(in);
-            joinEvaluators.addAll(evaluators);
-            rightJoinables = dataSource.getResourceData(join.getResource(), getReturnFields(), joinEvaluators);
+            joinQuery.addEvaluator(new In(join.getRightField().toString(), indexedJoineables.keySet()));
+
+            for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResourceName())) {
+                joinQuery.addEvaluator(evaluator);
+            }
+
+            rightJoinables = dataSource.getResourceData(joinQuery);
             leftJoinables.clear();
             for(Joinable rightJoinable : rightJoinables) {
                 for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField().toString()))) {
@@ -343,6 +350,34 @@ public class Query extends EvaluatorCollection {
             result.addAll(leftJoinables);
         }
 
+        return result;
+    }
+
+    /**
+     *
+     * @param collection
+     * @param resourceName
+     * @return
+     */
+    private List<Evaluator> getEvaluatorsFromResource(EvaluatorCollection collection, EvaluatorCollection parent, String resourceName) {
+        List<Evaluator> result = new ArrayList<>();
+        for(Evaluator evaluator : collection.getEvaluators()) {
+            if(evaluator instanceof FieldEvaluator) {
+                if(((FieldEvaluator) evaluator).getQueryField().getResource().getResourceName().equals(resourceName)) {
+                    result.add(evaluator);
+                }
+            } else if(evaluator instanceof EvaluatorCollection) {
+                EvaluatorCollection subCollection = null;
+                if(evaluator instanceof And) {
+                    subCollection = new And(parent);
+                } else if(evaluator instanceof Or) {
+                    subCollection = new Or(parent);
+                }
+                for(Evaluator subEvaluator : getEvaluatorsFromResource((EvaluatorCollection)evaluator, subCollection, resourceName)) {
+                    subCollection.addEvaluator(subEvaluator);
+                }
+            }
+        }
         return result;
     }
 
@@ -872,12 +907,10 @@ public class Query extends EvaluatorCollection {
 
         /**
          * This method musr return the data of diferents resources using some query.
-         * @param resource Resource to get data.
-         * @param returnFields Fields to be returned.
-         * @param evaluators List with the evaluators to filter the resource data.
+         * @param query Query object.
          * @return Data collection from the resource.
          */
-        public Collection<O> getResourceData(QueryResource resource, Collection<QueryField> returnFields, Collection<Evaluator> evaluators);
+        public Collection<O> getResourceData(Query query);
 
     }
 
