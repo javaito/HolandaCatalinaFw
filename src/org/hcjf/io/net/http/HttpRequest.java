@@ -149,9 +149,7 @@ public class HttpRequest extends HttpPackage {
         String[] parts = firstLine.split(LINE_FIELD_SEPARATOR);
 
         method = HttpMethod.valueOf(parts[METHOD_INDEX]);
-        try {
-            path = URLDecoder.decode(parts[REQUEST_PATH_INDEX], SystemProperties.getDefaultCharset());
-        } catch (UnsupportedEncodingException e) {}
+        path = parts[REQUEST_PATH_INDEX];
         setHttpVersion(parts[VERSION_INDEX]);
 
         //Check if there are parameters into request

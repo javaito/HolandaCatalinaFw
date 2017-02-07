@@ -164,6 +164,7 @@ public final class SystemProperties extends Properties {
             public static final String NULL = "hcjf.query.null.reserved.word";
             public static final String TRUE = "hcjf.query.true.reserved.word";
             public static final String FALSE = "hcjf.query.false.reserved.word";
+            public static final String AS = "hcjf.query.as.reserved.word";
         }
 
     }
@@ -318,6 +319,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.NULL, "NULL");
         defaults.put(Query.ReservedWord.TRUE, "TRUE");
         defaults.put(Query.ReservedWord.FALSE, "FALSE");
+        defaults.put(Query.ReservedWord.AS, "AS");
 
         Properties system = System.getProperties();
         putAll(system);

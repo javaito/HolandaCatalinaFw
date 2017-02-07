@@ -115,4 +115,22 @@ public abstract class StorageSession implements Closeable {
     public Procedure procedure() throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported procedure action for " + implName + " implementation");
     }
+
+    /**
+     * This method normalize the data source name to application mame.
+     * @param component Component from data source.
+     * @return Return the name that match with the application mame.
+     */
+    public Query.QueryComponent normalizeDataSourceToApplication(Query.QueryComponent component) {
+        return component;
+    }
+
+    /**
+     * This method normalize the application name to data source name.
+     * @param component Component from application.
+     * @return Return the name that match with the data source name.
+     */
+    public Query.QueryComponent normalizeApplicationToDataSource(Query.QueryComponent component) {
+        return component;
+    }
 }

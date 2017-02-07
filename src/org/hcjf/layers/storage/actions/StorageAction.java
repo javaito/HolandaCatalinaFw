@@ -140,24 +140,6 @@ public abstract class StorageAction<S extends StorageSession> {
     }
 
     /**
-     * This method normalize the data source name to application mame.
-     * @param component Component from data source.
-     * @return Return the name that match with the application mame.
-     */
-    protected Query.QueryComponent normalizeDataSourceToApplication(Query.QueryComponent component) {
-        return component;
-    }
-
-    /**
-     * This method normalize the application name to data source name.
-     * @param component Component from application.
-     * @return Return the name that match with the data source name.
-     */
-    protected Query.QueryComponent normalizeApplicationToDataSource(Query.QueryComponent component) {
-        return component;
-    }
-
-    /**
      * This method must be implemented for each action implementation
      * @param params Set of parameters to execute the action.
      * @return Return the storage response for the action.

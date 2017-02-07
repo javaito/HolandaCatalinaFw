@@ -129,23 +129,52 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
     }
 
     /**
-     * This method implements the read operation using the filters
-     * specified in the query.
-     * @param query Query.
-     * @return Return the list with the instances founded.
+     * This method implements the read operation without filters.
+     * @return List with all the instances of the resource.
      */
-    @Override
-    public Collection<O> read(Query query) {
+    public Collection<O> read()   {
         throw new UnsupportedOperationException();
     }
 
     /**
      * This method implements the read operation using the filters
-     * specified in the query and return a collection of maps.
+     * specified in the query.
+     * @param query Query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<O> read(Query query)  {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query.
+     * @param query Query.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<O> read(Query query, Object... parameters)  {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query.
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    public Collection<JoinableMap> readRows(Query.QueryId queryId) {
+    public Collection<O> read(Query.QueryId queryId)  {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query.
+     * @param queryId Id of the query.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<O> read(Query.QueryId queryId, Object... parameters)  {
         throw new UnsupportedOperationException();
     }
 
@@ -155,29 +184,39 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
      * @param query Query to read data.
      * @return Return the list with the instances founded.
      */
-    public Collection<JoinableMap> readRows(Query query) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation without filters.
-     *
-     * @return List with all the instances of the resource.
-     */
-    @Override
-    public Collection<O> read() {
+    public Collection<JoinableMap> readRows(Query query)  {
         throw new UnsupportedOperationException();
     }
 
     /**
      * This method implements the read operation using the filters
-     * specified in the query.
-     *
+     * specified in the query and return a collection of maps.
+     * @param query Query to read data.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<JoinableMap> readRows(Query query, Object... parameters)  {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query and return a collection of maps.
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    @Override
-    public Collection<O> read(Query.QueryId queryId) {
+    public Collection<JoinableMap> readRows(Query.QueryId queryId)  {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query and return a collection of maps.
+     * @param queryId Id of the query.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<JoinableMap> readRows(Query.QueryId queryId, Object... parameters)  {
         throw new UnsupportedOperationException();
     }
 

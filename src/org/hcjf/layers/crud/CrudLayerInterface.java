@@ -84,11 +84,29 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
 
     /**
      * This method implements the read operation using the filters
-     * specified in the query and return a collection of maps.
+     * specified in the query.
+     * @param query Query.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<O> read(Query query, Object... parameters);
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query.
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    public Collection<JoinableMap> readRows(Query.QueryId queryId);
+    public Collection<O> read(Query.QueryId queryId);
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query.
+     * @param queryId Id of the query.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<O> read(Query.QueryId queryId, Object... parameters);
 
     /**
      * This method implements the read operation using the filters
@@ -100,11 +118,29 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
 
     /**
      * This method implements the read operation using the filters
-     * specified in the query.
+     * specified in the query and return a collection of maps.
+     * @param query Query to read data.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<JoinableMap> readRows(Query query, Object... parameters);
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query and return a collection of maps.
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    public Collection<O> read(Query.QueryId queryId);
+    public Collection<JoinableMap> readRows(Query.QueryId queryId);
+
+    /**
+     * This method implements the read operation using the filters
+     * specified in the query and return a collection of maps.
+     * @param queryId Id of the query.
+     * @param parameters Parameters to evaluate query.
+     * @return Return the list with the instances founded.
+     */
+    public Collection<JoinableMap> readRows(Query.QueryId queryId, Object... parameters);
 
     /**
      * This method implements the update operation over a add of the instances,

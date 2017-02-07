@@ -60,12 +60,16 @@ public abstract class EvaluatorCollection {
         }
 
         if(!evaluators.contains(evaluator)) {
-            evaluators.add(evaluator);
+            evaluators.add(checkEvaluator(evaluator));
         } else {
             Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
                     "Duplicate evaluator: $s", evaluator);
         }
         return this;
+    }
+
+    protected Evaluator checkEvaluator(Evaluator evaluator) {
+        return evaluator;
     }
 
     /**
