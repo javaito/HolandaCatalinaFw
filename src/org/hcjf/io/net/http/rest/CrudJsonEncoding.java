@@ -249,9 +249,9 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
         if(jsonData.has(QUERY_JSON_FIELD)) {
             JsonObject queryJsonObject = jsonData.get(QUERY_JSON_FIELD).getAsJsonObject();
             if(queryJsonObject.has(QUERY_ID_FIELD)) {
-                decodedQuery = new Query(new Query.QueryId(UUID.fromString(queryJsonObject.get(QUERY_ID_FIELD).getAsString())));
+                decodedQuery = new Query("", new Query.QueryId(UUID.fromString(queryJsonObject.get(QUERY_ID_FIELD).getAsString())));
             } else {
-                decodedQuery = new Query();
+                decodedQuery = new Query("");
             }
             if(queryJsonObject.has(QUERY_LIMIT_FIELD)) {
                 decodedQuery.setLimit(queryJsonObject.get(QUERY_LIMIT_FIELD).getAsInt());
