@@ -339,7 +339,8 @@ public class Query extends EvaluatorCollection {
     private final Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
         Collection<Joinable> result = new ArrayList<>();
 
-        Collection<Joinable> leftJoinables = dataSource.getResourceData(this);
+        Collection<Joinable> leftJoinables = new ArrayList<>();
+        leftJoinables.addAll(dataSource.getResourceData(this));
         Collection<Joinable> rightJoinables;
         Map<Object, Set<Joinable>> indexedJoineables;
         In in;
@@ -347,7 +348,8 @@ public class Query extends EvaluatorCollection {
         Query joinQuery;
         for(Join join : joins) {
             joinQuery = new Query(join.getResourceName());
-            indexedJoineables = index(leftJoinables, join.getLeftField().toString(), consumer);
+            joinQuery.addReturnField("*");
+            indexedJoineables = index(leftJoinables, join.getLeftField().getFieldName(), consumer);
             joinQuery.addEvaluator(new In(join.getRightField().toString(), indexedJoineables.keySet()));
 
             for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResourceName())) {
@@ -357,7 +359,7 @@ public class Query extends EvaluatorCollection {
             rightJoinables = dataSource.getResourceData(joinQuery);
             leftJoinables.clear();
             for(Joinable rightJoinable : rightJoinables) {
-                for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField().toString()))) {
+                for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField().getFieldName()))) {
                     leftJoinables.add(leftJoinable.join(rightJoinable));
                 }
             }
@@ -412,7 +414,7 @@ public class Query extends EvaluatorCollection {
             key = consumer.get(joinable, fieldIndex);
             set = result.get(key);
             if(set == null) {
-                set = new TreeSet<>();
+                set = new HashSet<>();
                 result.put(key, set);
             }
             set.add(joinable);
@@ -904,12 +906,16 @@ public class Query extends EvaluatorCollection {
         public <R extends Object> R get(O instance, String fieldName) {
             Object result = null;
             try {
-                Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
-                if(getter != null) {
-                    result = getter.get(instance);
+                if(instance instanceof JoinableMap) {
+                    result = ((JoinableMap)instance).get(fieldName);
                 } else {
-                    Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
-                            "Order field not found: %s", fieldName);
+                    Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
+                    if (getter != null) {
+                        result = getter.get(instance);
+                    } else {
+                        Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
+                                "Order field not found: %s", fieldName);
+                    }
                 }
             } catch (Exception ex) {
                 throw new IllegalArgumentException("Unable to obtain order field value", ex);

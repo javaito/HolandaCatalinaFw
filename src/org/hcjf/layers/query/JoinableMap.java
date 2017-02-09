@@ -1,9 +1,8 @@
 package org.hcjf.layers.query;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import org.hcjf.utils.Strings;
+
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -15,14 +14,24 @@ import java.util.function.Function;
  */
 public class JoinableMap implements Joinable, Map<String, Object> {
 
+    private final Set<String> resources;
     private final Map<String, Object> mapInstance;
 
-    public JoinableMap() {
-        mapInstance = new HashMap<>();
+    public JoinableMap(String resourceName) {
+        this.resources = new TreeSet<>();
+        this.resources.add(resourceName);
+        this.mapInstance = new HashMap<>();
     }
 
     public JoinableMap(Map<String, Object> mapInstance) {
-        this.mapInstance = mapInstance;
+        this.resources = new TreeSet<>();
+        this.mapInstance = new HashMap<>();
+        for(String key : mapInstance.keySet()) {
+            if(key.contains(Strings.CLASS_SEPARATOR)) {
+                resources.add(key.substring(0, key.lastIndexOf(Strings.CLASS_SEPARATOR)));
+            }
+            this.put(key, mapInstance.get(key));
+        }
     }
 
     /**
@@ -32,7 +41,22 @@ public class JoinableMap implements Joinable, Map<String, Object> {
      */
     @Override
     public Object get(String fieldName) {
-        return mapInstance.get(fieldName);
+        Object result = null;
+        if(!fieldName.contains(Strings.CLASS_SEPARATOR)) {
+            for(String resource : resources) {
+                result = mapInstance.get(resource + Strings.CLASS_SEPARATOR + fieldName);
+                if(result != null) {
+                    break;
+                }
+            }
+
+            if(result == null) {
+                result = mapInstance.get(fieldName);
+            }
+        } else {
+            result = mapInstance.get(fieldName);
+        }
+        return result;
     }
 
     /**
@@ -53,6 +77,7 @@ public class JoinableMap implements Joinable, Map<String, Object> {
             throw new IllegalArgumentException("Only support JoinableMap instance.");
         }
 
+        resources.addAll(((JoinableMap)joinable).resources);
         mapInstance.putAll(((JoinableMap)joinable));
         return this;
     }
@@ -84,6 +109,9 @@ public class JoinableMap implements Joinable, Map<String, Object> {
 
     @Override
     public Object put(String key, Object value) {
+        if(key.contains(Strings.CLASS_SEPARATOR)) {
+            resources.add(key.substring(0, key.lastIndexOf(Strings.CLASS_SEPARATOR)));
+        }
         return mapInstance.put(key, value);
     }
 
