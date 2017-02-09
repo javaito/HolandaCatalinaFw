@@ -68,7 +68,22 @@ public abstract class EvaluatorCollection {
         return this;
     }
 
+    private Query.QueryField checkQueryField(Query.QueryField queryField) {
+        Query.QueryResource resource = queryField.getResource();
+        if(resource == null) {
+            EvaluatorCollection collection = parent;
+            while(!(collection instanceof Query)) {
+                collection = collection.parent;
+            }
+            queryField.setResource(((Query)collection).getResource());
+        }
+        return queryField;
+    }
+
     protected Evaluator checkEvaluator(Evaluator evaluator) {
+        if(evaluator instanceof FieldEvaluator) {
+            checkQueryField(((FieldEvaluator)evaluator).getQueryField());
+        }
         return evaluator;
     }
 

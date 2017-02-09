@@ -270,12 +270,19 @@ public class Query extends EvaluatorCollection {
                 Comparable<Object> comparable2;
                 for (OrderField orderField : orderFields) {
                     try {
-                        comparable1 = consumer.get(o1, orderField.toString());
-                        comparable2 = consumer.get(o2, orderField.toString());
+                        comparable1 = consumer.get(o1, orderField.getQueryField().getFieldName());
+                        comparable2 = consumer.get(o2, orderField.getQueryField().getFieldName());
                     } catch (ClassCastException ex) {
                         throw new IllegalArgumentException("Order field must be comparable");
                     }
-                    compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+
+                    if(comparable1 == null ^ comparable2 == null) {
+                        compareResult = (comparable1 == null) ? -1 : 1;
+                    } else if(comparable1 == null && comparable2 == null) {
+                        compareResult = 0;
+                    } else {
+                        compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+                    }
                 }
 
                 if (compareResult == 0) {
@@ -315,7 +322,7 @@ public class Query extends EvaluatorCollection {
             if(add) {
                 result.add(object);
             }
-            if(result.size() == getLimit()) {
+            if(getLimit() != null && result.size() == getLimit()) {
                 break;
             }
         }
@@ -479,7 +486,7 @@ public class Query extends EvaluatorCollection {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
             separator = Strings.EMPTY_STRING;
             for(OrderField orderField : orderFields) {
-                result.append(separator).append(orderField);
+                result.append(separator).append(orderField.getQueryField());
                 if(orderField.isDesc()) {
                     result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
                 }
@@ -805,7 +812,12 @@ public class Query extends EvaluatorCollection {
             if(group.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 result = new FieldEvaluator.QueryValue(Query.compile(groups, index));
             } else {
-                throw new IllegalArgumentException();
+                //If the string value start with "(" and end with ")" then the value is a collection.
+                Collection<Object> collection = new ArrayList<>();
+                for (String subStringValue : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                    collection.add(processStringValue(groups, subStringValue, placesIndex));
+                }
+                result = collection;
             }
         } else if(stringValue.startsWith(Strings.START_GROUP)) {
             if (stringValue.endsWith(Strings.END_GROUP)) {
@@ -1019,7 +1031,7 @@ public class Query extends EvaluatorCollection {
             this.originalValue = field;
         }
 
-        private void setResource(QueryResource resource) {
+        protected void setResource(QueryResource resource) {
             this.resource = resource;
         }
 
@@ -1115,4 +1127,5 @@ public class Query extends EvaluatorCollection {
             return originalValue;
         }
     }
+
 }

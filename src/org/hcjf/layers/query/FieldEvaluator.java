@@ -59,6 +59,19 @@ public abstract class FieldEvaluator implements Evaluator {
         if(result instanceof UnprocessedValue) {
             result = ((UnprocessedValue)value).process(dataSource, consumer, parameters);
         }
+
+        if(result instanceof Collection) {
+            Collection<Object> collectionResult = new ArrayList<>();
+            for(Object internalValue : (Collection)result) {
+                if(internalValue instanceof UnprocessedValue) {
+                    collectionResult.add(((UnprocessedValue)internalValue).process(dataSource, consumer, parameters));
+                } else {
+                    collectionResult.add(internalValue);
+                }
+            }
+            result = collectionResult;
+        }
+
         return result;
     }
 

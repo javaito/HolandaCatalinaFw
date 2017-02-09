@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import java.math.BigDecimal;
+
 /**
  * Compare two object and return true if the objects are equals and false in other ways.
  * @author javaito
@@ -25,10 +27,27 @@ public class Equals extends FieldEvaluator {
     public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
-            result = getValue(dataSource, consumer, parameters).equals(consumer.get(object, getQueryField().toString()));
+            Object fieldValue = getValue(dataSource, consumer, parameters);
+            Object consumerValue = consumer.get(object, getQueryField().toString());
+            if(fieldValue instanceof Number) {
+                if(consumerValue instanceof Number) {
+                    if(fieldValue instanceof Double || fieldValue instanceof Float ||
+                            consumerValue instanceof Double || consumerValue instanceof Float) {
+                        result = new BigDecimal(((Number) fieldValue).doubleValue()).equals(
+                                new BigDecimal(((Number) consumerValue).doubleValue()));
+                    } else {
+                        result = ((Number) fieldValue).longValue() == ((Number) consumerValue).longValue();
+                    }
+                } else {
+                    result = false;
+                }
+            } else {
+                result = getValue(dataSource, consumer, parameters).equals(consumer.get(object, getQueryField().toString()));
+            }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Equals evaluator fail", ex);
         }
         return result;
     }
+
 }

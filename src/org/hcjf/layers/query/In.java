@@ -21,6 +21,13 @@ public class In extends FieldEvaluator {
         try {
             Object value = getValue(dataSource, consumer, parameters);
             Object fieldValue = consumer.get(object, getQueryField().toString());
+            if(fieldValue instanceof Number) {
+                if(fieldValue instanceof Double || fieldValue instanceof Float) {
+                    fieldValue = new Double(((Number)fieldValue).doubleValue());
+                } else {
+                    fieldValue = new Long(((Number)fieldValue).longValue());
+                }
+            }
             if(Map.class.isAssignableFrom(fieldValue.getClass())) {
                 result = ((Map)fieldValue).containsKey(value);
             } else if(Collection.class.isAssignableFrom(fieldValue.getClass())) {
