@@ -293,11 +293,11 @@ public class Query extends EvaluatorCollection {
             });
         } else {
             //If the query has not order fields then creates a linked hash set to
-            //manteins the natural order of the data.
+            //maintain the natural order of the data.
             result = new LinkedHashSet<>();
         }
 
-        //Getting data from data dource.
+        //Getting data from data source.
         Collection<O> data;
         if(joins.size() > 0) {
             //If the query has joins then data source must return the joined data
