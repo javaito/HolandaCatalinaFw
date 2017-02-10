@@ -77,9 +77,13 @@ public class JoinableMap implements Joinable, Map<String, Object> {
             throw new IllegalArgumentException("Only support JoinableMap instance.");
         }
 
-        resources.addAll(((JoinableMap)joinable).resources);
-        mapInstance.putAll(((JoinableMap)joinable));
-        return this;
+        JoinableMap result = new JoinableMap(new HashMap<>());
+        result.resources.addAll(resources);
+        result.mapInstance.putAll(mapInstance);
+        result.resources.addAll(((JoinableMap)joinable).resources);
+        result.mapInstance.putAll(((JoinableMap)joinable));
+
+        return result;
     }
 
     @Override
