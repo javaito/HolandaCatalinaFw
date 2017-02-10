@@ -339,33 +339,89 @@ public class Query extends EvaluatorCollection {
     private final Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
         Collection<Joinable> result = new ArrayList<>();
 
-        Collection<Joinable> leftJoinables = new ArrayList<>();
-        leftJoinables.addAll(dataSource.getResourceData(this));
-        Collection<Joinable> rightJoinables;
-        Map<Object, Set<Joinable>> indexedJoineables;
-        In in;
-        Collection<Evaluator> joinEvaluators = new ArrayList<>();
-        Query joinQuery;
-        for(Join join : joins) {
+        //Creates the first query for the original resource.
+        Query joinQuery = new Query(getResourceName());
+        joinQuery.returnFields.addAll(this.returnFields);
+        joinQuery.orderFields.addAll(this.orderFields);
+        for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResourceName())) {
+            joinQuery.addEvaluator(evaluator);
+        }
+        //Set the first query as start by default
+        Query startQuery = joinQuery;
+
+        //Put the first query in the list
+        List<Query> queries = new ArrayList<>();
+        queries.add(joinQuery);
+
+        //Build a query for each join and evaluate the better filter to start
+        int queryStart = 0;
+        int joinStart = 0;
+        for (int i = 0; i < joins.size(); i++) {
+            Join join = joins.get(i);
             joinQuery = new Query(join.getResourceName());
             joinQuery.addReturnField("*");
-            indexedJoineables = index(leftJoinables, join.getLeftField().getFieldName(), consumer);
-            joinQuery.addEvaluator(new In(join.getRightField().toString(), indexedJoineables.keySet()));
-
-            for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResourceName())) {
+            for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResourceName())) {
                 joinQuery.addEvaluator(evaluator);
             }
+            queries.add(joinQuery);
 
-            rightJoinables = dataSource.getResourceData(joinQuery);
-            leftJoinables.clear();
-            for(Joinable rightJoinable : rightJoinables) {
-                for(Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(join.getRightField().getFieldName()))) {
-                    leftJoinables.add(leftJoinable.join(rightJoinable));
-                }
+            if(joinQuery.getEvaluators().size() > startQuery.getEvaluators().size()) {
+                startQuery = joinQuery;
+                queryStart = i+1;
+                joinStart = i;
             }
-            result.addAll(leftJoinables);
         }
 
+        Map<Object, Set<Joinable>> indexedJoineables;
+        Collection<Joinable> leftJoinables = new ArrayList<>();
+        Collection<Joinable> rightJoinables = new ArrayList<>();
+        In in;
+        Join queryJoin = null;
+        Set<Object> keys;
+
+        //Evaluate from the start query to right
+        int j = joinStart;
+        for (int i = queryStart; i < queries.size(); i++) {
+            joinQuery = queries.get(i);
+            if(leftJoinables.isEmpty()) {
+                leftJoinables.addAll(dataSource.getResourceData(joinQuery));
+            } else {
+                queryJoin = joins.get(j);
+                indexedJoineables = index(leftJoinables, queryJoin.getLeftField().getFieldName(), consumer);
+                leftJoinables.clear();
+                keys = indexedJoineables.keySet();
+                joinQuery.addEvaluator(new In(queryJoin.getRightField().toString(), keys));
+                rightJoinables.addAll(dataSource.getResourceData(joinQuery));
+                for (Joinable rightJoinable : rightJoinables) {
+                    for (Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(queryJoin.getRightField().getFieldName()))) {
+                        leftJoinables.add(leftJoinable.join(rightJoinable));
+                    }
+                }
+                j++;
+            }
+        }
+
+        rightJoinables = leftJoinables;
+        leftJoinables = new ArrayList<>();
+
+        //Evaluate from the start query to left
+        j = joinStart;
+        for (int i = queryStart - 1; i >= 0; i--, j--) {
+            joinQuery = queries.get(i);
+            queryJoin = joins.get(j);
+            indexedJoineables = index(rightJoinables, queryJoin.getRightField().getFieldName(), consumer);
+            rightJoinables.clear();
+            keys = indexedJoineables.keySet();
+            joinQuery.addEvaluator(new In(queryJoin.getLeftField().toString(), keys));
+            leftJoinables.addAll(dataSource.getResourceData(joinQuery));
+            for (Joinable leftJoinable : leftJoinables) {
+                for (Joinable rightJoinable : indexedJoineables.get(leftJoinable.get(queryJoin.getLeftField().getFieldName()))) {
+                    rightJoinables.add(rightJoinable.join(leftJoinable));
+                }
+            }
+        }
+
+        result.addAll(rightJoinables);
         return result;
     }
 
