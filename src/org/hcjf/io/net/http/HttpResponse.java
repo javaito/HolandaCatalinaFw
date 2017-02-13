@@ -74,9 +74,14 @@ public class HttpResponse extends HttpPackage {
     protected void processFirstLine(String firstLine) {
         String[] parts = firstLine.split(LINE_FIELD_SEPARATOR);
 
-        setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX]));
-        setReasonPhrase(parts[REASON_PHRASE_INDEX]);
-        setHttpVersion(parts[VERSION_INDEX]);
+        if(parts.length == 2) {
+            setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX]));
+            setHttpVersion(parts[VERSION_INDEX]);
+        } if(parts.length == 3) {
+            setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX]));
+            setReasonPhrase(parts[REASON_PHRASE_INDEX]);
+            setHttpVersion(parts[VERSION_INDEX]);
+        }
     }
 
     public NetStreamingSource getNetStreamingSource() {
