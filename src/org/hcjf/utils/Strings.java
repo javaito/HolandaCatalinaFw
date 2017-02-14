@@ -20,9 +20,9 @@ public final class Strings {
     public static final String CLASS_SEPARATOR = ".";
 
     /**
-     *
-     * @param value
-     * @return
+     * Replace the first character for his upper case representation.
+     * @param value Value to replace.
+     * @return Replaced value.
      */
     public static String capitalize(String value) {
         String result = value;
@@ -35,9 +35,9 @@ public final class Strings {
     }
 
     /**
-     *
-     * @param value
-     * @return
+     * Replace the first character for his lower case representation.
+     * @param value Value to replace.
+     * @return Replaced value.
      */
     public static String uncapitalize(String value) {
         String result = value;
@@ -50,66 +50,67 @@ public final class Strings {
     }
 
     /**
-     *
-     * @param value
-     * @param paddingSize
-     * @return
+     * Complete the left side of the value with n instance of the default padding value (' ').
+     * @param value Value to be completed.
+     * @param paddingSize Number of instance to pad the value.
+     * @return New string with the left side padding.
      */
     public static String leftPad(String value, int paddingSize) {
         return String.format("%1$" + paddingSize + "s", value);
     }
 
     /**
-     *
-     * @param value
-     * @param paddingValue
-     * @param paddingSize
-     * @return
+     * Complete the left side of the value with n instance of the padding value.
+     * @param value Value to be completed.
+     * @param paddingValue Padding value.
+     * @param paddingSize Number of instance to pad the value.
+     * @return New string with the left side padding.
      */
     public static String leftPad(String value, String paddingValue, int paddingSize) {
         return leftPad(value, paddingSize).replace(DEFAULT_PADDING_VALUE, paddingValue);
     }
 
     /**
-     *
-     * @param value
-     * @param paddingSize
-     * @return
+     * Complete the right side of the value with n instance of the default padding value (' ').
+     * @param value Value to be completed.
+     * @param paddingSize Number of instance to pad the value.
+     * @return New string with the right side padding.
      */
     public static String rightPad(String value, int paddingSize) {
         return String.format("%1$-" + paddingSize + "s", value);
     }
 
     /**
-     *
-     * @param value
-     * @param paddingValue
-     * @param paddingSize
-     * @return
+     * Complete the right side of the value with n instance of the padding value.
+     * @param value Value to be completed.
+     * @param paddingValue Padding value.
+     * @param paddingSize Number of instance to pad the value.
+     * @return New string with the right side padding.
      */
     public static String rightPad(String value, String paddingValue, int paddingSize) {
         return rightPad(value, paddingSize).replace(DEFAULT_PADDING_VALUE, paddingValue);
     }
 
     /**
-     *
-     * @param value
-     * @param foundedValue
-     * @return
+     * Return all the index into the string value where found the specific founded value.
+     * @param value Value to found the index.
+     * @param foundedValue Founded value into the string.
+     * @return Return a list with the indexes of the places where found value.
      */
     public static Set<Integer> allIndexOf(String value, String foundedValue) {
         return allIndexOf(value, foundedValue, false);
     }
 
     /**
-     *
-     * @param value
-     * @param foundedValue
-     * @param desc
-     * @return
+     * Return all the index into the string value where found the specific founded value.
+     * @param value Value to found the index.
+     * @param foundedValue Founded value into the string.
+     * @param desc If this parameter is true then the first index is the smaller else if the parameter
+     * s false then the first index is bigger.
+     * @return Return a list with the indexes of the places where found value.
      */
     public static Set<Integer> allIndexOf(String value, String foundedValue, boolean desc) {
-        TreeSet<Integer> result = new TreeSet<>((o1, o2) -> (01 - 02) * (desc ? 1 : -1));
+        TreeSet<Integer> result = new TreeSet<>((o1, o2) -> (o1 - o2) * (desc ? 1 : -1));
 
         int index = value.indexOf(foundedValue);
         while(index >= 0) {
@@ -120,6 +121,13 @@ public final class Strings {
         return result;
     }
 
+    /**
+     * Return the list with all the groups and sub groups of the value.
+     * A group is the char sequence between the start group character '('
+     * and the end group character ')'
+     * @param value
+     * @return
+     */
     public static List<String> group(String value) {
         Set<Integer> startIndexes = allIndexOf(value, START_GROUP, true);
         Set<Integer> endIndexes = allIndexOf(value, END_GROUP);
@@ -128,10 +136,18 @@ public final class Strings {
             throw new IllegalArgumentException("");
         }
 
-        return group(value, new ArrayList<>(), startIndexes, endIndexes);
+        return group(value, startIndexes, endIndexes);
     }
 
-    private static List<String> group(String value, List<String> groups, Set<Integer> startIndexes, Set<Integer> endIndexes) {
+    /**
+     * Return the list of groups into the value, using the ordered sets of
+     * start indexes and end indexes.
+     * @param value Value to group.
+     * @param startIndexes Set with all the start indexes.
+     * @param endIndexes Set with all the end indexes.
+     * @return List with all the groups.
+     */
+    private static List<String> group(String value, Set<Integer> startIndexes, Set<Integer> endIndexes) {
         List<String> result = new ArrayList<>();
         Integer start = null;
         Integer end = null;
@@ -158,6 +174,13 @@ public final class Strings {
         return result;
     }
 
+    /**
+     * Return a list with all groups and sub groups in ascendant order with replacement
+     * places that refer some index into the same list.
+     * e.g. "Hello (world)" -> ["world", "Hello $0"]
+     * @param value String to group.
+     * @return List with groups.
+     */
     public static final List<String> replaceableGroup(String value) {
         List<String> groups = Strings.group(value);
         List<Integer> withSubGroups = new ArrayList<>();
@@ -187,11 +210,39 @@ public final class Strings {
         return groups;
     }
 
+    /**
+     * Return a hexadecimal representation of the byte array.
+     * @param bytes Byte array to represents.
+     * @return Hexadecimal representation.
+     */
     public static String bytesToHex(byte[] bytes) {
         StringBuilder result = new StringBuilder();
         for(byte b : bytes) {
             result.append(String.format("%02x", b));
         }
         return result.toString();
+    }
+
+    /**
+     * This method creates a uuid from a hash code of the string object.
+     * @param value String to create a uuid. The hash code of this
+     * value is used to create the least significant bits of the uuid and the
+     * most significant bits are 0.
+     * @return UUID instance generated using the nex constructor new UUID(0, value.hashCode());
+     */
+    public static UUID createUUIDFromStringHash(String value) {
+        return createUUIDFromStringHash(null, value);
+    }
+
+    /**
+     * This method creates a uuid from a hash code of the string object.
+     * @param value1 First string to create a uuid. The hash code of this
+     * value is used to create the most significant bits of the uuid. This value con be null.
+     * @param value2 Second string to create a uuid. The hash code of this
+     * value is used to create the least significant bits of the uuid
+     * @return UUID instance generated using the nex constructor new UUID(0, value.hashCode());
+     */
+    public static UUID createUUIDFromStringHash(String value1, String value2) {
+        return new UUID(value1 == null ? 0 : value1.hashCode(), value2.hashCode());
     }
 }
