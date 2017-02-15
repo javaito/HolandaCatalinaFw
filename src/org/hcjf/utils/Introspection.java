@@ -189,7 +189,7 @@ public final class Introspection {
                         method.getParameterTypes().length == 0) {
                     fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
                             matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
-                    result1 = new InvokerEntry<>(fieldName, new Getter(clazz, fieldName, method));
+                    result1 = new InvokerEntry<>(fieldName, new Getter(method.getDeclaringClass(), fieldName, method));
                 }
             }
             return result1;
@@ -245,7 +245,7 @@ public final class Introspection {
                         method.getParameterTypes().length == 1) {
                     fieldName = matcher.group(SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP).toLowerCase() +
                             matcher.group(SETTER_GETTER_FIELD_NAME_GROUP);
-                    result1 = new InvokerEntry<>(fieldName, new Setter(clazz, fieldName, method));
+                    result1 = new InvokerEntry<>(fieldName, new Setter(method.getDeclaringClass(), fieldName, method));
                 }
             }
             return result1;

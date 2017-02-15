@@ -342,7 +342,6 @@ public class Query extends EvaluatorCollection {
         //Creates the first query for the original resource.
         Query joinQuery = new Query(getResourceName());
         joinQuery.returnFields.addAll(this.returnFields);
-        joinQuery.orderFields.addAll(this.orderFields);
         for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResourceName())) {
             joinQuery.addEvaluator(evaluator);
         }
@@ -482,23 +481,36 @@ public class Query extends EvaluatorCollection {
     /**
      * Return a copy of this query without all the evaluator and order fields of the
      * parameter collections.
-     * @param evaluators Evaluators to reduce.
-     * @param orderFields Order fields to reduce.
+     * @param evaluatorsToRemove Evaluators to reduce.
      * @return Reduced copy of the query.
      */
-    public final Query reduce(Collection<Evaluator> evaluators, Collection<String> orderFields) {
+    public final Query reduce(Collection<Evaluator> evaluatorsToRemove) {
         Query copy = new Query(this);
         copy.evaluators.addAll(this.evaluators);
 
-        if(evaluators != null && !evaluators.isEmpty()) {
-            copy.evaluators.removeAll(evaluators);
-        }
-
-        if(orderFields != null && !orderFields.isEmpty()) {
-            copy.orderFields.removeAll(orderFields);
+        if(evaluatorsToRemove != null && !evaluatorsToRemove.isEmpty()) {
+            reduceCollection(copy, evaluatorsToRemove);
         }
 
         return copy;
+    }
+
+    /**
+     * Reduce recursively all the collection into the query.
+     * @param collection Collection to reduce.
+     * @param evaluatorsToRemove Evaluator to remove.
+     */
+    private final void reduceCollection(EvaluatorCollection collection, Collection<Evaluator> evaluatorsToRemove) {
+        for(Evaluator evaluatorToRemove : evaluatorsToRemove) {
+            collection.evaluators.remove(evaluatorToRemove);
+            collection.addEvaluator(new TrueEvaluator());
+        }
+
+        for(Evaluator evaluator : collection.evaluators) {
+            if(evaluator instanceof Or || evaluator instanceof And) {
+                reduceCollection((EvaluatorCollection)evaluator, evaluatorsToRemove);
+            }
+        }
     }
 
     @Override
