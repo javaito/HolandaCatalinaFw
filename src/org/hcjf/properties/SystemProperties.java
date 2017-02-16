@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
+import org.hcjf.layers.query.Query;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -124,6 +125,7 @@ public final class SystemProperties extends Properties {
         public static final String SELECT_REGULAR_EXPRESSION = "hcjf.query.select.regular.expression";
         public static final String CONDITIONAL_REGULAR_EXPRESSION = "hcjf.query.conditional.regular.expression";
         public static final String WHERE_REGULAR_EXPRESSION = "hcjf.query.where.regular.expression";
+        public static final String OPERATION_REGULAR_EXPRESSION = "hcjf.query.operation.regular.expression";
         public static final String JOIN_REGULAR_EXPRESSION = "hcjf.query.join.regular.expression";
         public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
         public static final String FROM_GROUP_INDEX = "hcjf.query.from.group.index";
@@ -278,13 +280,14 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "^((SELECT|select)[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?(FROM|from)[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by ))");
-        defaults.put(Query.WHERE_REGULAR_EXPRESSION, "((?<=( and | or ))|(?=( and | or )))");
-        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "( ON |\\=)");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by ))");
+        defaults.put(Query.WHERE_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
+        defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|>|<|>=|<=|in|not in|like))|(?=(=|<>|>|<|>=|<=|in|not in|like))");
+        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on |\\=)");
         defaults.put(Query.SELECT_GROUP_INDEX, "1");
-        defaults.put(Query.FROM_GROUP_INDEX, "3");
-        defaults.put(Query.CONDITIONAL_GROUP_INDEX, "5");
+        defaults.put(Query.FROM_GROUP_INDEX, "2");
+        defaults.put(Query.CONDITIONAL_GROUP_INDEX, "3");
         defaults.put(Query.JOIN_RESOURCE_NAME_INDEX, "0");
         defaults.put(Query.JOIN_LEFT_FIELD_INDEX, "1");
         defaults.put(Query.JOIN_RIGHT_FIELD_INDEX, "2");

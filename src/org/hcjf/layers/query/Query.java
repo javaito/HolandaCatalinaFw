@@ -677,9 +677,9 @@ public class Query extends EvaluatorCollection {
 
         if(matcher.matches()) {
             String selectBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.SELECT_GROUP_INDEX));
-            selectBody = selectBody.replaceFirst(("(?i)") + SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT), Strings.EMPTY_STRING);
+            selectBody = selectBody.replaceFirst("(?i)"+SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT), Strings.EMPTY_STRING);
             String fromBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.FROM_GROUP_INDEX));
-            fromBody = fromBody.replaceFirst(("(?i)") + SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
+            fromBody = fromBody.replaceFirst("(?i)"+SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
             String conditionalBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
             if(conditionalBody != null && conditionalBody.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))) {
                 conditionalBody = conditionalBody.substring(0, conditionalBody.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))-1);
@@ -719,7 +719,7 @@ public class Query extends EvaluatorCollection {
                             boolean desc = SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER);
                             if (orderField.toUpperCase().contains(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
                                 desc = true;
-                                orderField = orderField.replaceAll("(?i)" + SystemProperties.get(SystemProperties.Query.ReservedWord.DESC), Strings.EMPTY_STRING).trim();
+                                orderField = orderField.replaceAll(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC), Strings.EMPTY_STRING).trim();
                             }
                             query.addOrderField(orderField, desc);
                         }
@@ -742,7 +742,10 @@ public class Query extends EvaluatorCollection {
      * @param parentCollection Parent collection.
      * @param definitionIndex Definition index into the groups.
      */
-    private static final void completeWhere(String startElement, List<String> groups, EvaluatorCollection parentCollection, Integer definitionIndex, AtomicInteger placesIndex) {
+    private static final void completeWhere(String startElement, List<String> groups,
+                                            EvaluatorCollection parentCollection,
+                                            Integer definitionIndex,
+                                            AtomicInteger placesIndex) {
         Pattern wherePatter = SystemProperties.getPattern(SystemProperties.Query.WHERE_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
         String[] evaluatorDefinitions;
         if(startElement != null) {
@@ -750,104 +753,134 @@ public class Query extends EvaluatorCollection {
         } else {
             evaluatorDefinitions = wherePatter.split(groups.get(definitionIndex));
         }
+        EvaluatorCollection collection = null;
+        List<String> pendingDefinitions = new ArrayList<>();
+        for(String definition : evaluatorDefinitions) {
+            definition = definition.trim();
+            if (definition.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.AND))) {
+                if (collection == null) {
+                    if(parentCollection instanceof Query || parentCollection instanceof And) {
+                        collection = parentCollection;
+                    } else {
+                        collection = parentCollection.and();
+                    }
+                } else if (collection instanceof Or) {
+                    if(parentCollection instanceof Query || parentCollection instanceof And) {
+                        collection = parentCollection;
+                    } else {
+                        collection = parentCollection.and();
+                    }
+                }
+            } else if (definition.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.OR))) {
+                if (collection == null) {
+                    if(parentCollection instanceof Or) {
+                        collection = parentCollection;
+                    } else {
+                        collection = parentCollection.or();
+                    }
+                } else if (collection instanceof And) {
+                    if(parentCollection instanceof Or) {
+                        collection = parentCollection;
+                    } else {
+                        collection = parentCollection.or();
+                    }
+                }
+            } else {
+                pendingDefinitions.add(definition);
+                if(collection != null) {
+                    for(String pendingDefinition : pendingDefinitions) {
+                        processDefinition(pendingDefinition, collection, groups, placesIndex);
+                    }
+                    pendingDefinitions.clear();
+                } else if(pendingDefinitions.size() > 1) {
+                    throw new IllegalArgumentException("");
+                }
+            }
+        }
+
+        for(String pendingDefinition : pendingDefinitions) {
+            if(collection != null) {
+                processDefinition(pendingDefinition, collection, groups, placesIndex);
+            } else {
+                processDefinition(pendingDefinition, parentCollection, groups, placesIndex);
+            }
+        }
+    }
+
+    private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, AtomicInteger placesIndex) {
         String[] evaluatorValues;
         String fieldValue;
         String operator;
         Object value;
         String stringValue;
         Evaluator evaluator = null;
-        EvaluatorCollection collection = null;
-        for(String definition : evaluatorDefinitions) {
-            definition = definition.trim();
-            if (definition.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.AND))) {
-                if(collection == null) {
-                    collection = parentCollection.and();
-                } else if(collection instanceof Or) {
-                    collection = collection.and();
+
+        if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
+            Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
+            completeWhere(null, groups, collection, index, placesIndex);
+        } else {
+            evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
+            if (evaluatorValues.length >= 3) {
+
+                boolean operatorDone = false;
+                fieldValue = "";
+                stringValue = "";
+                operator = null;
+                for (String evaluatorValue : evaluatorValues) {
+                    if (!operatorDone && (evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))
+                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)))) {
+                        operator = evaluatorValue.trim();
+                        operatorDone = true;
+                    } else if (operatorDone) {
+                        stringValue += evaluatorValue + Strings.WHITE_SPACE;
+                    } else {
+                        fieldValue += evaluatorValue + Strings.WHITE_SPACE;
+                    }
                 }
 
-                collection.addEvaluator(evaluator);
-                evaluator = null;
-            } else if (definition.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.OR))) {
-                if(collection == null) {
-                    collection = parentCollection.or();
-                } else if(collection instanceof And) {
-                    collection = collection.or();
+                if (operator == null) {
+                    throw new IllegalArgumentException("Operator not found for expression: " + definition);
                 }
 
-                collection.addEvaluator(evaluator);
-                evaluator = null;
-            } else if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
-                Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
-                completeWhere(null, groups, collection == null ? parentCollection : collection, index, placesIndex);
-            } else {
-                evaluatorValues = definition.split(Strings.WHITE_SPACE, 0);
-                if (evaluatorValues.length >= 3) {
+                fieldValue = fieldValue.trim();
+                operator = operator.trim();
 
-                    boolean operatorDone = false;
-                    fieldValue = "";
-                    stringValue = "";
-                    operator = null;
-                    for(String evaluatorValue : evaluatorValues) {
-                        if (!operatorDone && (evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))
-                                || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)))) {
-                            operator = evaluatorValue.trim();
-                            operatorDone = true;
-                        } else if(operatorDone) {
-                            stringValue += evaluatorValue + Strings.WHITE_SPACE;
-                        } else {
-                            fieldValue += evaluatorValue + Strings.WHITE_SPACE;
-                        }
-                    }
+                //Check the different types of parameters
+                stringValue = stringValue.trim();
+                value = processStringValue(groups, stringValue, placesIndex);
 
-                    if(operator == null) {
-                        throw new IllegalArgumentException("Operator not found for expression: " + definition);
-                    }
-
-                    fieldValue = fieldValue.trim();
-                    operator = operator.trim();
-
-                    //Check the different types of parameters
-                    stringValue = stringValue.trim();
-                    value = processStringValue(groups, stringValue, placesIndex);
-
-                    if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
-                        evaluator = new Distinct(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))) {
-                        evaluator = new Equals(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))) {
-                        evaluator = new GreaterThan(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))) {
-                        evaluator = new GreaterThanOrEqual(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))) {
-                        evaluator = new In(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))) {
-                        evaluator = new Like(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))) {
-                        evaluator = new NotIn(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))) {
-                        evaluator = new SmallerThan(fieldValue, value);
-                    } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
-                        evaluator = new SmallerThanOrEqual(fieldValue, value);
-                    }
+                if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
+                    evaluator = new Distinct(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))) {
+                    evaluator = new Equals(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))) {
+                    evaluator = new GreaterThan(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))) {
+                    evaluator = new GreaterThanOrEqual(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))) {
+                    evaluator = new In(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))) {
+                    evaluator = new Like(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))) {
+                    evaluator = new NotIn(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))) {
+                    evaluator = new SmallerThan(fieldValue, value);
+                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
+                    evaluator = new SmallerThanOrEqual(fieldValue, value);
                 } else {
-                    throw new IllegalArgumentException("Syntax error for expression: " + definition + ", expected {field} {operator} {value}");
-                }
-            }
-        }
 
-        if(evaluator != null) {
-            if(collection != null) {
+                }
+
                 collection.addEvaluator(evaluator);
             } else {
-                parentCollection.addEvaluator(evaluator);
+                throw new IllegalArgumentException("Syntax error for expression: " + definition + ", expected {field} {operator} {value}");
             }
         }
     }
@@ -1202,4 +1235,10 @@ public class Query extends EvaluatorCollection {
         }
     }
 
+    public static void main(String[] args) {
+        Query query = Query.compile("SeLeCt * FROM holder WHERE (id = 5) OR (name= 8)");
+        Query query1 = Query.compile("SELECT * FROM holder WHERE (((id = 5))) OR (name = 'hola') AND id = 8 ");
+        Query query2 = Query.compile("SELECT * FROM holder WHERE ((id = 5) OR (name = 8))");
+        System.out.println();
+    }
 }

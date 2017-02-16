@@ -129,7 +129,7 @@ public final class Strings {
      * @return
      */
     public static List<String> group(String value) {
-        Set<Integer> startIndexes = allIndexOf(value, START_GROUP, true);
+        Set<Integer> startIndexes = allIndexOf(value, START_GROUP);
         Set<Integer> endIndexes = allIndexOf(value, END_GROUP);
 
         if(startIndexes.size() != endIndexes.size()) {
@@ -151,20 +151,23 @@ public final class Strings {
         List<String> result = new ArrayList<>();
         Integer start = null;
         Integer end = null;
+        Integer candidate = null;
         Iterator<Integer> startIterator = startIndexes.iterator();
-        while(startIterator.hasNext()) {
-            start = startIterator.next();
+        while(!startIndexes.isEmpty()) {
+            start = startIndexes.iterator().next();
             Iterator<Integer> endIterator = endIndexes.iterator();
+            end = Integer.MAX_VALUE;
             while(endIterator.hasNext()) {
-                end = endIterator.next();
-                if(start < end) {
-                    endIterator.remove();
-                    startIterator.remove();
-                    break;
+                candidate = endIterator.next();
+                if(start < candidate && candidate < end) {
+                    end = candidate;
                 }
-                end = null;
             }
-            if(end == null) {
+
+            if(!endIndexes.remove(end)) {
+                throw new IllegalArgumentException("");
+            }
+            if(!startIndexes.remove(start)) {
                 throw new IllegalArgumentException("");
             }
 
