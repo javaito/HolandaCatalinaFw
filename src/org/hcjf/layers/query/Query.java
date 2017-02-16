@@ -1235,10 +1235,4 @@ public class Query extends EvaluatorCollection {
         }
     }
 
-    public static void main(String[] args) {
-        Query query = Query.compile("SeLeCt * FROM holder WHERE (id = 5) OR (name= 8)");
-        Query query1 = Query.compile("SELECT * FROM holder WHERE (((id = 5))) OR (name = 'hola') AND id = 8 ");
-        Query query2 = Query.compile("SELECT * FROM holder WHERE ((id = 5) OR (name = 8))");
-        System.out.println();
-    }
 }
