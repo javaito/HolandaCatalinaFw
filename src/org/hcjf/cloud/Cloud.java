@@ -1,9 +1,12 @@
 package org.hcjf.cloud;
 
+import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.Timer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -14,16 +17,19 @@ import java.util.concurrent.locks.Lock;
  * @author javaito
  * @mail javaito@gmail.com
  */
-public final class Cloud {
+public final class Cloud extends Service<CloudConsumer> {
 
     private static Cloud instance;
 
     private final CloudServiceImpl impl;
+    private final Timer timer;
 
     /**
      * Private constructor
      */
     private Cloud() {
+        super(SystemProperties.get(SystemProperties.Cloud.CLOUD_SERVICE_NAME),
+                SystemProperties.getInteger(SystemProperties.Cloud.CLOUD_SERVICE_PRIORITY));
         String implClassName = SystemProperties.get(SystemProperties.Cloud.CLOUD_IMPL);
         if(implClassName == null) {
             throw new IllegalArgumentException("Implementation cloud class is null, see the system property 'hcjf.cloud.impl'");
@@ -36,6 +42,7 @@ public final class Cloud {
         } catch (Exception ex) {
             throw new IllegalArgumentException("Unable to create cloud implementation", ex);
         }
+        timer = new Timer();
     }
 
     /**
@@ -127,5 +134,28 @@ public final class Cloud {
      */
     public static CloudCache getCache(String cacheName) {
         return getInstance().impl.getCache(cacheName);
+    }
+
+    /**
+     * Schedule into the cloud service an instance of timer task.
+     * @param timerTask Timer task instance.
+     */
+    public static void createTimerTask(CloudTimerTask timerTask) {
+        getInstance().fork(timerTask);
+    }
+
+    @Override
+    protected void shutdown(ShutdownStage stage) {
+        impl.shutdown();
+    }
+
+    @Override
+    public void registerConsumer(CloudConsumer consumer) {
+
+    }
+
+    @Override
+    public void unregisterConsumer(CloudConsumer consumer) {
+
     }
 }

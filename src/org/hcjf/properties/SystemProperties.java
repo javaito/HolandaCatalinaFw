@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
-import org.hcjf.layers.query.Query;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -37,6 +36,7 @@ public final class SystemProperties extends Properties {
         public static final String THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
         public static final String THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
         public static final String GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
+        public static final String SYSTEM_SESSION_NAME = "hcjf.service.system.session.name";
         public static final String SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
     }
 
@@ -172,13 +172,16 @@ public final class SystemProperties extends Properties {
     }
 
     public static class Cloud {
+        public static final String CLOUD_SERVICE_NAME = "hcjf.cloud.name";
+        public static final String CLOUD_SERVICE_PRIORITY = "hcjf.cloud.priority";
         public static final String CLOUD_IMPL = "hcjf.cloud.impl";
-        public static final String CLOUD_TIMER_TASK_MAP_NAME = "hcjf.cloud.timer.task.map.name";
-        public static final String CLOUD_TIMER_TASK_LOCK_NAME = "hcjf.cloud.timer.task.lock.name";
 
-        public static class ReservedWord {
-            public static final String CLOUD_TIMER_TASK_CONDITIONAL_SUFFIX_NAME = "hcjf.cloud.timer.task.conditional.suffix.name";
-
+        public static class TimerTask {
+            public static final String CLOUD_TIMER_TASK_MIN_VALUE_OF_DELAY = "hcjf.cloud.timer.task.min.value.of.delay";
+            public static final String CLOUD_TIMER_TASK_MAP_NAME = "hcjf.cloud.timer.task.map.name";
+            public static final String CLOUD_TIMER_TASK_MAP_SUFFIX_NAME = "hcjf.cloud.timer.task.map.suffix.name";
+            public static final String CLOUD_TIMER_TASK_LOCK_SUFFIX_NAME = "hcjf.cloud.timer.task.lock.suffix.name";
+            public static final String CLOUD_TIMER_TASK_CONDITION_SUFFIX_NAME = "hcjf.cloud.timer.task.condition.suffix.name";
         }
 
     }
@@ -214,6 +217,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
         defaults.put(Service.THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.GUEST_SESSION_NAME, "Guest");
+        defaults.put(Service.SYSTEM_SESSION_NAME, "System");
         defaults.put(Service.SHUTDOWN_TIME_OUT, "200");
 
         defaults.put(Event.SERVICE_NAME, "Events");
@@ -323,6 +327,15 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.TRUE, "TRUE");
         defaults.put(Query.ReservedWord.FALSE, "FALSE");
         defaults.put(Query.ReservedWord.AS, "AS");
+
+        defaults.put(Cloud.CLOUD_SERVICE_NAME, "CloudService");
+        defaults.put(Cloud.CLOUD_SERVICE_PRIORITY, "0");
+        defaults.put(Cloud.CLOUD_IMPL, "");
+        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_MIN_VALUE_OF_DELAY, "30000");
+        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_MAP_NAME, "hcjf.cloud.timer.task.map");
+        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");
+        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_LOCK_SUFFIX_NAME, "hcjf.cloud.timer.task.lock.");
+        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_CONDITION_SUFFIX_NAME, "hcjf.cloud.timer.task.condition.");
 
         Properties system = System.getProperties();
         putAll(system);

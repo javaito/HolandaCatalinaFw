@@ -93,7 +93,7 @@ public abstract class Service<C extends ServiceConsumer> {
             }
         }
 
-        ServiceSession session = null;
+        ServiceSession session = ServiceSession.getGuestSession();
         Map<String, Object> invokerProperties = null;
         if(Thread.currentThread() instanceof ServiceThread) {
             session = ((ServiceThread) Thread.currentThread()).getSession();
@@ -127,7 +127,7 @@ public abstract class Service<C extends ServiceConsumer> {
             }
         }
 
-        ServiceSession session = null;
+        ServiceSession session = ServiceSession.getGuestSession();
         Map<String, Object> invokerProperties = null;
         if(Thread.currentThread() instanceof ServiceThread) {
             session = ((ServiceThread) Thread.currentThread()).getSession();

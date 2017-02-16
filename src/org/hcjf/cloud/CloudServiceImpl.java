@@ -75,4 +75,9 @@ public interface CloudServiceImpl {
      * @return Instance of cache.
      */
     public CloudCache getCache(String cacheName);
+
+    /**
+     * Shutdown hook
+     */
+    public void shutdown();
 }

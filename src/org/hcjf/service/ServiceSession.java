@@ -13,10 +13,12 @@ import java.util.*;
  */
 public class ServiceSession implements Comparable {
 
-    private static final ServiceSession guestSession;
+    private static final SystemSession SYSTEM_SESSION;
+    private static final ServiceSession GUEST_SESSION;
 
     static {
-        guestSession = new GuestSession();
+        GUEST_SESSION = new GuestSession();
+        SYSTEM_SESSION = new SystemSession();
     }
 
     private final UUID id;
@@ -134,11 +136,19 @@ public class ServiceSession implements Comparable {
     }
 
     /**
+     * Return the instance of the system session.
+     * @return System session.
+     */
+    public static final ServiceSession getSystemSession() {
+        return SYSTEM_SESSION;
+    }
+
+    /**
      * Return the instance of the guest session.
      * @return Guest session.
      */
     public static final ServiceSession getGuestSession() {
-        return guestSession;
+        return GUEST_SESSION;
     }
 
     /**
@@ -183,13 +193,27 @@ public class ServiceSession implements Comparable {
     }
 
     /**
+     * This session is the session used in the case of some internal system task
+     * run over a service.
+     */
+    private static class SystemSession extends ServiceSession {
+
+        public SystemSession() {
+            super(new UUID(0,0));
+            setSessionName(SystemProperties.get(SystemProperties.Service.SYSTEM_SESSION_NAME));
+        }
+
+    }
+
+    /**
      * This class is the default session of the system.
      */
     private static class GuestSession extends ServiceSession {
 
         public GuestSession() {
-            super(UUID.randomUUID());
+            super(new UUID(0,1));
             setSessionName(SystemProperties.get(SystemProperties.Service.GUEST_SESSION_NAME));
         }
     }
+
 }
