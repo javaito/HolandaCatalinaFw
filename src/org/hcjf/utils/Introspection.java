@@ -1,12 +1,10 @@
 package org.hcjf.utils;
 
 import org.hcjf.names.Naming;
+import org.junit.Test;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -362,10 +360,29 @@ public final class Introspection {
     public static class Getter extends Accessor {
 
         private final Class returnType;
+        private final Class returnKeyType;
+        private final Class returnCollectionType;
 
         protected Getter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
             returnType = method.getReturnType();
+
+            if (method.getGenericReturnType() instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) method.getGenericReturnType();
+                if(Collection.class.isAssignableFrom(returnType)) {
+                    returnKeyType = null;
+                    returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                } else if(Map.class.isAssignableFrom(returnType)) {
+                    returnKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                } else {
+                    returnKeyType = null;
+                    returnCollectionType = null;
+                }
+            } else {
+                returnKeyType = null;
+                returnCollectionType = null;
+            }
         }
 
         /**
@@ -381,11 +398,29 @@ public final class Introspection {
         }
 
         /**
-         *
-         * @return
+         * Return the result type of the getter method.
+         * @return Result type.
          */
-        public Class getReturnType() {
+        public final Class getReturnType() {
             return returnType;
+        }
+
+        /**
+         * If the result type is assignable to map class then this method return
+         * the key type of the result type.
+         * @return Key type of the map.
+         */
+        public final Class getReturnKeyType() {
+            return returnKeyType;
+        }
+
+        /**
+         * If the result type if assignable to collection or map this this mehtod return
+         * the collection types of the result type.
+         * @return Collection type of the result type.
+         */
+        public final Class getReturnCollectionType() {
+            return returnCollectionType;
         }
     }
 
@@ -395,10 +430,29 @@ public final class Introspection {
     public static class Setter extends Accessor {
 
         private final Class parameterType;
+        private final Class parameterKeyType;
+        private final Class parameterCollectionType;
 
         protected Setter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
             this.parameterType = method.getParameterTypes()[0];
+
+            if(method.getGenericParameterTypes()[0] instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) method.getGenericParameterTypes()[0];
+                if(Collection.class.isAssignableFrom(parameterType)) {
+                    parameterKeyType = null;
+                    parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                } else if(Map.class.isAssignableFrom(parameterType)) {
+                    parameterKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                } else {
+                    parameterKeyType = null;
+                    parameterCollectionType = null;
+                }
+            } else {
+                parameterKeyType = null;
+                parameterCollectionType = null;
+            }
         }
 
         /**
@@ -413,11 +467,29 @@ public final class Introspection {
         }
 
         /**
-         *
-         * @return
+         * Return the parameter type of the setter method.
+         * @return Parameter type.
          */
-        public Class getParameterType() {
+        public final Class getParameterType() {
             return parameterType;
+        }
+
+        /**
+         * If the parameter type is assignable to map class then this method
+         * return the key type of the parameter type.
+         * @return Key type.
+         */
+        public final Class getParameterKeyType() {
+            return parameterKeyType;
+        }
+
+        /**
+         * If the parameter type is assignable to map class or collection class then this
+         * method return the collection type of the parameter type.
+         * @return Collection type.
+         */
+        public final Class getParameterCollectionType() {
+            return parameterCollectionType;
         }
     }
 
@@ -493,4 +565,5 @@ public final class Introspection {
         public Object consume(Object value);
 
     }
+
 }
