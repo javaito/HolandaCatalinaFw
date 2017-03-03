@@ -42,6 +42,8 @@ public class HttpHeader {
     public static final String LAST_MODIFIED = "Last-Modified";
     public static final String CONNECTION = "Connection";
     public static final String E_TAG = "ETag";
+    public static final String COOKIE = "Cookie";
+    public static final String SET_COOKIE = "Set-Cookie";
 
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
