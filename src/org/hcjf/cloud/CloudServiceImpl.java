@@ -1,5 +1,8 @@
 package org.hcjf.cloud;
 
+import org.hcjf.cloud.cache.CloudCache;
+import org.hcjf.cloud.cache.CloudCacheStrategy;
+
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.locks.Condition;

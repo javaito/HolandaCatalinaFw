@@ -28,13 +28,13 @@ public abstract class CloudTimerTask implements Runnable {
     public CloudTimerTask(String name) {
         this.name = name;
 
-        mapName = SystemProperties.get(SystemProperties.Cloud.TimerTask.CLOUD_TIMER_TASK_MAP_SUFFIX_NAME) + name;
-        lockName = SystemProperties.get(SystemProperties.Cloud.TimerTask.CLOUD_TIMER_TASK_LOCK_SUFFIX_NAME) + name;
-        conditionName = SystemProperties.get(SystemProperties.Cloud.TimerTask.CLOUD_TIMER_TASK_CONDITION_SUFFIX_NAME) + name;
+        mapName = SystemProperties.get(SystemProperties.Cloud.TimerTask.MAP_SUFFIX_NAME) + name;
+        lockName = SystemProperties.get(SystemProperties.Cloud.TimerTask.LOCK_SUFFIX_NAME) + name;
+        conditionName = SystemProperties.get(SystemProperties.Cloud.TimerTask.CONDITION_SUFFIX_NAME) + name;
 
         lock = Cloud.getLock(lockName);
         condition = Cloud.getCondition(conditionName, lock);
-        timerTaskMap = Cloud.getMap(SystemProperties.get(SystemProperties.Cloud.TimerTask.CLOUD_TIMER_TASK_MAP_NAME));
+        timerTaskMap = Cloud.getMap(SystemProperties.get(SystemProperties.Cloud.TimerTask.MAP_NAME));
     }
 
     /**
@@ -51,8 +51,8 @@ public abstract class CloudTimerTask implements Runnable {
                 //the system properties. If not bigger then the value is truncated to the min
                 //value of the system properties.
                 delay = getDelay();
-                if(delay < SystemProperties.getLong(SystemProperties.Cloud.TimerTask.CLOUD_TIMER_TASK_MIN_VALUE_OF_DELAY)) {
-                    delay = SystemProperties.getLong(SystemProperties.Cloud.TimerTask.CLOUD_TIMER_TASK_MIN_VALUE_OF_DELAY);
+                if(delay < SystemProperties.getLong(SystemProperties.Cloud.TimerTask.MIN_VALUE_OF_DELAY)) {
+                    delay = SystemProperties.getLong(SystemProperties.Cloud.TimerTask.MIN_VALUE_OF_DELAY);
                 }
 
                 //Try to block the task with the same name in the cloud.

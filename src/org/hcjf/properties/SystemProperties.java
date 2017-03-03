@@ -172,18 +172,23 @@ public final class SystemProperties extends Properties {
     }
 
     public static class Cloud {
-        public static final String CLOUD_SERVICE_NAME = "hcjf.cloud.name";
-        public static final String CLOUD_SERVICE_PRIORITY = "hcjf.cloud.priority";
-        public static final String CLOUD_IMPL = "hcjf.cloud.impl";
+        public static final String SERVICE_NAME = "hcjf.cloud.name";
+        public static final String SERVICE_PRIORITY = "hcjf.cloud.priority";
+        public static final String IMPL = "hcjf.cloud.impl";
 
         public static class TimerTask {
-            public static final String CLOUD_TIMER_TASK_MIN_VALUE_OF_DELAY = "hcjf.cloud.timer.task.min.value.of.delay";
-            public static final String CLOUD_TIMER_TASK_MAP_NAME = "hcjf.cloud.timer.task.map.name";
-            public static final String CLOUD_TIMER_TASK_MAP_SUFFIX_NAME = "hcjf.cloud.timer.task.map.suffix.name";
-            public static final String CLOUD_TIMER_TASK_LOCK_SUFFIX_NAME = "hcjf.cloud.timer.task.lock.suffix.name";
-            public static final String CLOUD_TIMER_TASK_CONDITION_SUFFIX_NAME = "hcjf.cloud.timer.task.condition.suffix.name";
+            public static final String MIN_VALUE_OF_DELAY = "hcjf.cloud.timer.task.min.value.of.delay";
+            public static final String MAP_NAME = "hcjf.cloud.timer.task.map.name";
+            public static final String MAP_SUFFIX_NAME = "hcjf.cloud.timer.task.map.suffix.name";
+            public static final String LOCK_SUFFIX_NAME = "hcjf.cloud.timer.task.lock.suffix.name";
+            public static final String CONDITION_SUFFIX_NAME = "hcjf.cloud.timer.task.condition.suffix.name";
         }
 
+        public static class Cache {
+            public static final String MAP_SUFFIX_NAME = "hcjf.cloud.cache.map.suffix.name";
+            public static final String LOCK_SUFFIX_NAME = "hcjf.cloud.cache.lock.suffix.name";
+            public static final String CONDITION_SUFFIX_NAME = "hcjf.cloud.cache.condition.suffix.name";
+        }
     }
 
     //Java property names
@@ -328,14 +333,17 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.FALSE, "FALSE");
         defaults.put(Query.ReservedWord.AS, "AS");
 
-        defaults.put(Cloud.CLOUD_SERVICE_NAME, "CloudService");
-        defaults.put(Cloud.CLOUD_SERVICE_PRIORITY, "0");
-        defaults.put(Cloud.CLOUD_IMPL, "");
-        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_MIN_VALUE_OF_DELAY, "30000");
-        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_MAP_NAME, "hcjf.cloud.timer.task.map");
-        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");
-        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_LOCK_SUFFIX_NAME, "hcjf.cloud.timer.task.lock.");
-        defaults.put(Cloud.TimerTask.CLOUD_TIMER_TASK_CONDITION_SUFFIX_NAME, "hcjf.cloud.timer.task.condition.");
+        defaults.put(Cloud.SERVICE_NAME, "CloudService");
+        defaults.put(Cloud.SERVICE_PRIORITY, "0");
+        defaults.put(Cloud.IMPL, "");
+        defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "30000");
+        defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
+        defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");
+        defaults.put(Cloud.TimerTask.LOCK_SUFFIX_NAME, "hcjf.cloud.timer.task.lock.");
+        defaults.put(Cloud.TimerTask.CONDITION_SUFFIX_NAME, "hcjf.cloud.timer.task.condition.");
+        defaults.put(Cloud.Cache.MAP_SUFFIX_NAME, "hcjf.cloud.cache.map.");
+        defaults.put(Cloud.Cache.LOCK_SUFFIX_NAME, "hcjf.cloud.cache.lock.");
+        defaults.put(Cloud.Cache.CONDITION_SUFFIX_NAME, "hcjf.cloud.cache.condition.");
 
         Properties system = System.getProperties();
         putAll(system);

@@ -1,5 +1,7 @@
 package org.hcjf.cloud;
 
+import org.hcjf.cloud.cache.CloudCache;
+import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -28,9 +30,9 @@ public final class Cloud extends Service<CloudConsumer> {
      * Private constructor
      */
     private Cloud() {
-        super(SystemProperties.get(SystemProperties.Cloud.CLOUD_SERVICE_NAME),
-                SystemProperties.getInteger(SystemProperties.Cloud.CLOUD_SERVICE_PRIORITY));
-        String implClassName = SystemProperties.get(SystemProperties.Cloud.CLOUD_IMPL);
+        super(SystemProperties.get(SystemProperties.Cloud.SERVICE_NAME),
+                SystemProperties.getInteger(SystemProperties.Cloud.SERVICE_PRIORITY));
+        String implClassName = SystemProperties.get(SystemProperties.Cloud.IMPL);
         if(implClassName == null) {
             throw new IllegalArgumentException("Implementation cloud class is null, see the system property 'hcjf.cloud.impl'");
         }
