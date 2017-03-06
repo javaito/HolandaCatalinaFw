@@ -170,7 +170,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(sessionManager == null) {
             sessionManager = HttpSessionManager.DEFAULT;
         }
-        sessionManager.destorySession((HttpSession) session);
+        sessionManager.destroySession((HttpSession) session);
     }
 
     /**

@@ -36,7 +36,7 @@ public interface HttpSessionManager {
      * @param session Net session.
      * @return Http session updated.
      */
-    public HttpSession destorySession(HttpSession session);
+    public HttpSession destroySession(HttpSession session);
 
     /**
      * This class is a default session factory implementation.
@@ -76,7 +76,7 @@ public interface HttpSessionManager {
          * @return Http session updated.
          */
         @Override
-        public HttpSession destorySession(HttpSession session) {
+        public HttpSession destroySession(HttpSession session) {
             return session;
         }
     }
