@@ -1410,8 +1410,4 @@ public class Query extends EvaluatorCollection {
 
     }
 
-    public static void main(String[] args) {
-        Query query = Query.compile("SELECT name as nombre, domain FROM holder");
-        System.out.println();
-    }
 }
