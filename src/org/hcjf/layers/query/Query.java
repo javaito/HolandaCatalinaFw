@@ -1008,10 +1008,10 @@ public class Query extends EvaluatorCollection {
                 }
             } else if(parameterClass.equals(QueryReturnParameter.class)) {
                 String alias = null;
-                if(originalValue.contains(SystemProperties.get(SystemProperties.Query.ReservedWord.AS))) {
-                    alias = originalValue.substring(originalValue.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.AS)) +
-                            SystemProperties.get(SystemProperties.Query.ReservedWord.AS).length()).trim();
-                    originalValue = originalValue.substring(0, originalValue.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.AS))).trim();
+                String[] parts = originalValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
+                if(parts.length == 3) {
+                    originalValue = parts[0];
+                    alias = parts[2];
                 }
 
                 if(function) {
@@ -1410,4 +1410,8 @@ public class Query extends EvaluatorCollection {
 
     }
 
+    public static void main(String[] args) {
+        Query query = Query.compile("SELECT name as nombre, domain FROM holder");
+        System.out.println();
+    }
 }
