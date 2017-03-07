@@ -11,6 +11,10 @@ public class Distinct extends Equals {
         super(fieldName, value);
     }
 
+    public Distinct(Query.QueryParameter parameter, Object value) {
+        super(parameter, value);
+    }
+
     /**
      * Evaluate if the evaluator's value and the object's value in the specified field of
      * the parameter instance are distinct.

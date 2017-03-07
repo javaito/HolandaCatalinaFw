@@ -18,6 +18,7 @@ public final class Strings {
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";
     public static final String CLASS_SEPARATOR = ".";
+    public static final String CASE_INSENSITIVE_REGEX_FLAG = "(?i)";
 
     /**
      * Replace the first character for his upper case representation.
@@ -211,6 +212,28 @@ public final class Strings {
         }
         groups.add(replacedValue);
         return groups;
+    }
+
+    /**
+     * Return the first replaceable index founded.
+     * @param value Value to analyse
+     * @return Replaceable index.
+     */
+    public static String getGroupIndex(String value) {
+        String result = null;
+        Integer startIndex = value.indexOf(REPLACEABLE_GROUP);
+        StringBuilder resultBuilder = new StringBuilder();
+        char current;
+        for (int i = startIndex; i < value.length(); i++) {
+            current = value.charAt(i);
+            if(Character.isDigit(current) || current == Strings.REPLACEABLE_GROUP.charAt(0)) {
+                resultBuilder.append(current);
+            } else {
+                break;
+            }
+        }
+        result = resultBuilder.toString();
+        return result;
     }
 
     /**

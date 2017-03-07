@@ -8,6 +8,10 @@ import java.util.regex.Pattern;
  */
 public class Like extends FieldEvaluator {
 
+    public Like(Query.QueryParameter parameter, Object value) {
+        super(parameter, value);
+    }
+
     public Like(String fieldName, Object value) {
         super(new Query.QueryField(fieldName), value);
     }
@@ -17,8 +21,8 @@ public class Like extends FieldEvaluator {
         boolean result = false;
 
         try {
-            Object value = getValue(dataSource, consumer, parameters);
-            Object fieldValue = consumer.get(object, getQueryField().toString());
+            Object value = getValue(object, dataSource, consumer, parameters);
+            Object fieldValue = consumer.get(object, getQueryParameter());
             if(fieldValue instanceof String) {
                 if(value instanceof Pattern) {
                     result = ((Pattern)value).matcher((String)fieldValue).matches();

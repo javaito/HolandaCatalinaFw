@@ -8,21 +8,29 @@ public class SmallerThan extends FieldEvaluator {
 
     private final boolean orEquals;
 
-    protected SmallerThan(String fieldName, Object value, boolean orEquals) {
-        super(new Query.QueryField(fieldName), value);
+    protected SmallerThan(Query.QueryParameter parameter, Object value, boolean orEquals) {
+        super(parameter, value);
         this.orEquals = orEquals;
     }
 
+    protected SmallerThan(String fieldName, Object value, boolean orEquals) {
+        this(new Query.QueryField(fieldName), value, orEquals);
+    }
+
     public SmallerThan(String fieldName, Object value) {
-        this(fieldName, value, false);
+        this(new Query.QueryField(fieldName), value, false);
+    }
+
+    public SmallerThan(Query.QueryParameter parameter, Object value) {
+        this(parameter, value, false);
     }
 
     @Override
     public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
-            Object value = getValue(dataSource, consumer, parameters);
-            Object fieldValue = consumer.get(object, getQueryField().toString());
+            Object value = getValue(object, dataSource, consumer, parameters);
+            Object fieldValue = consumer.get(object, getQueryParameter());
             if(Comparable.class.isAssignableFrom(value.getClass())) {
                 if(fieldValue.getClass().isAssignableFrom(value.getClass()) ||
                         value.getClass().isAssignableFrom(fieldValue.getClass())) {
@@ -33,7 +41,7 @@ public class SmallerThan extends FieldEvaluator {
                     }
                 } else {
                     throw new IllegalArgumentException("Incompatible types between value and field value ("
-                            + getQueryField().toString() + "): " + value.getClass() + " != " + fieldValue.getClass());
+                            + getQueryParameter().toString() + "): " + value.getClass() + " != " + fieldValue.getClass());
                 }
             } else {
                 throw new IllegalArgumentException("Unsupported evaluator type: " + value.getClass());

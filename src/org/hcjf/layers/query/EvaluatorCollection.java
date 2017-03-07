@@ -68,21 +68,31 @@ public abstract class EvaluatorCollection {
         return this;
     }
 
-    private Query.QueryField checkQueryField(Query.QueryField queryField) {
-        Query.QueryResource resource = queryField.getResource();
-        if(resource == null) {
-            EvaluatorCollection collection = parent;
-            while(!(collection instanceof Query)) {
-                collection = collection.parent;
+    private Query.QueryParameter checkQueryParameter(Query.QueryParameter queryParameter) {
+        if(queryParameter instanceof Query.QueryField) {
+            Query.QueryField queryField = (Query.QueryField) queryParameter;
+            Query.QueryResource resource = queryField.getResource();
+            if (resource == null) {
+                EvaluatorCollection collection = parent;
+                while (!(collection instanceof Query)) {
+                    collection = collection.parent;
+                }
+                queryField.setResource(((Query) collection).getResource());
             }
-            queryField.setResource(((Query)collection).getResource());
+        } else if(queryParameter instanceof Query.QueryFunction) {
+            Query.QueryFunction function = (Query.QueryFunction) queryParameter;
+            for(Object functionParameter : function.getParameters()) {
+                if(functionParameter instanceof Query.QueryParameter) {
+                    checkQueryParameter((Query.QueryParameter) functionParameter);
+                }
+            }
         }
-        return queryField;
+        return queryParameter;
     }
 
     protected Evaluator checkEvaluator(Evaluator evaluator) {
         if(evaluator instanceof FieldEvaluator) {
-            checkQueryField(((FieldEvaluator)evaluator).getQueryField());
+            checkQueryParameter(((FieldEvaluator)evaluator).getQueryParameter());
         }
         return evaluator;
     }

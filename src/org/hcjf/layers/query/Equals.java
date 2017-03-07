@@ -9,8 +9,12 @@ import java.math.BigDecimal;
  */
 public class Equals extends FieldEvaluator {
 
+    public Equals(Query.QueryParameter parameter, Object value) {
+        super(parameter, value);
+    }
+
     public Equals(String fieldName, Object value) {
-        super(new Query.QueryField(fieldName), value);
+        this(new Query.QueryField(fieldName), value);
     }
 
     /**
@@ -27,8 +31,8 @@ public class Equals extends FieldEvaluator {
     public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         boolean result;
         try {
-            Object fieldValue = getValue(dataSource, consumer, parameters);
-            Object consumerValue = consumer.get(object, getQueryField().toString());
+            Object fieldValue = getValue(object, dataSource, consumer, parameters);
+            Object consumerValue = consumer.get(object, getQueryParameter());
             if(fieldValue instanceof Number) {
                 if(consumerValue instanceof Number) {
                     if(fieldValue instanceof Double || fieldValue instanceof Float ||
@@ -42,7 +46,7 @@ public class Equals extends FieldEvaluator {
                     result = false;
                 }
             } else {
-                result = getValue(dataSource, consumer, parameters).equals(consumer.get(object, getQueryField().toString()));
+                result = getValue(object, dataSource, consumer, parameters).equals(consumer.get(object, getQueryParameter()));
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Equals evaluator fail", ex);

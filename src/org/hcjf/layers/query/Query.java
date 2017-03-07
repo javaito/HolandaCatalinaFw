@@ -25,14 +25,14 @@ public class Query extends EvaluatorCollection {
     private final QueryResource resource;
     private Integer limit;
     private Object start;
-    private final List<OrderField> orderFields;
-    private final List<QueryReturnField> returnFields;
+    private final List<QueryOrderParameter> orderParameters;
+    private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
 
     public Query(String resource, QueryId id) {
         this.id = id;
-        this.orderFields = new ArrayList<>();
-        this.returnFields = new ArrayList<>();
+        this.orderParameters = new ArrayList<>();
+        this.returnParameters = new ArrayList<>();
         this.joins = new ArrayList<>();
         this.resource = new QueryResource(resource);
     }
@@ -47,26 +47,36 @@ public class Query extends EvaluatorCollection {
         this.resource = source.resource;
         this.limit = source.limit;
         this.start = source.start;
-        this.orderFields = new ArrayList<>();
-        this.orderFields.addAll(source.orderFields);
-        this.returnFields = new ArrayList<>();
-        this.returnFields.addAll(source.returnFields);
+        this.orderParameters = new ArrayList<>();
+        this.orderParameters.addAll(source.orderParameters);
+        this.returnParameters = new ArrayList<>();
+        this.returnParameters.addAll(source.returnParameters);
         this.joins = new ArrayList<>();
         this.joins.addAll(source.joins);
     }
 
-    private QueryField checkQueryField(QueryField queryField) {
-        QueryResource resource = queryField.getResource();
-        if(resource == null) {
-            queryField.setResource(getResource());
+    private QueryParameter checkQueryParameter(QueryParameter queryParameter) {
+        if(queryParameter instanceof QueryField) {
+            QueryField queryField = (QueryField) queryParameter;
+            QueryResource resource = queryField.getResource();
+            if (resource == null) {
+                queryField.setResource(getResource());
+            }
+        } else if(queryParameter instanceof QueryFunction) {
+            QueryFunction function = (QueryFunction) queryParameter;
+            for(Object functionParameter : function.getParameters()) {
+                if(functionParameter instanceof QueryParameter) {
+                    checkQueryParameter((QueryParameter) functionParameter);
+                }
+            }
         }
-        return queryField;
+        return queryParameter;
     }
 
     @Override
     protected Evaluator checkEvaluator(Evaluator evaluator) {
         if(evaluator instanceof FieldEvaluator) {
-            checkQueryField(((FieldEvaluator)evaluator).getQueryField());
+            checkQueryParameter(((FieldEvaluator)evaluator).getQueryParameter());
         }
         return evaluator;
     }
@@ -139,8 +149,8 @@ public class Query extends EvaluatorCollection {
      * Return the unmodifiable list with order fields.
      * @return Order fields.
      */
-    public final List<OrderField> getOrderFields() {
-        return Collections.unmodifiableList(orderFields);
+    public final List<QueryOrderParameter> getOrderParameters() {
+        return Collections.unmodifiableList(orderParameters);
     }
 
     /**
@@ -162,7 +172,18 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField, boolean desc) {
-        orderFields.add(new OrderField(checkQueryField(new QueryField(orderField)), desc));
+        orderParameters.add((QueryOrderField) checkQueryParameter(new QueryOrderField(orderField, desc)));
+        return this;
+    }
+
+    /**
+     * Add a name of the field for order the data collection. This name must be exist
+     * like a setter/getter method in the instances of the data collection.
+     * @param orderParameter Order parameter.
+     * @return Return the same instance of this class.
+     */
+    public final Query addOrderField(QueryOrderParameter orderParameter) {
+        orderParameters.add(orderParameter);
         return this;
     }
 
@@ -170,8 +191,8 @@ public class Query extends EvaluatorCollection {
      * Return an unmodifiable list with the return fields.
      * @return Return fields.
      */
-    public final List<QueryField> getReturnFields() {
-        return Collections.unmodifiableList(returnFields);
+    public final List<QueryReturnParameter> getReturnParameters() {
+        return Collections.unmodifiableList(returnParameters);
     }
 
     /**
@@ -180,7 +201,17 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addReturnField(String returnField) {
-        returnFields.add((QueryReturnField) checkQueryField(new QueryReturnField(returnField)));
+        returnParameters.add((QueryReturnField) checkQueryParameter(new QueryReturnField(returnField)));
+        return this;
+    }
+
+    /**
+     * Add the name of the field to be returned in the result set.
+     * @param returnParameter Return parameter.
+     * @return Return the same instance of this class.
+     */
+    public final Query addReturnField(QueryReturnParameter returnParameter) {
+        returnParameters.add(returnParameter);
         return this;
     }
 
@@ -260,7 +291,7 @@ public class Query extends EvaluatorCollection {
         Set<O> result;
 
         //Creating result data collection.
-        if(orderFields.size() > 0) {
+        if(orderParameters.size() > 0) {
             //If the query has order fields then creates a tree set with
             //a comparator using the order fields.
             result = new TreeSet<>((o1, o2) -> {
@@ -268,10 +299,10 @@ public class Query extends EvaluatorCollection {
 
                 Comparable<Object> comparable1;
                 Comparable<Object> comparable2;
-                for (OrderField orderField : orderFields) {
+                for (QueryOrderParameter orderField : orderParameters) {
                     try {
-                        comparable1 = consumer.get(o1, orderField.getQueryField().getFieldName());
-                        comparable2 = consumer.get(o2, orderField.getQueryField().getFieldName());
+                        comparable1 = consumer.get(o1, (QueryParameter) orderField);
+                        comparable2 = consumer.get(o2, (QueryParameter) orderField);
                     } catch (ClassCastException ex) {
                         throw new IllegalArgumentException("Order field must be comparable");
                     }
@@ -341,8 +372,8 @@ public class Query extends EvaluatorCollection {
 
         //Creates the first query for the original resource.
         Query joinQuery = new Query(getResourceName());
-        joinQuery.returnFields.addAll(this.returnFields);
-        for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResourceName())) {
+        joinQuery.returnParameters.addAll(this.returnParameters);
+        for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResource())) {
             joinQuery.addEvaluator(evaluator);
         }
         //Set the first query as start by default
@@ -359,7 +390,7 @@ public class Query extends EvaluatorCollection {
             Join join = joins.get(i);
             joinQuery = new Query(join.getResourceName());
             joinQuery.addReturnField("*");
-            for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResourceName())) {
+            for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResource())) {
                 joinQuery.addEvaluator(evaluator);
             }
             queries.add(joinQuery);
@@ -386,7 +417,7 @@ public class Query extends EvaluatorCollection {
                 leftJoinables.addAll(dataSource.getResourceData(joinQuery));
             } else {
                 queryJoin = joins.get(j);
-                indexedJoineables = index(leftJoinables, queryJoin.getLeftField().getFieldName(), consumer);
+                indexedJoineables = index(leftJoinables, queryJoin.getLeftField(), consumer);
                 leftJoinables.clear();
                 keys = indexedJoineables.keySet();
                 joinQuery.addEvaluator(new In(queryJoin.getRightField().toString(), keys));
@@ -408,7 +439,7 @@ public class Query extends EvaluatorCollection {
         for (int i = queryStart - 1; i >= 0; i--, j--) {
             joinQuery = queries.get(i);
             queryJoin = joins.get(j);
-            indexedJoineables = index(rightJoinables, queryJoin.getRightField().getFieldName(), consumer);
+            indexedJoineables = index(rightJoinables, queryJoin.getRightField(), consumer);
             rightJoinables.clear();
             keys = indexedJoineables.keySet();
             joinQuery.addEvaluator(new In(queryJoin.getLeftField().toString(), keys));
@@ -427,14 +458,18 @@ public class Query extends EvaluatorCollection {
     /**
      *
      * @param collection
-     * @param resourceName
+     * @param resource
      * @return
      */
-    private List<Evaluator> getEvaluatorsFromResource(EvaluatorCollection collection, EvaluatorCollection parent, String resourceName) {
+    private List<Evaluator> getEvaluatorsFromResource(EvaluatorCollection collection, EvaluatorCollection parent, QueryResource resource) {
         List<Evaluator> result = new ArrayList<>();
         for(Evaluator evaluator : collection.getEvaluators()) {
             if(evaluator instanceof FieldEvaluator) {
-                if(((FieldEvaluator) evaluator).getQueryField().getResource().getResourceName().equals(resourceName)) {
+                QueryParameter queryParameter = ((FieldEvaluator) evaluator).getQueryParameter();
+                if((queryParameter instanceof QueryField &&
+                        ((QueryField)queryParameter).getResource().equals(resource)) ||
+                        (queryParameter instanceof QueryFunction &&
+                                ((QueryFunction)queryParameter).getResources().contains(resource))){
                     result.add(evaluator);
                 }
             } else if(evaluator instanceof EvaluatorCollection) {
@@ -444,7 +479,7 @@ public class Query extends EvaluatorCollection {
                 } else if(evaluator instanceof Or) {
                     subCollection = new Or(parent);
                 }
-                for(Evaluator subEvaluator : getEvaluatorsFromResource((EvaluatorCollection)evaluator, subCollection, resourceName)) {
+                for(Evaluator subEvaluator : getEvaluatorsFromResource((EvaluatorCollection)evaluator, subCollection, resource)) {
                     subCollection.addEvaluator(subEvaluator);
                 }
             }
@@ -460,7 +495,7 @@ public class Query extends EvaluatorCollection {
      * @param consumer Implementation to get the value from the collection
      * @return Return the filtered data indexed by value of the parameter field.
      */
-    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, String fieldIndex, Consumer<Joinable> consumer) {
+    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, QueryField fieldIndex, Consumer<Joinable> consumer) {
         Map<Object, Set<Joinable>> result = new HashMap<>();
 
         Object key;
@@ -521,8 +556,12 @@ public class Query extends EvaluatorCollection {
         result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));
         result.append(Strings.WHITE_SPACE);
         String separator = Strings.EMPTY_STRING;
-        for(QueryField field : getReturnFields()) {
+        for(QueryReturnParameter field : getReturnParameters()) {
             result.append(separator).append(field);
+            if(field.getAlias() != null) {
+                result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.AS));
+                result.append(Strings.WHITE_SPACE).append(field.getAlias());
+            }
             separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
         }
 
@@ -552,11 +591,11 @@ public class Query extends EvaluatorCollection {
             toStringEvaluatorCollection(result, this);
         }
 
-        if(orderFields.size() > 0) {
+        if(orderParameters.size() > 0) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
             separator = Strings.EMPTY_STRING;
-            for(OrderField orderField : orderFields) {
-                result.append(separator).append(orderField.getQueryField());
+            for(QueryOrderParameter orderField : orderParameters) {
+                result.append(separator).append(orderField);
                 if(orderField.isDesc()) {
                     result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
                 }
@@ -593,7 +632,7 @@ public class Query extends EvaluatorCollection {
                 }
             } else if(evaluator instanceof FieldEvaluator) {
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-                result.append(fieldEvaluator.getQueryField()).append(Strings.WHITE_SPACE);
+                result.append(fieldEvaluator.getQueryParameter()).append(Strings.WHITE_SPACE);
                 if (fieldEvaluator instanceof Distinct) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof Equals) {
@@ -677,9 +716,9 @@ public class Query extends EvaluatorCollection {
 
         if(matcher.matches()) {
             String selectBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.SELECT_GROUP_INDEX));
-            selectBody = selectBody.replaceFirst("(?i)"+SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT), Strings.EMPTY_STRING);
+            selectBody = selectBody.replaceFirst(Strings.CASE_INSENSITIVE_REGEX_FLAG+SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT), Strings.EMPTY_STRING);
             String fromBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.FROM_GROUP_INDEX));
-            fromBody = fromBody.replaceFirst("(?i)"+SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
+            fromBody = fromBody.replaceFirst(Strings.CASE_INSENSITIVE_REGEX_FLAG+SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
             String conditionalBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
             if(conditionalBody != null && conditionalBody.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))) {
                 conditionalBody = conditionalBody.substring(0, conditionalBody.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))-1);
@@ -687,9 +726,10 @@ public class Query extends EvaluatorCollection {
 
             query = new Query(fromBody.trim());
 
-            for(String returnFields : selectBody.split(SystemProperties.get(
+            for(String returnField : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                query.addReturnField(returnFields);
+                query.addReturnField((QueryReturnParameter)
+                        processStringValue(groups, returnField, null, QueryReturnParameter.class));
             }
 
             if(conditionalBody != null) {
@@ -716,12 +756,8 @@ public class Query extends EvaluatorCollection {
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                            boolean desc = SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER);
-                            if (orderField.toUpperCase().contains(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
-                                desc = true;
-                                orderField = orderField.replaceAll(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC), Strings.EMPTY_STRING).trim();
-                            }
-                            query.addOrderField(orderField, desc);
+                            query.addOrderField((QueryOrderParameter)
+                                    processStringValue(groups, orderField, null, QueryOrderParameter.class));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         query.setLimit(Integer.parseInt(elementValue));
@@ -809,11 +845,14 @@ public class Query extends EvaluatorCollection {
 
     private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, AtomicInteger placesIndex) {
         String[] evaluatorValues;
-        String fieldValue;
+        Object firstObject;
+        Object secondObject;
+        String firstArgument;
+        String secondArgument;
         String operator;
-        Object value;
-        String stringValue;
         Evaluator evaluator = null;
+        QueryParameter queryParameter;
+        Object value;
 
         if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
@@ -823,8 +862,8 @@ public class Query extends EvaluatorCollection {
             if (evaluatorValues.length >= 3) {
 
                 boolean operatorDone = false;
-                fieldValue = "";
-                stringValue = "";
+                firstArgument = Strings.EMPTY_STRING;
+                secondArgument = Strings.EMPTY_STRING;
                 operator = null;
                 for (String evaluatorValue : evaluatorValues) {
                     if (!operatorDone && (evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
@@ -839,9 +878,9 @@ public class Query extends EvaluatorCollection {
                         operator = evaluatorValue.trim();
                         operatorDone = true;
                     } else if (operatorDone) {
-                        stringValue += evaluatorValue + Strings.WHITE_SPACE;
+                        secondArgument += evaluatorValue + Strings.WHITE_SPACE;
                     } else {
-                        fieldValue += evaluatorValue + Strings.WHITE_SPACE;
+                        firstArgument += evaluatorValue + Strings.WHITE_SPACE;
                     }
                 }
 
@@ -849,33 +888,42 @@ public class Query extends EvaluatorCollection {
                     throw new IllegalArgumentException("Operator not found for expression: " + definition);
                 }
 
-                fieldValue = fieldValue.trim();
+                firstObject = processStringValue(groups, firstArgument.trim(), placesIndex, QueryParameter.class);
+                secondObject = processStringValue(groups, secondArgument.trim(), placesIndex, QueryParameter.class);
                 operator = operator.trim();
 
-                //Check the different types of parameters
-                stringValue = stringValue.trim();
-                value = processStringValue(groups, stringValue, placesIndex);
+                if(firstObject instanceof QueryParameter) {
+                    queryParameter = (QueryParameter) firstObject;
+                    if(secondObject instanceof QueryParameter) {
+                        value = new FieldEvaluator.QueryFieldValue((QueryParameter) secondObject);
+                    } else {
+                        value = secondObject;
+                    }
+                } else if(secondObject instanceof QueryParameter) {
+                    queryParameter = (QueryParameter) secondObject;
+                    value = firstObject;
+                } else {
+                    throw new IllegalArgumentException("");
+                }
 
                 if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
-                    evaluator = new Distinct(fieldValue, value);
+                    evaluator = new Distinct(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))) {
-                    evaluator = new Equals(fieldValue, value);
+                    evaluator = new Equals(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))) {
-                    evaluator = new GreaterThan(fieldValue, value);
+                    evaluator = new GreaterThan(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))) {
-                    evaluator = new GreaterThanOrEqual(fieldValue, value);
+                    evaluator = new GreaterThanOrEqual(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))) {
-                    evaluator = new In(fieldValue, value);
+                    evaluator = new In(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))) {
-                    evaluator = new Like(fieldValue, value);
+                    evaluator = new Like(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))) {
-                    evaluator = new NotIn(fieldValue, value);
+                    evaluator = new NotIn(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))) {
-                    evaluator = new SmallerThan(fieldValue, value);
+                    evaluator = new SmallerThan(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
-                    evaluator = new SmallerThanOrEqual(fieldValue, value);
-                } else {
-
+                    evaluator = new SmallerThanOrEqual(queryParameter, value);
                 }
 
                 collection.addEvaluator(evaluator);
@@ -885,8 +933,8 @@ public class Query extends EvaluatorCollection {
         }
     }
 
-    private static Object processStringValue(List<String> groups, String stringValue, AtomicInteger placesIndex) {
-        Object result;
+    private static Object processStringValue(List<String> groups, String stringValue, AtomicInteger placesIndex, Class parameterClass) {
+        Object result = null;
         if(stringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
             //If the string value is equals than "?" then the value object is an instance of ReplaceableValue.
             result = new FieldEvaluator.ReplaceableValue(placesIndex.getAndAdd(1));
@@ -918,30 +966,71 @@ public class Query extends EvaluatorCollection {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 for (String subStringValue : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(groups, subStringValue, placesIndex));
+                    collection.add(processStringValue(groups, subStringValue, placesIndex, parameterClass));
                 }
                 result = collection;
-            }
-        } else if(stringValue.startsWith(Strings.START_GROUP)) {
-            if (stringValue.endsWith(Strings.END_GROUP)) {
-                //If the string value start with "(" and end with ")" then the value is a collection.
-                Collection<Object> collection = new ArrayList<>();
-                stringValue = stringValue.substring(1, stringValue.length() - 1);
-                for (String subStringValue : stringValue.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(groups, subStringValue, placesIndex));
-                }
-                result = collection;
-            } else {
-                throw new IllegalArgumentException();
             }
         } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
             result = UUID.fromString(stringValue);
-        } else {
-            //The last chance is the value be a number
+        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_NUMBER_REGEX))) {
             try {
                 result = NumberFormat.getInstance().parse(stringValue);
             } catch (ParseException e) {
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("");
+            }
+        } else {
+            //Default case, only must be a query parameter.
+            String functionName = null;
+            String originalValue = null;
+            String replaceValue = null;
+            String group = null;
+            List<Object> functionParameters = null;
+            Boolean function = false;
+            if(stringValue.contains(Strings.REPLACEABLE_GROUP)) {
+                replaceValue = Strings.getGroupIndex(stringValue);
+                group = groups.get(Integer.parseInt(replaceValue.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING)));
+                functionName = stringValue.substring(0, stringValue.indexOf(Strings.REPLACEABLE_GROUP));
+                originalValue = stringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
+                functionParameters = new ArrayList<>();
+                for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                    functionParameters.add(processStringValue(groups, param, placesIndex, parameterClass));
+                }
+                function = true;
+            } else {
+                originalValue = stringValue;
+            }
+
+            if(parameterClass.equals(QueryParameter.class)) {
+                if(function) {
+                    result = new QueryFunction(originalValue, functionName, functionParameters);
+                } else {
+                    result = new QueryField(stringValue);
+                }
+            } else if(parameterClass.equals(QueryReturnParameter.class)) {
+                String alias = null;
+                if(originalValue.contains(SystemProperties.get(SystemProperties.Query.ReservedWord.AS))) {
+                    alias = originalValue.substring(originalValue.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.AS)) +
+                            SystemProperties.get(SystemProperties.Query.ReservedWord.AS).length()).trim();
+                    originalValue = originalValue.substring(0, originalValue.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.AS))).trim();
+                }
+
+                if(function) {
+                    result = new QueryReturnFunction(originalValue, functionName, functionParameters, alias);
+                } else {
+                    result = new QueryReturnField(originalValue, alias);
+                }
+            } else if(parameterClass.equals(QueryOrderParameter.class)) {
+                boolean desc = false;
+                if(originalValue.contains(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
+                    originalValue = originalValue.substring(0, originalValue.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))).trim();
+                    desc = true;
+                }
+
+                if(function) {
+                    result = new QueryOrderFunction(originalValue, functionName, functionParameters, desc) ;
+                } else {
+                    result = new QueryOrderField(originalValue, desc);
+                }
             }
         }
 
@@ -982,11 +1071,11 @@ public class Query extends EvaluatorCollection {
         /**
          * Get naming information from an instance.
          * @param instance Data source.
-         * @param fieldName Name of particular data.
+         * @param queryParameter Query parameter.
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
-        public <R extends Object> R get(O instance, String fieldName);
+        public <R extends Object> R get(O instance, QueryParameter queryParameter);
 
     }
 
@@ -999,27 +1088,32 @@ public class Query extends EvaluatorCollection {
          * Get naming information from an instance.
          *
          * @param instance    Data source.
-         * @param fieldName Name of particular data.
+         * @param queryParameter Query parameter.
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
         @Override
-        public <R extends Object> R get(O instance, String fieldName) {
+        public <R extends Object> R get(O instance, QueryParameter queryParameter) {
             Object result = null;
-            try {
-                if(instance instanceof JoinableMap) {
-                    result = ((JoinableMap)instance).get(fieldName);
-                } else {
-                    Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
-                    if (getter != null) {
-                        result = getter.get(instance);
+            if(queryParameter instanceof QueryField) {
+                String fieldName = ((QueryField)queryParameter).getFieldName();
+                try {
+                    if (instance instanceof JoinableMap) {
+                        result = ((JoinableMap) instance).get(fieldName);
                     } else {
-                        Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
-                                "Order field not found: %s", fieldName);
+                        Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
+                        if (getter != null) {
+                            result = getter.get(instance);
+                        } else {
+                            Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
+                                    "Order field not found: %s", fieldName);
+                        }
                     }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("Unable to obtain order field value", ex);
                 }
-            } catch (Exception ex) {
-                throw new IllegalArgumentException("Unable to obtain order field value", ex);
+            } else if(queryParameter instanceof QueryFunction) {
+                throw new UnsupportedOperationException("Function: " + ((QueryFunction)queryParameter).getFunctionName());
             }
             return (R) result;
         }
@@ -1038,36 +1132,6 @@ public class Query extends EvaluatorCollection {
          */
         public Collection<O> getResourceData(Query query);
 
-    }
-
-    /**
-     * This class represents a order field with desc property
-     */
-    public static class OrderField {
-
-        private final QueryField queryField;
-        private final boolean desc;
-
-        public OrderField(QueryField queryField, boolean desc) {
-            this.queryField = queryField;
-            this.desc = desc;
-        }
-
-        /**
-         * Return the query field
-         * @return Query field
-         */
-        public QueryField getQueryField() {
-            return queryField;
-        }
-
-        /**
-         * Return the desc property.
-         * @return Desc property.
-         */
-        public boolean isDesc() {
-            return desc;
-        }
     }
 
     /**
@@ -1110,17 +1174,92 @@ public class Query extends EvaluatorCollection {
         }
     }
 
+    public static abstract class QueryParameter implements Comparable<QueryParameter>, QueryComponent {
+
+        private final String originalValue;
+
+        public QueryParameter(String originalValue) {
+            this.originalValue = originalValue.trim();
+        }
+
+        /**
+         * Return the original representation of the field.
+         * @return Original representation.
+         */
+        @Override
+        public String toString() {
+            return originalValue;
+        }
+
+        /**
+         * Compare the original value of the fields.
+         * @param obj Other field.
+         * @return True if the fields are equals.
+         */
+        @Override
+        public boolean equals(Object obj) {
+            boolean result = false;
+            if(obj instanceof QueryParameter) {
+                result = toString().equals(obj.toString());
+            }
+            return result;
+        }
+
+        @Override
+        public int compareTo(QueryParameter o) {
+            return toString().compareTo(o.toString());
+        }
+
+    }
+
+    /**
+     *
+     */
+    public static class QueryFunction extends QueryParameter {
+
+        private final String functionName;
+        private final List<Object> parameters;
+
+        public QueryFunction(String originalFunction, String functionName, List<Object> parameters) {
+            super(originalFunction);
+            this.functionName = functionName;
+            this.parameters = parameters;
+        }
+
+        public String getFunctionName() {
+            return functionName;
+        }
+
+        public List<Object> getParameters() {
+            return parameters;
+        }
+
+        public Set<QueryResource> getResources() {
+            Set<QueryResource> queryResources = new TreeSet<>();
+
+            for(Object parameter : parameters) {
+                if(parameter instanceof QueryField) {
+                    queryResources.add(((QueryField)parameter).getResource());
+                } else if(parameter instanceof QueryFunction) {
+                    queryResources.addAll(((QueryFunction)parameter).getResources());
+                }
+            }
+
+            return queryResources;
+        }
+    }
+
     /**
      * This class represents any kind of query fields.
      */
-    public static class QueryField implements Comparable<QueryField>, QueryComponent {
+    public static class QueryField extends QueryParameter {
 
         private QueryResource resource;
         private String fieldName;
         private final String index;
-        private final String originalValue;
 
         public QueryField(String field) {
+            super(field);
             if(field.contains(Strings.CLASS_SEPARATOR)) {
                 resource = new QueryResource(field.substring(0, field.lastIndexOf(Strings.CLASS_SEPARATOR)));
                 this.fieldName = field.substring(field.lastIndexOf(Strings.CLASS_SEPARATOR) + 1).trim();
@@ -1135,7 +1274,6 @@ public class Query extends EvaluatorCollection {
             } else {
                 index = null;
             }
-            this.originalValue = field;
         }
 
         protected void setResource(QueryResource resource) {
@@ -1166,55 +1304,32 @@ public class Query extends EvaluatorCollection {
             return index;
         }
 
-        /**
-         * Return the original representation of the field.
-         * @return Original representation.
-         */
-        @Override
-        public String toString() {
-            return originalValue;
-        }
+    }
+
+    public interface QueryReturnParameter extends QueryComponent {
 
         /**
-         * Compare the original value of the fields.
-         * @param obj Other field.
-         * @return True if the fields are equals.
+         * Return the field alias, can be null.
+         * @return Field alias.
          */
-        @Override
-        public boolean equals(Object obj) {
-            boolean result = false;
-            if(obj instanceof QueryField) {
-                result = toString().equals(obj.toString());
-            }
-            return result;
-        }
+        public String getAlias();
 
-        @Override
-        public int compareTo(QueryField o) {
-            return toString().compareTo(o.toString());
-        }
     }
 
     /**
      * This kind of component represent the fields to be returned into the query.
      */
-    public static class QueryReturnField extends QueryField {
+    public static class QueryReturnField extends QueryField implements QueryReturnParameter {
 
         private final String alias;
-        private final String originalValue;
 
         public QueryReturnField(String field) {
-            super(field.contains(SystemProperties.get(SystemProperties.Query.ReservedWord.AS)) ?
-                    field.substring(0, field.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.AS))).trim() :
-                    field);
+            this(field, null);
+        }
 
-            originalValue = field;
-            if(field.contains(SystemProperties.get(SystemProperties.Query.ReservedWord.AS))) {
-                alias = field.substring(field.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.AS)) +
-                        SystemProperties.get(SystemProperties.Query.ReservedWord.AS).length()).trim();
-            } else {
-                alias = null;
-            }
+        public QueryReturnField(String field, String alias) {
+            super(field);
+            this.alias = alias;
         }
 
         /**
@@ -1225,14 +1340,74 @@ public class Query extends EvaluatorCollection {
             return alias;
         }
 
-        /**
-         * String representation of the field.
-         * @return
-         */
-        @Override
-        public String toString() {
-            return originalValue;
+    }
+
+    public static class QueryReturnFunction extends QueryFunction implements QueryReturnParameter {
+
+        private final String alias;
+
+        public QueryReturnFunction(String originalFunction, String functionName, List<Object> parameters, String alias) {
+            super(originalFunction, functionName, parameters);
+            this.alias = alias;
         }
+
+        /**
+         * Return the field alias, can be null.
+         * @return Field alias.
+         */
+        public String getAlias() {
+            return alias;
+        }
+    }
+
+    public interface QueryOrderParameter extends QueryComponent {
+
+        /**
+         * Return the desc property.
+         * @return Desc property.
+         */
+        public boolean isDesc();
+
+    }
+
+    /**
+     * This class represents a order field with desc property
+     */
+    public static class QueryOrderField extends QueryField implements QueryOrderParameter {
+
+        private final boolean desc;
+
+        public QueryOrderField(String field, boolean desc) {
+            super(field);
+            this.desc = desc;
+        }
+
+        /**
+         * Return the desc property.
+         * @return Desc property.
+         */
+        public boolean isDesc() {
+            return desc;
+        }
+    }
+
+    public static class QueryOrderFunction extends QueryFunction implements QueryOrderParameter {
+
+        private final boolean desc;
+
+        public QueryOrderFunction(String originalFunction, String functionName, List<Object> parameters, boolean desc) {
+            super(originalFunction, functionName, parameters);
+            this.desc = desc;
+        }
+
+        /**
+         * Return the desc property.
+         * @return Desc property.
+         */
+        public boolean isDesc() {
+            return desc;
+        }
+
     }
 
 }

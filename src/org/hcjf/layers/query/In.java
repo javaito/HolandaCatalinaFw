@@ -11,7 +11,11 @@ import java.util.Map;
 public class In extends FieldEvaluator {
 
     public In(String fieldName, Object value) {
-        super(new Query.QueryField(fieldName), value);
+        this(new Query.QueryField(fieldName), value);
+    }
+
+    public In(Query.QueryParameter parameter, Object value) {
+        super(parameter, value);
     }
 
     @Override
@@ -19,8 +23,8 @@ public class In extends FieldEvaluator {
         boolean result = false;
 
         try {
-            Object value = getValue(dataSource, consumer, parameters);
-            Object fieldValue = consumer.get(object, getQueryField().toString());
+            Object value = getValue(object, dataSource, consumer, parameters);
+            Object fieldValue = consumer.get(object, getQueryParameter());
             if(fieldValue instanceof Number) {
                 if(fieldValue instanceof Double || fieldValue instanceof Float) {
                     fieldValue = new Double(((Number)fieldValue).doubleValue());

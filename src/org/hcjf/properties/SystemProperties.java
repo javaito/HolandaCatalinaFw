@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
+import org.hcjf.layers.query.Query;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -30,6 +31,7 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_XML = "hcjf.default.properties.file.xml";
     public static final String HCJF_UUID_REGEX = "hcjf.uuid.regex";
+    public static final String HCJF_NUMBER_REGEX = "hcjf.number.regex";
 
     public static final class Service {
         public static final String THREAD_POOL_CORE_SIZE = "hcjf.service.thread.pool.core.size";
@@ -127,6 +129,8 @@ public final class SystemProperties extends Properties {
         public static final String WHERE_REGULAR_EXPRESSION = "hcjf.query.where.regular.expression";
         public static final String OPERATION_REGULAR_EXPRESSION = "hcjf.query.operation.regular.expression";
         public static final String JOIN_REGULAR_EXPRESSION = "hcjf.query.join.regular.expression";
+        public static final String AS_REGULAR_EXPRESSION = "hcjf.query.as.regular.expression";
+        public static final String DESC_REGULAR_EXPRESSION = "hcjf.query.desc.regular.expression";
         public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
         public static final String FROM_GROUP_INDEX = "hcjf.query.from.group.index";
         public static final String CONDITIONAL_GROUP_INDEX = "hcjf.query.conditional.group.index";
@@ -217,6 +221,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, "default.locale.layer");
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
         defaults.put(HCJF_UUID_REGEX, "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+        defaults.put(HCJF_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
 
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
         defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
@@ -292,8 +297,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by ))");
         defaults.put(Query.WHERE_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
-        defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|>|<|>=|<=|in|not in|like))|(?=(=|<>|>|<|>=|<=|in|not in|like))");
+        defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|>|<|>=|<=| in | not in | like ))|(?=(=|<>|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on |\\=)");
+        defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
+        defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)( desc )");
         defaults.put(Query.SELECT_GROUP_INDEX, "1");
         defaults.put(Query.FROM_GROUP_INDEX, "2");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "3");
