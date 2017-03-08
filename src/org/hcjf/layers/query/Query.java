@@ -1172,7 +1172,11 @@ public class Query extends EvaluatorCollection {
 
         @Override
         public boolean equals(Object obj) {
-            return resourceName.equals(obj);
+            boolean result = false;
+            if(obj instanceof QueryResource) {
+                result = resourceName.equals(((QueryResource)obj).getResourceName());
+            }
+            return result;
         }
 
         @Override
