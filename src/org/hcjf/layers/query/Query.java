@@ -966,7 +966,7 @@ public class Query extends EvaluatorCollection {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 for (String subStringValue : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(groups, subStringValue, placesIndex, parameterClass));
+                    collection.add(processStringValue(groups, subStringValue.trim(), placesIndex, parameterClass));
                 }
                 result = collection;
             }
