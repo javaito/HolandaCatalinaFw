@@ -160,8 +160,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField) {
-        addOrderField(orderField, SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER));
-        return this;
+        return addOrderField(orderField, SystemProperties.getBoolean(SystemProperties.Query.DEFAULT_DESC_ORDER));
     }
 
     /**
@@ -172,8 +171,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField, boolean desc) {
-        orderParameters.add((QueryOrderField) checkQueryParameter(new QueryOrderField(orderField, desc)));
-        return this;
+        return addOrderField(new QueryOrderField(orderField, desc));
     }
 
     /**
@@ -183,7 +181,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(QueryOrderParameter orderParameter) {
-        orderParameters.add(orderParameter);
+        orderParameters.add((QueryOrderParameter) checkQueryParameter((QueryParameter) orderParameter));
         return this;
     }
 
@@ -201,8 +199,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addReturnField(String returnField) {
-        returnParameters.add((QueryReturnField) checkQueryParameter(new QueryReturnField(returnField)));
-        return this;
+        return addReturnField(new QueryReturnField(returnField));
     }
 
     /**
@@ -211,7 +208,7 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addReturnField(QueryReturnParameter returnParameter) {
-        returnParameters.add(returnParameter);
+        returnParameters.add((QueryReturnParameter) checkQueryParameter((QueryParameter) returnParameter));
         return this;
     }
 
@@ -843,6 +840,13 @@ public class Query extends EvaluatorCollection {
         }
     }
 
+    /**
+     *
+     * @param definition
+     * @param collection
+     * @param groups
+     * @param placesIndex
+     */
     private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, AtomicInteger placesIndex) {
         String[] evaluatorValues;
         Object firstObject;
@@ -933,6 +937,14 @@ public class Query extends EvaluatorCollection {
         }
     }
 
+    /**
+     *
+     * @param groups
+     * @param stringValue
+     * @param placesIndex
+     * @param parameterClass
+     * @return
+     */
     private static Object processStringValue(List<String> groups, String stringValue, AtomicInteger placesIndex, Class parameterClass) {
         Object result = null;
         if(stringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
@@ -1205,6 +1217,11 @@ public class Query extends EvaluatorCollection {
             return result;
         }
 
+        /**
+         * Compare the string representation of both objects.
+         * @param o Other object.
+         * @return Magnitude of the difference between both objects.
+         */
         @Override
         public int compareTo(QueryParameter o) {
             return toString().compareTo(o.toString());
@@ -1276,6 +1293,10 @@ public class Query extends EvaluatorCollection {
             }
         }
 
+        /**
+         * Return the resource of the field.
+         * @param resource Field resource.
+         */
         protected void setResource(QueryResource resource) {
             this.resource = resource;
         }

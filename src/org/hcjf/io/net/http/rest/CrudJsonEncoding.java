@@ -87,7 +87,7 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
                         JsonObject evaluatorJsonObject = new JsonObject();
                         evaluatorJsonObject.add(EVALUATOR_ACTION_FIELD,
                                 new JsonPrimitive(Strings.uncapitalize(evaluator.getClass().getSimpleName())));
-                        evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(fieldEvaluator.getQueryField().toString()));
+                        evaluatorJsonObject.add(EVALUATOR_FIELD_FIELD, new JsonPrimitive(fieldEvaluator.getQueryParameter().toString()));
                         evaluatorJsonObject.add(EVALUATOR_VALUE_FIELD, createTypedObject(fieldEvaluator.getRawValue()));
                         evaluatorArray.add(evaluatorJsonObject);
                     }
