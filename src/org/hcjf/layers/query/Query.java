@@ -960,7 +960,7 @@ public class Query extends EvaluatorCollection {
         } else if(stringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(stringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
-            if(group.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
+            if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 result = new FieldEvaluator.QueryValue(Query.compile(groups, index));
             } else {
                 //If the string value start with "(" and end with ")" then the value is a collection.
