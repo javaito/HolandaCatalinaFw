@@ -746,7 +746,7 @@ public class Query extends EvaluatorCollection {
                                 joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim(),
                                 new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim()),
                                 new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim()),
-                                Join.JoinType.valueOf(element));
+                                Join.JoinType.valueOf(element.toUpperCase()));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
                         completeWhere(elementValue, groups, query, 0, new AtomicInteger(0));
