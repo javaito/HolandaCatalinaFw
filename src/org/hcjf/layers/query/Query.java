@@ -746,7 +746,7 @@ public class Query extends EvaluatorCollection {
                                 joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim(),
                                 new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim()),
                                 new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim()),
-                                Join.JoinType.valueOf(element));
+                                Join.JoinType.valueOf(element.toUpperCase()));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
                         completeWhere(elementValue, groups, query, 0, new AtomicInteger(0));
@@ -972,13 +972,13 @@ public class Query extends EvaluatorCollection {
         } else if(stringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(stringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
-            if(group.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
+            if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 result = new FieldEvaluator.QueryValue(Query.compile(groups, index));
             } else {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 for (String subStringValue : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(groups, subStringValue, placesIndex, parameterClass));
+                    collection.add(processStringValue(groups, subStringValue.trim(), placesIndex, parameterClass));
                 }
                 result = collection;
             }
@@ -1172,7 +1172,11 @@ public class Query extends EvaluatorCollection {
 
         @Override
         public boolean equals(Object obj) {
-            return resourceName.equals(obj);
+            boolean result = false;
+            if(obj instanceof QueryResource) {
+                result = resourceName.equals(((QueryResource)obj).getResourceName());
+            }
+            return result;
         }
 
         @Override
