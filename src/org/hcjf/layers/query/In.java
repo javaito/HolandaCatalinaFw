@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -50,7 +51,21 @@ public class In extends FieldEvaluator {
             } else {
                 //If the field value is not any kind of collection then the method evaluate equals condition between
                 //the field value and the value.
-                result = value.equals(fieldValue);
+                if(fieldValue instanceof Number) {
+                    if(value instanceof Number) {
+                        if(fieldValue instanceof Double || fieldValue instanceof Float ||
+                                value instanceof Double || value instanceof Float) {
+                            result = new BigDecimal(((Number) fieldValue).doubleValue()).equals(
+                                    new BigDecimal(((Number) value).doubleValue()));
+                        } else {
+                            result = ((Number) fieldValue).longValue() == ((Number) value).longValue();
+                        }
+                    } else {
+                        result = false;
+                    }
+                } else {
+                    result = fieldValue.equals(value);
+                }
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("In evaluator fail", ex);
