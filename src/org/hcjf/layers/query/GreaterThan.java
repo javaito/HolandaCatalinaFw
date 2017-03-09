@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import java.util.Map;
+
 /**
  * Evaluate if the field's value of the instance is greater than the
  * parameter value.
@@ -32,6 +34,7 @@ public class GreaterThan extends FieldEvaluator {
      * parameter value.
      * @param object Object of the data collection.
      * @param consumer Data source consumer
+     * @param valuesMap Values
      * @return True if he field's value is greater than the parameter value and
      * false in the other ways.
      * @throws IllegalArgumentException
@@ -40,10 +43,13 @@ public class GreaterThan extends FieldEvaluator {
      * <li> If the parameter value and field's valur are incompatible: 'Incompatible types between value and field's value'</li>
      */
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
         boolean result;
         try {
-            Object value = getValue(object, dataSource, consumer, parameters);
+            Object value = valuesMap.get(this);
+            if(value instanceof Query.QueryParameter) {
+                value = consumer.get(object, ((Query.QueryParameter)value));
+            }
             Object fieldValue = consumer.get(object, getQueryParameter());
             if(Comparable.class.isAssignableFrom(value.getClass()) &&
                     Comparable.class.isAssignableFrom(fieldValue.getClass())) {

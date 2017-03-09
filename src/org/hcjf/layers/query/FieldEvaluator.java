@@ -54,17 +54,17 @@ public abstract class FieldEvaluator implements Evaluator {
      * instance.
      * @return Object value.
      */
-    public final Object getValue(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
+    public final Object getValue(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
         Object result = value;
         if(result instanceof UnprocessedValue) {
-            result = ((UnprocessedValue)value).process(object, dataSource, consumer, parameters);
+            result = ((UnprocessedValue)value).process(dataSource, consumer, parameters);
         }
 
         if(result instanceof Collection) {
             Collection<Object> collectionResult = new ArrayList<>();
             for(Object internalValue : (Collection)result) {
                 if(internalValue instanceof UnprocessedValue) {
-                    collectionResult.add(((UnprocessedValue)internalValue).process(object, dataSource, consumer, parameters));
+                    collectionResult.add(((UnprocessedValue)internalValue).process(dataSource, consumer, parameters));
                 } else {
                     collectionResult.add(internalValue);
                 }
@@ -107,13 +107,12 @@ public abstract class FieldEvaluator implements Evaluator {
 
         /**
          * Return the processed value.
-         * @param object In-evaluation object.
          * @param dataSource Data source of the in-evaluation object.
          * @param consumer Consumer for the object.
          * @param parameters Implementation parameters.
          * @return Processed value.
          */
-        public Object process(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters);
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters);
 
     }
 
@@ -130,45 +129,18 @@ public abstract class FieldEvaluator implements Evaluator {
 
         /**
          * Return the processed value.
-         * @param object In-evaluation object.
          * @param dataSource Data source of the in-evaluation object.
          * @param consumer Consumer for the object.
          * @param parameters Implementation parameters.
          * @return Processed value.
          */
         @Override
-        public Object process(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
             if(parameters.length <= place) {
                 throw new IllegalArgumentException("Non-specified replaceable value, index " + place);
             }
 
             return parameters[place];
-        }
-    }
-
-    /**
-     * This implementation is for the case that the evaluator use 2 fields of the
-     * same row.
-     */
-    public static class QueryFieldValue implements UnprocessedValue {
-
-        private final Query.QueryParameter queryParameter;
-
-        public QueryFieldValue(Query.QueryParameter queryParameter) {
-            this.queryParameter = queryParameter;
-        }
-
-        /**
-         * Return the value of the other field.
-         * @param object In-evaluation object.
-         * @param dataSource Data source of the in-evaluation object.
-         * @param consumer Consumer for the object.
-         * @param parameters Implementation parameters.
-         * @return Field value.
-         */
-        @Override
-        public Object process(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
-            return consumer.get(object, queryParameter);
         }
     }
 
@@ -195,8 +167,7 @@ public abstract class FieldEvaluator implements Evaluator {
          * Evaluate the sub-query a return the collection result set as value.
          * The first value of the parameters array (parameters[0]) is the instance of data source to evaluate the sub-query.
          * The second value of the parameters array (parameters[1]) is the instance of the consumer to evaluate the sub-query.
-         * The rest of the parameters are the parameter to evaluate the sub-query.
-         * @param object In-evaluation object.
+         * The rest of the parameters are the parameter to evaluate the sub-query..
          * @param dataSource Data source of the in-evaluation object.
          * @param consumer Consumer for the object.
          * @param parameters Implementation parameters.
@@ -204,7 +175,7 @@ public abstract class FieldEvaluator implements Evaluator {
          * size is greater than one then the result will be a collection with object instance.
          */
         @Override
-        public Object process(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
             Object result;
             Collection<Object> collection;
             Collection<Object> subQueryResult = query.evaluate(dataSource, consumer, parameters);

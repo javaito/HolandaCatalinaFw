@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -17,11 +18,14 @@ public class Like extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
+    public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
         boolean result = false;
 
         try {
-            Object value = getValue(object, dataSource, consumer, parameters);
+            Object value = valuesMap.get(this);
+            if(value instanceof Query.QueryParameter) {
+                value = consumer.get(object, (Query.QueryParameter)value);
+            }
             Object fieldValue = consumer.get(object, getQueryParameter());
             if(fieldValue instanceof String) {
                 if(value instanceof Pattern) {

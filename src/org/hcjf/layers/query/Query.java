@@ -329,6 +329,8 @@ public class Query extends EvaluatorCollection {
             result = new LinkedHashSet<>();
         }
 
+        Map<Evaluator,Object> valuesMap = createValuesMap(this, dataSource, consumer, parameters);
+
         //Getting data from data source.
         Collection<O> data;
         if(joins.size() > 0) {
@@ -346,7 +348,7 @@ public class Query extends EvaluatorCollection {
         for(O object : data) {
             add = true;
             for(Evaluator evaluator : getEvaluators()) {
-                add = evaluator.evaluate(object, dataSource, consumer, parameters);
+                add = evaluator.evaluate(object, consumer, valuesMap);
             if(!add) {
                     break;
                 }
@@ -363,12 +365,35 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
+     * Creates a map with the value for all the unresolved values and raw values into
+     * each field evaluator.
+     * @param collection Evaluator collection.
+     * @param dataSource Data source.
+     * @param consumer Consumer.
+     * @param parameters Parameters.
+     * @return Map with all the needed values.
+     */
+    private Map<Evaluator, Object> createValuesMap(EvaluatorCollection collection,
+                                                   DataSource dataSource, Consumer consumer,
+                                                   Object... parameters){
+        Map<Evaluator, Object> result = new HashMap<>();
+        for(Evaluator evaluator : collection.getEvaluators()) {
+            if(evaluator instanceof FieldEvaluator) {
+                result.put(evaluator, ((FieldEvaluator)evaluator).getValue(dataSource, consumer, parameters));
+            } else if(evaluator instanceof EvaluatorCollection) {
+                result.putAll(createValuesMap((EvaluatorCollection)evaluator, dataSource, consumer, parameters));
+            }
+        }
+        return result;
+    }
+
+    /**
      * Create a joined data from data source using the joins instances stored in the query.
      * @param dataSource Data souce.
      * @param consumer Consumer.
      * @return Joined data collection.
      */
-    private final Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
+    private Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
         Collection<Joinable> result = new ArrayList<>();
 
         //Creates the first query for the original resource.
@@ -930,11 +955,7 @@ public class Query extends EvaluatorCollection {
 
                 if(firstObject instanceof QueryParameter) {
                     queryParameter = (QueryParameter) firstObject;
-                    if(secondObject instanceof QueryParameter) {
-                        value = new FieldEvaluator.QueryFieldValue((QueryParameter) secondObject);
-                    } else {
-                        value = secondObject;
-                    }
+                    value = secondObject;
                 } else if(secondObject instanceof QueryParameter) {
                     queryParameter = (QueryParameter) secondObject;
                     value = firstObject;
