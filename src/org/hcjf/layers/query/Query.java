@@ -336,11 +336,16 @@ public class Query extends EvaluatorCollection {
         if(joins.size() > 0) {
             //If the query has joins then data source must return the joined data
             //collection using all the resources
-            data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
+            data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer, valuesMap);
         } else {
+            //Creates the first query for the original resource.
+            Query resolveQuery = new Query(getResourceName());
+            resolveQuery.returnParameters.addAll(this.returnParameters);
+            copyEvaluators(resolveQuery, this, valuesMap);
+
             //If the query has not joins then data source must return data from
             //resource of the query.
-            data = dataSource.getResourceData(this);
+            data = dataSource.getResourceData(resolveQuery);
         }
 
         //Filtering data
@@ -362,6 +367,24 @@ public class Query extends EvaluatorCollection {
         }
 
         return result;
+    }
+
+    /**
+     * Copy all the evaluator from the source collection to destiny collection.
+     * @param dest Destiny collection.
+     * @param src Source collection.
+     * @param valuesMap Resolved values.
+     */
+    private void copyEvaluators(EvaluatorCollection dest, EvaluatorCollection src, Map<Evaluator, Object> valuesMap) {
+        for(Evaluator evaluator : src.getEvaluators()) {
+            if(evaluator instanceof FieldEvaluator) {
+                dest.addEvaluator(((FieldEvaluator)evaluator).copy(valuesMap.get(evaluator)));
+            } else if(evaluator instanceof And) {
+                copyEvaluators(dest.and(), (EvaluatorCollection) evaluator, valuesMap);
+            } else if(evaluator instanceof Or) {
+                copyEvaluators(dest.or(), (EvaluatorCollection) evaluator, valuesMap);
+            }
+        }
     }
 
     /**
@@ -393,14 +416,14 @@ public class Query extends EvaluatorCollection {
      * @param consumer Consumer.
      * @return Joined data collection.
      */
-    private Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
+    private Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer, Map<Evaluator,Object> valuesMap) {
         Collection<Joinable> result = new ArrayList<>();
 
         //Creates the first query for the original resource.
         Query joinQuery = new Query(getResourceName());
         joinQuery.returnParameters.addAll(this.returnParameters);
         for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResource())) {
-            joinQuery.addEvaluator(evaluator);
+            joinQuery.addEvaluator(((FieldEvaluator)evaluator).copy(valuesMap.get(evaluator)));
         }
         //Set the first query as start by default
         Query startQuery = joinQuery;
@@ -482,15 +505,15 @@ public class Query extends EvaluatorCollection {
             queryJoin = joins.get(j);
 
             if(queryJoin.getLeftField().getResource().equals(queryJoin.getResource())) {
-                //If the left field of the join has the same resource that join then the
-                //right field index the accumulated data.
-                firstField = queryJoin.getRightField();
-                secondField = queryJoin.getLeftField();
-            } else {
                 //If the right field of the join has the same resource that join then the
                 //left field index the accumulated data.
                 firstField = queryJoin.getLeftField();
                 secondField = queryJoin.getRightField();
+            } else {
+                //If the left field of the join has the same resource that join then the
+                //right field index the accumulated data.
+                firstField = queryJoin.getRightField();
+                secondField = queryJoin.getLeftField();
             }
 
             indexedJoineables = index(rightJoinables, firstField, consumer);

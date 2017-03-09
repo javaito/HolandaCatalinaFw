@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -89,6 +90,20 @@ public abstract class FieldEvaluator implements Evaluator {
      */
     public final Class getValueType() {
         return value.getClass();
+    }
+
+    /**
+     * Copy this field evaluator with other value.
+     * @param newValue New value.
+     * @return New instance.
+     */
+    public final FieldEvaluator copy(Object newValue) {
+        try {
+            return getClass().getConstructor(Query.QueryParameter.class, Object.class).
+                    newInstance(getQueryParameter(), newValue);
+        } catch (Exception e) {
+            throw new RuntimeException("");
+        }
     }
 
     /**
