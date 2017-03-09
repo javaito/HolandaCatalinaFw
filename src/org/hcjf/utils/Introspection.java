@@ -118,7 +118,7 @@ public final class Introspection {
                             }
                         }
                     }
-                    if(!clazz.getSuperclass().equals(Objects.class)) {
+                    if(clazz.getSuperclass() != null && !clazz.getSuperclass().equals(Objects.class)) {
                         result.putAll(getInvokers(clazz.getSuperclass(), filter));
                     }
                 } else {
