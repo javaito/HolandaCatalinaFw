@@ -305,11 +305,15 @@ public class Query extends EvaluatorCollection {
                     }
 
                     if(comparable1 == null ^ comparable2 == null) {
-                        compareResult = (comparable1 == null) ? -1 : 1;
+                        compareResult += (comparable1 == null) ? -1 : 1;
                     } else if(comparable1 == null && comparable2 == null) {
-                        compareResult = 0;
+                        compareResult += 0;
                     } else {
-                        compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+                        compareResult += comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+                    }
+
+                    if(compareResult != 0) {
+                        break;
                     }
                 }
 
@@ -405,6 +409,8 @@ public class Query extends EvaluatorCollection {
         In in;
         Join queryJoin = null;
         Set<Object> keys;
+        QueryField firstField;
+        QueryField secondField;
 
         //Evaluate from the start query to right
         int j = joinStart;
@@ -414,13 +420,26 @@ public class Query extends EvaluatorCollection {
                 leftJoinables.addAll(dataSource.getResourceData(joinQuery));
             } else {
                 queryJoin = joins.get(j);
-                indexedJoineables = index(leftJoinables, queryJoin.getLeftField(), consumer);
+
+                if(queryJoin.getLeftField().getResource().equals(queryJoin.getResource())) {
+                    //If the left field of the join has the same resource that join then the
+                    //right field index the accumulated data.
+                    firstField = queryJoin.getRightField();
+                    secondField = queryJoin.getLeftField();
+                } else {
+                    //If the right field of the join has the same resource that join then the
+                    //left field index the accumulated data.
+                    firstField = queryJoin.getLeftField();
+                    secondField = queryJoin.getRightField();
+                }
+
+                indexedJoineables = index(leftJoinables, firstField, consumer);
                 leftJoinables.clear();
                 keys = indexedJoineables.keySet();
-                joinQuery.addEvaluator(new In(queryJoin.getRightField().toString(), keys));
+                joinQuery.addEvaluator(new In(secondField.toString(), keys));
                 rightJoinables.addAll(dataSource.getResourceData(joinQuery));
                 for (Joinable rightJoinable : rightJoinables) {
-                    for (Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(queryJoin.getRightField().getFieldName()))) {
+                    for (Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(secondField.getFieldName()))) {
                         leftJoinables.add(leftJoinable.join(rightJoinable));
                     }
                 }
@@ -436,13 +455,26 @@ public class Query extends EvaluatorCollection {
         for (int i = queryStart - 1; i >= 0; i--, j--) {
             joinQuery = queries.get(i);
             queryJoin = joins.get(j);
-            indexedJoineables = index(rightJoinables, queryJoin.getRightField(), consumer);
+
+            if(queryJoin.getLeftField().getResource().equals(queryJoin.getResource())) {
+                //If the left field of the join has the same resource that join then the
+                //right field index the accumulated data.
+                firstField = queryJoin.getRightField();
+                secondField = queryJoin.getLeftField();
+            } else {
+                //If the right field of the join has the same resource that join then the
+                //left field index the accumulated data.
+                firstField = queryJoin.getLeftField();
+                secondField = queryJoin.getRightField();
+            }
+
+            indexedJoineables = index(rightJoinables, firstField, consumer);
             rightJoinables.clear();
             keys = indexedJoineables.keySet();
-            joinQuery.addEvaluator(new In(queryJoin.getLeftField().toString(), keys));
+            joinQuery.addEvaluator(new In(secondField.toString(), keys));
             leftJoinables.addAll(dataSource.getResourceData(joinQuery));
             for (Joinable leftJoinable : leftJoinables) {
-                for (Joinable rightJoinable : indexedJoineables.get(leftJoinable.get(queryJoin.getLeftField().getFieldName()))) {
+                for (Joinable rightJoinable : indexedJoineables.get(leftJoinable.get(secondField.getFieldName()))) {
                     rightJoinables.add(rightJoinable.join(leftJoinable));
                 }
             }
