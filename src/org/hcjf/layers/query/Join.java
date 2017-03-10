@@ -5,18 +5,41 @@ package org.hcjf.layers.query;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class Join implements Comparable<Join> {
+public class Join extends EvaluatorCollection implements Comparable<Join> {
 
     private final Query.QueryResource resource;
-    private final Query.QueryField leftField;
-    private final Query.QueryField rightField;
+    private Equals joinCondition;
     private final JoinType type;
 
-    public Join(String resourceName, Query.QueryField leftField, Query.QueryField rightField, JoinType type) {
+    public Join(Query query, String resourceName, JoinType type) {
+        super(query);
         this.resource = new Query.QueryResource(resourceName);
-        this.leftField = leftField;
-        this.rightField = rightField;
         this.type = type;
+    }
+
+    /**
+     * Override this method to complete the join condition with the first
+     * evaluator of the collection.
+     * @param evaluator Evaluator added.
+     */
+    @Override
+    protected boolean onAddEvaluator(Evaluator evaluator) {
+        boolean result = true;
+        if(joinCondition == null) {
+            result = false;
+            //The first time that call this method.
+            if(evaluator instanceof Equals) {
+                if(((Equals)evaluator).getQueryParameter() instanceof Query.QueryField &&
+                        ((Equals)evaluator).getRawValue() instanceof Query.QueryField) {
+                    joinCondition = (Equals) evaluator;
+                } else {
+                    throw new IllegalArgumentException("The join condition must be between two resource fields.");
+                }
+            } else {
+                throw new IllegalArgumentException("The first evaluator must be the join condition (Equals evaluator).");
+            }
+        }
+        return result;
     }
 
     /**
@@ -40,7 +63,7 @@ public class Join implements Comparable<Join> {
      * @return Left field.
      */
     public Query.QueryField getLeftField() {
-        return leftField;
+        return (Query.QueryField) joinCondition.getQueryParameter();
     }
 
     /**
@@ -48,7 +71,7 @@ public class Join implements Comparable<Join> {
      * @return Right field.
      */
     public Query.QueryField getRightField() {
-        return rightField;
+        return (Query.QueryField) joinCondition.getRawValue();
     }
 
     /**

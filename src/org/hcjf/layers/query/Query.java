@@ -439,6 +439,9 @@ public class Query extends EvaluatorCollection {
             Join join = joins.get(i);
             joinQuery = new Query(join.getResourceName());
             joinQuery.addReturnField("*");
+            for (Evaluator evaluator : join.getEvaluators()) {
+                joinQuery.addEvaluator(evaluator);
+            }
             for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResource())) {
                 joinQuery.addEvaluator(evaluator);
             }
@@ -661,6 +664,10 @@ public class Query extends EvaluatorCollection {
             result.append(join.getLeftField()).append(Strings.WHITE_SPACE);
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
             result.append(join.getRightField()).append(Strings.WHITE_SPACE);
+            if(join.getEvaluators().size() > 0) {
+                result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND)).append(Strings.WHITE_SPACE);
+                toStringEvaluatorCollection(result, join);
+            }
         }
 
         if(evaluators.size() > 0) {
@@ -818,18 +825,27 @@ public class Query extends EvaluatorCollection {
                     element = conditionalElements[i++].trim();
                     elementValue = conditionalElements[i].trim();
                     if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
-                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER_JOIN)) ||
-                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT_JOIN)) ||
-                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT_JOIN))) {
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT))) {
+
+                        Join.JoinType type = Join.JoinType.valueOf(element);
+                        if(type != Join.JoinType.JOIN) {
+                            elementValue = conditionalElements[++i].trim();
+                        }
+
                         String[] joinElements = elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
-                        Join join = new Join(
-                                joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim(),
-                                new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_LEFT_FIELD_INDEX)].trim()),
-                                new QueryField(joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RIGHT_FIELD_INDEX)].trim()),
-                                Join.JoinType.valueOf(element.toUpperCase()));
+                        String joinResource = joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim();
+                        String joinEvaluators = joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_EVALUATORS_INDEX)].trim();
+                        if(joinEvaluators.startsWith(Strings.REPLACEABLE_GROUP)) {
+                            joinEvaluators = groups.get(Integer.parseInt(joinEvaluators.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING)));
+                        }
+
+                        Join join = new Join(query, joinResource, Join.JoinType.valueOf(element.toUpperCase()));
+                        completeEvaluatorCollection(joinEvaluators, groups, join, 0, new AtomicInteger(0));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
-                        completeWhere(elementValue, groups, query, 0, new AtomicInteger(0));
+                        completeEvaluatorCollection(elementValue, groups, query, 0, new AtomicInteger(0));
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
@@ -849,17 +865,21 @@ public class Query extends EvaluatorCollection {
         return query;
     }
 
+    public static void main(String[] args) {
+        System.out.println(Query.compile("SELECT * FROM holder INNER JOIN device ON (device.id = holder.id AND device.id > 15)"));
+    }
+
     /**
      * Complete the evaluator collections with all the evaluator definitions in the groups.
      * @param groups Where groups.
      * @param parentCollection Parent collection.
      * @param definitionIndex Definition index into the groups.
      */
-    private static final void completeWhere(String startElement, List<String> groups,
-                                            EvaluatorCollection parentCollection,
-                                            Integer definitionIndex,
-                                            AtomicInteger placesIndex) {
-        Pattern wherePatter = SystemProperties.getPattern(SystemProperties.Query.WHERE_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
+    private static final void completeEvaluatorCollection(String startElement, List<String> groups,
+                                                          EvaluatorCollection parentCollection,
+                                                          Integer definitionIndex,
+                                                          AtomicInteger placesIndex) {
+        Pattern wherePatter = SystemProperties.getPattern(SystemProperties.Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
         String[] evaluatorDefinitions;
         if(startElement != null) {
             evaluatorDefinitions = wherePatter.split(startElement);
@@ -872,13 +892,13 @@ public class Query extends EvaluatorCollection {
             definition = definition.trim();
             if (definition.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.AND))) {
                 if (collection == null) {
-                    if(parentCollection instanceof Query || parentCollection instanceof And) {
+                    if(parentCollection instanceof Query || parentCollection instanceof Join || parentCollection instanceof And) {
                         collection = parentCollection;
                     } else {
                         collection = parentCollection.and();
                     }
                 } else if (collection instanceof Or) {
-                    if(parentCollection instanceof Query || parentCollection instanceof And) {
+                    if(parentCollection instanceof Query || parentCollection instanceof Join || parentCollection instanceof And) {
                         collection = parentCollection;
                     } else {
                         collection = parentCollection.and();
@@ -940,7 +960,7 @@ public class Query extends EvaluatorCollection {
 
         if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
-            completeWhere(null, groups, collection, index, placesIndex);
+            completeEvaluatorCollection(null, groups, collection, index, placesIndex);
         } else {
             evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
             if (evaluatorValues.length >= 3) {

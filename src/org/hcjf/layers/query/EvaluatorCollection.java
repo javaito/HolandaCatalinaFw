@@ -60,12 +60,23 @@ public abstract class EvaluatorCollection {
         }
 
         if(!evaluators.contains(evaluator)) {
-            evaluators.add(checkEvaluator(evaluator));
+            if(onAddEvaluator(evaluator)) {
+                evaluators.add(checkEvaluator(evaluator));
+            }
         } else {
             Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
                     "Duplicate evaluator: $s", evaluator);
         }
         return this;
+    }
+
+    /**
+     * This method is called when some evaluator is added to the collection.
+     * @param evaluator Evaluator added.
+     * @return True if the evaluator must be added into the evaluator collection.
+     */
+    protected boolean onAddEvaluator(Evaluator evaluator) {
+        return true;
     }
 
     private Query.QueryParameter checkQueryParameter(Query.QueryParameter queryParameter) {
