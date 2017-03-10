@@ -865,10 +865,6 @@ public class Query extends EvaluatorCollection {
         return query;
     }
 
-    public static void main(String[] args) {
-        System.out.println(Query.compile("SELECT * FROM holder INNER JOIN device ON (device.id = holder.id AND device.id > 15)"));
-    }
-
     /**
      * Complete the evaluator collections with all the evaluator definitions in the groups.
      * @param groups Where groups.
