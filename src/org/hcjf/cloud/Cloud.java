@@ -2,13 +2,16 @@ package org.hcjf.cloud;
 
 import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
+import org.hcjf.cloud.counter.Counter;
 import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -80,6 +83,27 @@ public final class Cloud extends Service<CloudConsumer> {
      */
     public static <V extends Object> Queue<V> getQueue(String queueName) {
         return getInstance().impl.getQueue(queueName);
+    }
+
+    /**
+     * This method provides an implementation of distributed set. All the nodes
+     * on the cloud shares this instance.
+     * @param setName Name of the set.
+     * @param <V> Type of the set's values.
+     * @return Return the instance of the distributed set.
+     */
+    public static <V extends Object> Set<V> getSet(String setName) {
+        return getInstance().impl.getSet(setName);
+    }
+
+    /**
+     * This method provides an implementation of distributed counter. All the nodes
+     * on the cloud shares this instance.
+     * @param counterName Name of the counter.
+     * @return Return thr instance of the counter.
+     */
+    public static Counter getCounter(String counterName) {
+        return getInstance().impl.getCounter(counterName);
     }
 
     /**
