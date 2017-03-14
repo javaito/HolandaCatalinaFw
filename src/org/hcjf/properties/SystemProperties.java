@@ -32,6 +32,10 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_UUID_REGEX = "hcjf.uuid.regex";
     public static final String HCJF_NUMBER_REGEX = "hcjf.number.regex";
 
+    public static final class Layer {
+        public static final String LOG_TAG = "hcjf.layers.log.tag";
+    }
+
     public static final class Service {
         public static final String THREAD_POOL_CORE_SIZE = "hcjf.service.thread.pool.core.size";
         public static final String THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
@@ -177,6 +181,7 @@ public final class SystemProperties extends Properties {
         public static final String SERVICE_NAME = "hcjf.cloud.name";
         public static final String SERVICE_PRIORITY = "hcjf.cloud.priority";
         public static final String IMPL = "hcjf.cloud.impl";
+        public static final String LOG_TAG = "hcjf.cloud.log.tag";
 
         public static class TimerTask {
             public static final String MIN_VALUE_OF_DELAY = "hcjf.cloud.timer.task.min.value.of.delay";
@@ -220,6 +225,8 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
         defaults.put(HCJF_UUID_REGEX, "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
         defaults.put(HCJF_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
+
+        defaults.put(Layer.LOG_TAG, "LAYER");
 
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
         defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
@@ -290,6 +297,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Rest.QUERY_PATH, "query");
         defaults.put(Net.Rest.QUERY_PARAMETER_PATH, "q");
 
+        defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
@@ -340,6 +348,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");
         defaults.put(Cloud.IMPL, "");
+        defaults.put(Cloud.LOG_TAG, "CLOUD");
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "30000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");

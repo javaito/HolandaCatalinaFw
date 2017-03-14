@@ -116,7 +116,7 @@ public abstract class Layer implements LayerInterface {
      * @throws Throwable
      */
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         Access access = checkAccess();
 
         if(access == null) {
@@ -141,7 +141,7 @@ public abstract class Layer implements LayerInterface {
         Object result;
         try {
             getProxy().onBeforeInvoke(method, args);
-            result = method.invoke(this, args);
+            result = method.invoke(getTarget(), args);
             getProxy().onAfterInvoke(method, result, args);
         } finally {
             if(serviceThread != null) {
@@ -149,6 +149,14 @@ public abstract class Layer implements LayerInterface {
             }
         }
         return result;
+    }
+
+    /**
+     * This method return the invocation target.
+     * @return Invation target.
+     */
+    protected Object getTarget() {
+        return this;
     }
 
     /**
