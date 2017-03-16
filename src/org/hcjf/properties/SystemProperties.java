@@ -42,6 +42,7 @@ public final class SystemProperties extends Properties {
             public static final String CLOUD_DEPLOYMENT_MAP_NAME = "hcjf.layers.plugin.cloud.deployment.map.name";
             public static final String CLOUD_DEPLOYMENT_LOCK_NAME = "hcjf.layers.plugin.cloud.deployment.lock.name";
             public static final String CLOUD_DEPLOYMENT_LOCK_CONDITION_NAME = "hcjf.layers.plugin.cloud.deployment.lock.condition.name";
+            public static final String CLOUD_DEPLOYMENT_FILTER = "hcjf.layers.plugin.cloud.deployment.filter";
         }
     }
 

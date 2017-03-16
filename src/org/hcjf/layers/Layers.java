@@ -225,17 +225,18 @@ public final class Layers {
      * This method publish all the layer into the plugin jar.
      * @param jarBuffer Plugin jar.
      */
-    public static synchronized void publishPlugin(ByteBuffer jarBuffer) {
-        publishPlugin(jarBuffer, DeploymentConsumer.DEFAULT_FILTER);
+    public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer) {
+        return publishPlugin(jarBuffer, DeploymentConsumer.DEFAULT_FILTER);
     }
 
     /**
      * This method publish all the layer into the plugin jar.
      * @param jarBuffer Plugin jar.
      */
-    public static synchronized void publishPlugin(ByteBuffer jarBuffer, DeploymentConsumer.DeploymentFilter filter) {
+    public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer, DeploymentConsumer.DeploymentFilter filter) {
         String pluginGroupName = Strings.EMPTY_STRING;
         String pluginName = Strings.EMPTY_STRING;
+        Plugin result = null;
         try {
             File tempFile = File.createTempFile("."+UUID.randomUUID().toString(), "tmp");
 
@@ -259,11 +260,11 @@ public final class Layers {
 
             Version pluginVersion = Version.build(pluginAttributes.getValue(PLUGIN_VERSION));
 
+            result = new Plugin(pluginGroupName, pluginName, pluginVersion, jarBuffer);
             if(filter.matchPlugin(pluginGroupName, pluginName, pluginVersion)) {
                 String[] layers = pluginAttributes.getValue(LAYERS).split(CLASS_SEPARATOR);
                 Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Deploying plugin %s", pluginName);
-                Plugin plugin = new Plugin(pluginGroupName, pluginName, pluginVersion, jarBuffer);
-                URLClassLoader pluginClassLoader = new PluginClassLoader(plugin, new URL[]{tempFile.toURI().toURL()},
+                URLClassLoader pluginClassLoader = new PluginClassLoader(result, new URL[]{tempFile.toURI().toURL()},
                         instance.getClass().getClassLoader());
 
                 Class<? extends Layer> layerClass;
@@ -297,6 +298,8 @@ public final class Layers {
         } catch (Exception ex) {
             Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Plugin deployment fail (%s:%s)", ex, pluginGroupName, pluginName);
         }
+
+        return result;
     }
 
     /**
@@ -348,39 +351,4 @@ public final class Layers {
 
     }
 
-    public static void main(String[] args) throws Exception {
-
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
-
-        new Thread(() -> {
-            while(true) {
-                try {
-                    System.in.read();
-                    File file2 = new File("/home/javaito/IdeaProjects/TestPlugin/out/artifacts/TestPlugin/TestPlugin.jar");
-                    ByteBuffer jarBuffer2 = ByteBuffer.wrap(Files.readAllBytes(file2.toPath()));
-                    publishPlugin(jarBuffer2);
-                } catch (Exception ex){}
-            }
-        }).start();
-
-        while(true) {
-            CrudLayerInterface<String> crudLayerInterface;
-            try {
-                crudLayerInterface = Layers.get(CrudLayerInterface.class, "MyModelCrud");
-            } catch (Exception ex) {
-                System.out.println("Plugin not found");
-                Thread.sleep(4000);
-                continue;
-            }
-            while (true) {
-                try {
-                    crudLayerInterface.create("Javaito");
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-                Thread.sleep(4000);
-            }
-        }
-
-    }
 }
