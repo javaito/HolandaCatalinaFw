@@ -701,12 +701,17 @@ public class Query extends EvaluatorCollection {
                 SystemProperties.get(SystemProperties.Query.ReservedWord.OR) :
                 SystemProperties.get(SystemProperties.Query.ReservedWord.AND);
         for(Evaluator evaluator : collection.getEvaluators()) {
-            result.append(separator);
             if(evaluator instanceof Or) {
-                result.append(Strings.START_GROUP);
-                toStringEvaluatorCollection(result, (Or)evaluator);
-                result.append(Strings.END_GROUP);
+                result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.OR)).append(Strings.WHITE_SPACE);
+                if(((Or)evaluator).getEvaluators().size() == 1) {
+                    toStringEvaluatorCollection(result, (Or) evaluator);
+                } else {
+                    result.append(Strings.START_GROUP);
+                    toStringEvaluatorCollection(result, (Or) evaluator);
+                    result.append(Strings.END_GROUP);
+                }
             } else if(evaluator instanceof And) {
+                result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND)).append(Strings.WHITE_SPACE);
                 if(collection instanceof Query) {
                     toStringEvaluatorCollection(result, (And) evaluator);
                 } else {
@@ -715,6 +720,7 @@ public class Query extends EvaluatorCollection {
                     result.append(Strings.END_GROUP);
                 }
             } else if(evaluator instanceof FieldEvaluator) {
+                result.append(separator);
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
                 result.append(fieldEvaluator.getQueryParameter()).append(Strings.WHITE_SPACE);
                 if (fieldEvaluator instanceof Distinct) {
@@ -907,7 +913,7 @@ public class Query extends EvaluatorCollection {
                     } else {
                         collection = parentCollection.or();
                     }
-                } else if (collection instanceof And) {
+                } else if(collection instanceof Query || collection instanceof Join || collection instanceof And) {
                     if(parentCollection instanceof Or) {
                         collection = parentCollection;
                     } else {
