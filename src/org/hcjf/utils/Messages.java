@@ -6,7 +6,6 @@ import org.hcjf.properties.SystemProperties;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Message manager

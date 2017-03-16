@@ -4,7 +4,6 @@ import org.hcjf.encoding.DecodedPackage;
 import org.hcjf.errors.Errors;
 import org.hcjf.layers.query.Query;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**

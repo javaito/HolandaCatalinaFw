@@ -1,9 +1,14 @@
 package org.hcjf.layers;
 
 import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.plugins.DeploymentConsumer;
+import org.hcjf.layers.plugins.Plugin;
+import org.hcjf.layers.plugins.PluginClassLoader;
+import org.hcjf.layers.plugins.PluginLayer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
+import org.hcjf.utils.Version;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,7 +31,9 @@ import java.util.jar.Manifest;
  */
 public final class Layers {
 
+    private static final String PLUGIN_GROUP_NAME = "Plugin-Group-Name";
     private static final String PLUGIN_NAME = "Plugin-Name";
+    private static final String PLUGIN_VERSION = "Plugin-Version";
     private static final String LAYERS = "Layers";
     private static final String CLASS_SEPARATOR = ";";
 
@@ -159,6 +166,22 @@ public final class Layers {
         }
 
         if(result == null) {
+            if (instance.pluginLayerImplementations.containsKey(matcher.getLayerClass())) {
+                Map<String, String> layersByName =
+                        instance.pluginLayerImplementations.get(matcher.getLayerClass());
+                for (String implName : layersByName.keySet()) {
+                    result = getPluginImplementationInstance(
+                            matcher.getLayerClass(), layersByName.get(implName));
+                    if(matcher.match((Layer)result)){
+                        break;
+                    } else {
+                        result = null;
+                    }
+                }
+            }
+        }
+
+        if(result == null) {
             throw new IllegalArgumentException("Layer implementation not found");
         }
 
@@ -172,7 +195,7 @@ public final class Layers {
      * @return Implementation name.
      * @throws IllegalArgumentException
      */
-    public static synchronized String publishPlugin(Class<? extends Layer> layerClass) {
+    public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
         if(layerClass == null) {
             throw new IllegalArgumentException("Unable to publish a null class");
         }
@@ -203,9 +226,19 @@ public final class Layers {
      * @param jarBuffer Plugin jar.
      */
     public static synchronized void publishPlugin(ByteBuffer jarBuffer) {
+        publishPlugin(jarBuffer, DeploymentConsumer.DEFAULT_FILTER);
+    }
+
+    /**
+     * This method publish all the layer into the plugin jar.
+     * @param jarBuffer Plugin jar.
+     */
+    public static synchronized void publishPlugin(ByteBuffer jarBuffer, DeploymentConsumer.DeploymentFilter filter) {
+        String pluginGroupName = Strings.EMPTY_STRING;
         String pluginName = Strings.EMPTY_STRING;
         try {
             File tempFile = File.createTempFile("."+UUID.randomUUID().toString(), "tmp");
+
             FileOutputStream fos = new FileOutputStream(tempFile);
             fos.write(jarBuffer.array());
             fos.flush();
@@ -213,40 +246,56 @@ public final class Layers {
             JarFile jarFile = new JarFile(tempFile);
             Manifest manifest = jarFile.getManifest();
             Attributes pluginAttributes = manifest.getMainAttributes();
+
+            pluginGroupName = pluginAttributes.getValue(PLUGIN_GROUP_NAME);
+            if(pluginGroupName == null) {
+                throw new IllegalArgumentException("Plugin group name is not specified into the manifest file (Plugin-Group-Name)");
+            }
+
             pluginName = pluginAttributes.getValue(PLUGIN_NAME);
-            String[] layers = pluginAttributes.getValue(LAYERS).split(CLASS_SEPARATOR);
-            Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Deploying plugin %s", pluginName);
-            URLClassLoader pluginClassLoader = new URLClassLoader(new URL[]{tempFile.toURI().toURL()},
-                    instance.getClass().getClassLoader());
-
-            Class<? extends Layer> layerClass;
-            Class<? extends LayerInterface> layerInterfaceClass;
-            List<Layer> toDeployLayers = new ArrayList<>();
-            Layer layer;
-            for(String layerClassName : layers) {
-                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Loading layer %s", layerClassName);
-                layerClass = (Class<? extends Layer>) Class.forName(layerClassName, true, pluginClassLoader);
-                getLayerInterfaceClass(layerClass);
-                layer = layerClass.newInstance();
-                toDeployLayers.add(layer);
-                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Layer %s loaded", layer.getImplName());
+            if(pluginName == null) {
+                throw new IllegalArgumentException("Plugin name is not specified into the manifest file (Plugin-Name)");
             }
 
-            for(Layer layerInstance : toDeployLayers) {
-                layerInterfaceClass = getLayerInterfaceClass(layerInstance.getClass());
-                instance.pluginCache.remove(layerInstance.getClass().getName());
-                instance.pluginCache.put(layerInstance.getClass().getName(), layerInstance);
+            Version pluginVersion = Version.build(pluginAttributes.getValue(PLUGIN_VERSION));
 
-                if(!instance.pluginLayerImplementations.containsKey(layerInterfaceClass)) {
-                    instance.pluginLayerImplementations.put(layerInterfaceClass, new HashMap<>());
+            if(filter.matchPlugin(pluginGroupName, pluginName, pluginVersion)) {
+                String[] layers = pluginAttributes.getValue(LAYERS).split(CLASS_SEPARATOR);
+                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Deploying plugin %s", pluginName);
+                Plugin plugin = new Plugin(pluginGroupName, pluginName, pluginVersion, jarBuffer);
+                URLClassLoader pluginClassLoader = new PluginClassLoader(plugin, new URL[]{tempFile.toURI().toURL()},
+                        instance.getClass().getClassLoader());
+
+                Class<? extends Layer> layerClass;
+                Class<? extends LayerInterface> layerInterfaceClass;
+                List<Layer> toDeployLayers = new ArrayList<>();
+                Layer layer;
+                for (String layerClassName : layers) {
+                    Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Loading layer %s", layerClassName);
+                    layerClass = (Class<? extends Layer>) Class.forName(layerClassName, true, pluginClassLoader);
+                    getLayerInterfaceClass(layerClass);
+                    layer = layerClass.newInstance();
+                    toDeployLayers.add(layer);
+                    Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Layer %s loaded", layer.getImplName());
                 }
-                if(!instance.pluginLayerImplementations.get(layerInterfaceClass).containsKey(layerInstance.getImplName())) {
-                    instance.pluginLayerImplementations.get(layerInterfaceClass).put(layerInstance.getImplName(), layerInstance.getClass().getName());
+
+                for (Layer layerInstance : toDeployLayers) {
+                    layerInterfaceClass = getLayerInterfaceClass(layerInstance.getClass());
+                    instance.pluginCache.remove(layerInstance.getClass().getName());
+                    instance.pluginCache.put(layerInstance.getClass().getName(), layerInstance);
+
+                    if (!instance.pluginLayerImplementations.containsKey(layerInterfaceClass)) {
+                        instance.pluginLayerImplementations.put(layerInterfaceClass, new HashMap<>());
+                    }
+                    if (!instance.pluginLayerImplementations.get(layerInterfaceClass).containsKey(layerInstance.getImplName())) {
+                        instance.pluginLayerImplementations.get(layerInterfaceClass).put(layerInstance.getImplName(), layerInstance.getClass().getName());
+                    }
                 }
+            } else {
+                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Plugin refused (%s:%s)", pluginGroupName, pluginName);
             }
-
         } catch (Exception ex) {
-            Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Plugin deployment fail (%s)", ex, pluginName);
+            Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Plugin deployment fail (%s:%s)", ex, pluginGroupName, pluginName);
         }
     }
 
@@ -255,7 +304,7 @@ public final class Layers {
      * @param layerClass  Layer class.
      * @return Layer interface implemented.
      */
-    private static Class<? extends LayerInterface> getLayerInterfaceClass(Class<? extends Layer> layerClass) {
+    public static Class<? extends LayerInterface> getLayerInterfaceClass(Class<? extends Layer> layerClass) {
         Class<? extends LayerInterface> layerInterfaceClass = null;
         Class introspectedClass = layerClass;
         while(layerInterfaceClass == null && !introspectedClass.equals(Object.class)) {
@@ -299,4 +348,39 @@ public final class Layers {
 
     }
 
+    public static void main(String[] args) throws Exception {
+
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+
+        new Thread(() -> {
+            while(true) {
+                try {
+                    System.in.read();
+                    File file2 = new File("/home/javaito/IdeaProjects/TestPlugin/out/artifacts/TestPlugin/TestPlugin.jar");
+                    ByteBuffer jarBuffer2 = ByteBuffer.wrap(Files.readAllBytes(file2.toPath()));
+                    publishPlugin(jarBuffer2);
+                } catch (Exception ex){}
+            }
+        }).start();
+
+        while(true) {
+            CrudLayerInterface<String> crudLayerInterface;
+            try {
+                crudLayerInterface = Layers.get(CrudLayerInterface.class, "MyModelCrud");
+            } catch (Exception ex) {
+                System.out.println("Plugin not found");
+                Thread.sleep(4000);
+                continue;
+            }
+            while (true) {
+                try {
+                    crudLayerInterface.create("Javaito");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                Thread.sleep(4000);
+            }
+        }
+
+    }
 }

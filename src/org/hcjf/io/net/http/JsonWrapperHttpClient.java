@@ -2,13 +2,10 @@ package org.hcjf.io.net.http;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonIntrospection;
 
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 
 /**

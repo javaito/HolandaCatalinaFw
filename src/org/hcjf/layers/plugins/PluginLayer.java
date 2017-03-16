@@ -1,4 +1,6 @@
-package org.hcjf.layers;
+package org.hcjf.layers.plugins;
+
+import org.hcjf.layers.Layer;
 
 /**
  * @author Javier Quiroga.

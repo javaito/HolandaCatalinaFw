@@ -5,7 +5,6 @@ import org.hcjf.io.net.http.HttpHeader;
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.HttpResponse;
 
-import javax.xml.ws.Response;
 import java.net.URL;
 
 /**

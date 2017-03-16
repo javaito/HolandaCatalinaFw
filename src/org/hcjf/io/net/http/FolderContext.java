@@ -16,8 +16,6 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 /**
  * This class publish some local folder in the web environment.

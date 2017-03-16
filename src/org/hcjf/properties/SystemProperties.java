@@ -34,6 +34,15 @@ public final class SystemProperties extends Properties {
 
     public static final class Layer {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
+
+        public static final class Deployment {
+            public static final String SERVICE_NAME = "hcjf.layers.deployment.service.name";
+            public static final String SERVICE_PRIORITY = "hcjf.layers.deployment.service.priority";
+            public static final String CLOUD_DEPLOYMENT_ENABLED = "hcjf.layers.plugin.cloud.deployment.enabled";
+            public static final String CLOUD_DEPLOYMENT_MAP_NAME = "hcjf.layers.plugin.cloud.deployment.map.name";
+            public static final String CLOUD_DEPLOYMENT_LOCK_NAME = "hcjf.layers.plugin.cloud.deployment.lock.name";
+            public static final String CLOUD_DEPLOYMENT_LOCK_CONDITION_NAME = "hcjf.layers.plugin.cloud.deployment.lock.condition.name";
+        }
     }
 
     public static final class Service {

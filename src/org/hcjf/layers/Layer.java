@@ -99,7 +99,7 @@ public abstract class Layer implements LayerInterface {
     public LayerProxy getProxy() {
         return new LayerProxy() {
             @Override
-            public void onBeforeInvoke(Method method, Object... params) {}
+            public ProxyInterceptor onBeforeInvoke(Method method, Object... params) {return null;}
 
             @Override
             public void onAfterInvoke(Method method, Object result, Object... params) {}
@@ -140,8 +140,12 @@ public abstract class Layer implements LayerInterface {
 
         Object result;
         try {
-            getProxy().onBeforeInvoke(method, args);
-            result = method.invoke(getTarget(), args);
+            LayerProxy.ProxyInterceptor interceptor =getProxy().onBeforeInvoke(method, args);
+            if(interceptor == null || !interceptor.isCached()) {
+                result = method.invoke(getTarget(), args);
+            } else {
+                result = interceptor.getResult();
+            }
             getProxy().onAfterInvoke(method, result, args);
         } finally {
             if(serviceThread != null) {
@@ -214,4 +218,5 @@ public abstract class Layer implements LayerInterface {
             return throwable;
         }
     }
+
 }

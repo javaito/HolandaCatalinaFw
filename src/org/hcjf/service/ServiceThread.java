@@ -2,7 +2,7 @@ package org.hcjf.service;
 
 import org.hcjf.layers.Layer;
 
-import java.util.*;
+import java.util.UUID;
 
 /**
  * This are the thread created by the factory in the

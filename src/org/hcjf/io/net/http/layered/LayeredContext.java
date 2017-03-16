@@ -1,7 +1,10 @@
 package org.hcjf.io.net.http.layered;
 
 import org.hcjf.errors.Errors;
-import org.hcjf.io.net.http.*;
+import org.hcjf.io.net.http.Context;
+import org.hcjf.io.net.http.HttpRequest;
+import org.hcjf.io.net.http.HttpResponse;
+import org.hcjf.io.net.http.HttpResponseCode;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 

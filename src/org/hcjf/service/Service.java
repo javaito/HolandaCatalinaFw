@@ -1,6 +1,5 @@
 package org.hcjf.service;
 
-import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 

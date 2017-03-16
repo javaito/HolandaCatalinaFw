@@ -1,9 +1,7 @@
 package org.hcjf.io.net.http.view;
 
 import org.hcjf.io.net.http.layered.LayeredContext;
-import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.view.ViewCrudLayerInterface;
-import org.hcjf.layers.view.ViewLayerInterface;
 import org.hcjf.view.ViewComponent;
 
 /**

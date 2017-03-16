@@ -1,8 +1,5 @@
 package org.hcjf.io.net.http;
 
-import org.hcjf.io.net.NetService;
-import org.hcjf.properties.SystemProperties;
-
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;

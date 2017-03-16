@@ -1,9 +1,6 @@
 package org.hcjf.layers.storage;
 
 import org.hcjf.layers.LayerInterface;
-import org.hcjf.layers.query.Query;
-
-import java.util.List;
 
 /**
  * This kind of layers provides a interface with a storage

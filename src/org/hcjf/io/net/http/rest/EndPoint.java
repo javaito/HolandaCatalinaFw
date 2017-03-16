@@ -2,7 +2,7 @@ package org.hcjf.io.net.http.rest;
 
 import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.HttpMethod;
-import org.hcjf.io.net.http.layered.*;
+import org.hcjf.io.net.http.layered.LayeredContext;
 import org.hcjf.layers.LayerInterface;
 
 /**

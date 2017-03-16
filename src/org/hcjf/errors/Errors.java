@@ -2,10 +2,6 @@ package org.hcjf.errors;
 
 import org.hcjf.utils.Messages;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 /**
  * @author javaito
  * @email javaito@gmail.com
