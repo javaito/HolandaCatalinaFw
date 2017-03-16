@@ -715,9 +715,13 @@ public class Query extends EvaluatorCollection {
                 if(collection instanceof Query) {
                     toStringEvaluatorCollection(result, (And) evaluator);
                 } else {
-                    result.append(Strings.START_GROUP);
-                    toStringEvaluatorCollection(result, (And) evaluator);
-                    result.append(Strings.END_GROUP);
+                    if(((And)evaluator).getEvaluators().size() == 1) {
+                        toStringEvaluatorCollection(result, (And) evaluator);
+                    } else {
+                        result.append(Strings.START_GROUP);
+                        toStringEvaluatorCollection(result, (And) evaluator);
+                        result.append(Strings.END_GROUP);
+                    }
                 }
             } else if(evaluator instanceof FieldEvaluator) {
                 result.append(separator);
