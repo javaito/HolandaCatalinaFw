@@ -1,10 +1,7 @@
 package org.hcjf.layers;
 
 import org.hcjf.layers.crud.CrudLayerInterface;
-import org.hcjf.layers.plugins.DeploymentConsumer;
-import org.hcjf.layers.plugins.Plugin;
-import org.hcjf.layers.plugins.PluginClassLoader;
-import org.hcjf.layers.plugins.PluginLayer;
+import org.hcjf.layers.plugins.*;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
@@ -226,14 +223,14 @@ public final class Layers {
      * @param jarBuffer Plugin jar.
      */
     public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer) {
-        return publishPlugin(jarBuffer, DeploymentConsumer.DEFAULT_FILTER);
+        return publishPlugin(jarBuffer, DeploymentService.DeploymentConsumer.DEFAULT_FILTER);
     }
 
     /**
      * This method publish all the layer into the plugin jar.
      * @param jarBuffer Plugin jar.
      */
-    public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer, DeploymentConsumer.DeploymentFilter filter) {
+    public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer, DeploymentService.DeploymentConsumer.DeploymentFilter filter) {
         String pluginGroupName = Strings.EMPTY_STRING;
         String pluginName = Strings.EMPTY_STRING;
         Plugin result = null;
@@ -351,4 +348,39 @@ public final class Layers {
 
     }
 
+    public static void main(String[] args) throws Exception {
+
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+
+        new Thread(() -> {
+            while(true) {
+                try {
+                    System.in.read();
+                    File file2 = new File("/home/javaito/IdeaProjects/TestPlugin/out/artifacts/TestPlugin/TestPlugin.jar");
+                    ByteBuffer jarBuffer2 = ByteBuffer.wrap(Files.readAllBytes(file2.toPath()));
+                    publishPlugin(jarBuffer2);
+                } catch (Exception ex){}
+            }
+        }).start();
+
+        while(true) {
+            CrudLayerInterface<String> crudLayerInterface;
+            try {
+                crudLayerInterface = Layers.get(CrudLayerInterface.class, "MyModelCrud");
+            } catch (Exception ex) {
+                System.out.println("Plugin not found");
+                Thread.sleep(4000);
+                continue;
+            }
+            while (true) {
+                try {
+                    crudLayerInterface.create("Javaito");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+                Thread.sleep(4000);
+            }
+        }
+
+    }
 }

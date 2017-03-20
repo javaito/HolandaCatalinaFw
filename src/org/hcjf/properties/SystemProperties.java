@@ -237,6 +237,12 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
 
         defaults.put(Layer.LOG_TAG, "LAYER");
+        defaults.put(Layer.Deployment.SERVICE_NAME, "DeploymentService");
+        defaults.put(Layer.Deployment.SERVICE_PRIORITY, "0");
+        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_ENABLED, "true");
+        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_MAP_NAME, "hcjf.layers.plugin.cloud.deployment.map");
+        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_LOCK_NAME, "hcjf.layers.plugin.cloud.deployment.lock");
+        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_LOCK_CONDITION_NAME, "hcjf.layers.plugin.cloud.deployment.lock.condition.name");
 
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
         defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
