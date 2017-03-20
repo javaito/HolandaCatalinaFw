@@ -279,6 +279,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      * @return Http response package.
      */
     public final HttpResponse request() {
+        long time = System.currentTimeMillis();
         session = new HttpSession(UUID.randomUUID(), this);
         session.setRequest(request);
         session.setSessionName(SESSION_NAME);
@@ -307,7 +308,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             status = Status.WRITING;
 
             synchronized (this) {
-                Log.out(HTTP_CLIENT_LOG_TAG, "Http client request\r\n%s", request.toString());
+                Log.out(HTTP_CLIENT_LOG_TAG, "Request\r\n%s", request.toString());
                 try {
                     write(getSession(), request);
                 } catch (IOException ex) {
@@ -343,7 +344,8 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
         disconnect(getSession(), DISCONNECTION_MESSAGE);
 
-        Log.in(HTTP_CLIENT_LOG_TAG, "Http client response\r\n%s", response.toString());
+        Log.in(HTTP_CLIENT_LOG_TAG, "Response -> [Time: %d ms]\r\n%s",
+                (System.currentTimeMillis() - time), response.toString());
         return response;
     }
 
