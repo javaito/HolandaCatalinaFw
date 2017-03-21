@@ -491,7 +491,7 @@ public class Query extends EvaluatorCollection {
                 joinQuery.addEvaluator(new In(secondField.toString(), keys));
                 rightJoinables.addAll(dataSource.getResourceData(joinQuery));
                 for (Joinable rightJoinable : rightJoinables) {
-                    for (Joinable leftJoinable : indexedJoineables.get(rightJoinable.get(secondField.getFieldName()))) {
+                    for (Joinable leftJoinable : indexedJoineables.get(consumer.get(rightJoinable, secondField))) {
                         leftJoinables.add(leftJoinable.join(rightJoinable));
                     }
                 }
@@ -526,7 +526,7 @@ public class Query extends EvaluatorCollection {
             joinQuery.addEvaluator(new In(secondField.toString(), keys));
             leftJoinables.addAll(dataSource.getResourceData(joinQuery));
             for (Joinable leftJoinable : leftJoinables) {
-                for (Joinable rightJoinable : indexedJoineables.get(leftJoinable.get(secondField.getFieldName()))) {
+                for (Joinable rightJoinable : indexedJoineables.get(consumer.get(leftJoinable, secondField))) {
                     rightJoinables.add(rightJoinable.join(leftJoinable));
                 }
             }
@@ -1376,6 +1376,7 @@ public class Query extends EvaluatorCollection {
 
         private QueryResource resource;
         private String fieldName;
+        private final String completeFieldName;
         private final String index;
 
         public QueryField(String field) {
@@ -1394,6 +1395,8 @@ public class Query extends EvaluatorCollection {
             } else {
                 index = null;
             }
+
+            completeFieldName = (resource == null ? "" : resource + Strings.CLASS_SEPARATOR) + fieldName;
         }
 
         /**
@@ -1418,6 +1421,14 @@ public class Query extends EvaluatorCollection {
          */
         public String getFieldName() {
             return fieldName;
+        }
+
+        /**
+         * Return the resource name and the field name into the same value.
+         * @return Complete name.
+         */
+        public String getCompleteFieldName() {
+            return completeFieldName;
         }
 
         /**
