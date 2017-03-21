@@ -1,10 +1,6 @@
 package org.hcjf.layers;
 
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
-
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 
 /**
  * This class wrap the layer invocation with two method, one
@@ -19,7 +15,7 @@ public interface LayerProxy {
      * @param method Layer's method to invoke.
      * @param params Parameter's method.
      */
-    public void onBeforeInvoke(Method method, Object... params);
+    public ProxyInterceptor onBeforeInvoke(Method method, Object... params);
 
     /**
      * This method is called after of layer invocation.
@@ -28,5 +24,39 @@ public interface LayerProxy {
      * @param params Parameter's method.
      */
     public void onAfterInvoke(Method method, Object result, Object... params);
+
+    /**
+     * This class is the result of the before invoke method.
+     */
+    public static class ProxyInterceptor {
+
+        private final boolean cached;
+        private final Object result;
+
+        public ProxyInterceptor(boolean cached, Object result) {
+            this.cached = cached;
+            this.result = result;
+        }
+
+        public ProxyInterceptor() {
+            this(false, null);
+        }
+
+        /**
+         * Return true if the proxy intercepts the invocation.
+         * @return Intercept value.
+         */
+        public boolean isCached() {
+            return cached;
+        }
+
+        /**
+         * Return the intercepted value.
+         * @return Intercepted value.
+         */
+        public Object getResult() {
+            return result;
+        }
+    }
 
 }

@@ -1,6 +1,5 @@
 package org.hcjf.io.net.http.view;
 
-import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.io.net.http.layered.LayeredResponse;
 
 /**

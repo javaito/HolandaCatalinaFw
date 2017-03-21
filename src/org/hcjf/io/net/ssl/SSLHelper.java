@@ -1,8 +1,6 @@
 package org.hcjf.io.net.ssl;
 
 import org.hcjf.io.net.NetPackage;
-import org.hcjf.io.net.NetService;
-import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.properties.SystemProperties;
 
 import javax.net.ssl.SSLEngine;

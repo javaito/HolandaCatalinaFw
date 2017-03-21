@@ -1,7 +1,6 @@
 package org.hcjf.io.net;
 
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Created by javaito on 09/09/16.

@@ -183,6 +183,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
+            long time = System.currentTimeMillis();
             HttpResponse response = null;
             HttpRequest request = (HttpRequest) payLoad;
             Log.in(HTTP_SERVER_LOG_TAG, "Request\r\n%s", request.toString());
@@ -224,7 +225,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             boolean writeError = false;
             try {
                 write(session, response, response.getNetStreamingSource(), false);
-                Log.out(HTTP_SERVER_LOG_TAG, "Response\r\n%s", response.toString());
+                Log.out(HTTP_SERVER_LOG_TAG, "Response -> [Time: %d ms] \r\n%s",
+                        (System.currentTimeMillis() - time), response.toString());
             } catch (Throwable throwable) {
                 Log.e(NetService.NET_SERVICE_LOG_TAG, "Http server error", throwable);
                 writeError = true;

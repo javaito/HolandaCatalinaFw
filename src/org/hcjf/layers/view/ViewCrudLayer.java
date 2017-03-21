@@ -7,7 +7,6 @@ import org.hcjf.view.components.ViewDataSet;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
-import java.util.List;
 /**
  * @author Andrés Medina
  * @email armedina@gmail.com

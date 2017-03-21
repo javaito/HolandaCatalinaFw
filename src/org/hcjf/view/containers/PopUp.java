@@ -1,6 +1,5 @@
 package org.hcjf.view.containers;
 
-import org.hcjf.view.ViewComponent;
 import org.hcjf.view.ViewComponentContainer;
 
 /**

@@ -1,7 +1,5 @@
 package org.hcjf.io.net.http.view;
 
-import org.hcjf.encoding.DecodedPackage;
-import org.hcjf.encoding.EncodingService;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.http.HttpHeader;
 import org.hcjf.io.net.http.HttpRequest;

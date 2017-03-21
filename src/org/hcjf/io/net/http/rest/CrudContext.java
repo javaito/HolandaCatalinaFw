@@ -1,11 +1,11 @@
 package org.hcjf.io.net.http.rest;
 
+import org.hcjf.encoding.EncodingService;
+import org.hcjf.encoding.MimeType;
 import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.*;
-import org.hcjf.layers.query.Query;
 import org.hcjf.layers.crud.CrudLayerInterface;
-import org.hcjf.encoding.MimeType;
-import org.hcjf.encoding.EncodingService;
+import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 
 import java.util.HashMap;
