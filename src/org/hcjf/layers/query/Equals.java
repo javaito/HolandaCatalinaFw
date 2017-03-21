@@ -39,17 +39,7 @@ public class Equals extends FieldEvaluator {
             }
             Object consumerValue = consumer.get(object, getQueryParameter());
             if(fieldValue instanceof Number) {
-                if(consumerValue instanceof Number) {
-                    if(fieldValue instanceof Double || fieldValue instanceof Float ||
-                            consumerValue instanceof Double || consumerValue instanceof Float) {
-                        result = new BigDecimal(((Number) fieldValue).doubleValue()).equals(
-                                new BigDecimal(((Number) consumerValue).doubleValue()));
-                    } else {
-                        result = ((Number) fieldValue).longValue() == ((Number) consumerValue).longValue();
-                    }
-                } else {
-                    result = false;
-                }
+                result = numberEquals((Number) fieldValue, consumerValue);
             } else {
                 result = fieldValue.equals(consumerValue);
             }
