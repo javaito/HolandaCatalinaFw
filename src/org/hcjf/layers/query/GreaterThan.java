@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -51,6 +52,18 @@ public class GreaterThan extends FieldEvaluator {
                 value = consumer.get(object, ((Query.QueryParameter)value));
             }
             Object fieldValue = consumer.get(object, getQueryParameter());
+
+            if(fieldValue instanceof Number && value instanceof Number) {
+                if(fieldValue instanceof Double || fieldValue instanceof Float ||
+                        value instanceof Double || value instanceof Float) {
+                    fieldValue = new Double(((Number)fieldValue).doubleValue());
+                    value = new Double(((Number)value).doubleValue());
+                } else {
+                    fieldValue = new Long(((Number)fieldValue).longValue());
+                    value = new Long(((Number)value).longValue());
+                }
+            }
+
             if(Comparable.class.isAssignableFrom(value.getClass()) &&
                     Comparable.class.isAssignableFrom(fieldValue.getClass())) {
                 if(fieldValue.getClass().isAssignableFrom(value.getClass()) ||
@@ -73,5 +86,8 @@ public class GreaterThan extends FieldEvaluator {
         return result;
     }
 
-
+    public static void main(String[] args) {
+        Double d = 30.0;
+        Integer i = 0;
+    }
 }
