@@ -62,10 +62,10 @@ public class In extends FieldEvaluator {
         boolean result = false;
         Collection collection = null;
         if(Map.class.isAssignableFrom(value.getClass())) {
-            collection = ((Map)numberValue).keySet();
+            collection = ((Map)value).keySet();
         } else if(Collection.class.isAssignableFrom(value.getClass())) {
-            collection = ((Collection)numberValue);
-        } else if(numberValue.getClass().isArray()) {
+            collection = ((Collection)value);
+        } else if(value.getClass().isArray()) {
             collection = Arrays.asList((Object[])value);
         } else {
             result = numberEquals(numberValue, value);
