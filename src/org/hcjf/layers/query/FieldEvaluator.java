@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -103,6 +104,26 @@ public abstract class FieldEvaluator implements Evaluator {
         } catch (Exception e) {
             throw new RuntimeException("");
         }
+    }
+
+    /**
+     * Normalize any kind of number and compare both;
+     * @param fieldValue Field value.
+     * @param value Value.
+     * @return True if the field value and value are equals as number.
+     */
+    protected boolean numberEquals(Number fieldValue, Object value) {
+        boolean result = false;
+        if(value instanceof Number) {
+            if(fieldValue instanceof Double || fieldValue instanceof Float ||
+                    value instanceof Double || value instanceof Float) {
+                result = new BigDecimal(fieldValue.doubleValue()).equals(
+                        new BigDecimal(((Number) value).doubleValue()));
+            } else {
+                result = fieldValue.longValue() == ((Number) value).longValue();
+            }
+        }
+        return result;
     }
 
     /**
