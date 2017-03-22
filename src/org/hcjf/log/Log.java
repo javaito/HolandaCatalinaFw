@@ -315,6 +315,7 @@ public final class Log extends Service<LogPrinter> {
         private final String originalMessage;
         private final String message;
         private final SimpleDateFormat dateFormat;
+        private final Object[] params;
 
         /**
          * Constructor
@@ -331,6 +332,7 @@ public final class Log extends Service<LogPrinter> {
             this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.Log.DATE_FORMAT));
             this.originalMessage = message;
             this.message = createMessage(message, throwable, params);
+            this.params = params;
         }
 
         /**
@@ -432,6 +434,14 @@ public final class Log extends Service<LogPrinter> {
         @Override
         public String toString() {
             return getMessage();
+        }
+
+        /**
+         * Return the log record params.
+         * @return Log record params.
+         */
+        public Object[] getParams() {
+            return params;
         }
     }
 
