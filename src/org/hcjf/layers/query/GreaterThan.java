@@ -1,6 +1,5 @@
 package org.hcjf.layers.query;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -86,8 +85,4 @@ public class GreaterThan extends FieldEvaluator {
         return result;
     }
 
-    public static void main(String[] args) {
-        Double d = 30.0;
-        Integer i = 0;
-    }
 }
