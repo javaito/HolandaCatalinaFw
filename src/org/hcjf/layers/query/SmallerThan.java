@@ -36,6 +36,18 @@ public class SmallerThan extends FieldEvaluator {
                 value = consumer.get(object, (Query.QueryParameter)value);
             }
             Object fieldValue = consumer.get(object, getQueryParameter());
+
+            if(fieldValue instanceof Number && value instanceof Number) {
+                if(fieldValue instanceof Double || fieldValue instanceof Float ||
+                        value instanceof Double || value instanceof Float) {
+                    fieldValue = new Double(((Number)fieldValue).doubleValue());
+                    value = new Double(((Number)value).doubleValue());
+                } else {
+                    fieldValue = new Long(((Number)fieldValue).longValue());
+                    value = new Long(((Number)value).longValue());
+                }
+            }
+
             if(Comparable.class.isAssignableFrom(value.getClass())) {
                 if(fieldValue.getClass().isAssignableFrom(value.getClass()) ||
                         value.getClass().isAssignableFrom(fieldValue.getClass())) {

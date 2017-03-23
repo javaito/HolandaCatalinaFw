@@ -38,14 +38,26 @@ public class ServiceSession implements Comparable {
         locale = SystemProperties.getLocale();
     }
 
+    /**
+     * Return the session id.
+     * @return Session id.
+     */
     public UUID getId() {
         return id;
     }
 
+    /**
+     * Set the session name.
+     * @param sessionName Session name.
+     */
     public void setSessionName(String sessionName) {
         this.sessionName = sessionName;
     }
 
+    /**
+     * Return the session name.
+     * @return Session Session name.
+     */
     public String getSessionName() {
         return sessionName;
     }
@@ -149,6 +161,20 @@ public class ServiceSession implements Comparable {
      */
     public static final ServiceSession getGuestSession() {
         return GUEST_SESSION;
+    }
+
+    /**
+     * This method obtain the current session from the current thread.
+     * @param <S> Expected session type.
+     * @return Current session.
+     */
+    public static final <S extends ServiceSession> S getCurrentSession() {
+        Thread currentThread = Thread.currentThread();
+        if(ServiceThread.class.isAssignableFrom(currentThread.getClass())) {
+            return (S) ((ServiceThread)currentThread).getSession();
+        } else {
+            throw new IllegalStateException("The current thread is not a service thread.");
+        }
     }
 
     /**
