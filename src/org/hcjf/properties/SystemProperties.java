@@ -75,6 +75,7 @@ public final class SystemProperties extends Properties {
         public static final String QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
         public static final String TRUNCATE_TAG = "hcjf.log.truncate.tag";
         public static final String TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
+        public static final String LOG_CONSUMERS_SIZE = "hcjf.log.consumers.size";
     }
 
     public static final class Encoding {
@@ -275,6 +276,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Log.QUEUE_INITIAL_SIZE, "10000");
         defaults.put(Log.TRUNCATE_TAG, "false");
         defaults.put(Log.TRUNCATE_TAG_SIZE, "35");
+        defaults.put(Log.LOG_CONSUMERS_SIZE, "50");
 
         defaults.put(Net.INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.OUTPUT_BUFFER_SIZE, "102400");

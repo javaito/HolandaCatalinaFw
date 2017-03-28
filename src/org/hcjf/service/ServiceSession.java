@@ -71,7 +71,7 @@ public class ServiceSession implements Comparable {
      */
     public synchronized void startThread() {
         systemTimeByThread.put(Thread.currentThread().getId(),
-                threadMXBean.getThreadUserTime(Thread.currentThread().getId()));
+                threadMXBean.getCurrentThreadCpuTime());
         layerStack.put(Thread.currentThread().getId(), new ArrayList<>());
         properties.put(Thread.currentThread().getId(), new HashMap<>());
         onStartThread();
@@ -88,9 +88,9 @@ public class ServiceSession implements Comparable {
     public synchronized void endThread() {
         layerStack.remove(Thread.currentThread().getId());
         properties.remove(Thread.currentThread().getId());
-        addThreadTime(System.currentTimeMillis() -
-                threadMXBean.getThreadUserTime(Thread.currentThread().getId()));
         onEndThread();
+        addThreadTime(threadMXBean.getCurrentThreadCpuTime() -
+                systemTimeByThread.get(Thread.currentThread().getId()));
     }
 
     /**
@@ -212,8 +212,8 @@ public class ServiceSession implements Comparable {
     }
 
     /**
-     * Add system use time to specific session.
-     * @param time System use time.
+     * Add system use time to specific session in nanoseconds.
+     * @param time System use time in nanoseconds.
      */
     protected void addThreadTime(long time){
     }

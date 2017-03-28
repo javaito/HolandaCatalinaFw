@@ -59,7 +59,9 @@ public final class Log extends Service<LogPrinter> {
      */
     @Override
     protected void init() {
-        future = fork(new LogRunnable());
+        for (int i = 0; i < SystemProperties.getInteger(SystemProperties.Log.SERVICE_NAME); i++) {
+            future = fork(new LogRunnable());
+        }
         List<String> logConsumers = SystemProperties.getList(SystemProperties.Log.CONSUMERS);
         logConsumers.forEach(S -> {
             try {
@@ -261,6 +263,14 @@ public final class Log extends Service<LogPrinter> {
                 instance.printers.size() > 0) {
             instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message, throwable, params));
         }
+    }
+
+    /**
+     * Return the size of the log queue.
+     * @return Size of the log queue.
+     */
+    public static Integer getLogQueueSize() {
+        return instance.queue.size();
     }
 
     private class LogRunnable implements Runnable {

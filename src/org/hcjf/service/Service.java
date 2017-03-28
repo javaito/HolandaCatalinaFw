@@ -56,7 +56,7 @@ public abstract class Service<C extends ServiceConsumer> {
      * @return Thread factory.
      */
     private ThreadFactory createThreadFactory() {
-        return r -> new ServiceThread(r);
+        return r -> new ServiceThread(r, getServiceName() + UUID.randomUUID());
     }
 
     /**

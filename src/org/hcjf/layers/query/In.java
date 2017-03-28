@@ -1,9 +1,7 @@
 package org.hcjf.layers.query;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 /**
