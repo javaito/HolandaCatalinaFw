@@ -59,7 +59,7 @@ public final class Log extends Service<LogPrinter> {
      */
     @Override
     protected void init() {
-        for (int i = 0; i < SystemProperties.getInteger(SystemProperties.Log.SERVICE_NAME); i++) {
+        for (int i = 0; i < SystemProperties.getInteger(SystemProperties.Log.LOG_CONSUMERS_SIZE); i++) {
             future = fork(new LogRunnable());
         }
         List<String> logConsumers = SystemProperties.getList(SystemProperties.Log.CONSUMERS);
