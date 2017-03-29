@@ -341,9 +341,14 @@ public final class Layers {
     public interface LayerMatcher<L extends LayerInterface> {
 
         default Class<? extends L> getLayerClass() {
-            Type genericSuperClass = getClass().getGenericSuperclass();
-            Type actualType = ((ParameterizedType) genericSuperClass).
-                    getActualTypeArguments()[0];
+            Type actualType = null;
+            for(Type genericInterface : getClass().getGenericInterfaces()) {
+                if(genericInterface.getTypeName().equals(LayerMatcher.class.getName())) {
+                    actualType = ((ParameterizedType) genericInterface).
+                            getActualTypeArguments()[0];
+                    break;
+                }
+            }
             return (Class<L>) actualType;
         }
 
