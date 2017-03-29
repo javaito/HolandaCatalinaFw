@@ -149,14 +149,14 @@ public final class Layers {
      * @param <L> Expected layer class.
      * @return Layer instance.
      */
-    public static <L extends LayerInterface> L get(LayerMatcher<L> matcher) {
+    public static <L extends LayerInterface> L get(Class<? extends L> layerClass, LayerMatcher<L> matcher) {
         L result = null;
-        if(instance.layerImplementations.containsKey(matcher.getLayerClass())) {
+        if(instance.layerImplementations.containsKey(layerClass)) {
             Map<String, Class<? extends Layer>> layersByName =
-                    instance.layerImplementations.get(matcher.getLayerClass());
+                    instance.layerImplementations.get(layerClass);
             for(String implName : layersByName.keySet()) {
                 result = getImplementationInstance(
-                        matcher.getLayerClass(), layersByName.get(implName));
+                        layerClass, layersByName.get(implName));
                 if(matcher.match(result)){
                     break;
                 } else {
@@ -166,12 +166,12 @@ public final class Layers {
         }
 
         if(result == null) {
-            if (instance.pluginLayerImplementations.containsKey(matcher.getLayerClass())) {
+            if (instance.pluginLayerImplementations.containsKey(layerClass)) {
                 Map<String, String> layersByName =
-                        instance.pluginLayerImplementations.get(matcher.getLayerClass());
+                        instance.pluginLayerImplementations.get(layerClass);
                 for (String implName : layersByName.keySet()) {
                     result = getPluginImplementationInstance(
-                            matcher.getLayerClass(), layersByName.get(implName));
+                            layerClass, layersByName.get(implName));
                     if(matcher.match(result)){
                         break;
                     } else {
@@ -339,18 +339,6 @@ public final class Layers {
      * @param <L> Kind of layer
      */
     public interface LayerMatcher<L extends LayerInterface> {
-
-        default Class<? extends L> getLayerClass() {
-            Type actualType = null;
-            for(Type genericInterface : getClass().getGenericInterfaces()) {
-                if(LayerMatcher.class.isAssignableFrom((Class)genericInterface)) {
-                    actualType = ((ParameterizedType) genericInterface).
-                            getActualTypeArguments()[0];
-                    break;
-                }
-            }
-            return (Class<L>) actualType;
-        }
 
         public boolean match(L layer);
 
