@@ -157,7 +157,7 @@ public final class Layers {
             for(String implName : layersByName.keySet()) {
                 result = getImplementationInstance(
                         matcher.getLayerClass(), layersByName.get(implName));
-                if(matcher.match((Layer) result)){
+                if(matcher.match(result)){
                     break;
                 } else {
                     result = null;
@@ -172,7 +172,7 @@ public final class Layers {
                 for (String implName : layersByName.keySet()) {
                     result = getPluginImplementationInstance(
                             matcher.getLayerClass(), layersByName.get(implName));
-                    if(matcher.match((Layer)result)){
+                    if(matcher.match(result)){
                         break;
                     } else {
                         result = null;
@@ -343,7 +343,7 @@ public final class Layers {
         default Class<? extends L> getLayerClass() {
             Type actualType = null;
             for(Type genericInterface : getClass().getGenericInterfaces()) {
-                if(genericInterface.getTypeName().equals(LayerMatcher.class.getName())) {
+                if(LayerMatcher.class.isAssignableFrom((Class)genericInterface)) {
                     actualType = ((ParameterizedType) genericInterface).
                             getActualTypeArguments()[0];
                     break;
@@ -352,7 +352,7 @@ public final class Layers {
             return (Class<L>) actualType;
         }
 
-        public boolean match(Layer layer);
+        public boolean match(L layer);
 
     }
 
