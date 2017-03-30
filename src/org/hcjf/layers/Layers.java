@@ -344,39 +344,4 @@ public final class Layers {
 
     }
 
-    public static void main(String[] args) throws Exception {
-
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
-
-        new Thread(() -> {
-            while(true) {
-                try {
-                    System.in.read();
-                    File file2 = new File("/home/javaito/IdeaProjects/TestPlugin/out/artifacts/TestPlugin/TestPlugin.jar");
-                    ByteBuffer jarBuffer2 = ByteBuffer.wrap(Files.readAllBytes(file2.toPath()));
-                    publishPlugin(jarBuffer2);
-                } catch (Exception ex){}
-            }
-        }).start();
-
-        while(true) {
-            CrudLayerInterface<String> crudLayerInterface;
-            try {
-                crudLayerInterface = Layers.get(CrudLayerInterface.class, "MyModelCrud");
-            } catch (Exception ex) {
-                System.out.println("Plugin not found");
-                Thread.sleep(4000);
-                continue;
-            }
-            while (true) {
-                try {
-                    crudLayerInterface.create("Javaito");
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-                Thread.sleep(4000);
-            }
-        }
-
-    }
 }

@@ -193,6 +193,17 @@ public abstract class Service<C extends ServiceConsumer> {
     }
 
     /**
+     * This method is the gateway to the service subsystem from context out of
+     * the hcjf domain.
+     * @param runnable Custom runnable.
+     * @param session Custom session.
+     */
+    public static final void run(Runnable runnable, ServiceSession session) {
+        RunnableWrapper serviceRunnable = new RunnableWrapper(runnable, session);
+        SystemServices.instance.serviceExecutor.execute(serviceRunnable);
+    }
+
+    /**
      * This internal class contains all the services registered
      * in the system.
      */
@@ -204,6 +215,7 @@ public abstract class Service<C extends ServiceConsumer> {
             instance = new SystemServices();
         }
 
+        private final ThreadPoolExecutor serviceExecutor;
         private final Map<String, Service> services;
         private Log log;
 
@@ -211,6 +223,11 @@ public abstract class Service<C extends ServiceConsumer> {
          * Constructor.
          */
         private SystemServices() {
+            this.serviceExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(
+                    runnable -> new ServiceThread(runnable, SystemProperties.get(SystemProperties.Service.STATIC_THREAD_NAME)));
+            this.serviceExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.Service.STATIC_THREAD_POOL_CORE_SIZE));
+            this.serviceExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.Service.STATIC_THREAD_POOL_MAX_SIZE));
+            this.serviceExecutor.setKeepAliveTime(SystemProperties.getLong(SystemProperties.Service.STATIC_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
             services = new HashMap<>();
 
             //Adding service shutdown hook
@@ -358,6 +375,10 @@ public abstract class Service<C extends ServiceConsumer> {
         private final ServiceSession session;
         private final Map<String, Object> invokerProperties;
         private final long creationTime;
+
+        public RunnableWrapper(Runnable runnable, ServiceSession session) {
+            this(runnable, session, new HashMap<>());
+        }
 
         public RunnableWrapper(Runnable runnable, ServiceSession session, Map<String, Object> invokerProperties) {
             this.runnable = runnable;
