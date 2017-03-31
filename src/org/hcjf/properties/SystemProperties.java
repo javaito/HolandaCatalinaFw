@@ -47,6 +47,10 @@ public final class SystemProperties extends Properties {
     }
 
     public static final class Service {
+        public static final String STATIC_THREAD_NAME = "hcjf.service.static.thread.name";
+        public static final String STATIC_THREAD_POOL_CORE_SIZE = "hcjf.service.static.thread.pool.core.size";
+        public static final String STATIC_THREAD_POOL_MAX_SIZE = "hcfj.service.static.thread.pool.max.size";
+        public static final String STATIC_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.static.thread.pool.keep.alive.time";
         public static final String THREAD_POOL_CORE_SIZE = "hcjf.service.thread.pool.core.size";
         public static final String THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
         public static final String THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
@@ -75,6 +79,7 @@ public final class SystemProperties extends Properties {
         public static final String QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
         public static final String TRUNCATE_TAG = "hcjf.log.truncate.tag";
         public static final String TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
+        public static final String LOG_CONSUMERS_SIZE = "hcjf.log.consumers.size";
     }
 
     public static final class Encoding {
@@ -244,6 +249,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_LOCK_NAME, "hcjf.layers.plugin.cloud.deployment.lock");
         defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_LOCK_CONDITION_NAME, "hcjf.layers.plugin.cloud.deployment.lock.condition.name");
 
+        defaults.put(Service.STATIC_THREAD_NAME, "StaticServiceThread");
+        defaults.put(Service.STATIC_THREAD_POOL_CORE_SIZE, "1");
+        defaults.put(Service.STATIC_THREAD_POOL_MAX_SIZE, "5");
+        defaults.put(Service.STATIC_THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
         defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
         defaults.put(Service.THREAD_POOL_KEEP_ALIVE_TIME, "10");
@@ -275,6 +284,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Log.QUEUE_INITIAL_SIZE, "10000");
         defaults.put(Log.TRUNCATE_TAG, "false");
         defaults.put(Log.TRUNCATE_TAG_SIZE, "35");
+        defaults.put(Log.LOG_CONSUMERS_SIZE, "50");
 
         defaults.put(Net.INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.OUTPUT_BUFFER_SIZE, "102400");

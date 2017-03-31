@@ -1,7 +1,10 @@
 package org.hcjf.layers;
 
 import org.hcjf.layers.crud.CrudLayerInterface;
-import org.hcjf.layers.plugins.*;
+import org.hcjf.layers.plugins.DeploymentService;
+import org.hcjf.layers.plugins.Plugin;
+import org.hcjf.layers.plugins.PluginClassLoader;
+import org.hcjf.layers.plugins.PluginLayer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
@@ -146,15 +149,15 @@ public final class Layers {
      * @param <L> Expected layer class.
      * @return Layer instance.
      */
-    public static <L extends LayerInterface> L get(LayerMatcher<L> matcher) {
+    public static <L extends LayerInterface> L get(Class<? extends L> layerClass, LayerMatcher<L> matcher) {
         L result = null;
-        if(instance.layerImplementations.containsKey(matcher.getLayerClass())) {
+        if(instance.layerImplementations.containsKey(layerClass)) {
             Map<String, Class<? extends Layer>> layersByName =
-                    instance.layerImplementations.get(matcher.getLayerClass());
+                    instance.layerImplementations.get(layerClass);
             for(String implName : layersByName.keySet()) {
                 result = getImplementationInstance(
-                        matcher.getLayerClass(), layersByName.get(implName));
-                if(matcher.match((Layer) result)){
+                        layerClass, layersByName.get(implName));
+                if(matcher.match(result)){
                     break;
                 } else {
                     result = null;
@@ -163,13 +166,13 @@ public final class Layers {
         }
 
         if(result == null) {
-            if (instance.pluginLayerImplementations.containsKey(matcher.getLayerClass())) {
+            if (instance.pluginLayerImplementations.containsKey(layerClass)) {
                 Map<String, String> layersByName =
-                        instance.pluginLayerImplementations.get(matcher.getLayerClass());
+                        instance.pluginLayerImplementations.get(layerClass);
                 for (String implName : layersByName.keySet()) {
                     result = getPluginImplementationInstance(
-                            matcher.getLayerClass(), layersByName.get(implName));
-                    if(matcher.match((Layer)result)){
+                            layerClass, layersByName.get(implName));
+                    if(matcher.match(result)){
                         break;
                     } else {
                         result = null;
@@ -337,50 +340,8 @@ public final class Layers {
      */
     public interface LayerMatcher<L extends LayerInterface> {
 
-        default Class<? extends L> getLayerClass() {
-            Type genericSuperClass = getClass().getGenericSuperclass();
-            Type actualType = ((ParameterizedType) genericSuperClass).
-                    getActualTypeArguments()[0];
-            return (Class<L>) actualType;
-        }
-
-        public boolean match(Layer layer);
+        public boolean match(L layer);
 
     }
 
-    public static void main(String[] args) throws Exception {
-
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
-
-        new Thread(() -> {
-            while(true) {
-                try {
-                    System.in.read();
-                    File file2 = new File("/home/javaito/IdeaProjects/TestPlugin/out/artifacts/TestPlugin/TestPlugin.jar");
-                    ByteBuffer jarBuffer2 = ByteBuffer.wrap(Files.readAllBytes(file2.toPath()));
-                    publishPlugin(jarBuffer2);
-                } catch (Exception ex){}
-            }
-        }).start();
-
-        while(true) {
-            CrudLayerInterface<String> crudLayerInterface;
-            try {
-                crudLayerInterface = Layers.get(CrudLayerInterface.class, "MyModelCrud");
-            } catch (Exception ex) {
-                System.out.println("Plugin not found");
-                Thread.sleep(4000);
-                continue;
-            }
-            while (true) {
-                try {
-                    crudLayerInterface.create("Javaito");
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-                Thread.sleep(4000);
-            }
-        }
-
-    }
 }
