@@ -746,12 +746,12 @@ public class Query extends EvaluatorCollection {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof GreaterThan) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof NotIn) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof In) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.IN)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof Like) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof NotIn) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof SmallerThanOrEqual) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof SmallerThan) {
