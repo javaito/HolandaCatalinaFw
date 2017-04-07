@@ -638,6 +638,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             if(key.isValid() && sessionsByChannel.containsKey(keyChannel)) {
                                                 removeKey = false;
                                             }
+                                        } catch (Exception ex) {
+                                            key.cancel();
+                                            Log.w(NET_SERVICE_LOG_TAG, "Unable to for key");
                                         }
                                     } else {
                                         key.cancel();
