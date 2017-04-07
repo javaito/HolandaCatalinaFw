@@ -4,6 +4,7 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.layers.storage.actions.*;
 
 import java.io.Closeable;
+import java.util.Map;
 
 /**
  * This class is the base class to implements a storage session over
@@ -35,11 +36,11 @@ public abstract class StorageSession implements Closeable {
     /**
      * This method must return a insert operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storableObject Object to initialize the instance of insert operation.
+     * @param object Object to initialize the instance of insert operation.
      * @return Return the insert operation.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Insert insert(Object storableObject) throws StorageAccessException {
+    public Insert insert(Object object) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported insert action for " + implName + " implementation");
     }
 
@@ -56,43 +57,45 @@ public abstract class StorageSession implements Closeable {
     /**
      * This method must return a update operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storableObject Object to initialize the instance of update operation.
+     * @param query Query to filter the update.
+     * @param values Values to been updated.
      * @return Return the update operation.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Update update(Object storableObject) throws StorageAccessException {
+    public Update update(Query query, Map<String, Object> values) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported update action for " + implName + " implementation");
     }
 
     /**
      * This method must return a update operation implementation, this implementation
      * depends of the storage session technology.
+     * @param query Query to filter the update
      * @return Return the update operation.
      * @throws StorageAccessException
      */
-    public Update update() throws StorageAccessException {
+    public Update update(Query query) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported update action for " + implName + " implementation");
     }
 
     /**
      * This method must return a delete operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storageName Storage name refer the storage structure to be deleted.
+     * @param query Query to filter the delete.
      * @return Return the delete operation.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Delete delete(String storageName) throws StorageAccessException {
+    public Delete delete(Query query) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported delete action for " + implName + " implementation");
     }
 
     /**
      * This method must return a upsert operation implementation, this implementation
      * depends of the storage session technology.
-     * @param storableObject Object to initialize the instance of upsert operation.
+     * @param object Object to initialize the instance of upsert operation.
      * @return Return the upsert operation.
      * @throws StorageAccessException Encapsulates all exceptions of the underlying technology
      */
-    public Upsert upsert(Object storableObject) throws StorageAccessException {
+    public Upsert upsert(Object object) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported upsert action for " + implName + " implementation");
     }
 
