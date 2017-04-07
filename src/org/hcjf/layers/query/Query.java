@@ -5,6 +5,7 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 
+import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
@@ -537,10 +538,10 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     *
-     * @param collection
-     * @param resource
-     * @return
+     * Return the list of evaluator for the specific resource.
+     * @param collection Evaluator collection.
+     * @param resource Resource type.
+     * @return List of evaluators.
      */
     private List<Evaluator> getEvaluatorsFromResource(EvaluatorCollection collection, EvaluatorCollection parent, QueryResource resource) {
         List<Evaluator> result = new ArrayList<>();
@@ -629,6 +630,10 @@ public class Query extends EvaluatorCollection {
         }
     }
 
+    /**
+     * Creates a string representation of the query object.
+     * @return String representation.
+     */
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
@@ -696,6 +701,11 @@ public class Query extends EvaluatorCollection {
         return result.toString();
     }
 
+    /**
+     * Creates a string representation of evaluator collection.
+     * @param result Buffer with the current result.
+     * @param collection Collection in order to create the string representation.
+     */
     private void toStringEvaluatorCollection(StringBuilder result, EvaluatorCollection collection) {
         String separator = Strings.EMPTY_STRING;
         String separatorValue = collection instanceof Or ?
@@ -736,12 +746,12 @@ public class Query extends EvaluatorCollection {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof GreaterThan) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN)).append(Strings.WHITE_SPACE);
+                } else if (fieldEvaluator instanceof NotIn) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof In) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.IN)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof Like) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof NotIn) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof SmallerThanOrEqual) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof SmallerThan) {
@@ -758,6 +768,13 @@ public class Query extends EvaluatorCollection {
         }
     }
 
+    /**
+     * Creates the string representation of the field evaluator.
+     * @param value Object to create the string representation.
+     * @param type Object type.
+     * @param result Buffer with the current result.
+     * @return String representation of the field evaluator.
+     */
     private static StringBuilder toStringFieldEvaluatorValue(Object value, Class type, StringBuilder result) {
         if(FieldEvaluator.ReplaceableValue.class.isAssignableFrom(type)) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE));
@@ -948,11 +965,11 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     *
-     * @param definition
-     * @param collection
-     * @param groups
-     * @param placesIndex
+     * Creates a conditional evaluator from string representation.
+     * @param definition String definition of the conditional.
+     * @param collection Evaluator collection to put the conditional processed.
+     * @param groups Sub representation of the main representation.
+     * @param placesIndex Place counter of the group list.
      */
     private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, AtomicInteger placesIndex) {
         String[] evaluatorValues;
@@ -975,18 +992,21 @@ public class Query extends EvaluatorCollection {
                 boolean operatorDone = false;
                 firstArgument = Strings.EMPTY_STRING;
                 secondArgument = Strings.EMPTY_STRING;
-                operator = null;
+                operator = Strings.EMPTY_STRING;
                 for (String evaluatorValue : evaluatorValues) {
-                    if (!operatorDone && (evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))
-                            || evaluatorValue.trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)))) {
-                        operator = evaluatorValue.trim();
+                    evaluatorValue = evaluatorValue.trim();
+                    if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT))) {
+                        operator += evaluatorValue + Strings.WHITE_SPACE;
+                        operatorDone = true;
+                    } else if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
+                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
+                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))
+                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))
+                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))
+                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))
+                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))
+                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
+                        operator += evaluatorValue;
                         operatorDone = true;
                     } else if (operatorDone) {
                         secondArgument += evaluatorValue + Strings.WHITE_SPACE;
@@ -1041,12 +1061,12 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     *
-     * @param groups
-     * @param stringValue
-     * @param placesIndex
-     * @param parameterClass
-     * @return
+     * Process the string representation to obtain the specific object type.
+     * @param groups Sub representation of the main representation.
+     * @param stringValue String representation to process.
+     * @param placesIndex Place counter of the group list.
+     * @param parameterClass Parameter class.
+     * @return Return the specific implementation of the string representation.
      */
     private static Object processStringValue(List<String> groups, String stringValue, AtomicInteger placesIndex, Class parameterClass) {
         Object result = null;

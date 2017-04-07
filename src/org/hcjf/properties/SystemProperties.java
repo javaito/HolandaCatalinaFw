@@ -178,6 +178,7 @@ public final class SystemProperties extends Properties {
             public static final String SMALLER_THAN_OR_EQUALS = "hcjf.query.smaller.than.or.equals.reserved.word";
             public static final String IN = "hcjf.query.in.reserved.word";
             public static final String NOT_IN = "hcjf.query.not.in.reserved.word";
+            public static final String NOT = "hcjf.query.not.reserved.word";
             public static final String LIKE = "hcjf.query.like.reserved.word";
             public static final String AND = "hcjf.query.and.reserved.word";
             public static final String OR = "hcjf.query.or.reserved.word";
@@ -326,7 +327,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?%\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|>|<|>=|<=| in | not in | like ))|(?=(=|<>|>|<|>=|<=| in | not in | like ))");
@@ -360,6 +361,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.SMALLER_THAN_OR_EQUALS, "<=");
         defaults.put(Query.ReservedWord.IN, "IN");
         defaults.put(Query.ReservedWord.NOT_IN, "NOT IN");
+        defaults.put(Query.ReservedWord.NOT, "NOT");
         defaults.put(Query.ReservedWord.LIKE, "LIKE");
         defaults.put(Query.ReservedWord.AND, "AND");
         defaults.put(Query.ReservedWord.OR, "OR");

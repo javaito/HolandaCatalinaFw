@@ -235,6 +235,19 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
     }
 
     /**
+     * This method implements the update operation over a add of the instances,
+     * this instances are selected using the query like a filter.
+     * @param query Query to select the instance to update.
+     * @param parameters Values that contains the information to update the
+     *                   instances.
+     * @return Return the instances updated.
+     */
+    @Override
+    public Collection<O> update(Query query, Map<String, Object> parameters) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * This method implements the delete operation over a add of the instances.
      * This instances are selected using the query like a filter.
      *
@@ -243,6 +256,17 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
      */
     @Override
     public Collection<O> delete(Query.QueryId queryId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * This method implements the delete operation over a add of the instances.
+     * This instances are selected using the query like a filter.
+     * @param query Query to select the instances to delete.
+     * @return Return the instances deleted.
+     */
+    @Override
+    public Collection<O> delete(Query query) {
         throw new UnsupportedOperationException();
     }
 
