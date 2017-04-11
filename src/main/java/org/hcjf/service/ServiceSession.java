@@ -62,8 +62,16 @@ public class ServiceSession implements Comparable {
         return sessionName;
     }
 
+    /**
+     * Return the properties name of the session.
+     * @return Unmodifiable properties map.
+     */
     public Map<String, Object> getProperties() {
-        return Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
+        Map<String, Object> result = null;
+        if(properties.containsKey(Thread.currentThread().getId())) {
+            result = Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
+        }
+        return result;
     }
 
     /**

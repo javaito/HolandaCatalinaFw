@@ -86,6 +86,21 @@ public class JoinableMap implements Joinable, Map<String, Object> {
         return result;
     }
 
+    /**
+     * Write all the elements of the map.
+     * @return Map print.
+     */
+    @Override
+    public final String toString() {
+        Strings.Builder builder = new Strings.Builder();
+        builder.append(Strings.START_SUB_GROUP);
+        for(String key : mapInstance.keySet()) {
+            builder.append(key).append(Strings.ASSIGNATION);
+            builder.append(mapInstance.get(key), Strings.ARGUMENT_SEPARATOR, Strings.WHITE_SPACE);
+        }
+        return super.toString();
+    }
+
     @Override
     public int size() {
         return mapInstance.size();
