@@ -24,7 +24,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public class FolderContext extends Context {
 
-    private static final String[] FORBIDDEN_CHARACTERS = {"..", "~"};
+    private static final String[] FORBIDDEN_CHARACTERS = {"main", "~"};
     private static final String FILE_EXTENSION_REGEX = "\\.(?=[^\\.]+$)";
     private static final String FOLDER_DEFAULT_HTML_DOCUMENT = "<!DOCTYPE html><html><head><title>%s</title><body>%s</body></html></head>";
     private static final String FOLDER_DEFAULT_HTML_BODY = "<table>%s</table>";

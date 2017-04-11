@@ -172,6 +172,7 @@ public final class SystemProperties extends Properties {
             public static final String ARGUMENT_SEPARATOR = "hcjf.query.argument.separator";
             public static final String EQUALS = "hcjf.query.equals.reserved.word";
             public static final String DISTINCT = "hcjf.query.distinct.reserved.word";
+            public static final String DISTINCT_2 = "hcjf.query.distinct.2.reserved.word";
             public static final String GREATER_THAN = "hcjf.query.greater.than.reserved.word";
             public static final String GREATER_THAN_OR_EQUALS = "hcjf.query.greater.than.or.equals.reserved.word";
             public static final String SMALLER_THAN = "hcjf.query.smaller.than.reserved.word";
@@ -330,7 +331,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?%\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
-        defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|>|<|>=|<=| in | not in | like ))|(?=(=|<>|>|<|>=|<=| in | not in | like ))");
+        defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on )");
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
         defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)( desc )");
@@ -355,6 +356,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.ARGUMENT_SEPARATOR, ",");
         defaults.put(Query.ReservedWord.EQUALS, "=");
         defaults.put(Query.ReservedWord.DISTINCT, "<>");
+        defaults.put(Query.ReservedWord.DISTINCT_2, "!=");
         defaults.put(Query.ReservedWord.GREATER_THAN, ">");
         defaults.put(Query.ReservedWord.GREATER_THAN_OR_EQUALS, ">=");
         defaults.put(Query.ReservedWord.SMALLER_THAN, "<");
