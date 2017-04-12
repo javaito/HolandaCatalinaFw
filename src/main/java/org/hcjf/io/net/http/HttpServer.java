@@ -198,7 +198,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             Log.e(HTTP_SERVER_LOG_TAG, "Exception on context %s", throwable, context.getContextRegex());
                             response = context.onError(request, throwable);
                             if (response == null) {
-                                response = createDefaulErrorResponse(throwable);
+                                response = createDefaultErrorResponse(throwable);
                             }
                         }
                     } else {
@@ -219,7 +219,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     response = onNotCheckedSession(request);
                 }
             } catch (Throwable throwable) {
-                response = createDefaulErrorResponse(throwable);
+                response = createDefaultErrorResponse(throwable);
             }
 
             boolean writeError = false;
@@ -243,7 +243,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @param throwable Throwable
      * @return Http response package.
      */
-    private HttpResponse createDefaulErrorResponse(Throwable throwable) {
+    private HttpResponse createDefaultErrorResponse(Throwable throwable) {
         HttpResponse response = new HttpResponse();
         response.setReasonPhrase(throwable.getMessage());
         response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);

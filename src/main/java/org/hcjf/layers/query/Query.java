@@ -1,11 +1,11 @@
 package org.hcjf.layers.query;
 
+import javafx.beans.property.StringProperty;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 
-import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
@@ -1110,11 +1110,19 @@ public class Query extends EvaluatorCollection {
             }
         } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
             result = UUID.fromString(stringValue);
-        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_NUMBER_REGEX))) {
+        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
+            result = Long.parseLong(stringValue);
+        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
             try {
-                result = NumberFormat.getInstance().parse(stringValue);
+                result = SystemProperties.getDecimalFormat(SystemProperties.Query.DECIMAL_FORMAT).parse(stringValue);
             } catch (ParseException e) {
-                throw new IllegalArgumentException("");
+                throw new IllegalArgumentException("Unable to parse decimal number");
+            }
+        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
+            try {
+                result = SystemProperties.getDecimalFormat(SystemProperties.Query.SCIENTIFIC_NOTATION_FORMAT).parse(stringValue);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Unable to parse scientific number");
             }
         } else {
             //Default case, only must be a query parameter.

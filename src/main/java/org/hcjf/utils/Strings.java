@@ -137,7 +137,7 @@ public final class Strings {
         Set<Integer> endIndexes = allIndexOf(value, END_GROUP);
 
         if(startIndexes.size() != endIndexes.size()) {
-            throw new IllegalArgumentException("");
+            throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
         }
 
         return group(value, startIndexes, endIndexes);
@@ -153,10 +153,9 @@ public final class Strings {
      */
     private static List<String> group(String value, Set<Integer> startIndexes, Set<Integer> endIndexes) {
         List<String> result = new ArrayList<>();
-        Integer start = null;
-        Integer end = null;
-        Integer candidate = null;
-        Iterator<Integer> startIterator = startIndexes.iterator();
+        Integer start;
+        Integer end;
+        Integer candidate;
         while(!startIndexes.isEmpty()) {
             start = startIndexes.iterator().next();
             Iterator<Integer> endIterator = endIndexes.iterator();
