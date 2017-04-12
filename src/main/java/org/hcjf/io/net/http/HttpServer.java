@@ -183,9 +183,17 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
+
+            //Flag to pipe line.
             boolean connectionKeepAlive = false;
+
+            //Remove the http buffer because the payload is complete.
+            requestBuffers.remove(session);
+
+            //Value to calculate the request execution time
             long time = System.currentTimeMillis();
-            HttpResponse response = null;
+
+            HttpResponse response;
             HttpRequest request = (HttpRequest) payLoad;
             Log.in(HTTP_SERVER_LOG_TAG, "Request\r\n%s", request.toString());
             try {
@@ -195,7 +203,13 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         try {
                             Log.d(HTTP_SERVER_LOG_TAG, "Request context: %s", request.getContext());
                             response = context.onContext(request);
-                            response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+                            if(request.containsHeader(HttpHeader.CONNECTION)) {
+                                if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
+                                    Log.d(HTTP_SERVER_LOG_TAG, "Http connection keep alive");
+                                    connectionKeepAlive = true;
+                                }
+                                response.addHeader(request.getHeader(HttpHeader.CONNECTION));
+                            }
                             if(response.getNetStreamingSource() != null) {
                                 connectionKeepAlive = true;
                             }
