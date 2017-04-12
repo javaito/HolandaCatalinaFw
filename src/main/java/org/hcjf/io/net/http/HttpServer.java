@@ -195,13 +195,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         try {
                             Log.d(HTTP_SERVER_LOG_TAG, "Request context: %s", request.getContext());
                             response = context.onContext(request);
-                            if(request.containsHeader(HttpHeader.CONNECTION)) {
-                                if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
-                                    Log.d(HTTP_SERVER_LOG_TAG, "Http connection keep alive");
-                                    connectionKeepAlive = true;
-                                }
-                                response.addHeader(request.getHeader(HttpHeader.CONNECTION));
-                            }
+                            response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
                             if(response.getNetStreamingSource() != null) {
                                 connectionKeepAlive = true;
                             }
