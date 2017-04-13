@@ -283,9 +283,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * This method must create the response package when the context not found.
+     * @param request Http request.
+     * @return Context not found response.
      */
     protected HttpResponse onContextNotFound(HttpRequest request) {
         HttpResponse response = new HttpResponse();
@@ -300,9 +300,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * This method must create the response package when the context result is null.
+     * @param request Http request.
+     * @return Unresponsive context response.
      */
     protected HttpResponse onUnresponsiveContext(HttpRequest request) {
         HttpResponse response = new HttpResponse();
@@ -317,9 +317,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * This method must create the response package when the session check fail.
+     * @param request Http request.
+     * @return Session check fail response.
      */
     protected HttpResponse onNotCheckedSession(HttpRequest request) {
         HttpResponse response = new HttpResponse();
@@ -330,19 +330,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param session
-     * @param payLoad
-     * @param netPackage
-     */
-    @Override
-    protected final void onConnect(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        super.onConnect(session, payLoad, netPackage);
-    }
-
-    /**
-     * @param session
-     * @param netPackage
+     * This method is called when the session is closed.
+     * @param session Closed session.
+     * @param netPackage Close package.
      */
     @Override
     protected final void onDisconnect(HttpSession session, NetPackage netPackage) {

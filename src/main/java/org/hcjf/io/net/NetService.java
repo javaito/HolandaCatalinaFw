@@ -896,8 +896,12 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     *
-     * @param channel
+     * This method take the output queue associated to the consumer and write over the
+     * session channel all the packages.
+     * If one of the packages is a disconnection package then the channel is closed and
+     * the rest of the packages are discarded.
+     * @param channel Session channel.
+     * @param consumer Net service consumer.
      */
     private void write(SelectableChannel channel, NetServiceConsumer consumer) {
         NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
@@ -973,6 +977,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     onAction(netPackage, consumer);
                                 }
                             }
+
+                            //Change the key operation to finish write loop
+                            channel.keyFor(getSelector()).interestOps(SelectionKey.OP_READ);
+
                             break;
                         }
                         case DISCONNECT: {
