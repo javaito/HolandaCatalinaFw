@@ -63,7 +63,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(sessionManager == null) {
             sessionManager = HttpSessionManager.DEFAULT;
         }
-        return sessionManager.createSession(this, netPackage);
+
+
+
+        HttpSession session = sessionManager.createSession(this, netPackage);
+
+        Log.d(HTTP_SERVER_LOG_TAG, "[CREATE_SESSION] Http session %s", session);
+
+        return session;
     }
 
     /**
@@ -79,7 +86,12 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(sessionManager == null) {
             sessionManager = HttpSessionManager.DEFAULT;
         }
-        return sessionManager.checkSession(session, (HttpRequest) payLoad);
+
+        HttpSession session1 = sessionManager.checkSession(session, (HttpRequest) payLoad);
+
+        Log.d(HTTP_SERVER_LOG_TAG, "[CHECK_SESSION] Http session %s", session);
+
+        return session1;
     }
 
     /**

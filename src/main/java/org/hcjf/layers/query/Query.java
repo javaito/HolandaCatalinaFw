@@ -1,12 +1,10 @@
 package org.hcjf.layers.query;
 
-import javafx.beans.property.StringProperty;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;

@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.net.StandardSocketOptions;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
@@ -558,8 +557,6 @@ public final class NetService extends Service<NetServiceConsumer> {
             throw new IllegalArgumentException("The service consumer must be instance of org.hcjf.io.net.NetServer or org.hcjf.io.net.NetClient.");
         }
 
-        ((ServiceThread)Thread.currentThread()).setSession(result);
-        result.startThread();
         return result;
     }
 
@@ -629,7 +626,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                     } catch (Exception ex) {
                                                         Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
                                                     } finally {
-                                                        ((ServiceThread) Thread.currentThread()).getSession().endThread();
                                                         ((ServiceThread) Thread.currentThread()).setSession(null);
                                                     }
                                                 }
@@ -808,6 +804,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                         if(session == null){
                             destroyChannel(channel);
                         } else {
+                            //Here the session is linked with the current thread
+                            ((ServiceThread)Thread.currentThread()).setSession(session);
+
                             netPackage.setSession(session);
                             if(!sessionsByChannel.containsKey(channel)){
                                 if(channels.containsKey(session)){
@@ -865,6 +864,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                         }
 
                         if(session != null){
+                            //Here the session is linked with the current thread
+                            ((ServiceThread)Thread.currentThread()).setSession(session);
+
                             netPackage.setSession(session);
                             if(addresses.containsKey(session)) {
                                 addresses.put(session, address);
