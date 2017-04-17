@@ -365,7 +365,7 @@ public final class Introspection {
         private final Class returnKeyType;
         private final Class returnCollectionType;
 
-        protected Getter(Class implementationClass, String resourceName, Method method) {
+        public Getter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
             returnType = method.getReturnType();
 
