@@ -855,7 +855,7 @@ public class Query extends EvaluatorCollection {
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT))) {
 
-                        Join.JoinType type = Join.JoinType.valueOf(element);
+                        Join.JoinType type = Join.JoinType.valueOf(element.toUpperCase());
                         if(type != Join.JoinType.JOIN) {
                             elementValue = conditionalElements[++i].trim();
                         }
@@ -867,7 +867,7 @@ public class Query extends EvaluatorCollection {
                             joinEvaluators = groups.get(Integer.parseInt(joinEvaluators.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING)));
                         }
 
-                        Join join = new Join(query, joinResource, Join.JoinType.valueOf(element.toUpperCase()));
+                        Join join = new Join(query, joinResource, type);
                         completeEvaluatorCollection(joinEvaluators, groups, join, 0, new AtomicInteger(0));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
@@ -1154,8 +1154,8 @@ public class Query extends EvaluatorCollection {
                 String alias = null;
                 String[] parts = originalValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
                 if(parts.length == 3) {
-                    originalValue = parts[0];
-                    alias = parts[2];
+                    originalValue = parts[0].trim();
+                    alias = parts[2].trim();
                 }
 
                 if(function) {
@@ -1346,11 +1346,7 @@ public class Query extends EvaluatorCollection {
          */
         @Override
         public boolean equals(Object obj) {
-            boolean result = false;
-            if(obj instanceof QueryParameter) {
-                result = toString().equals(obj.toString());
-            }
-            return result;
+            return toString().equals(obj.toString());
         }
 
         /**
