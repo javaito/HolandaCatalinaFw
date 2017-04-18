@@ -63,7 +63,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(sessionManager == null) {
             sessionManager = HttpSessionManager.DEFAULT;
         }
-        return sessionManager.createSession(this, netPackage);
+
+
+
+        HttpSession session = sessionManager.createSession(this, netPackage);
+
+        Log.d(HTTP_SERVER_LOG_TAG, "[CREATE_SESSION] Http session %s", session);
+
+        return session;
     }
 
     /**
@@ -79,7 +86,12 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(sessionManager == null) {
             sessionManager = HttpSessionManager.DEFAULT;
         }
-        return sessionManager.checkSession(session, (HttpRequest) payLoad);
+
+        HttpSession session1 = sessionManager.checkSession(session, (HttpRequest) payLoad);
+
+        Log.d(HTTP_SERVER_LOG_TAG, "[CHECK_SESSION] Http session %s", session);
+
+        return session1;
     }
 
     /**
@@ -183,8 +195,17 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
+
+            //Flag to pipe line.
+            boolean connectionKeepAlive = false;
+
+            //Remove the http buffer because the payload is complete.
+            requestBuffers.remove(session);
+
+            //Value to calculate the request execution time
             long time = System.currentTimeMillis();
-            HttpResponse response = null;
+
+            HttpResponse response;
             HttpRequest request = (HttpRequest) payLoad;
             Log.in(HTTP_SERVER_LOG_TAG, "Request\r\n%s", request.toString());
             try {
@@ -194,11 +215,21 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         try {
                             Log.d(HTTP_SERVER_LOG_TAG, "Request context: %s", request.getContext());
                             response = context.onContext(request);
+                            if(request.containsHeader(HttpHeader.CONNECTION)) {
+                                if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
+                                    Log.d(HTTP_SERVER_LOG_TAG, "Http connection keep alive");
+                                    connectionKeepAlive = true;
+                                }
+                                response.addHeader(request.getHeader(HttpHeader.CONNECTION));
+                            }
+                            if(response.getNetStreamingSource() != null) {
+                                connectionKeepAlive = true;
+                            }
                         } catch (Throwable throwable) {
                             Log.e(HTTP_SERVER_LOG_TAG, "Exception on context %s", throwable, context.getContextRegex());
                             response = context.onError(request, throwable);
                             if (response == null) {
-                                response = createDefaulErrorResponse(throwable);
+                                response = createDefaultErrorResponse(throwable);
                             }
                         }
                     } else {
@@ -219,19 +250,18 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     response = onNotCheckedSession(request);
                 }
             } catch (Throwable throwable) {
-                response = createDefaulErrorResponse(throwable);
+                response = createDefaultErrorResponse(throwable);
             }
 
-            boolean writeError = false;
             try {
                 write(session, response, response.getNetStreamingSource(), false);
                 Log.out(HTTP_SERVER_LOG_TAG, "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());
             } catch (Throwable throwable) {
                 Log.e(NetService.NET_SERVICE_LOG_TAG, "Http server error", throwable);
-                writeError = true;
+                connectionKeepAlive = false;
             } finally {
-                if(writeError || response == null || response.getNetStreamingSource() == null) {
+                if(!connectionKeepAlive) {
                     disconnect(session, "Http request end");
                 }
             }
@@ -243,7 +273,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @param throwable Throwable
      * @return Http response package.
      */
-    private HttpResponse createDefaulErrorResponse(Throwable throwable) {
+    private HttpResponse createDefaultErrorResponse(Throwable throwable) {
         HttpResponse response = new HttpResponse();
         response.setReasonPhrase(throwable.getMessage());
         response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
@@ -265,9 +295,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * This method must create the response package when the context not found.
+     * @param request Http request.
+     * @return Context not found response.
      */
     protected HttpResponse onContextNotFound(HttpRequest request) {
         HttpResponse response = new HttpResponse();
@@ -282,9 +312,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * This method must create the response package when the context result is null.
+     * @param request Http request.
+     * @return Unresponsive context response.
      */
     protected HttpResponse onUnresponsiveContext(HttpRequest request) {
         HttpResponse response = new HttpResponse();
@@ -299,9 +329,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param request
-     * @return
+     * This method must create the response package when the session check fail.
+     * @param request Http request.
+     * @return Session check fail response.
      */
     protected HttpResponse onNotCheckedSession(HttpRequest request) {
         HttpResponse response = new HttpResponse();
@@ -312,19 +342,9 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     *
-     * @param session
-     * @param payLoad
-     * @param netPackage
-     */
-    @Override
-    protected final void onConnect(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        super.onConnect(session, payLoad, netPackage);
-    }
-
-    /**
-     * @param session
-     * @param netPackage
+     * This method is called when the session is closed.
+     * @param session Closed session.
+     * @param netPackage Close package.
      */
     @Override
     protected final void onDisconnect(HttpSession session, NetPackage netPackage) {
@@ -355,4 +375,5 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     protected void onStop() {
         Log.d(HTTP_SERVER_LOG_TAG, "Http server stopped.");
     }
+
 }

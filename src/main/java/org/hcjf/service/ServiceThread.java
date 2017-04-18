@@ -41,26 +41,36 @@ public class ServiceThread extends Thread {
     }
 
     /**
-     *
-     * @return
+     * This method return the stack of layer of the session.
+     * @return Layer stack.
      */
     public Class[] getLayerStack() {
         return getSession().getLayerStack();
     }
 
     /**
-     *
-     * @return
+     * Return the session of the thread.
+     * @return Session of the thread.
      */
-    public ServiceSession getSession() {
+    public final ServiceSession getSession() {
         return session;
     }
 
     /**
-     *
-     * @param session
+     * Set the session for the thread.
+     * @param session Service session.
      */
-    public void setSession(ServiceSession session) {
+    public final void setSession(ServiceSession session) {
+        if(this.session != null) {
+            //Remove the status of the current thread stored into the old session
+            this.session.endThread();
+        }
+
+        if(session != null) {
+            //Start the status of the current thread into the new session.
+            session.startThread();
+        }
+
         this.session = session;
     }
 }

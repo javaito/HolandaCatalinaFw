@@ -20,7 +20,7 @@ public class In extends FieldEvaluator {
 
     @Override
     public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
-        boolean result;
+        boolean result = false;
 
         try {
             Object value = valuesMap.get(this);
@@ -38,13 +38,23 @@ public class In extends FieldEvaluator {
                 } else if (Collection.class.isAssignableFrom(fieldValue.getClass())) {
                     result = ((Collection) fieldValue).contains(value);
                 } else if (fieldValue.getClass().isArray()) {
-                    result = Arrays.binarySearch((Object[]) fieldValue, value) >= 0;
+                    for(Object arrayValue : (Object[])fieldValue) {
+                        result = arrayValue.equals(value);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (Map.class.isAssignableFrom(value.getClass())) {
                     result = ((Map) value).containsKey(fieldValue);
                 } else if (Collection.class.isAssignableFrom(value.getClass())) {
                     result = ((Collection) value).contains(fieldValue);
                 } else if (value.getClass().isArray()) {
-                    result = Arrays.binarySearch((Object[]) value, fieldValue) >= 0;
+                    for(Object arrayValue : (Object[])value) {
+                        result = arrayValue.equals(fieldValue);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else {
                     result = fieldValue.equals(value);
                 }

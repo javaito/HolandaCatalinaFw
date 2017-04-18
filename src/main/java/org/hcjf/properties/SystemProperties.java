@@ -30,7 +30,9 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_XML = "hcjf.default.properties.file.xml";
     public static final String HCJF_UUID_REGEX = "hcjf.uuid.regex";
-    public static final String HCJF_NUMBER_REGEX = "hcjf.number.regex";
+    public static final String HCJF_INTEGER_NUMBER_REGEX = "hcjf.integer.number.regex";
+    public static final String HCJF_DECIMAL_NUMBER_REGEX = "hcjf.decimal.number.regex";
+    public static final String HCJF_SCIENTIFIC_NUMBER_REGEX = "hcjf.scientific.number.regex";
 
     public static final class Layer {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
@@ -155,7 +157,10 @@ public final class SystemProperties extends Properties {
         public static final String JOIN_RESOURCE_NAME_INDEX = "hcjf.query.join.resource.name.index";
         public static final String JOIN_EVALUATORS_INDEX = "hcjf.query.join.evaluators.index";
         public static final String DATE_FORMAT = "hcjf.query.date.format";
+        public static final String DECIMAL_SEPARATOR = "hcjf.query.decimal.separator";
         public static final String DECIMAL_FORMAT = "hcjf.query.decimal.format";
+        public static final String SCIENTIFIC_NOTATION = "hcjf.query.scientific.notation";
+        public static final String SCIENTIFIC_NOTATION_FORMAT = "hcjf.query.scientific.notation.format";
 
         public static final class ReservedWord {
             public static final String SELECT = "hcjf.query.select.reserved.word";
@@ -241,7 +246,9 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, "default.locale.layer");
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
         defaults.put(HCJF_UUID_REGEX, "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
-        defaults.put(HCJF_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
+        defaults.put(HCJF_INTEGER_NUMBER_REGEX, "^[-]?[0-9]{1,}$");
+        defaults.put(HCJF_DECIMAL_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
+        defaults.put(HCJF_SCIENTIFIC_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}E[-]?[0-9]{1,}$");
 
         defaults.put(Layer.LOG_TAG, "LAYER");
         defaults.put(Layer.Deployment.SERVICE_NAME, "DeploymentService");
@@ -341,7 +348,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.JOIN_RESOURCE_NAME_INDEX, "0");
         defaults.put(Query.JOIN_EVALUATORS_INDEX, "1");
         defaults.put(Query.DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(Query.DECIMAL_SEPARATOR, ".");
         defaults.put(Query.DECIMAL_FORMAT, "0.000");
+        defaults.put(Query.SCIENTIFIC_NOTATION, "E");
+        defaults.put(Query.SCIENTIFIC_NOTATION_FORMAT, "0.0E0");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");

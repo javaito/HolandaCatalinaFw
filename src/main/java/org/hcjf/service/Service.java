@@ -398,14 +398,12 @@ public abstract class Service<C extends ServiceConsumer> {
             }
 
             try {
-                session.startThread();
+                ((ServiceThread) Thread.currentThread()).setSession(session);
                 if(invokerProperties != null) {
                     session.putAll(invokerProperties);
                 }
-                ((ServiceThread) Thread.currentThread()).setSession(session);
                 runnable.run();
             } finally {
-                session.endThread();
                 ((ServiceThread) Thread.currentThread()).setSession(null);
             }
         }
@@ -439,14 +437,12 @@ public abstract class Service<C extends ServiceConsumer> {
             }
 
             try {
-                session.startThread();
+                ((ServiceThread) Thread.currentThread()).setSession(session);
                 if(invokerProperties != null) {
                     session.putAll(invokerProperties);
                 }
-                ((ServiceThread) Thread.currentThread()).setSession(session);
                 return callable.call();
             } finally {
-                session.endThread();
                 ((ServiceThread) Thread.currentThread()).setSession(null);
             }
         }

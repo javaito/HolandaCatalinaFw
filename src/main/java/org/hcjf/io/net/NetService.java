@@ -557,8 +557,6 @@ public final class NetService extends Service<NetServiceConsumer> {
             throw new IllegalArgumentException("The service consumer must be instance of org.hcjf.io.net.NetServer or org.hcjf.io.net.NetClient.");
         }
 
-        ((ServiceThread)Thread.currentThread()).setSession(result);
-        result.startThread();
         return result;
     }
 
@@ -628,7 +626,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                     } catch (Exception ex) {
                                                         Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
                                                     } finally {
-                                                        ((ServiceThread) Thread.currentThread()).getSession().endThread();
                                                         ((ServiceThread) Thread.currentThread()).setSession(null);
                                                     }
                                                 }
@@ -807,6 +804,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                         if(session == null){
                             destroyChannel(channel);
                         } else {
+                            //Here the session is linked with the current thread
+                            ((ServiceThread)Thread.currentThread()).setSession(session);
+
                             netPackage.setSession(session);
                             if(!sessionsByChannel.containsKey(channel)){
                                 if(channels.containsKey(session)){
@@ -864,6 +864,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                         }
 
                         if(session != null){
+                            //Here the session is linked with the current thread
+                            ((ServiceThread)Thread.currentThread()).setSession(session);
+
                             netPackage.setSession(session);
                             if(addresses.containsKey(session)) {
                                 addresses.put(session, address);
@@ -895,8 +898,12 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     *
-     * @param channel
+     * This method take the output queue associated to the consumer and write over the
+     * session channel all the packages.
+     * If one of the packages is a disconnection package then the channel is closed and
+     * the rest of the packages are discarded.
+     * @param channel Session channel.
+     * @param consumer Net service consumer.
      */
     private void write(SelectableChannel channel, NetServiceConsumer consumer) {
         NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
@@ -972,6 +979,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     onAction(netPackage, consumer);
                                 }
                             }
+
+                            //Change the key operation to finish write loop
+                            channel.keyFor(getSelector()).interestOps(SelectionKey.OP_READ);
+
                             break;
                         }
                         case DISCONNECT: {

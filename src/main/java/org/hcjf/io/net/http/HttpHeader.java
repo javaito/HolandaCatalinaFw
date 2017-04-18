@@ -23,6 +23,7 @@ public class HttpHeader {
     public static final String EXPECT = "Expect";
     public static final String FROM = "From";
     public static final String HOST = "Host";
+    public static final String ORIGIN = "Origin";
     public static final String IF_MATCH = "If-Match";
     public static final String IF_MODIFIED_SINCE = "If-Modified-Since";
     public static final String IF_NONE_MATCH = "If-None-Match";
@@ -48,6 +49,7 @@ public class HttpHeader {
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String CLOSED = "Closed";
+    public static final String KEEP_ALIVE = "Keep-Alive";
     public static final String DEFAULT_USER_AGENT = "HCJF";
     public static final String DEFLATE = "deflate";
     public static final String GZIP = "gzip";

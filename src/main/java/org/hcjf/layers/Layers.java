@@ -1,6 +1,5 @@
 package org.hcjf.layers;
 
-import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.plugins.DeploymentService;
 import org.hcjf.layers.plugins.Plugin;
 import org.hcjf.layers.plugins.PluginClassLoader;
@@ -12,13 +11,10 @@ import org.hcjf.utils.Version;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
