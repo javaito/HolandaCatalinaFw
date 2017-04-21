@@ -195,6 +195,7 @@ public final class SystemProperties extends Properties {
             public static final String TRUE = "hcjf.query.true.reserved.word";
             public static final String FALSE = "hcjf.query.false.reserved.word";
             public static final String AS = "hcjf.query.as.reserved.word";
+            public static final String GROUP_BY = "hcjf.query.group.by.reserved.word";
         }
 
     }
@@ -336,7 +337,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?%\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |(( inner | left | right )? join )| where | limit | order by ))");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^order by |^group by |(( inner | left | right )? join )| where | limit | order by | group by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |^group by |(( inner | left | right )? join )| where | limit | order by | group by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on )");
@@ -384,6 +385,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.TRUE, "TRUE");
         defaults.put(Query.ReservedWord.FALSE, "FALSE");
         defaults.put(Query.ReservedWord.AS, "AS");
+        defaults.put(Query.ReservedWord.GROUP_BY, "GROUP BY");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");

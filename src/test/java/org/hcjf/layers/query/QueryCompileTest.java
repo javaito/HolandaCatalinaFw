@@ -10,10 +10,46 @@ import org.junit.Test;
 public class QueryCompileTest {
 
     @Test()
-    public void test() {
+    public void testCompile() {
         try {
-            Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5");
+            Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6");
             Assert.assertNotNull(query);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
+            Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7");
+            Assert.assertNotNull(query);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
+            Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 LIMIT 10");
+            Assert.assertNotNull(query);
+            Assert.assertEquals(query.getLimit().intValue(), 10);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
+            Query query = Query.compile("SELECT * FROM resource JOIN resource1 ON resource.id = resource1.id WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 LIMIT 10");
+            Assert.assertNotNull(query);
+            Assert.assertEquals(query.getLimit().intValue(), 10);
+            Assert.assertNotNull(query.getJoins());
+            Assert.assertEquals(query.getJoins().size(), 1);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
+            Query query = Query.compile("SELECT * FROM resource JOIN resource1 ON resource.id = resource1.id WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 GROUP BY field2 LIMIT 10");
+            Assert.assertNotNull(query);
+            Assert.assertEquals(query.getLimit().intValue(), 10);
+            Assert.assertNotNull(query.getJoins());
+            Assert.assertEquals(query.getJoins().size(), 1);
+            Assert.assertEquals(query.getGroupParameters().size(), 1);
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }

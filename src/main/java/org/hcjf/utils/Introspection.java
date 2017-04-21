@@ -27,6 +27,35 @@ public final class Introspection {
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
 
     /**
+     * Return the value that is the result of invoke the specific getter method.
+     * @param instance Instance to invoke the getter method.
+     * @param getterName Specific getter name.
+     * @param <O> Expected result type.
+     * @return Return the value that is a result of the specific getter method.
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
+    public static <O extends Object> O get(Object instance, String getterName) throws InvocationTargetException, IllegalAccessException {
+        return getGetters(instance.getClass()).get(getterName).get(instance);
+    }
+
+    /**
+     * Return a list of values that are the results of invoke each of the specific getters.
+     * @param instance Instance to invoke each of getters.
+     * @param getters Specific getter names.
+     * @return Return a list with each of the results.
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
+    public static List get(Object instance, String... getters) throws InvocationTargetException, IllegalAccessException {
+        List result = new ArrayList();
+        for(String getter : getters) {
+            result.add(get(instance, getter));
+        }
+        return result;
+    }
+
+    /**
      * Creates a mpa using all the getters method of the class.
      * @param instance Instance to transform.
      * @return Map

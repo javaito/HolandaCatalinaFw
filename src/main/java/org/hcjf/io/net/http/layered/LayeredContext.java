@@ -67,6 +67,19 @@ public abstract class LayeredContext<L extends LayerInterface,
     }
 
     /**
+     * This method must return the instance of the layer interface.
+     * @return Return the implementation founded.
+     * @throws IllegalArgumentException if the implementation with the
+     * pointed name is not found.
+     */
+    protected final L getLayerInterface() {
+        Class<L> implementationClass = (Class<L>)
+                ((ParameterizedType)getClass().getGenericSuperclass()).
+                        getActualTypeArguments()[0];
+        return Layers.get(implementationClass, getResourceName());
+    }
+
+    /**
      * This method is called when there comes a http package addressed to this
      * context.
      *
