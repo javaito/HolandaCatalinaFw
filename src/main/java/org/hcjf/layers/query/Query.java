@@ -24,12 +24,14 @@ public class Query extends EvaluatorCollection {
     private final QueryResource resource;
     private Integer limit;
     private Object start;
+    private final List<QueryField> groupParameters;
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
 
     public Query(String resource, QueryId id) {
         this.id = id;
+        this.groupParameters = new ArrayList<>();
         this.orderParameters = new ArrayList<>();
         this.returnParameters = new ArrayList<>();
         this.joins = new ArrayList<>();
@@ -50,6 +52,8 @@ public class Query extends EvaluatorCollection {
         this.orderParameters.addAll(source.orderParameters);
         this.returnParameters = new ArrayList<>();
         this.returnParameters.addAll(source.returnParameters);
+        this.groupParameters = new ArrayList<>();
+        this.groupParameters.addAll(source.groupParameters);
         this.joins = new ArrayList<>();
         this.joins.addAll(source.joins);
     }
@@ -142,6 +146,35 @@ public class Query extends EvaluatorCollection {
      */
     public final void setStart(Object start) {
         this.start = start;
+    }
+
+    /**
+     * Return all the group fields of the query.
+     * @return Group field of the query.
+     */
+    public List<QueryField> getGroupParameters() {
+        return Collections.unmodifiableList(groupParameters);
+    }
+
+    /**
+     * Add a name of the field for group the data collection. This name must be exist
+     * like a setter/getter method in the instances of the data collection.
+     * @param groupField Name of the pair getter/setter.
+     * @return Return the same instance of this class.
+     */
+    public final Query addGroupField(String groupField) {
+        return addGroupField(new QueryReturnField(groupField));
+    }
+
+    /**
+     * Add a name of the field for group the data collection. This name must be exist
+     * like a setter/getter method in the instances of the data collection.
+     * @param groupField Name of the pair getter/setter.
+     * @return Return the same instance of this class.
+     */
+    public final Query addGroupField(QueryField groupField) {
+        groupParameters.add((QueryField) checkQueryParameter(groupField));
+        return this;
     }
 
     /**
@@ -348,18 +381,43 @@ public class Query extends EvaluatorCollection {
             data = dataSource.getResourceData(resolveQuery);
         }
 
+        boolean groupResult = false;
+        Map<GroupableIndex, Groupable> groupingMap = null;
+        GroupableIndex groupableIndex;
+        Object[] indexes;
+        if(groupParameters != null) {
+            groupingMap = new HashMap<>();
+            groupResult = true;
+        }
+
         //Filtering data
         boolean add;
         for(O object : data) {
             add = true;
             for(Evaluator evaluator : getEvaluators()) {
                 add = evaluator.evaluate(object, consumer, valuesMap);
-            if(!add) {
+                if(!add) {
                     break;
                 }
             }
             if(add) {
-                result.add(object);
+                if(groupResult) {
+                    //Creates an instance of groupable index
+                    int i = 0;
+                    indexes = new Object[groupParameters.size()];
+                    for(QueryField field : groupParameters) {
+                        indexes[i++] = consumer.get(object, field);
+                    }
+                    groupableIndex = new GroupableIndex(indexes);
+                    if(groupingMap.containsKey(groupableIndex)) {
+                        groupingMap.get(groupableIndex).group((Groupable) object);
+                    } else {
+                        groupingMap.put(groupableIndex, (Groupable) object);
+                        result.add(object);
+                    }
+                } else {
+                    result.add(object);
+                }
             }
             if(getLimit() != null && result.size() == getLimit()) {
                 break;
@@ -634,20 +692,20 @@ public class Query extends EvaluatorCollection {
      */
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder();
+        Strings.Builder result = new Strings.Builder();
 
         //Print select
         result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));
         result.append(Strings.WHITE_SPACE);
-        String separator = Strings.EMPTY_STRING;
         for(QueryReturnParameter field : getReturnParameters()) {
-            result.append(separator).append(field);
+            result.append(field);
             if(field.getAlias() != null) {
                 result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.AS));
                 result.append(Strings.WHITE_SPACE).append(field.getAlias());
             }
-            separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+            result.append(Strings.EMPTY_STRING).append(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
         }
+        result.cleanBuffer();
 
         //Print from
         result.append(Strings.WHITE_SPACE);
@@ -679,16 +737,24 @@ public class Query extends EvaluatorCollection {
             toStringEvaluatorCollection(result, this);
         }
 
+        if(groupParameters.size() > 0) {
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
+            for(QueryOrderParameter orderField : orderParameters) {
+                result.append(orderField, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+            }
+            result.cleanBuffer();
+        }
+
         if(orderParameters.size() > 0) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
-            separator = Strings.EMPTY_STRING;
             for(QueryOrderParameter orderField : orderParameters) {
-                result.append(separator).append(orderField);
+                result.append(orderField);
                 if(orderField.isDesc()) {
                     result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
                 }
-                separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+                result.append(Strings.EMPTY_STRING).append(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
             }
+            result.cleanBuffer();
         }
 
         if(getLimit() != null) {
@@ -704,7 +770,7 @@ public class Query extends EvaluatorCollection {
      * @param result Buffer with the current result.
      * @param collection Collection in order to create the string representation.
      */
-    private void toStringEvaluatorCollection(StringBuilder result, EvaluatorCollection collection) {
+    private void toStringEvaluatorCollection(Strings.Builder result, EvaluatorCollection collection) {
         String separator = Strings.EMPTY_STRING;
         String separatorValue = collection instanceof Or ?
                 SystemProperties.get(SystemProperties.Query.ReservedWord.OR) :
@@ -773,7 +839,7 @@ public class Query extends EvaluatorCollection {
      * @param result Buffer with the current result.
      * @return String representation of the field evaluator.
      */
-    private static StringBuilder toStringFieldEvaluatorValue(Object value, Class type, StringBuilder result) {
+    private static Strings.Builder toStringFieldEvaluatorValue(Object value, Class type, Strings.Builder result) {
         if(FieldEvaluator.ReplaceableValue.class.isAssignableFrom(type)) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE));
         } else if(FieldEvaluator.QueryValue.class.isAssignableFrom(type)) {
@@ -877,6 +943,12 @@ public class Query extends EvaluatorCollection {
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addOrderField((QueryOrderParameter)
                                     processStringValue(groups, orderField, null, QueryOrderParameter.class));
+                        }
+                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
+                        for (String orderField : elementValue.split(SystemProperties.get(
+                                SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                            query.addGroupField((QueryField)
+                                    processStringValue(groups, orderField, null, QueryParameter.class));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         query.setLimit(Integer.parseInt(elementValue));
@@ -1276,6 +1348,35 @@ public class Query extends EvaluatorCollection {
          */
         public Collection<O> getResourceData(Query query);
 
+    }
+
+    private static class GroupableIndex {
+
+        private final Object[] indexes;
+
+        public GroupableIndex(Object[] indexes) {
+            this.indexes = indexes;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            boolean result = false;
+
+            if(obj instanceof GroupableIndex) {
+                GroupableIndex groupableIndex = (GroupableIndex) obj;
+                if(groupableIndex.indexes.length == indexes.length) {
+                    result = true;
+                    for (int i = 0; i < indexes.length; i++) {
+                        result &= groupableIndex.indexes[i].equals(indexes[i]);
+                        if(!result) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
     }
 
     /**

@@ -7,7 +7,7 @@ package org.hcjf.layers.query;
 public interface Joinable {
 
     /**
-     * Return the value that correspons to the specific field name.
+     * Return the value that corresponds to the specific field name.
      * @param fieldName Field name.
      * @return Field value.
      */
