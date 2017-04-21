@@ -385,7 +385,7 @@ public class Query extends EvaluatorCollection {
         Map<GroupableIndex, Groupable> groupingMap = null;
         GroupableIndex groupableIndex;
         Object[] indexes;
-        if(groupParameters != null) {
+        if(!groupParameters.isEmpty()) {
             groupingMap = new HashMap<>();
             groupResult = true;
         }
@@ -703,7 +703,7 @@ public class Query extends EvaluatorCollection {
                 result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.AS));
                 result.append(Strings.WHITE_SPACE).append(field.getAlias());
             }
-            result.append(Strings.EMPTY_STRING).append(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
+            result.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
         }
         result.cleanBuffer();
 
@@ -752,7 +752,7 @@ public class Query extends EvaluatorCollection {
                 if(orderField.isDesc()) {
                     result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
                 }
-                result.append(Strings.EMPTY_STRING).append(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
+                result.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
             }
             result.cleanBuffer();
         }
