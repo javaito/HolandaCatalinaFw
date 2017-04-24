@@ -6,6 +6,7 @@ import org.hcjf.properties.SystemProperties;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * @author javaito
@@ -27,6 +28,7 @@ public class ServiceSession implements Comparable {
     private final Map<Long, Map<String, Object>> properties;
     private final Map<Long, Long> systemTimeByThread;
     private final ThreadMXBean threadMXBean;
+    private final List<ServiceSession> identities;
     private Locale locale;
 
     public ServiceSession(UUID id) {
@@ -36,6 +38,37 @@ public class ServiceSession implements Comparable {
         systemTimeByThread = new HashMap<>();
         threadMXBean = ManagementFactory.getThreadMXBean();
         locale = SystemProperties.getLocale();
+        identities = new ArrayList<>();
+    }
+
+    /**
+     * Add a new identity to the service session.
+     * @param serviceSession New identity.
+     */
+    public final void addIdentity(ServiceSession serviceSession) {
+        identities.add(0, serviceSession);
+    }
+
+    /**
+     * Remove the last added identity to the session.
+     */
+    public final void removeIdentity() {
+        if(!identities.isEmpty()) {
+            identities.remove(0);
+        }
+    }
+
+    /**
+     * Return the last identity added into the session.
+     * @param <S> Expected identity type.
+     * @return Service session that represents the current identity.
+     */
+    public final <S extends ServiceSession> S currentIdentity() {
+        S result = (S) this;
+        if(!identities.isEmpty()) {
+            result = (S) identities.get(0);
+        }
+        return result;
     }
 
     /**
@@ -180,6 +213,20 @@ public class ServiceSession implements Comparable {
         Thread currentThread = Thread.currentThread();
         if(ServiceThread.class.isAssignableFrom(currentThread.getClass())) {
             return (S) ((ServiceThread)currentThread).getSession();
+        } else {
+            throw new IllegalStateException("The current thread is not a service thread.");
+        }
+    }
+
+    /**
+     * Return the current identity associated to the current thread.
+     * @param <S> Expected session type.
+     * @return Current identity.
+     */
+    public static final <S extends ServiceSession> S getCurrentIdentity() {
+        Thread currentThread = Thread.currentThread();
+        if(ServiceThread.class.isAssignableFrom(currentThread.getClass())) {
+            return (S) ((ServiceThread)currentThread).getSession().currentIdentity();
         } else {
             throw new IllegalStateException("The current thread is not a service thread.");
         }

@@ -739,8 +739,8 @@ public class Query extends EvaluatorCollection {
 
         if(groupParameters.size() > 0) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
-            for(QueryOrderParameter orderField : orderParameters) {
-                result.append(orderField, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+            for(QueryField groupParameter : groupParameters) {
+                result.append(groupParameter, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
             }
             result.cleanBuffer();
         }
