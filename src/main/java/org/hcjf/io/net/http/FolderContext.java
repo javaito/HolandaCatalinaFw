@@ -24,12 +24,6 @@ import java.util.zip.GZIPOutputStream;
  */
 public class FolderContext extends Context {
 
-    private static final String[] FORBIDDEN_CHARACTERS = {"main", "~"};
-    private static final String FILE_EXTENSION_REGEX = "\\.(?=[^\\.]+$)";
-    private static final String FOLDER_DEFAULT_HTML_DOCUMENT = "<!DOCTYPE html><html><head><title>%s</title><body>%s</body></html></head>";
-    private static final String FOLDER_DEFAULT_HTML_BODY = "<table>%s</table>";
-    private static final String FOLDER_DEFAULT_HTML_ROW = "<tr><th><a href=\"%s\">%s</a></th></tr>";
-
     private final Path baseFolder;
     private final String name;
     private final String defaultFile;
@@ -73,7 +67,7 @@ public class FolderContext extends Context {
     @Override
     public HttpResponse onContext(HttpRequest request) {
         List<String> elements = request.getPathParts();
-        for(String forbidden : FORBIDDEN_CHARACTERS) {
+        for(String forbidden : SystemProperties.getList(SystemProperties.Net.Http.Folder.FORBIDDEN_CHARACTERS)) {
             for(String element : elements) {
                 if (element.contains(forbidden)) {
                     throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_3, forbidden, request.getContext()));
@@ -101,12 +95,12 @@ public class FolderContext extends Context {
             if (file.isDirectory()) {
                 StringBuilder list = new StringBuilder();
                 for(File subFile : file.listFiles()) {
-                    list.append(String.format(FOLDER_DEFAULT_HTML_ROW,
+                    list.append(String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_ROW),
                             path.relativize(baseFolder).resolve(request.getContext()).resolve(subFile.getName()).toString(),
                             subFile.getName()));
                 }
-                String htmlBody = String.format(FOLDER_DEFAULT_HTML_BODY, list.toString());
-                String document = String.format(FOLDER_DEFAULT_HTML_DOCUMENT, file.getName(), htmlBody);
+                String htmlBody = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_BODY), list.toString());
+                String document = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_DOCUMENT), file.getName(), htmlBody);
                 byte[] body = document.getBytes();
                 response.setReasonPhrase(file.getName());
                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
@@ -134,7 +128,7 @@ public class FolderContext extends Context {
                     }
                 }
 
-                String[] nameExtension = file.getName().split(FILE_EXTENSION_REGEX);
+                String[] nameExtension = file.getName().split(SystemProperties.get(SystemProperties.Net.Http.Folder.FILE_EXTENSION_REGEX));
                 String extension = nameExtension.length == 2 ? nameExtension[1] : MimeType.BIN;
                 response.setResponseCode(responseCode);
                 response.setReasonPhrase(file.getName());

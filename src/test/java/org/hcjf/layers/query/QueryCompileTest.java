@@ -3,6 +3,8 @@ package org.hcjf.layers.query;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.UUID;
+
 /**
  * @author Javier Quiroga.
  * @email javier.quiroga@sitrack.com
@@ -13,6 +15,7 @@ public class QueryCompileTest {
     public void testCompile() {
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6");
+            query = Query.compile(query.toString());
             Assert.assertNotNull(query);
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
@@ -20,6 +23,7 @@ public class QueryCompileTest {
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7");
+            query = Query.compile(query.toString());
             Assert.assertNotNull(query);
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
@@ -27,6 +31,7 @@ public class QueryCompileTest {
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 LIMIT 10");
+            query = Query.compile(query.toString());
             Assert.assertNotNull(query);
             Assert.assertEquals(query.getLimit().intValue(), 10);
         } catch (Exception ex) {
@@ -35,6 +40,7 @@ public class QueryCompileTest {
 
         try {
             Query query = Query.compile("SELECT * FROM resource JOIN resource1 ON resource.id = resource1.id WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 LIMIT 10");
+            query = Query.compile(query.toString());
             Assert.assertNotNull(query);
             Assert.assertEquals(query.getLimit().intValue(), 10);
             Assert.assertNotNull(query.getJoins());
@@ -45,6 +51,7 @@ public class QueryCompileTest {
 
         try {
             Query query = Query.compile("SELECT * FROM resource JOIN resource1 ON resource.id = resource1.id WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 GROUP BY field2 LIMIT 10");
+            query = Query.compile(query.toString());
             Assert.assertNotNull(query);
             Assert.assertEquals(query.getLimit().intValue(), 10);
             Assert.assertNotNull(query.getJoins());
@@ -103,5 +110,14 @@ public class QueryCompileTest {
         }
     }
 
+    @Test
+    public void testCompileNumericUUIDType() {
+        try {
+            Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84");
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof UUID);
+        } catch (Exception ex) {
+            Assert.fail("Unable to parse UUID data type");
+        }
+    }
 
 }

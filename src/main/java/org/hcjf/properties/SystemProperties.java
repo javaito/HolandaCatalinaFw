@@ -125,6 +125,14 @@ public final class SystemProperties extends Properties {
             public static final String DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.http.default.client.write.timeout";
             public static final String DEFAULT_GUEST_SESSION_NAME = "hcjf.http.default.guest.session.name";
             public static final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.http.default.file.checksum.algorithm";
+
+            public static final class Folder {
+                public static final String FORBIDDEN_CHARACTERS = "hcjf.http.folder.forbidden.characters";
+                public static final String FILE_EXTENSION_REGEX = "hcjf.http.folder.file.extension.regex";
+                public static final String DEFAULT_HTML_DOCUMENT = "hcjf.http.folder.default.html.document";
+                public static final String DEFAULT_HTML_BODY = "hcjf.http.folder.default.html.body";
+                public static final String DEFAULT_HTML_ROW = "hcjf.http.folder.default.html.row";
+            }
         }
 
         public static final class Https {
@@ -138,6 +146,7 @@ public final class SystemProperties extends Properties {
             public static final String QUERY_PATH = "hcjf.rest.query.path";
             public static final String QUERY_PARAMETER_PATH = "hcjf.rest.query.parameter.path";
         }
+
     }
 
     public static final class Query {
@@ -325,6 +334,12 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.DEFAULT_GUEST_SESSION_NAME, "Http guest session");
         defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
 
+        defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
+        defaults.put(Net.Http.Folder.FILE_EXTENSION_REGEX, "\\.(?=[^\\.]+$)");
+        defaults.put(Net.Http.Folder.DEFAULT_HTML_DOCUMENT, "<!DOCTYPE html><html><head><title>%s</title><body>%s</body></html></head>");
+        defaults.put(Net.Http.Folder.DEFAULT_HTML_BODY, "<table>%s</table>");
+        defaults.put(Net.Http.Folder.DEFAULT_HTML_ROW, "<tr><th><a href=\"%s\">%s</a></th></tr>");
+
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
 
@@ -493,14 +508,20 @@ public final class SystemProperties extends Properties {
     public static Boolean getBoolean(String propertyName) {
         Boolean result = null;
 
-        String propertyValue = get(propertyName);
-        try {
-            if (propertyValue != null) {
-                result = Boolean.valueOf(propertyValue);
+        synchronized (instance.instancesCache) {
+            result = (Boolean) instance.instancesCache.get(propertyName);
+            if (result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    if (propertyValue != null) {
+                        result = Boolean.valueOf(propertyValue);
+                        instance.instancesCache.put(propertyName, result);
+                    }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a boolean valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("The property value has not a boolean valid format: '"
-                    + propertyName + ":" + propertyValue + "'", ex);
         }
 
         return result;
@@ -514,14 +535,20 @@ public final class SystemProperties extends Properties {
     public static Integer getInteger(String propertyName) {
         Integer result = null;
 
-        String propertyValue = get(propertyName);
-        try {
-            if(propertyValue != null) {
-                result = Integer.decode(propertyValue);
+        synchronized (instance.instancesCache) {
+            result = (Integer) instance.instancesCache.get(propertyName);
+            if (result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    if (propertyValue != null) {
+                        result = Integer.decode(propertyValue);
+                        instance.instancesCache.put(propertyName, result);
+                    }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a integer valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("The property value has not a integer valid format: '"
-                    + propertyName + ":" + propertyValue + "'", ex);
         }
 
         return result;
@@ -535,14 +562,20 @@ public final class SystemProperties extends Properties {
     public static Long getLong(String propertyName) {
         Long result = null;
 
-        String propertyValue = get(propertyName);
-        try {
-            if (propertyValue != null) {
-                result = Long.decode(propertyValue);
+        synchronized (instance.instancesCache) {
+            result = (Long) instance.instancesCache.get(propertyName);
+            if (result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    if (propertyValue != null) {
+                        result = Long.decode(propertyValue);
+                        instance.instancesCache.put(propertyName, result);
+                    }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a long valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("The property value has not a long valid format: '"
-                    + propertyName + ":" + propertyValue + "'", ex);
         }
 
         return result;
@@ -556,14 +589,47 @@ public final class SystemProperties extends Properties {
     public static Double getDouble(String propertyName) {
         Double result = null;
 
-        String propertyValue = get(propertyName);
-        try {
-            if (propertyValue != null) {
-                result = Double.valueOf(propertyValue);
+        synchronized (instance.instancesCache) {
+            result = (Double) instance.instancesCache.get(propertyName);
+            if(result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    if (propertyValue != null) {
+                        result = Double.valueOf(propertyValue);
+                        instance.instancesCache.put(propertyName, result);
+                    }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a double valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
             }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("The property value has not a double valid format: '"
-                    + propertyName + ":" + propertyValue + "'", ex);
+        }
+
+        return result;
+    }
+
+    /**
+     * This method return the value of the system property as UUID instance.
+     * @param propertyName Name of the find property.
+     * @return Value of the system property as UUID instance, or null if the property is not found.
+     */
+    public static UUID getUUID(String propertyName) {
+        UUID result = null;
+
+        synchronized (instance.instancesCache) {
+            result = (UUID) instance.instancesCache.get(propertyName);
+            if(result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    if (propertyValue != null) {
+                        result = UUID.fromString(propertyValue);
+                        instance.instancesCache.put(propertyName, result);
+                    }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a double valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
+            }
         }
 
         return result;
@@ -578,12 +644,20 @@ public final class SystemProperties extends Properties {
     public static <O extends Object> Class<O> getClass(String propertyName) {
         Class<O> result;
 
-        String propertyValue = get(propertyName);
-        try {
-            result = (Class<O>) Class.forName(propertyValue);
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("The property value has not a class name valid format: '"
-                    + propertyName + ":" + propertyValue + "'", ex);
+        synchronized (instance.instancesCache) {
+            result = (Class<O>) instance.instancesCache.get(propertyName);
+            if(result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    if(propertyValue != null) {
+                        result = (Class<O>) Class.forName(propertyValue);
+                        instance.instancesCache.put(propertyName, result);
+                    }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a class name valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
+            }
         }
 
         return result;
