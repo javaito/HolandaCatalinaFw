@@ -257,7 +257,7 @@ public class CrudJsonEncoding extends EncodingImpl<CrudDecodedPackage> {
                 decodedQuery.setLimit(queryJsonObject.get(QUERY_LIMIT_FIELD).getAsInt());
             }
             if(queryJsonObject.has(QUERY_PAGE_START_FIELD)) {
-                decodedQuery.setStart(getValue(QUERY_PAGE_START_FIELD, queryJsonObject.get(QUERY_PAGE_START_FIELD)));
+                decodedQuery.setStart(queryJsonObject.get(QUERY_PAGE_START_FIELD).getAsInt());
             }
             if(queryJsonObject.has(QUERY_ORDER_FIELDS_FIELD)) {
                 JsonArray ordersJasonArray = queryJsonObject.getAsJsonArray(QUERY_ORDER_FIELDS_FIELD);

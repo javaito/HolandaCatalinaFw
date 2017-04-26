@@ -33,7 +33,7 @@ public class Like extends FieldEvaluator {
                 } else if(value instanceof String) {
                     String stringFieldValue = (String) fieldValue;
                     String stringValue = (String) value;
-                    result = stringFieldValue.contains(stringValue);
+                    result = stringFieldValue.toUpperCase().contains(stringValue.toUpperCase());
                 }
             }
         } catch (Exception ex) {

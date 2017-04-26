@@ -183,6 +183,7 @@ public final class SystemProperties extends Properties {
             public static final String ORDER_BY = "hcjf.query.order.by.reserved.word";
             public static final String DESC = "hcjf.query.desc.reserved.word";
             public static final String LIMIT = "hcjf.query.limit.reserved.word";
+            public static final String START = "hcjf.query.start.reserved.word";
             public static final String ARGUMENT_SEPARATOR = "hcjf.query.argument.separator";
             public static final String EQUALS = "hcjf.query.equals.reserved.word";
             public static final String DISTINCT = "hcjf.query.distinct.reserved.word";
@@ -352,7 +353,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.*\\$ ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.* ?%\\$<>!\\:\\-()\\[\\]]{1,})?[$;]?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^order by |^group by |(( inner | left | right )? join )| where | limit | order by | group by )))|(?=(^((inner |left |right )?join )|^where |^limit |^order by |^group by |(( inner | left | right )? join )| where | limit | order by | group by ))");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )? join )| where | limit | start | order by | group by )))|(?=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )? join )| where | limit | start | order by | group by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on )");
@@ -379,6 +380,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.ORDER_BY, "ORDER BY");
         defaults.put(Query.ReservedWord.DESC, "DESC");
         defaults.put(Query.ReservedWord.LIMIT, "LIMIT");
+        defaults.put(Query.ReservedWord.START, "START");
         defaults.put(Query.ReservedWord.ARGUMENT_SEPARATOR, ",");
         defaults.put(Query.ReservedWord.EQUALS, "=");
         defaults.put(Query.ReservedWord.DISTINCT, "<>");
