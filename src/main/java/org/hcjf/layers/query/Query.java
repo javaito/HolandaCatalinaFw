@@ -373,8 +373,11 @@ public class Query extends EvaluatorCollection {
         } else {
             //Creates the first query for the original resource.
             Query resolveQuery = new Query(getResourceName());
-            resolveQuery.setLimit(getLimit());
-            resolveQuery.setStart(getStart());
+            if(getStart() != null) {
+                resolveQuery.setLimit(getLimit() + getStart());
+            } else {
+                resolveQuery.setLimit(getLimit());
+            }
             resolveQuery.returnParameters.addAll(this.returnParameters);
             copyEvaluators(resolveQuery, this, valuesMap);
 
