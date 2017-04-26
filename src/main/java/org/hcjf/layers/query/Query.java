@@ -25,7 +25,6 @@ public class Query extends EvaluatorCollection {
     private final QueryResource resource;
     private Integer limit;
     private Integer start;
-    private Integer offset;
     private final List<QueryField> groupParameters;
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
@@ -148,14 +147,6 @@ public class Query extends EvaluatorCollection {
      */
     public final void setStart(Integer start) {
         this.start = start;
-    }
-
-    /**
-     *
-     * @param offset
-     */
-    public void setOffset(Integer offset) {
-        this.offset = offset;
     }
 
     /**
@@ -383,6 +374,7 @@ public class Query extends EvaluatorCollection {
             //Creates the first query for the original resource.
             Query resolveQuery = new Query(getResourceName());
             resolveQuery.setLimit(getLimit());
+            resolveQuery.setStart(getStart());
             resolveQuery.returnParameters.addAll(this.returnParameters);
             copyEvaluators(resolveQuery, this, valuesMap);
 
