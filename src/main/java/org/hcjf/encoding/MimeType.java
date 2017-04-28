@@ -74,6 +74,7 @@ public class MimeType {
     public static final MimeType APPLICATION_SET = new MimeType("application/set");
     public static final MimeType APPLICATION_SLA = new MimeType("application/sla");
     public static final MimeType APPLICATION_SMIL = new MimeType("application/smil");
+    public static final MimeType APPLICATION_SOAP_XML = new MimeType("application/soap+xml");
     public static final MimeType APPLICATION_SOLIDS = new MimeType("application/solids");
     public static final MimeType APPLICATION_SOUNDER = new MimeType("application/sounder");
     public static final MimeType APPLICATION_STEP = new MimeType("application/step");
