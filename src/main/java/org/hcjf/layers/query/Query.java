@@ -423,6 +423,19 @@ public class Query extends EvaluatorCollection {
                             result.add(object);
                         }
                     } else {
+                        if(object instanceof Enlarged) {
+                            for(QueryReturnParameter returnParameter : getReturnParameters()) {
+                                if(returnParameter instanceof QueryReturnField) {
+                                    QueryReturnField returnField = (QueryReturnField) returnParameter;
+                                    if(returnField.getAlias() != null) {
+                                        ((Enlarged)object).put(returnField.getAlias(), ((Enlarged)object).get(returnField.getFieldName()));
+                                    }
+                                } else if(returnParameter instanceof QueryReturnFunction) {
+                                    QueryReturnFunction function = (QueryReturnFunction) returnParameter;
+                                    ((Enlarged)object).put(function.getAlias(), null);
+                                }
+                            }
+                        }
                         result.add(object);
                     }
                 }
@@ -1312,12 +1325,36 @@ public class Query extends EvaluatorCollection {
          */
         public <R extends Object> R get(O instance, QueryParameter queryParameter);
 
+        /**
+         * This method must resolve the functions that are used into the query object.
+         * @param instance Instance of the result object.
+         * @param function Query function.
+         * @param <R> Expected result.
+         * @return Return the value obtained of the function resolution.
+         */
+        public <R extends Object> R resolveFunction(O instance, QueryFunction function);
+
+    }
+
+    public static abstract class DefaultConsumer <O extends Object> implements Consumer<O> {
+
+        /**
+         * This method must resolve the functions that are used into the query object.
+         * @param instance Instance of the result object.
+         * @param function Query function.
+         * @param <R> Expected result.
+         * @return Return the value obtained of the function resolution.
+         */
+        public <R extends Object> R resolveFunction(O instance, QueryFunction function) {
+            return null;
+        }
+
     }
 
     /**
      * This private class is the default consume method of the queries.
      */
-    private static class IntrospectionConsumer<O extends Object> implements Consumer<O> {
+    private static class IntrospectionConsumer<O extends Object> extends DefaultConsumer<O> {
 
         /**
          * Get naming information from an instance.
@@ -1352,6 +1389,7 @@ public class Query extends EvaluatorCollection {
             }
             return (R) result;
         }
+
     }
 
     /**

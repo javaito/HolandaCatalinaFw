@@ -12,7 +12,7 @@ import java.util.function.Function;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class JoinableMap implements Joinable, Groupable, Map<String, Object> {
+public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, Object> {
 
     private final Set<String> resources;
     private final Map<String, Object> mapInstance;
