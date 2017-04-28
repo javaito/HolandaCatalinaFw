@@ -394,7 +394,7 @@ public final class Introspection {
         private final Class returnKeyType;
         private final Class returnCollectionType;
 
-        protected Getter(Class implementationClass, String resourceName, Method method) {
+        public Getter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
             returnType = method.getReturnType();
 
@@ -464,7 +464,7 @@ public final class Introspection {
         private final Class parameterKeyType;
         private final Class parameterCollectionType;
 
-        protected Setter(Class implementationClass, String resourceName, Method method) {
+        public Setter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
             this.parameterType = method.getParameterTypes()[0];
 

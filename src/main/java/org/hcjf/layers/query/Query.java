@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * This class contains all the parameter needed to create a query.
@@ -23,7 +24,7 @@ public class Query extends EvaluatorCollection {
     private final QueryId id;
     private final QueryResource resource;
     private Integer limit;
-    private Object start;
+    private Integer start;
     private final List<QueryField> groupParameters;
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
@@ -136,7 +137,7 @@ public class Query extends EvaluatorCollection {
      * Return the object that represents the first element of the result.
      * @return Firts object of the result.
      */
-    public final Object getStart() {
+    public final Integer getStart() {
         return start;
     }
 
@@ -144,7 +145,7 @@ public class Query extends EvaluatorCollection {
      * Set the first object of the result.
      * @param start First object of the result.
      */
-    public final void setStart(Object start) {
+    public final void setStart(Integer start) {
         this.start = start;
     }
 
@@ -372,7 +373,11 @@ public class Query extends EvaluatorCollection {
         } else {
             //Creates the first query for the original resource.
             Query resolveQuery = new Query(getResourceName());
-            resolveQuery.setLimit(getLimit());
+            if(getStart() != null) {
+                resolveQuery.setLimit(getLimit() + getStart());
+            } else {
+                resolveQuery.setLimit(getLimit());
+            }
             resolveQuery.returnParameters.addAll(this.returnParameters);
             copyEvaluators(resolveQuery, this, valuesMap);
 
@@ -392,35 +397,42 @@ public class Query extends EvaluatorCollection {
 
         //Filtering data
         boolean add;
-        for(O object : data) {
-            add = true;
-            for(Evaluator evaluator : getEvaluators()) {
-                add = evaluator.evaluate(object, consumer, valuesMap);
-                if(!add) {
+        int start = getStart() == null ? 0 : getStart();
+        if(start < data.size()) {
+            for (O object : data) {
+                add = true;
+                for (Evaluator evaluator : getEvaluators()) {
+                    add = evaluator.evaluate(object, consumer, valuesMap);
+                    if (!add) {
+                        break;
+                    }
+                }
+                if (add) {
+                    if (groupResult) {
+                        //Creates an instance of groupable index
+                        int i = 0;
+                        indexes = new Object[groupParameters.size()];
+                        for (QueryField field : groupParameters) {
+                            indexes[i++] = consumer.get(object, field);
+                        }
+                        groupableIndex = new GroupableIndex(indexes);
+                        if (groupingMap.containsKey(groupableIndex)) {
+                            groupingMap.get(groupableIndex).group((Groupable) object);
+                        } else {
+                            groupingMap.put(groupableIndex, (Groupable) object);
+                            result.add(object);
+                        }
+                    } else {
+                        result.add(object);
+                    }
+                }
+                if (getLimit() != null && result.size() == (start + getLimit())) {
                     break;
                 }
             }
-            if(add) {
-                if(groupResult) {
-                    //Creates an instance of groupable index
-                    int i = 0;
-                    indexes = new Object[groupParameters.size()];
-                    for(QueryField field : groupParameters) {
-                        indexes[i++] = consumer.get(object, field);
-                    }
-                    groupableIndex = new GroupableIndex(indexes);
-                    if(groupingMap.containsKey(groupableIndex)) {
-                        groupingMap.get(groupableIndex).group((Groupable) object);
-                    } else {
-                        groupingMap.put(groupableIndex, (Groupable) object);
-                        result.add(object);
-                    }
-                } else {
-                    result.add(object);
-                }
-            }
-            if(getLimit() != null && result.size() == getLimit()) {
-                break;
+
+            if (start > 0) {
+                result = result.stream().skip(start).collect(Collectors.toSet());
             }
         }
 
@@ -757,6 +769,11 @@ public class Query extends EvaluatorCollection {
             result.cleanBuffer();
         }
 
+        if(getStart() != null) {
+            result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.START));
+            result.append(Strings.WHITE_SPACE).append(getStart());
+        }
+
         if(getLimit() != null) {
             result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
             result.append(Strings.WHITE_SPACE).append(getLimit());
@@ -952,6 +969,8 @@ public class Query extends EvaluatorCollection {
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         query.setLimit(Integer.parseInt(elementValue));
+                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.START))) {
+                        query.setStart(Integer.parseInt(elementValue));
                     }
                 }
             }
