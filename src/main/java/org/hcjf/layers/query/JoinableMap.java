@@ -143,7 +143,24 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, O
 
     @Override
     public boolean containsKey(Object key) {
-        return mapInstance.containsKey(key);
+        boolean result = false;
+        String fieldName = (String) key;
+
+        if(!fieldName.contains(Strings.CLASS_SEPARATOR)) {
+            for(String resource : resources) {
+                result = mapInstance.containsKey(resource + Strings.CLASS_SEPARATOR + fieldName);
+                if(result) {
+                    break;
+                }
+            }
+
+            if(!result) {
+                result = mapInstance.containsKey(fieldName);
+            }
+        } else {
+            result = mapInstance.containsKey(fieldName);
+        }
+        return result;
     }
 
     @Override

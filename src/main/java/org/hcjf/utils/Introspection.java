@@ -204,7 +204,7 @@ public final class Introspection {
      * <li>must return something distinct to void type</li>
      * <li>without parameters</li>
      * <li>must be a public method</li>
-     * @param clazz Class definition to found the getters method.
+     * @param clazz Class definition `to found the getters method.
      * @return All the accessors founded indexed by the possible field name.
      */
     public static Map<String, Getter> getGetters(Class clazz) {
