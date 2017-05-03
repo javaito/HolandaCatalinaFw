@@ -12,7 +12,7 @@ import java.util.function.Function;
  * @author javaito
  * @email javaito@gmail.com
  */
-public class JoinableMap implements Joinable, Groupable, Map<String, Object> {
+public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, Object> {
 
     private final Set<String> resources;
     private final Map<String, Object> mapInstance;
@@ -143,7 +143,24 @@ public class JoinableMap implements Joinable, Groupable, Map<String, Object> {
 
     @Override
     public boolean containsKey(Object key) {
-        return mapInstance.containsKey(key);
+        boolean result = false;
+        String fieldName = (String) key;
+
+        if(!fieldName.contains(Strings.CLASS_SEPARATOR)) {
+            for(String resource : resources) {
+                result = mapInstance.containsKey(resource + Strings.CLASS_SEPARATOR + fieldName);
+                if(result) {
+                    break;
+                }
+            }
+
+            if(!result) {
+                result = mapInstance.containsKey(fieldName);
+            }
+        } else {
+            result = mapInstance.containsKey(fieldName);
+        }
+        return result;
     }
 
     @Override
