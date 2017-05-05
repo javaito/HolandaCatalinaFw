@@ -402,10 +402,22 @@ public final class Introspection {
                 ParameterizedType parameterizedType = (ParameterizedType) method.getGenericReturnType();
                 if(Collection.class.isAssignableFrom(returnType)) {
                     returnKeyType = null;
-                    returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else {
+                        returnCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
+                    }
                 } else if(Map.class.isAssignableFrom(returnType)) {
-                    returnKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
-                    returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        returnKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else {
+                        returnKeyType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
+                    }
+                    if(parameterizedType.getActualTypeArguments()[1] instanceof Class) {
+                        returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                    } else {
+                        returnCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[1]).getRawType();
+                    }
                 } else {
                     returnKeyType = null;
                     returnCollectionType = null;
@@ -472,10 +484,23 @@ public final class Introspection {
                 ParameterizedType parameterizedType = (ParameterizedType) method.getGenericParameterTypes()[0];
                 if(Collection.class.isAssignableFrom(parameterType)) {
                     parameterKeyType = null;
-                    parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else {
+                        parameterCollectionType = (Class) ((ParameterizedType) parameterizedType.getActualTypeArguments()[0]).getRawType();
+                    }
                 } else if(Map.class.isAssignableFrom(parameterType)) {
-                    parameterKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
-                    parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        parameterKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else {
+                        parameterKeyType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
+                    }
+
+                    if(parameterizedType.getActualTypeArguments()[1] instanceof Class) {
+                        parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                    } else {
+                        parameterCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[1]).getRawType();
+                    }
                 } else {
                     parameterKeyType = null;
                     parameterCollectionType = null;
