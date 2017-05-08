@@ -387,7 +387,9 @@ public class Query extends EvaluatorCollection {
         }
 
         boolean groupResult = false;
-        Map<GroupableIndex, Groupable> groupingMap = null;
+        Map<GroupableIndex, Map<Query.QueryReturnGroupingFunction, List<Object>>> groupingMap = null;
+        Map<Query.QueryReturnGroupingFunction, List<Object>> functionMap;
+        List<Object> valuesByfunction;
         GroupableIndex groupableIndex;
         Object[] indexes;
         if(!groupParameters.isEmpty()) {
@@ -408,34 +410,51 @@ public class Query extends EvaluatorCollection {
                     }
                 }
                 if (add) {
-                    if (groupResult) {
-                        //Creates an instance of groupable index
-                        int i = 0;
-                        indexes = new Object[groupParameters.size()];
-                        for (QueryField field : groupParameters) {
-                            indexes[i++] = consumer.get(object, field);
-                        }
-                        groupableIndex = new GroupableIndex(indexes);
-                        if (groupingMap.containsKey(groupableIndex)) {
-                            groupingMap.get(groupableIndex).group((Groupable) object);
+                    if(groupResult) {
+                        if(!(object instanceof Groupable)) {
+                            //Creates an instance of groupable index
+                            int i = 0;
+                            indexes = new Object[groupParameters.size()];
+                            for (QueryField field : groupParameters) {
+                                indexes[i++] = consumer.get(object, field);
+                            }
+                            groupableIndex = new GroupableIndex(indexes);
+                            functionMap = groupingMap.get(groupableIndex);
+                            if (functionMap == null) {
+                                functionMap = new HashMap<>();
+                                groupingMap.put(groupableIndex, functionMap);
+                                result.add(object);
+                            }
+                            for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                                if (returnParameter instanceof QueryReturnGroupingFunction) {
+                                    valuesByfunction = functionMap.get(returnParameter);
+                                    if (valuesByfunction == null) {
+                                        valuesByfunction = new ArrayList<>();
+                                        functionMap.put((QueryReturnGroupingFunction) returnParameter, valuesByfunction);
+                                    }
+
+                                }
+                            }
                         } else {
-                            groupingMap.put(groupableIndex, (Groupable) object);
-                            result.add(object);
+                            throw new IllegalArgumentException("");
                         }
                     } else {
                         if(object instanceof Enlarged) {
                             for(QueryReturnParameter returnParameter : getReturnParameters()) {
                                 if(returnParameter instanceof QueryReturnField) {
                                     QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                    if(returnField.getAlias() != null) {
-                                        ((Enlarged)object).put(returnField.getAlias(), ((Enlarged)object).get(returnField.getFieldName()));
+                                    if (returnField.getAlias() != null) {
+                                        ((Enlarged) object).put(returnField.getAlias(), ((Enlarged) object).get(returnField.getFieldName()));
                                     }
+                                } else if(returnParameter instanceof QueryReturnGroupingFunction) {
+                                    //Do nothing because the grouping functions only must be used when the query is grouped
                                 } else if(returnParameter instanceof QueryReturnFunction) {
                                     QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                     ((Enlarged)object).put(function.getAlias(), null);
                                 }
                             }
                         }
+
                         result.add(object);
                     }
                 }
@@ -1680,6 +1699,14 @@ public class Query extends EvaluatorCollection {
         public String getAlias() {
             return alias;
         }
+    }
+
+    public static class QueryReturnGroupingFunction extends QueryFunction {
+
+        public QueryReturnGroupingFunction(String originalFunction, String functionName, List<Object> parameters) {
+            super(originalFunction, functionName, parameters);
+        }
+
     }
 
     public interface QueryOrderParameter extends QueryComponent {
