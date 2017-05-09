@@ -15,9 +15,15 @@ public interface Groupable {
     public Object get(String fieldName);
 
     /**
-     * Group the current instance of the groupable instance with other instance.
-     * @param groupable Other instance.
+     *
+     * @param fieldName
+     * @param value
      */
-    public void group(Groupable groupable);
+    public void put(String fieldName, Object value);
+
+    /**
+     * Remove all the elements of the groupable object.
+     */
+    public void clear();
 
 }
