@@ -19,7 +19,7 @@ public interface Groupable {
      * @param fieldName
      * @param value
      */
-    public void put(String fieldName, Object value);
+    public Object put(String fieldName, Object value);
 
     /**
      * Remove all the elements of the groupable object.
