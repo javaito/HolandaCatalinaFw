@@ -7,7 +7,7 @@
     <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.9-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>https://github.com/javaito/HolandaCatalinaFw</url>
 
@@ -29,7 +29,7 @@
     </distributionManagement>
 
     <build>
-        <defaultGoal>install</defaultGoal>
+        <defaultGoal>deploy</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
