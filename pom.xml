@@ -4,10 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.7-SNAPSHOT</version>
     <packaging>jar</packaging>
+    <url>https://github.com/javaito/HolandaCatalinaFw</url>
+
+    <scm>
+        <connection>scm:git:git//github.com:javaito/HolandaCatalinaFw.git</connection>
+        <developerConnection>scm:git:https://github.com/javaito/HolandaCatalinaFw.git</developerConnection>
+        <url>https://github.com/javaito/HolandaCatalinaFw</url>
+    </scm>
 
     <distributionManagement>
         <snapshotRepository>
@@ -21,7 +29,7 @@
     </distributionManagement>
 
     <build>
-        <defaultGoal>deploy</defaultGoal>
+        <defaultGoal>install</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
