@@ -24,6 +24,19 @@ public final class Strings {
     public static final String ASSIGNATION = "=";
 
     /**
+     * Return the string that result of join all the values separated by the
+     * separated value specified.
+     * @param values Values to join.
+     * @param separator Separator value.
+     * @return Result of the join operation.
+     */
+    public static String join(Collection<String> values, String separator) {
+        Builder builder = new Builder();
+        values.stream().filter(S -> !S.isEmpty()).forEach(S -> builder.append(S, separator));
+        return builder.toString();
+    }
+
+    /**
      * Replace the first character for his upper case representation.
      * @param value Value to replace.
      * @return Replaced value.

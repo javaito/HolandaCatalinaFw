@@ -1,88 +1,81 @@
 package org.hcjf.io.net.http.rest;
 
-import org.hcjf.errors.Errors;
-import org.hcjf.io.net.http.HttpMethod;
+import org.hcjf.io.net.http.HttpHeader;
+import org.hcjf.io.net.http.HttpRequest;
+import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.io.net.http.layered.LayeredContext;
-import org.hcjf.layers.LayerInterface;
+import org.hcjf.io.net.http.rest.layers.EndPointDecoderLayerInterface;
+import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
+import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.CrudLayerInterface;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 /**
- * 
+ * This context publish some kind of layer that response with rest interface.
  * @author javaito
- * @email javaito@gmail.com
  */
-public abstract class EndPoint<L extends LayerInterface,
-        P extends EndPointRequest, R extends EndPointResponse> extends LayeredContext<L, P, R> {
+public abstract class EndPoint extends LayeredContext<CrudLayerInterface, EndPointRequest, EndPointResponse> {
 
-    public EndPoint(String groupName, String resourceName) {
-        super(groupName, resourceName);
+    public EndPoint(String... endPointPath) {
+        super(endPointPath);
     }
 
-    /**
-     * This method is called when there comes a http package addressed to this
-     * context.
-     *
-     * @param request All the request information.
-     * @return Return an object with all the response information.
-     */
     @Override
-    public final R onAction(P request) {
-        R result = null;
-        switch (request.getMethod()) {
-            case GET: {
-                result = get(request);
-                break;
-            }
-            case POST: {
-                result = post(request);
-                break;
-            }
-            case PUT: {
-                result = put(request);
-                break;
-            }
-            case DELETE: {
-                result = delete(request);
-                break;
-            }
+    protected final EndPointResponse onAction(EndPointRequest request) {
+        List<String> resourcePath = getResourcePath(request);
+        if(resourcePath.isEmpty()) {
+            throw new IllegalArgumentException("");
         }
 
-        return result;
+        CrudLayerInterface crudLayerInterface = getLayerInterface(resourcePath.get(0));
+        try {
+            return new EndPointResponse(request.getInvoker().invoke(crudLayerInterface, request.getParams()));
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException("", e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("", e);
+        }
     }
 
-    /**
-     *
-     * @param layeredRequest
-     * @return
-     */
-    protected R get(P layeredRequest) {
-        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.GET.toString()));
+    @Override
+    protected final HttpResponse onError(HttpRequest request, Throwable throwable) {
+        HttpResponse response;
+        HttpHeader acceptHeader = request.getHeader(HttpHeader.ACCEPT);
+        if(acceptHeader == null) {
+            response = super.onError(request, throwable);;
+        } else {
+            EndPointEncoderLayerInterface decoderLayerInterface =
+                    Layers.get(EndPointEncoderLayerInterface.class, acceptHeader.getHeaderValue());
+            response = decoderLayerInterface.encode(request, throwable);
+        }
+        return response;
     }
 
-    /**
-     *
-     * @param layeredRequest
-     * @return
-     */
-    protected R post(P layeredRequest) {
-        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.POST.toString()));
+    @Override
+    protected final EndPointRequest decode(HttpRequest request) {
+        HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
+        if(contentTypeHeader == null) {
+            throw new IllegalArgumentException("");
+        }
+
+        EndPointDecoderLayerInterface endPointDecoderLayerInterface =
+                Layers.get(EndPointDecoderLayerInterface.class, contentTypeHeader.getHeaderValue());
+
+        return endPointDecoderLayerInterface.decode(request);
     }
 
-    /**
-     *
-     * @param layeredRequest
-     * @return
-     */
-    protected R put(P layeredRequest) {
-        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.PUT.toString()));
-    }
+    @Override
+    protected final HttpResponse encode(EndPointResponse response, EndPointRequest request) {
+        HttpHeader acceptHeader = request.getHeader(HttpHeader.ACCEPT);
+        if(acceptHeader == null) {
+            throw new IllegalArgumentException("");
+        }
 
-    /**
-     *
-     * @param layeredRequest
-     * @return
-     */
-    protected R delete(P layeredRequest) {
-        throw new UnsupportedOperationException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_REST_4, HttpMethod.DELETE.toString()));
+        EndPointEncoderLayerInterface decoderLayerInterface =
+                Layers.get(EndPointEncoderLayerInterface.class, acceptHeader.getHeaderValue());
+        return decoderLayerInterface.encode(request, response);
     }
 
 }

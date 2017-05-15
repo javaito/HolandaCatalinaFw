@@ -161,7 +161,9 @@ public class HttpRequest extends HttpPackage {
         }
 
         for(String pathPart : context.split(HTTP_CONTEXT_SEPARATOR)) {
-            pathParts.add(pathPart);
+            if(!pathPart.isEmpty()) {
+                pathParts.add(pathPart);
+            }
         }
     }
 

@@ -7,8 +7,13 @@ import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.io.net.http.HttpResponseCode;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
+import org.hcjf.utils.Strings;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This kind of context publish an http interface for
@@ -19,37 +24,14 @@ import java.lang.reflect.ParameterizedType;
 public abstract class LayeredContext<L extends LayerInterface,
         P extends LayeredRequest, R extends LayeredResponse> extends Context {
 
-    private final String layerGroupName;
-    private final String resourceName;
+    private final List<String> endPointPath;
 
-    public LayeredContext(String layerGroupName, String resourceName) {
-        super("^/" + ((layerGroupName == null || layerGroupName.isEmpty()) ?
-                resourceName : (layerGroupName + "/" + resourceName)) + ".*");
-        if(resourceName == null) {
-            throw new NullPointerException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_LAYERED_1));
-        }
-        this.layerGroupName = layerGroupName;
-        this.resourceName = resourceName;
-    }
-
-    public LayeredContext(String resourceName) {
-        this(null, resourceName);
-    }
-
-    /**
-     * Return the name of the group
-     * @return Group's name.
-     */
-    public String getLayerGroupName() {
-        return layerGroupName;
-    }
-
-    /**
-     * Return the name of the resource.
-     * @return Resource's name.
-     */
-    protected final String getResourceName() {
-        return resourceName;
+    public LayeredContext(String... endPointPath) {
+        super(START_CONTEXT +
+                URI_FOLDER_SEPARATOR +
+                Strings.join(Arrays.asList(endPointPath), URI_FOLDER_SEPARATOR) +
+                END_CONTEXT);
+        this.endPointPath = Arrays.asList(endPointPath);
     }
 
     /**
@@ -67,16 +49,20 @@ public abstract class LayeredContext<L extends LayerInterface,
     }
 
     /**
-     * This method must return the instance of the layer interface.
-     * @return Return the implementation founded.
-     * @throws IllegalArgumentException if the implementation with the
-     * pointed name is not found.
+     * Return the list of the paths of the end point.
+     * @return List of the paths.
      */
-    protected final L getLayerInterface() {
-        Class<L> implementationClass = (Class<L>)
-                ((ParameterizedType)getClass().getGenericSuperclass()).
-                        getActualTypeArguments()[0];
-        return Layers.get(implementationClass, getResourceName());
+    protected final List<String> getEndPointPath() {
+        return endPointPath;
+    }
+
+    /**
+     * Return the list of paths skipping all the end point paths.
+     * @param request Http request.
+     * @return List of the resource path.
+     */
+    protected final List<String> getResourcePath(HttpRequest request) {
+        return request.getPathParts().stream().skip(getEndPointPath().size()).collect(Collectors.toList());
     }
 
     /**
@@ -130,4 +116,5 @@ public abstract class LayeredContext<L extends LayerInterface,
      * @return Http response.
      */
     protected abstract HttpResponse encode(R response, P request);
+
 }

@@ -1,7 +1,6 @@
 package org.hcjf.encoding;
 
 import org.hcjf.errors.Errors;
-import org.hcjf.io.net.http.rest.CrudJsonEncoding;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 
@@ -29,7 +28,6 @@ public final class EncodingService extends Service<EncodingImpl> {
         super(SystemProperties.get(SystemProperties.Encoding.SERVICE_NAME),
                 SystemProperties.getInteger(SystemProperties.Encoding.SERVICE_PRIORITY));
         implementations = new HashMap<>();
-        registerConsumer(new CrudJsonEncoding());
     }
 
     /**

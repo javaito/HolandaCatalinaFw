@@ -927,9 +927,11 @@ public class Query extends EvaluatorCollection {
             result.append(Strings.START_GROUP);
             String separator = Strings.EMPTY_STRING;
             for(Object object : (Collection)value) {
-                result.append(separator);
-                result = toStringFieldEvaluatorValue(object, object.getClass(), result);
-                separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+                if(object != null) {
+                    result.append(separator);
+                    result = toStringFieldEvaluatorValue(object, object.getClass(), result);
+                    separator = SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+                }
             }
             result.append(Strings.END_GROUP);
         } else {
