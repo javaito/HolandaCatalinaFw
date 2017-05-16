@@ -10,7 +10,7 @@ import java.util.concurrent.*;
  * This abstract class contains all the implementations and
  * the interfaces that describe the behavior of the system service.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public abstract class Service<C extends ServiceConsumer> {
 

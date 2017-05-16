@@ -8,7 +8,6 @@ import java.lang.reflect.Type;
 /**
  * This class resolve the interface to receive events of the instance.
  * @author javaito
- * @email javaito@gmail.com
  */
 public interface EventListener<E extends Event> extends ServiceConsumer {
 

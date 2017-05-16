@@ -13,9 +13,8 @@ import java.io.PrintStream;
 import java.util.*;
 
 /**
- *
+ * Implementation of the net service that provides the http protocol server.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 

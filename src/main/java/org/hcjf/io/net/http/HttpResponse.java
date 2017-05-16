@@ -6,7 +6,7 @@ import org.hcjf.properties.SystemProperties;
 /**
  * This class represents a http response package.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class HttpResponse extends HttpPackage {
 

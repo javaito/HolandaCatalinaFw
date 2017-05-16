@@ -3,11 +3,10 @@ package org.hcjf.cloud;
 import org.hcjf.service.ServiceConsumer;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * Consumer implementation for the cloud internal service.
+ * @author javaito
  */
 public abstract class CloudConsumer implements ServiceConsumer {
-
 
 
 }

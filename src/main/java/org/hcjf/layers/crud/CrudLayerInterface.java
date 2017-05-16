@@ -10,8 +10,9 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
+ * Interface that contains all the methods that must be implemented for
+ * all the crud layer implementations.
  * @author javaito
- * @mail javaito@gmail.com
  */
 public interface CrudLayerInterface<O extends Object> extends LayerInterface {
 

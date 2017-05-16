@@ -14,7 +14,6 @@ import java.util.concurrent.locks.Lock;
  * This clas must be implemented in order to create an
  * implementation to resolve the cloud interface.
  * @author javaito
- * @mail javaito@gmail.com
  */
 public interface CloudServiceImpl {
 

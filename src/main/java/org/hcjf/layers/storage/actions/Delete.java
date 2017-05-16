@@ -5,7 +5,7 @@ import org.hcjf.layers.storage.StorageSession;
 /**
  * Delete storage operation.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class Delete<S extends StorageSession> extends StorageAction<S> {
 

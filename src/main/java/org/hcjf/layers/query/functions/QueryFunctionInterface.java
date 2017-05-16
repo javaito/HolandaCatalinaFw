@@ -3,8 +3,8 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.layers.LayerInterface;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito.
+ *
  */
 public interface QueryFunctionInterface extends LayerInterface {
 

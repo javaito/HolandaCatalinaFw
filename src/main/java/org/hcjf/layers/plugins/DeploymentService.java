@@ -16,8 +16,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public final class DeploymentService extends Service<DeploymentService.DeploymentConsumer> {
 
@@ -159,8 +158,8 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
     /**
      * This class implements the abstract process of deployment of plugins
      * using different methods to obtain the in-memory jar file.
-     * @author Javier Quiroga.
-     * @email javier.quiroga@sitrack.com
+     * @author javaito.
+     *
      */
     public abstract static class DeploymentConsumer implements ServiceConsumer {
 

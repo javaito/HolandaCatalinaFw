@@ -7,7 +7,7 @@ import org.hcjf.log.Log;
  * This class is the base class to implements all the result sets
  * for storage layer.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class ResultSet<O extends Object> {
 

@@ -11,7 +11,7 @@ import java.util.Map;
  * some particular technology. These implementations are the bonds
  * between the storage interface and the particular technologies.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class StorageSession implements Closeable {
 

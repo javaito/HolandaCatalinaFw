@@ -1,202 +1,203 @@
 package org.hcjf.io.net.http;
 
 /**
- * Created by javaito on 25/4/2016.
+ * Contains commons http response codes.
+ * @author javaito
  */
 public interface HttpResponseCode {
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.1.1</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.1.1
      */
     Integer CONTINUE = 100;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.1.2</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.1.2
      */
     Integer SWITCHING_PROTOCOLS = 101;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.2.1</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.2.1
      */
     Integer OK = 200;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.2.2</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.2.2
      */
     Integer CREATED = 201;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.2.3</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.2.3
      */
     Integer ACCEPTED = 202;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.2.4</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.2.4
      */
     Integer NON_AUTHORITATIVE_INFOTMATION = 203;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.2.5</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.2.5
      */
     Integer NO_CONTENT = 204;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.2.6</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.2.6
      */
     Integer RESET_CONTENT = 205;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.2.7</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.2.7
      */
     Integer PARTIAL_CONTENT = 206;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.3.1</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.3.1
      */
     Integer MULTIPLE_CHOICES = 300;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.3.2</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.3.2
      */
     Integer MOVED_PERMANENTLY = 301;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.3.3</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.3.3
      */
     Integer FOUND = 302;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.3.4</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.3.4
      */
     Integer SEE_OTHER = 303;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.3.5</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.3.5
      */
     Integer NOT_MODIFIED = 304;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.3.6</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.3.6
      */
     Integer USE_PROXY = 305;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.3.8</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.3.8
      */
     Integer TEMPORARY_REDIRECT = 307;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.1</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.1
      */
     Integer BAD_REQUEST = 400;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.2</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.2
      */
     Integer UNAUTHORIZED = 401;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.3</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.3
      */
     Integer PAYMENT_REQUIRED = 402;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.4</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.4
      */
     Integer FORBIDDEN = 403;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.5</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.5
      */
     Integer NOT_FOUND = 404;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.6</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.6
      */
     Integer METHOD_NOT_ALLOWED = 405;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.7</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.7
      */
     Integer NOT_ACCEPTABLE = 406;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.9</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.9
      */
     Integer REQUEST_TIMEOUT = 408;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.10</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.10
      */
     Integer CONFLICT = 409;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.11</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.11
      */
     Integer GONE = 410;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.12</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.12
      */
     Integer LENGTH_REQUIRED = 411;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.13</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.13
      */
     Integer PRECONDITION_FAILED = 412;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.14</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.14
      */
     Integer REQUEST_ENTITY_TOO_LARGE = 413;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.15</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.15
      */
     Integer REQUEST_URI_TOO_LARGE = 414;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.16</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.16
      */
     Integer UNSUPPORTED_MEDIA_TYPE = 415;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.17</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.17
      */
     Integer REQUESTED_RANGE_NOT_SATISFIABLE = 416;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.4.18</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.4.18
      */
     Integer EXPECTATION_FAILED = 417;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.5.1</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.5.1
      */
     Integer INTERNAL_SERVER_ERROR = 500;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.5.2</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.5.2
      */
     Integer NOT_IMPLEMENTED = 501;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.5.3</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.5.3
      */
     Integer BAD_GATEWAY = 502;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.5.4</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.5.4
      */
     Integer SERVICE_UNAVAILABLE = 503;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.5.5</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.5.5
      */
     Integer GATEWAY_TIMEOUT = 504;
 
     /**
-     * <link href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.1>10.5.6</link>
+     * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.5.6
      */
     Integer HTTP_VERSION_NOT_SUPPORTED = 505;
 }

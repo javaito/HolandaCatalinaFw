@@ -3,8 +3,8 @@ package org.hcjf.errors;
 import org.hcjf.utils.Messages;
 
 /**
+ * Contains the system error messages.
  * @author javaito
- * @email javaito@gmail.com
  */
 public final class Errors extends Messages {
 

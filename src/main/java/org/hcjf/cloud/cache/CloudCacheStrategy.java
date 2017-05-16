@@ -2,7 +2,6 @@ package org.hcjf.cloud.cache;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
  */
 public interface CloudCacheStrategy {
 

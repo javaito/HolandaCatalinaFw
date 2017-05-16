@@ -9,7 +9,6 @@ import java.io.PrintStream;
 /**
  * This class represents a standard web context that can be published
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class Context {
 

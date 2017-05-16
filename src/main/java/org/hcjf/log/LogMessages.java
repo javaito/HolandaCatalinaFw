@@ -4,7 +4,7 @@ import org.hcjf.utils.Messages;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public final class LogMessages extends Messages {
 

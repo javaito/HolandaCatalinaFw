@@ -19,7 +19,6 @@ import java.util.concurrent.Future;
  * This class provide an interface in order to register
  * a watcher for a file or directory.
  * @author javaito
- * @email javaito@gmail.com
  */
 public final class FileSystemWatcherService extends Service<FileSystemWatcherConsumer> {
 

@@ -2,7 +2,7 @@ package org.hcjf.layers.query;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public interface Joinable {
 

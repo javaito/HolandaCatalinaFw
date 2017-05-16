@@ -6,7 +6,6 @@ import org.hcjf.properties.SystemProperties;
 /**
  * This is the default implementation
  * @author javaito
- * @email javaito@gmail.com
  */
 public class DefaultLocaleLayer extends Layer implements LocaleLayerInterface {
 

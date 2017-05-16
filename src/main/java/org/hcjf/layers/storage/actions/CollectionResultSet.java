@@ -4,7 +4,7 @@ import java.util.Collection;
 
 /**
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class CollectionResultSet extends ResultSet<Collection<Object>> {
 

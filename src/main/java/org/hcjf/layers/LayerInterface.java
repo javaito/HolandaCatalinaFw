@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationHandler;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public interface LayerInterface extends InvocationHandler {
 

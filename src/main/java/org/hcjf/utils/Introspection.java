@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 /**
  * This class contains a set of utilities to optimize the introspection native methods.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public final class Introspection {
 

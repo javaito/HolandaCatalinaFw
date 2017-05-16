@@ -9,7 +9,6 @@ import java.util.Map;
 
 /**
  * @author javaito
- * @mail javaito@gmail.com
  */
 public final class EncodingService extends Service<EncodingImpl> {
 

@@ -6,7 +6,6 @@ import org.hcjf.io.net.http.HttpRequest;
  * This class analyze the requests and return a set of redirection
  * task to be executed for the http proxy.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class HttpProxyRule {
 

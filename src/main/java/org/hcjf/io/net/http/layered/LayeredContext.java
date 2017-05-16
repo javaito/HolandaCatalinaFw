@@ -1,6 +1,5 @@
 package org.hcjf.io.net.http.layered;
 
-import org.hcjf.errors.Errors;
 import org.hcjf.io.net.http.Context;
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.HttpResponse;
@@ -9,7 +8,6 @@ import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.utils.Strings;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.List;
@@ -19,7 +17,6 @@ import java.util.stream.Collectors;
  * This kind of context publish an http interface for
  * som kind of layer.
  * @author javaito
- * @mail javaito@gmail.com
  */
 public abstract class LayeredContext<L extends LayerInterface,
         P extends LayeredRequest, R extends LayeredResponse> extends Context {

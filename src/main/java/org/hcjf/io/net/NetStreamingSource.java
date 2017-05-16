@@ -11,7 +11,6 @@ import java.nio.channels.SocketChannel;
  * This class create a bond from a data source to a client
  * using a pipe.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class NetStreamingSource implements Runnable {
 

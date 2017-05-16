@@ -10,7 +10,7 @@ import java.util.function.Function;
 /**
  * This is a wrapper of map implementation wit the joinable implementation.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, Object> {
 

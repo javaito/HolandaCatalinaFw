@@ -5,8 +5,8 @@ import org.hcjf.io.net.http.layered.LayeredRequest;
 import org.hcjf.layers.crud.CrudLayerInterface;
 
 /**
+ * This package is the request for the end point implementation interface.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class EndPointRequest extends LayeredRequest {
 

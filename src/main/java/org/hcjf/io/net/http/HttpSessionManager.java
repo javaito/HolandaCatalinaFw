@@ -9,7 +9,6 @@ import java.util.UUID;
  * This class is a factory in order to implements a method to create and organize
  * the http sessions.
  * @author javaito
- * @email javaito@gmail.com
  */
 public interface HttpSessionManager {
 

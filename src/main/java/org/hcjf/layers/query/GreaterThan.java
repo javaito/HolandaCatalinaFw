@@ -6,7 +6,7 @@ import java.util.Map;
  * Evaluate if the field's value of the instance is greater than the
  * parameter value.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class GreaterThan extends FieldEvaluator {
 

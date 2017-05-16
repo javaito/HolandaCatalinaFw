@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * This class contains all the parameter needed to create a query.
  * This kind of queries works over any data collection.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class Query extends EvaluatorCollection {
 

@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * This consumer provide an interface for the net service.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class NetServiceConsumer<S extends NetSession, D extends Object> implements ServiceConsumer {
 
@@ -133,8 +132,8 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     }
 
     /**
-     *
-     * @param session
+     * Disconnect the specific session.
+     * @param session Net session.
      */
     protected final void disconnect(S session, String message) {
         service.disconnect(session, message);
@@ -146,6 +145,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * that the data was written over the communication channel
      * @param session Net session.
      * @param payLoad Data to be written
+     * @throws IOException Exception for the io operations
      */
     protected final void write(S session, D payLoad) throws IOException {
         write(session, payLoad, null, true);
@@ -157,6 +157,8 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param payLoad Data to be written.
      * @param waitFor If this parameter is true then the operation generate
      *                a blocking over the communication channel.
+     * @param source Streaming source.
+     * @throws IOException Exception for io operations
      */
     protected final void write(S session, D payLoad, NetStreamingSource source, boolean waitFor) throws IOException {
         if(waitFor) {

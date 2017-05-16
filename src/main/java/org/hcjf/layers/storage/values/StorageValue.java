@@ -2,7 +2,7 @@ package org.hcjf.layers.storage.values;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class StorageValue {
 

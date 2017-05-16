@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Http proxy implementation
  * @author javaito
- * @email javaito@gmail.com
  */
 public class HttpProxy extends HttpServer {
 

@@ -8,8 +8,7 @@ import java.net.URLClassLoader;
 
 /**
  * This class loader is a wrapper of url class loader.
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class PluginClassLoader extends URLClassLoader {
 

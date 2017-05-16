@@ -6,11 +6,13 @@ import org.hcjf.properties.SystemProperties;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingDeque;
 
 /**
+ * This class must be implemented for all implementation
+ * of the service session.
+ * This kind of session provides an authenticated environment for all the
+ * service thread.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class ServiceSession implements Comparable {
 
@@ -159,6 +161,7 @@ public class ServiceSession implements Comparable {
     /**
      * Return a session property.
      * @param propertyName Property name.
+     * @param <O> Expected return type.
      * @return Session value.
      */
     public <O extends Object> O get(String propertyName) {

@@ -6,7 +6,6 @@ import java.util.UUID;
 /**
  * This class represents a package of information over IP protocol.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class NetPackage {
 

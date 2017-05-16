@@ -10,7 +10,6 @@ import java.util.List;
 /**
  * This class implements the event service for the instance.
  * @author javaito
- * @email javaito@gmail.com
  */
 public final class Events extends Service<EventListener> {
 

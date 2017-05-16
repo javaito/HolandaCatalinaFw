@@ -2,8 +2,7 @@ package org.hcjf.cloud.counter;
 
 /**
  * Distributed atomic counter.
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public interface Counter {
 

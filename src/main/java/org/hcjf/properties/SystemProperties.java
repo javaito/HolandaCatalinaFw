@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * some default values and properties definitions for the service-oriented platforms
  * works.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public final class SystemProperties extends Properties {
 

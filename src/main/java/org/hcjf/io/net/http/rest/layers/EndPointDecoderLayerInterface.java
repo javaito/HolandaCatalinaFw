@@ -7,7 +7,7 @@ import org.hcjf.layers.LayerInterface;
 /**
  * This layer interface provides the statement to decode a http request and
  * create a end point package.
- * @author Javier Quiroga.
+ * @author javaito
  */
 public interface EndPointDecoderLayerInterface extends LayerInterface {
 

@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
  * This class wrap the layer invocation with two method, one
  * before the invocation and other after invocation.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public interface LayerProxy {
 

@@ -4,7 +4,6 @@ package org.hcjf.io.net;
  * This class is a kind of net consumer that represent
  * a server for the ip connections.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class NetServer<S extends NetSession, D extends Object> extends NetServiceConsumer<S, D> {
 

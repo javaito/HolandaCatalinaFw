@@ -7,7 +7,6 @@ import java.util.UUID;
 /**
  * This interface define de behavior of the net session.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class NetSession extends ServiceSession {
 

@@ -8,9 +8,8 @@ import java.util.*;
 
 /**
  * This class represents all the king of packages between server and
- * client side in a http comunication.
+ * client side in a http communication.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class HttpPackage {
 
@@ -106,9 +105,9 @@ public abstract class HttpPackage {
     }
 
     /**
-     *
-     * @param headerName
-     * @return
+     * Return the header instance with the specific name.
+     * @param headerName Name of the founded header.
+     * @return Founded header or null if there are'nt any header with this name.
      */
     public final HttpHeader getHeader(String headerName) {
         HttpHeader result = null;
@@ -121,17 +120,17 @@ public abstract class HttpPackage {
     }
 
     /**
-     *
-     * @param headerName
-     * @return
+     * Verify if the package contains any header with the specific name.
+     * @param headerName Finding header name.
+     * @return Return true if there are any header with the specific name and false in the otherwise.
      */
     public final boolean containsHeader(String headerName) {
         return getHeader(headerName) != null;
     }
 
     /**
-     *
-     * @param data
+     * Add a portion of data into the package.
+     * @param data Portion of data.
      */
     public final synchronized void addData(byte[] data) {
         if(!complete) {
@@ -197,21 +196,20 @@ public abstract class HttpPackage {
     }
 
     /**
-     *
-     * @param body
-     * @return
+     * This method must be implemented to process the body information.
+     * @param body Body information.
      */
     protected abstract void processBody(byte[] body);
 
     /**
-     *
-     * @param firstLine
+     * This method must be implemented to process the first line of the package.
+     * @param firstLine First line of the package.
      */
     protected abstract void processFirstLine(String firstLine);
 
     /**
-     *
-     * @return
+     * Return the bytes that represent the string of the protocol name.
+     * @return Protocol name bytes.
      */
     public abstract byte[] getProtocolHeader();
 

@@ -13,7 +13,6 @@ import java.util.Map;
 /**
  * This layer implements the {@link CrudLayerInterface}
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class CrudLayer<O extends Object> extends Layer implements CrudLayerInterface<O> {
 

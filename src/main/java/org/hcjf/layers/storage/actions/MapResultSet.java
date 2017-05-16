@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class MapResultSet extends ResultSet<List<Map<String, Object>>> {
 

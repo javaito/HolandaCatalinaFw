@@ -3,7 +3,7 @@ package org.hcjf.properties;
 /**
  * This interface define the validators for the values of the properties.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public interface PropertyValueValidator<O extends Object> {
 

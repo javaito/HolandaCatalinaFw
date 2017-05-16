@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  * <br><b>hcfj_log_level</b>: min level to write file, by default "I"
  * <br><b>hcfj_log_date_format</b>: date format to show in the log file, by default "yyyy-mm-dd hh:mm:ss"
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public final class Log extends Service<LogPrinter> {
 

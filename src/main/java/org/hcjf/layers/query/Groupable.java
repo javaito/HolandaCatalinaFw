@@ -2,8 +2,8 @@ package org.hcjf.layers.query;
 
 /**
  * This interface represents all object capable of being grouped
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito.
+ *
  */
 public interface Groupable {
 

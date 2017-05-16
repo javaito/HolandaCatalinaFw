@@ -10,7 +10,7 @@ import java.util.List;
  * is the implementation of a method to decide if an object is part of the result
  * of the query or not is.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class FieldEvaluator implements Evaluator {
 

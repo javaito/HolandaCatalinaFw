@@ -10,7 +10,6 @@ import java.util.*;
 /**
  * This particular kind of package contains the request information.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class HttpRequest extends HttpPackage {
 
@@ -142,7 +141,8 @@ public class HttpRequest extends HttpPackage {
     }
 
     /**
-     * @param firstLine
+     * Process the first line of the request.
+     * @param firstLine First line of the request.
      */
     @Override
     protected void processFirstLine(String firstLine) {
@@ -208,8 +208,8 @@ public class HttpRequest extends HttpPackage {
     }
 
     /**
-     *
-     * @return
+     * Return the string that represent the protocol of the package.
+     * @return Protocol description.
      */
     private String toStringProtocolHeader() {
         StringBuilder builder = new StringBuilder();
@@ -225,8 +225,8 @@ public class HttpRequest extends HttpPackage {
     }
 
     /**
-     *
-     * @return
+     * Return the bytes that represent the string of the protocol name.
+     * @return Protocol name bytes.
      */
     @Override
     public final byte[] getProtocolHeader() {
@@ -234,8 +234,8 @@ public class HttpRequest extends HttpPackage {
     }
 
     /**
-     *
-     * @return
+     * Creates the string representation of the package.
+     * @return String representation of the package.
      */
     @Override
     public String toString() {

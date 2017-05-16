@@ -6,7 +6,7 @@ import java.util.stream.IntStream;
 /**
  * This class contains utils methods to work with strings.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public final class Strings {
 

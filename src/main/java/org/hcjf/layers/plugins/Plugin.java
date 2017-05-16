@@ -5,8 +5,7 @@ import org.hcjf.utils.Version;
 import java.nio.ByteBuffer;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class Plugin {
 

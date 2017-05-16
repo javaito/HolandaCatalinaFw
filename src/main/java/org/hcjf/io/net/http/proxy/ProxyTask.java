@@ -4,8 +4,9 @@ import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.HttpResponse;
 
 /**
+ * Proxy task, this task could be one of many task into the some
+ * http proxy instance.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class ProxyTask {
 
