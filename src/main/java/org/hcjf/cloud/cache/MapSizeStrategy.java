@@ -1,8 +1,7 @@
 package org.hcjf.cloud.cache;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class MapSizeStrategy  {
 }

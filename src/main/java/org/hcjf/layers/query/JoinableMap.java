@@ -10,7 +10,7 @@ import java.util.function.Function;
 /**
  * This is a wrapper of map implementation wit the joinable implementation.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, Object> {
 
@@ -57,36 +57,6 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, O
             result = mapInstance.get(fieldName);
         }
         return result;
-    }
-
-    /**
-     * Group the current instance of the groupable instance with other instance.
-     * @param groupable Other instance.
-     */
-    @Override
-    public void group(Groupable groupable) {
-        Object currentValue;
-        Object value;
-        for(String key : keySet()) {
-            currentValue = get(key);
-            value = groupable.get(key);
-            if(currentValue != null) {
-                if (Long.class.isAssignableFrom(currentValue.getClass())) {
-                    currentValue = ((Number) currentValue).longValue() + ((Number) value).longValue();
-                } else if (Double.class.isAssignableFrom(currentValue.getClass())) {
-                    currentValue = ((Number) currentValue).doubleValue() + ((Number) value).doubleValue();
-                } else if (Collection.class.isAssignableFrom(currentValue.getClass())) {
-                    ((Collection) currentValue).addAll((Collection) value);
-                } else if (Map.class.isAssignableFrom(currentValue.getClass())) {
-                    ((Map) currentValue).putAll((Map) currentValue);
-                } else {
-                    if (!currentValue.equals(value)) {
-                        currentValue = null;
-                    }
-                }
-            }
-            put(key, currentValue);
-        }
     }
 
     /**

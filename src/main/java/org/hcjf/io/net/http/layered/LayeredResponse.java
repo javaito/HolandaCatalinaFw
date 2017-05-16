@@ -3,8 +3,8 @@ package org.hcjf.io.net.http.layered;
 import org.hcjf.io.net.http.HttpResponse;
 
 /**
+ * Response package for the layered contexts.
  * @author javaito
- * @mail javaito@gmail.com
  */
 public class LayeredResponse extends HttpResponse {
 
@@ -14,6 +14,10 @@ public class LayeredResponse extends HttpResponse {
         this.layerResponse = layerResponse;
     }
 
+    /**
+     * Get the response object of the layer's invocation
+     * @return Response object.
+     */
     public final Object getLayerResponse() {
         return layerResponse;
     }

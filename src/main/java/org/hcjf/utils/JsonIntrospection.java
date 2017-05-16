@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public final class JsonIntrospection {
 

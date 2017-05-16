@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
  * All the layer implementation extends this class, and this class is a proxy
  * between the layer client and implementation.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class Layer implements LayerInterface {
 

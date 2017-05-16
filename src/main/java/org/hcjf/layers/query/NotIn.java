@@ -4,7 +4,7 @@ import java.util.Map;
 
 /**
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class NotIn extends In {
 

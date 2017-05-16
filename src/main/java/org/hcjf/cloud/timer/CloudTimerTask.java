@@ -12,7 +12,7 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public abstract class CloudTimerTask implements Runnable {
 

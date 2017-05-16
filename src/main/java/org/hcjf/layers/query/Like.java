@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 /**
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class Like extends FieldEvaluator {
 

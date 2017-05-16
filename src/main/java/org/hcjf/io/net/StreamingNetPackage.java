@@ -3,7 +3,6 @@ package org.hcjf.io.net;
 /**
  * This package extension contains a streaming source.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class StreamingNetPackage extends DefaultNetPackage {
 

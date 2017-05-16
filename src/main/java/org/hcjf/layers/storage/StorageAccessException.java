@@ -6,7 +6,7 @@ import java.security.PrivilegedActionException;
  * This exception wrap all the exceptions generated for the particulars
  * implementation of the storage layer.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class StorageAccessException extends Exception {
 

@@ -4,7 +4,7 @@ package org.hcjf.service;
  * This class is a singleton and all the service thread
  * run over the unique instance of this class as a group.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public final class ServiceThreadGroup extends ThreadGroup {
 

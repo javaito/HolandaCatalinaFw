@@ -7,7 +7,6 @@ import java.util.Map;
 /**
  * Encoding implementation base class.
  * @author javaito
- * @mail javaito@gmail.com
  */
 public abstract class EncodingImpl<P extends DecodedPackage> implements ServiceConsumer {
 

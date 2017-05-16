@@ -10,7 +10,6 @@ import java.util.Set;
  * This class represents a http header and contains all
  * the components of the headers.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class HttpHeader {
 
@@ -108,7 +107,7 @@ public class HttpHeader {
 
     /**
      * Print the header with the http header standard format.
-     * @param includeHeaderName
+     * @param includeHeaderName Boolean to indicates if the name of the header must be printed.
      * @return Header's print.
      */
     public String toString(boolean includeHeaderName) {
@@ -122,18 +121,18 @@ public class HttpHeader {
     }
 
     /**
-     *
-     * @return
+     * Return the header groups.
+     * @return Header groups.
      */
     public final Set<String> getGroups() {
         return headerGroups.keySet();
     }
 
     /**
-     *
-     * @param groupName
-     * @param parameterName
-     * @return
+     * Return the value of the specific parameter.
+     * @param groupName Group name.
+     * @param parameterName Parameter name.
+     * @return Parameter value.
      */
     public final String getParameter(String groupName, String parameterName) {
         if(groupName == null) {

@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Contains commons mime types.
  * @author javaito
- * @mail javaito@gmail.com
  */
 public class MimeType {
 

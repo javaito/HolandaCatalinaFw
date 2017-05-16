@@ -2,9 +2,8 @@ package org.hcjf.io.net.http;
 
 /**
  * This enumeration contains all the possible methods of the HTTP protocol.
- * The documentation base on <link>https://www.w3.org/Protocols/rfc2616/rfc2616.html<link/>
+ * The documentation base on https://www.w3.org/Protocols/rfc2616/rfc2616.html
  * @author javaito
- * @email javaito@gmail.com
  */
 public enum HttpMethod {
 

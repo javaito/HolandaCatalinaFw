@@ -3,7 +3,6 @@ package org.hcjf.events;
 /**
  * This class implements the system event structure.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class Event {
 

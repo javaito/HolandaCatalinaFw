@@ -5,8 +5,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito.
+ *
  */
 public final class Group {
 

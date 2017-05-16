@@ -16,8 +16,8 @@ import java.net.URL;
 import java.util.UUID;
 
 /**
+ * Client to invoke some http server.
  * @author javaito
- * @mail javaito@gmail.com
  */
 public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
@@ -170,8 +170,8 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     }
 
     /**
-     *
-     * @return
+     * Creates the SSL engine.
+     * @return SSL engine instance.
      */
     @Override
     protected SSLEngine createSSLEngine() {

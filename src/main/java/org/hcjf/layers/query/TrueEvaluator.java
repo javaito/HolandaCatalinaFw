@@ -4,8 +4,8 @@ import java.util.Map;
 
 /**
  * This kind of evaluator is used to reduce the query.
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito.
+ *
  */
 public final class TrueEvaluator implements Evaluator {
 

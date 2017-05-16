@@ -12,7 +12,6 @@ import java.util.concurrent.locks.Lock;
 /**
  * This interface provides the method to use a simple cache.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class CloudCache {
 

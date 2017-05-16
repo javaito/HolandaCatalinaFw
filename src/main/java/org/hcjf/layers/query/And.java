@@ -4,7 +4,7 @@ import java.util.Map;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class And extends EvaluatorCollection implements Evaluator {
 

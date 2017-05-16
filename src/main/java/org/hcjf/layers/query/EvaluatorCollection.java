@@ -10,7 +10,7 @@ import java.util.Set;
 /**
  * Collection of evaluator components.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public abstract class EvaluatorCollection {
 

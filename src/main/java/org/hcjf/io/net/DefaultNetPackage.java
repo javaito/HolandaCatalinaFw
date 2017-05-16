@@ -3,7 +3,8 @@ package org.hcjf.io.net;
 import java.util.Date;
 
 /**
- * Created by javaito on 09/09/16.
+ * Default implementation of the net package.
+ * @author javaito
  */
 public class DefaultNetPackage extends NetPackage {
 

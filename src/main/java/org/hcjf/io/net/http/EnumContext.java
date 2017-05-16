@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * This kind of context publish the enums of the system.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class EnumContext extends Context{
 

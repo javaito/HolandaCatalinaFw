@@ -6,7 +6,7 @@ import java.util.stream.IntStream;
 /**
  * This class contains utils methods to work with strings.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public final class Strings {
 
@@ -22,6 +22,19 @@ public final class Strings {
     public static final String CASE_INSENSITIVE_REGEX_FLAG = "(?i)";
     public static final String ARGUMENT_SEPARATOR = ",";
     public static final String ASSIGNATION = "=";
+
+    /**
+     * Return the string that result of join all the values separated by the
+     * separated value specified.
+     * @param values Values to join.
+     * @param separator Separator value.
+     * @return Result of the join operation.
+     */
+    public static String join(Collection<String> values, String separator) {
+        Builder builder = new Builder();
+        values.stream().filter(S -> !S.isEmpty()).forEach(S -> builder.append(S, separator));
+        return builder.toString();
+    }
 
     /**
      * Replace the first character for his upper case representation.

@@ -20,7 +20,6 @@ import java.util.zip.GZIPOutputStream;
 /**
  * This class publish some local folder in the web environment.
  * @author javaito
- * @email javaito@gmail.com
  */
 public class FolderContext extends Context {
 

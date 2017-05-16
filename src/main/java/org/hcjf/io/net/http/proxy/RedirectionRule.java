@@ -8,7 +8,8 @@ import org.hcjf.io.net.http.HttpResponse;
 import java.net.URL;
 
 /**
- * Created by javaito on 26/08/16.
+ * Proxy task that implements a redirection rule.
+ * @author javaito
  */
 public class RedirectionRule extends HttpProxyRule {
 

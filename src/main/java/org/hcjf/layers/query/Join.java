@@ -3,7 +3,7 @@ package org.hcjf.layers.query;
 /**
  * This class represent a join operation
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class Join extends EvaluatorCollection implements Comparable<Join> {
 

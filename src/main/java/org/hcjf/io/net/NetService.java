@@ -23,7 +23,6 @@ import java.util.concurrent.ThreadPoolExecutor;
  * up-level interface to open tcp and udp connections like a
  * server side or client side.
  * @author javaito
- * @email javaito@gmail.com
  */
 public final class NetService extends Service<NetServiceConsumer> {
 
@@ -114,6 +113,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * This method will be called immediately after the static
      * method 'shutdown' of the class has been called.
+     * @param stage Shutdown stage.
      */
     @Override
     protected void shutdown(ShutdownStage stage) {
@@ -326,17 +326,18 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     *
-     * @return
+     * Return a boolean to knows if the instance of the java vm is into the
+     * shutdown process or not.
+     * @return True if the vm is into the shutdown porcess and false in the otherwise.
      */
     public final boolean isShuttingDown() {
         return shuttingDown;
     }
 
     /**
-     *
-     * @param session
-     * @return
+     * Check if the specific session is active into the sercie.
+     * @param session Specific session.
+     * @return Return true if the session is active into the
      */
     public final boolean checkSession(NetSession session) {
         boolean result = false;

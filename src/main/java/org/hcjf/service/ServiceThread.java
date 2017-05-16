@@ -9,7 +9,7 @@ import java.util.UUID;
  * class service, all the services run over this kind of
  * thread.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class ServiceThread extends Thread {
 

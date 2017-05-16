@@ -6,7 +6,7 @@ import org.hcjf.service.ServiceConsumer;
  * This class porvide the interface to write the records of
  * the log in different places.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public interface LogPrinter extends ServiceConsumer {
 

@@ -16,7 +16,7 @@ import java.util.Map;
  * This class is the base class for all the possible operations
  * over data storage session.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class StorageAction<S extends StorageSession> {
 

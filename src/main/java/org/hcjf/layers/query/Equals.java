@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Compare two object and return true if the objects are equals and false in other ways.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public class Equals extends FieldEvaluator {
 

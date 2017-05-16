@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public final class Naming extends Service<NamingConsumer> {
 

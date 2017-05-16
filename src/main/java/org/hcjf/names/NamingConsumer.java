@@ -4,7 +4,7 @@ import org.hcjf.service.ServiceConsumer;
 
 /**
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class NamingConsumer implements ServiceConsumer {
 

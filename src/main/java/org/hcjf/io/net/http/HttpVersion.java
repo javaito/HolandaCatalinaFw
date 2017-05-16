@@ -1,7 +1,7 @@
 package org.hcjf.io.net.http;
 
 /**
- * Created by javaito on 28/4/2016.
+ * Contains all the http version that the server support.
  */
 public interface HttpVersion {
 

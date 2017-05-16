@@ -19,7 +19,6 @@ import java.util.concurrent.locks.Lock;
  * cloud interface, the implementation of this interface
  * depends of the system property 'hcjf.cloud.impl'
  * @author javaito
- * @mail javaito@gmail.com
  */
 public final class Cloud extends Service<CloudConsumer> {
 

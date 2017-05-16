@@ -3,8 +3,7 @@ package org.hcjf.layers.plugins;
 import org.hcjf.layers.Layer;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public abstract class PluginLayer extends Layer {
 

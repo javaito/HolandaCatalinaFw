@@ -14,9 +14,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 /**
- * This helper provides
+ * This helper provides the ssl life cycle.
  * @author javaito
- * @email javaito@gmail.com
  */
 public final class SSLHelper implements Runnable {
 
@@ -57,10 +56,6 @@ public final class SSLHelper implements Runnable {
         return status;
     }
 
-    /**
-     *
-     * @param decrypted
-     */
     private void onRead(ByteBuffer decrypted) {
         byte[] decryptedArray = new byte[decrypted.limit()];
         decrypted.get(decryptedArray);
@@ -70,10 +65,6 @@ public final class SSLHelper implements Runnable {
         }
     }
 
-    /**
-     *
-     * @param encrypted
-     */
     private void onWrite(ByteBuffer encrypted) {
         try {
             ((SocketChannel)selectableChannel).write(encrypted);
@@ -88,31 +79,18 @@ public final class SSLHelper implements Runnable {
         }
     }
 
-    /**
-     *
-     * @param ex
-     */
     private void onFailure(Exception ex) {
         status = SSLHelperStatus.FAIL;
     }
 
-    /**
-     *
-     */
     private void onSuccess() {
         status = SSLHelperStatus.READY;
     }
 
-    /**
-     *
-     */
     private void onClosed() {
 
     }
 
-    /**
-     *
-     */
     @Override
     public void run() {
         while (this.isHandShaking()) {
@@ -149,10 +127,6 @@ public final class SSLHelper implements Runnable {
         return netPackage;
     }
 
-    /**
-     *
-     * @param netPackage
-     */
     public synchronized NetPackage read(NetPackage netPackage) {
         this.ioExecutor.execute(() -> {
             srcUnwrap.put(netPackage.getPayload());
@@ -178,10 +152,6 @@ public final class SSLHelper implements Runnable {
         return netPackage;
     }
 
-    /**
-     *
-     * @return
-     */
     private synchronized boolean isHandShaking() {
         switch (sslEngine.getHandshakeStatus()) {
             case NOT_HANDSHAKING:
@@ -223,10 +193,6 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
-    /**
-     *
-     * @return
-     */
     private boolean wrap() {
         SSLEngineResult wrapResult;
 
@@ -265,10 +231,6 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
-    /**
-     *
-     * @return
-     */
     private boolean unwrap() {
         SSLEngineResult unwrapResult;
 

@@ -10,7 +10,6 @@ import java.nio.file.WatchEvent;
  * This class must be implemented if tou want to
  * consume the file system watcher service.
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class FileSystemWatcherConsumer implements ServiceConsumer {
 

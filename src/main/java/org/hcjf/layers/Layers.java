@@ -23,7 +23,7 @@ import java.util.jar.Manifest;
 /**
  * This class manage all the published layers.
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public final class Layers {
 

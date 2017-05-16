@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Message manager
  * @author javaito
- * @email javaito@gmail.com
+ *
  */
 public class Messages {
 

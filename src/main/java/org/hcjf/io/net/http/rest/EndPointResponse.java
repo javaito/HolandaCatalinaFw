@@ -3,8 +3,8 @@ package org.hcjf.io.net.http.rest;
 import org.hcjf.io.net.http.layered.LayeredResponse;
 
 /**
+ * Response package to end point implementation
  * @author javaito
- * @email javaito@gmail.com
  */
 public class EndPointResponse extends LayeredResponse {
 

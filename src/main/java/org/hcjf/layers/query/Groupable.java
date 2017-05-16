@@ -2,8 +2,8 @@ package org.hcjf.layers.query;
 
 /**
  * This interface represents all object capable of being grouped
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito.
+ *
  */
 public interface Groupable {
 
@@ -15,9 +15,15 @@ public interface Groupable {
     public Object get(String fieldName);
 
     /**
-     * Group the current instance of the groupable instance with other instance.
-     * @param groupable Other instance.
+     *
+     * @param fieldName
+     * @param value
      */
-    public void group(Groupable groupable);
+    public Object put(String fieldName, Object value);
+
+    /**
+     * Remove all the elements of the groupable object.
+     */
+    public void clear();
 
 }

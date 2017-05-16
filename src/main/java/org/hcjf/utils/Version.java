@@ -1,8 +1,8 @@
 package org.hcjf.utils;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito.
+ *
  */
 public final class Version implements Comparable<Version> {
 

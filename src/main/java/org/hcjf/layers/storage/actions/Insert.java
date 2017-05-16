@@ -5,7 +5,7 @@ import org.hcjf.layers.storage.StorageSession;
 /**
  * Insert storage operation.
  * @author javaito
- * @mail javaito@gmail.com
+ *
  */
 public abstract class Insert<S extends StorageSession> extends StorageAction<S> {
 

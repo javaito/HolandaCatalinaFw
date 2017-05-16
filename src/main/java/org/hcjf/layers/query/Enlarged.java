@@ -2,8 +2,8 @@ package org.hcjf.layers.query;
 
 /**
  * This interface provides the functionality to extends the instance domain.
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito.
+ *
  */
 public interface Enlarged {
 

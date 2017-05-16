@@ -6,7 +6,6 @@ import org.hcjf.layers.LayerInterface;
  * This interface provides some methods access the locale information
  * based on the locale of the service session.
  * @author javaito
- * @email javaito@gmail.com
  */
 public interface LocaleLayerInterface extends LayerInterface {
 
