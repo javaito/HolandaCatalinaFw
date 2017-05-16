@@ -8,6 +8,7 @@ import org.hcjf.io.net.http.rest.layers.EndPointDecoderLayerInterface;
 import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.query.Query;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
  * This context publish some kind of layer that response with rest interface.
  * @author javaito
  */
-public abstract class EndPoint extends LayeredContext<CrudLayerInterface, EndPointRequest, EndPointResponse> {
+public class EndPoint extends LayeredContext<CrudLayerInterface, EndPointRequest, EndPointResponse> {
 
     public EndPoint(String... endPointPath) {
         super(endPointPath);
@@ -31,19 +32,23 @@ public abstract class EndPoint extends LayeredContext<CrudLayerInterface, EndPoi
      */
     @Override
     protected final EndPointResponse onAction(EndPointRequest request) {
-        List<String> resourcePath = getResourcePath(request);
-        if(resourcePath.isEmpty()) {
-            throw new IllegalArgumentException("");
+        EndPointResponse result;
+        if(request instanceof EndPointCrudRequest) {
+            try {
+                EndPointCrudRequest crudRequest = (EndPointCrudRequest) request;
+                result = new EndPointResponse(crudRequest.getInvoker().invoke(crudRequest.getCrudLayerInterface(), crudRequest.getParams()));
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException("", e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("", e);
+            }
+        } else if(request instanceof EndPointQueryRequest) {
+            EndPointQueryRequest queryRequest = (EndPointQueryRequest) request;
+            result = new EndPointResponse(Query.evaluate(queryRequest.getQuery()));
+        } else {
+            throw new IllegalArgumentException();
         }
-
-        CrudLayerInterface crudLayerInterface = getLayerInterface(resourcePath.stream().findFirst().get());
-        try {
-            return new EndPointResponse(request.getInvoker().invoke(crudLayerInterface, request.getParams()));
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException("", e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("", e);
-        }
+        return result;
     }
 
     /**
@@ -79,15 +84,30 @@ public abstract class EndPoint extends LayeredContext<CrudLayerInterface, EndPoi
      */
     @Override
     protected final EndPointRequest decode(HttpRequest request) {
-        HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
-        if(contentTypeHeader == null) {
-            throw new IllegalArgumentException("");
+        EndPointRequest result;
+
+        if(request.getParameters().containsKey("q")) {
+            result = new EndPointQueryRequest(request, Query.compile(request.getParameter("q")));
+        } else {
+            List<String> resourcePath = getResourcePath(request);
+            if (resourcePath.isEmpty()) {
+                throw new IllegalArgumentException("");
+            }
+
+            CrudLayerInterface crudLayerInterface = getLayerInterface(resourcePath.stream().findFirst().get());
+
+            HttpHeader contentTypeHeader = request.getHeader(HttpHeader.CONTENT_TYPE);
+            if (contentTypeHeader == null) {
+                throw new IllegalArgumentException("");
+            }
+
+            EndPointDecoderLayerInterface endPointDecoderLayerInterface =
+                    Layers.get(EndPointDecoderLayerInterface.class, contentTypeHeader.getHeaderValue());
+
+            result = endPointDecoderLayerInterface.decode(request, crudLayerInterface);
         }
 
-        EndPointDecoderLayerInterface endPointDecoderLayerInterface =
-                Layers.get(EndPointDecoderLayerInterface.class, contentTypeHeader.getHeaderValue());
-
-        return endPointDecoderLayerInterface.decode(request);
+        return result;
     }
 
     /**

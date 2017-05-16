@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
@@ -950,6 +952,14 @@ public class Query extends EvaluatorCollection {
         return compile(groups, groups.size() -1);
     }
 
+    public static Collection<JoinableMap> evaluate(String query) {
+        return compile(query).evaluate(new CrudDataSource());
+    }
+
+    public static Collection<JoinableMap> evaluate(Query query) {
+        return query.evaluate(new CrudDataSource());
+    }
+
     /**
      * Create a query instance from sql definition.
      * @param groups
@@ -1445,6 +1455,23 @@ public class Query extends EvaluatorCollection {
          * @return Data collection from the resource.
          */
         public Collection<O> getResourceData(Query query);
+
+    }
+
+    /**
+     *
+     */
+    public static class CrudDataSource implements DataSource<JoinableMap> {
+
+        /**
+         *
+         * @param query Query object.
+         * @return
+         */
+        @Override
+        public Collection<JoinableMap> getResourceData(Query query) {
+            return Layers.get(CrudLayerInterface.class, query.getResourceName()).readRows(query);
+        }
 
     }
 

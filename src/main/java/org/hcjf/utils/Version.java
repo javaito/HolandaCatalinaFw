@@ -1,8 +1,8 @@
 package org.hcjf.utils;
 
 /**
+ * Object
  * @author javaito.
- *
  */
 public final class Version implements Comparable<Version> {
 
