@@ -370,7 +370,6 @@ public class Query extends EvaluatorCollection {
         //Getting data from data source.
         Collection<O> data;
         try {
-            initializeEvaluatorsCache();
             if (joins.size() > 0) {
                 //If the query has joins then data source must return the joined data
                 //collection using all the resources
@@ -385,6 +384,10 @@ public class Query extends EvaluatorCollection {
                 }
                 resolveQuery.returnParameters.addAll(this.returnParameters);
                 copyEvaluators(resolveQuery, this, valuesMap);
+
+                //Initialize the evaluators cache because the evaluators in the simple
+                //query are valid into the platform evaluation environment.
+                initializeEvaluatorsCache();
 
                 //If the query has not joins then data source must return data from
                 //resource of the query.
