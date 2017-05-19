@@ -71,6 +71,7 @@ public final class SSLHelper implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        encrypted.rewind();
         byte[] decryptedArray = new byte[encrypted.limit()];
         encrypted.get(decryptedArray);
         result = decryptedArray;

@@ -320,7 +320,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
                 } else if(Query.QueryId.class.isAssignableFrom(method.getParameterTypes()[0])) {
                     statement = CrudMethodStatement.DELETE_QUERY$ID.toString();
                 } else {
-                    statement = CrudMethodStatement.DELETE_OBJECT.toString();
+                    statement = CrudMethodStatement.DELETE_ID.toString();
                 }
             } else if(method.getName().equals(CREATE_QUERY)) {
                 statement = CrudMethodStatement.CREATE$QUERY_QUERY_MAP.toString();
@@ -333,7 +333,8 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
             }
 
             if(statement != null) {
-                result = new Introspection.InvokerEntry<>(statement, new CrudInvoker(CrudLayerInterface.class, method));
+                result = new Introspection.InvokerEntry<>(statement,
+                        new CrudInvoker(CrudLayerInterface.class, method), method.toString());
             }
 
             return result;
@@ -378,7 +379,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
 
         UPDATE_QUERY_MAP,
 
-        DELETE_OBJECT,
+        DELETE_ID,
 
         DELETE_QUERY$ID,
 

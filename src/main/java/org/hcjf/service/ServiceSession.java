@@ -1,6 +1,7 @@
 package org.hcjf.service;
 
 import org.hcjf.layers.Layer;
+import org.hcjf.layers.query.Evaluator;
 import org.hcjf.properties.SystemProperties;
 
 import java.lang.management.ManagementFactory;
