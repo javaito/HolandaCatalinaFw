@@ -13,6 +13,7 @@ public abstract class ProxyTask {
     /**
      * This method execute the task.
      * @param request Incoming request.
+     * @return Http response.
      */
     public abstract HttpResponse execute(HttpRequest request);
 

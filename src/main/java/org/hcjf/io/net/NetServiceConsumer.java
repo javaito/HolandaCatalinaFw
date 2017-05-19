@@ -134,6 +134,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     /**
      * Disconnect the specific session.
      * @param session Net session.
+     * @param message Disconnection message.
      */
     protected final void disconnect(S session, String message) {
         service.disconnect(session, message);

@@ -270,6 +270,7 @@ public class Query extends EvaluatorCollection {
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -286,6 +287,7 @@ public class Query extends EvaluatorCollection {
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -301,6 +303,7 @@ public class Query extends EvaluatorCollection {
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -317,6 +320,7 @@ public class Query extends EvaluatorCollection {
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -1439,6 +1443,7 @@ public class Query extends EvaluatorCollection {
          * Get naming information from an instance.
          * @param instance Data source.
          * @param queryParameter Query parameter.
+         * @param <R> Expected response type.
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
@@ -1532,9 +1537,9 @@ public class Query extends EvaluatorCollection {
     public static class CrudDataSource implements DataSource<JoinableMap> {
 
         /**
-         *
+         * Return the collection of data as query response.
          * @param query Query object.
-         * @return
+         * @return Collection of data.
          */
         @Override
         public Collection<JoinableMap> getResourceData(Query query) {

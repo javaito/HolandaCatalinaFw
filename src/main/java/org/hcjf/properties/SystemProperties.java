@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
  * some default values and properties definitions for the service-oriented platforms
  * works.
  * @author javaito
- *
  */
 public final class SystemProperties extends Properties {
 
@@ -475,7 +474,7 @@ public final class SystemProperties extends Properties {
      * This method return the string value of the system property
      * named like the parameter.
      * @param propertyName Name of the find property.
-     * @param validator
+     * @param validator Property validator.
      * @return Return the value of the property or null if the property is no defined.
      */
     public static String get(String propertyName, PropertyValueValidator<String> validator) {
@@ -851,6 +850,7 @@ public final class SystemProperties extends Properties {
     /**
      * Return the compiled pattern from the property value.
      * @param propertyName Name of the property.
+     * @param flags Regex flags.
      * @return Compiled pattern.
      */
     public static Pattern getPattern(String propertyName, int flags) {

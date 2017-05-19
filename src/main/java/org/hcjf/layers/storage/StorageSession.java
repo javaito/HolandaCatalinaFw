@@ -71,7 +71,7 @@ public abstract class StorageSession implements Closeable {
      * depends of the storage session technology.
      * @param query Query to filter the update
      * @return Return the update operation.
-     * @throws StorageAccessException
+     * @throws StorageAccessException Storage access exception
      */
     public Update update(Query query) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported update action for " + implName + " implementation");
@@ -82,7 +82,7 @@ public abstract class StorageSession implements Closeable {
      * depends of the storage session technology.
      * @param object Instance that will be updated.
      * @return Return the update operation.
-     * @throws StorageAccessException
+     * @throws StorageAccessException Storage access exception
      */
     public Update update(Object object) throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported update action for " + implName + " implementation");
@@ -104,7 +104,7 @@ public abstract class StorageSession implements Closeable {
      * This method must return a update operation implementation, this implementation
      * depends of the storage session technology.
      * @return Return the update operation.
-     * @throws StorageAccessException
+     * @throws StorageAccessException Storage access exception
      */
     public Update update() throws StorageAccessException {
         throw new UnsupportedOperationException("Unsupported update action for " + implName + " implementation");

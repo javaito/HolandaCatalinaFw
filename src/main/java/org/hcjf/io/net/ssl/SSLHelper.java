@@ -30,6 +30,11 @@ public final class SSLHelper implements Runnable {
     private SSLHelperStatus status;
     private Object result;
 
+    /**
+     * SSL Helper default constructor.
+     * @param sslEngine SSL Engine.
+     * @param selectableChannel Selectable channel.
+     */
     public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel) {
         this.sslEngine = sslEngine;
         this.selectableChannel = selectableChannel;
@@ -52,10 +57,18 @@ public final class SSLHelper implements Runnable {
         this.ioExecutor.execute(this);
     }
 
+    /**
+     * Return the helper status.
+     * @return Helper status.
+     */
     public SSLHelperStatus getStatus() {
         return status;
     }
 
+    /**
+     * This method is called when there are data into the read buffer.
+     * @param decrypted Read buffer.
+     */
     private void onRead(ByteBuffer decrypted) {
         byte[] decryptedArray = new byte[decrypted.limit()];
         decrypted.get(decryptedArray);
@@ -65,6 +78,10 @@ public final class SSLHelper implements Runnable {
         }
     }
 
+    /**
+     * This method is called when there are data into the write buffer.
+     * @param encrypted Write buffer.
+     */
     private void onWrite(ByteBuffer encrypted) {
         try {
             ((SocketChannel)selectableChannel).write(encrypted);
@@ -73,6 +90,7 @@ public final class SSLHelper implements Runnable {
         }
         encrypted.rewind();
         byte[] decryptedArray = new byte[encrypted.limit()];
+        encrypted.rewind();
         encrypted.get(decryptedArray);
         result = decryptedArray;
         synchronized (this) {
@@ -80,18 +98,31 @@ public final class SSLHelper implements Runnable {
         }
     }
 
+    /**
+     * This method is called when the operation fail.
+     * @param ex Fail exception.
+     */
     private void onFailure(Exception ex) {
         status = SSLHelperStatus.FAIL;
     }
 
+    /**
+     * This method is called when the operation is success.
+     */
     private void onSuccess() {
         status = SSLHelperStatus.READY;
     }
 
+    /**
+     * This method is called when the helper is closed.
+     */
     private void onClosed() {
 
     }
 
+    /**
+     * Run method of the helper.
+     */
     @Override
     public void run() {
         while (this.isHandShaking()) {
@@ -100,8 +131,9 @@ public final class SSLHelper implements Runnable {
     }
 
     /**
-     *
-     * @param netPackage
+     * Write data into the associated channel.
+     * @param netPackage Net package.
+     * @return Net package.
      */
     public NetPackage write(NetPackage netPackage) {
         this.ioExecutor.execute(() -> {
@@ -109,50 +141,27 @@ public final class SSLHelper implements Runnable {
             SSLHelper.this.run();
         });
 
-//        while(result == null) {
-//            try {
-//                synchronized (this) {
-//                    wait();
-//                }
-//            } catch (InterruptedException e) }
-//        }
-
-//        if(result instanceof Exception) {
-//            throw new RuntimeException((Exception) result);
-//        }
-//
-//        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
-//        result = null;
-//        return resultNetPackage;
-
         return netPackage;
     }
 
+    /**
+     * Read data from the associated channel.
+     * @param netPackage Net package.
+     * @return Input data.
+     */
     public synchronized NetPackage read(NetPackage netPackage) {
         this.ioExecutor.execute(() -> {
             srcUnwrap.put(netPackage.getPayload());
             SSLHelper.this.run();
         });
 
-//        while(result == null) {
-//            try {
-//                synchronized (this) {
-//                    wait();
-//                }
-//            } catch (InterruptedException e) {}
-//        }
-//
-//        if(result instanceof Exception) {
-//            throw new RuntimeException((Exception) result);
-//        }
-//
-//        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
-//        result = null;
-//        return resultNetPackage;
-
         return netPackage;
     }
 
+    /**
+     * Return boolean to indicate if the hand shaking process is running.
+     * @return True if the process is running and false in otherwise.
+     */
     private synchronized boolean isHandShaking() {
         switch (sslEngine.getHandshakeStatus()) {
             case NOT_HANDSHAKING:
@@ -194,6 +203,10 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
+    /**
+     * Wrap the output data.
+     * @return Return true if the process was success.
+     */
     private boolean wrap() {
         SSLEngineResult wrapResult;
 
@@ -232,6 +245,10 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
+    /**
+     * Unwrap the input data.
+     * @return Return true if the process was success.
+     */
     private boolean unwrap() {
         SSLEngineResult unwrapResult;
 
@@ -273,6 +290,9 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
+    /**
+     * Contains all the possible helper status.
+     */
     public static enum SSLHelperStatus {
 
         WAITING,

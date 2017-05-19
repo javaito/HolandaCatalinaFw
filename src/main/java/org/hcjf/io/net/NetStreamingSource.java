@@ -98,6 +98,7 @@ public abstract class NetStreamingSource implements Runnable {
 
     /**
     * The implementation must provides the data source to the streaming process.
+     * @return Readable byte channel.
     * @throws java.io.IOException Throws if the source provide fail.
     */
     public abstract ReadableByteChannel getSource() throws Exception;

@@ -10,7 +10,6 @@ import java.util.List;
  * is the implementation of a method to decide if an object is part of the result
  * of the query or not is.
  * @author javaito
- *
  */
 public abstract class FieldEvaluator implements Evaluator {
 
@@ -53,6 +52,9 @@ public abstract class FieldEvaluator implements Evaluator {
     /**
      * Return the value to compare with the field's object of the data collection's
      * instance.
+     * @param dataSource Query associated data source.
+     * @param consumer Query associated data consumer.
+     * @param parameters Query parameters.
      * @return Object value.
      */
     public final Object getValue(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {

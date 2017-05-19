@@ -419,7 +419,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param session Net session.
      * @param data Data to create the package.
      * @return Return the id of the created package.
-     * @throws IOException
+     * @throws IOException Exception of the write operation.
      */
     public final NetPackage writeData(NetSession session, byte[] data) throws IOException {
         return writeData(session, data, null);
@@ -431,7 +431,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param data Data to create the package.
      * @param source Data source.
      * @return Return the id of the created package.
-     * @throws IOException
+     * @throws IOException Exception of the write operation.
      */
     public final NetPackage writeData(NetSession session, byte[] data, NetStreamingSource source) throws IOException {
         NetPackage netPackage;
@@ -450,9 +450,9 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     *
-     * @param session
-     * @param message
+     * Disconnect a specific session.
+     * @param session Session to disconnect.
+     * @param message Disconnection message.
      */
     public final void disconnect(NetSession session, String message) {
         SelectableChannel channel = channels.get(session);

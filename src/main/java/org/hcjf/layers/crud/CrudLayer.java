@@ -283,7 +283,7 @@ public abstract class CrudLayer<O extends Object> extends Layer implements CrudL
     /**
      * This method implements the create operation of the resource's query.
      *
-     * @param query
+     * @param query Query instance.
      * @param parameters Some parameters that could be necessaries
      *                   in order to create an instance of the resource's query.
      * @return Instance of the resource's query.

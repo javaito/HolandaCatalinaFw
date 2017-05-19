@@ -190,6 +190,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
 
     /**
      * This method implements the create operation of the resource's query.
+     * @param query Query instance.
      * @param parameters Some parameters that could be necessaries
      *                   in order to create an instance of the resource's query.
      * @return Instance of the resource's query.
@@ -214,7 +215,7 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
     public Query deleteQuery(Query.QueryId queryId);
 
     /**
-     * Return all the crud method of the interface indexed by the statements into the {@see CrudMethodStatement}
+     * Return all the crud method of the interface indexed by the statements into the {@link CrudMethodStatement}
      * @return Crud invokers.+
      */
     default Map<String, CrudInvoker> getInvokers() {

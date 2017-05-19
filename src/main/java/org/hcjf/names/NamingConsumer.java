@@ -3,8 +3,8 @@ package org.hcjf.names;
 import org.hcjf.service.ServiceConsumer;
 
 /**
+ * Naming service consumer base class.
  * @author javaito
- *
  */
 public abstract class NamingConsumer implements ServiceConsumer {
 
@@ -15,17 +15,17 @@ public abstract class NamingConsumer implements ServiceConsumer {
     }
 
     /**
-     *
-     * @return
+     * Return the name of the consumer.
+     * @return Name of the consumer.
      */
     public final String getName() {
         return name;
     }
 
     /**
-     *
-     * @param value
-     * @return
+     * Normalize the specific value.
+     * @param value Value to normalize.
+     * @return Normalized value.
      */
     public abstract String normalize(String value);
 }

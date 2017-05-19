@@ -15,9 +15,10 @@ public interface Groupable {
     public Object get(String fieldName);
 
     /**
-     *
-     * @param fieldName
-     * @param value
+     * Put a value indexed by name.
+     * @param fieldName Field name.
+     * @param value Value.
+     * @return Value
      */
     public Object put(String fieldName, Object value);
 
