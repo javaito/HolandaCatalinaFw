@@ -418,7 +418,7 @@ public class Query extends EvaluatorCollection {
                 for (O object : data) {
                     add = true;
                     for (Evaluator evaluator : getEvaluators()) {
-                        if (isEvaluatorDone(evaluator)) {
+                        if (!isEvaluatorDone(evaluator)) {
                             add = evaluator.evaluate(object, consumer, valuesMap);
                             if (!add) {
                                 break;
@@ -534,7 +534,7 @@ public class Query extends EvaluatorCollection {
     private void initializeEvaluatorsCache() {
         ServiceSession session = ServiceSession.getCurrentSession();
         if(session != null) {
-            session.getProperties().put(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME),
+            session.put(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME),
                     new ArrayList<Evaluator>());
         }
     }
@@ -545,7 +545,7 @@ public class Query extends EvaluatorCollection {
     private void clearEvaluatorsCache() {
         ServiceSession session = ServiceSession.getCurrentSession();
         if(session != null) {
-            session.getProperties().remove(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
+            session.remove(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
         }
     }
 

@@ -824,6 +824,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                             }
 
                             if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                                System.out.println("READ SSL " + netPackage.getPayload().length);
                                 netPackage = sslHelpers.get(session).read(netPackage);
                             }
                             onAction(netPackage, consumer);
