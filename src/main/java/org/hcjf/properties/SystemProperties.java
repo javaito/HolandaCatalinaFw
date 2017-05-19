@@ -170,6 +170,7 @@ public final class SystemProperties extends Properties {
         public static final String DECIMAL_FORMAT = "hcjf.query.decimal.format";
         public static final String SCIENTIFIC_NOTATION = "hcjf.query.scientific.notation";
         public static final String SCIENTIFIC_NOTATION_FORMAT = "hcjf.query.scientific.notation.format";
+        public static final String EVALUATORS_CACHE_NAME = "hcjf.query.evaluators.cache";
 
         public static final class ReservedWord {
             public static final String SELECT = "hcjf.query.select.reserved.word";
@@ -369,6 +370,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.DECIMAL_FORMAT, "0.000");
         defaults.put(Query.SCIENTIFIC_NOTATION, "E");
         defaults.put(Query.SCIENTIFIC_NOTATION_FORMAT, "0.0E0");
+        defaults.put(Query.EVALUATORS_CACHE_NAME, "__evaluators__cache__");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");

@@ -4,6 +4,7 @@ import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 
@@ -368,129 +369,193 @@ public class Query extends EvaluatorCollection {
 
         //Getting data from data source.
         Collection<O> data;
-        if(joins.size() > 0) {
-            //If the query has joins then data source must return the joined data
-            //collection using all the resources
-            data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer, valuesMap);
-        } else {
-            //Creates the first query for the original resource.
-            Query resolveQuery = new Query(getResourceName());
-            if(getStart() != null) {
-                resolveQuery.setLimit(getLimit() + getStart());
+        try {
+            initializeEvaluatorsCache();
+            if (joins.size() > 0) {
+                //If the query has joins then data source must return the joined data
+                //collection using all the resources
+                data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer, valuesMap);
             } else {
-                resolveQuery.setLimit(getLimit());
+                //Creates the first query for the original resource.
+                Query resolveQuery = new Query(getResourceName());
+                if (getStart() != null) {
+                    resolveQuery.setLimit(getLimit() + getStart());
+                } else {
+                    resolveQuery.setLimit(getLimit());
+                }
+                resolveQuery.returnParameters.addAll(this.returnParameters);
+                copyEvaluators(resolveQuery, this, valuesMap);
+
+                //If the query has not joins then data source must return data from
+                //resource of the query.
+                data = dataSource.getResourceData(resolveQuery);
             }
-            resolveQuery.returnParameters.addAll(this.returnParameters);
-            copyEvaluators(resolveQuery, this, valuesMap);
 
-            //If the query has not joins then data source must return data from
-            //resource of the query.
-            data = dataSource.getResourceData(resolveQuery);
-        }
+            boolean groupResult = false;
+            Map<GroupableIndex, Map<Query.QueryReturnGroupingFunction, List<Object>>> groupingMap = null;
+            Map<GroupableIndex, Groupable> parcelMap = null;
+            Map<Query.QueryReturnGroupingFunction, List<Object>> functionMap;
+            List<Object> valuesByFunction;
+            GroupableIndex groupableIndex;
+            Object[] indexes;
+            if (!groupParameters.isEmpty()) {
+                groupingMap = new HashMap<>();
+                parcelMap = new HashMap<>();
+                groupResult = true;
+            }
 
-        boolean groupResult = false;
-        Map<GroupableIndex, Map<Query.QueryReturnGroupingFunction, List<Object>>> groupingMap = null;
-        Map<GroupableIndex, Groupable> parcelMap = null;
-        Map<Query.QueryReturnGroupingFunction, List<Object>> functionMap;
-        List<Object> valuesByfunction;
-        GroupableIndex groupableIndex;
-        Object[] indexes;
-        if(!groupParameters.isEmpty()) {
-            groupingMap = new HashMap<>();
-            parcelMap = new HashMap<>();
-            groupResult = true;
-        }
+            //Filtering data
+            boolean add;
+            int start = getStart() == null ? 0 : getStart();
+            if (start < data.size()) {
+                for (O object : data) {
+                    add = true;
+                    for (Evaluator evaluator : getEvaluators()) {
+                        if (isEvaluatorDone(evaluator)) {
+                            add = evaluator.evaluate(object, consumer, valuesMap);
+                            if (!add) {
+                                break;
+                            }
+                        }
+                    }
+                    if (add) {
+                        if (groupResult) {
+                            if (!(object instanceof Groupable)) {
+                                //Creates an instance of groupable index
+                                int i = 0;
+                                indexes = new Object[groupParameters.size()];
+                                for (QueryField field : groupParameters) {
+                                    indexes[i++] = consumer.get(object, field);
+                                }
+                                groupableIndex = new GroupableIndex(indexes);
+                                functionMap = groupingMap.get(groupableIndex);
+                                if (functionMap == null) {
+                                    functionMap = new HashMap<>();
+                                    parcelMap.put(groupableIndex, (Groupable) object);
+                                    groupingMap.put(groupableIndex, functionMap);
+                                }
+                                for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                                    if (returnParameter instanceof QueryReturnGroupingFunction) {
+                                        valuesByFunction = functionMap.get(returnParameter);
+                                        if (valuesByFunction == null) {
+                                            valuesByFunction = new ArrayList<>();
+                                            functionMap.put((QueryReturnGroupingFunction) returnParameter, valuesByFunction);
+                                        }
+                                        valuesByFunction.add(object);
+                                    }
+                                }
+                            } else {
+                                throw new IllegalArgumentException("");
+                            }
+                        } else {
+                            if (object instanceof Enlarged) {
+                                for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                                    if (returnParameter instanceof QueryReturnField) {
+                                        QueryReturnField returnField = (QueryReturnField) returnParameter;
+                                        if (returnField.getAlias() != null) {
+                                            ((Enlarged) object).put(returnField.getAlias(), ((Enlarged) object).get(returnField.getFieldName()));
+                                        }
+                                    } else if (returnParameter instanceof QueryReturnGroupingFunction) {
+                                        //Do nothing because the grouping functions only must be used when the query is grouped
+                                    } else if (returnParameter instanceof QueryReturnFunction) {
+                                        QueryReturnFunction function = (QueryReturnFunction) returnParameter;
+                                        ((Enlarged) object).put(function.getAlias(),
+                                                consumer.resolveFunction(function, object));
+                                    }
+                                }
+                            }
 
-        //Filtering data
-        boolean add;
-        int start = getStart() == null ? 0 : getStart();
-        if(start < data.size()) {
-            for (O object : data) {
-                add = true;
-                for (Evaluator evaluator : getEvaluators()) {
-                    add = evaluator.evaluate(object, consumer, valuesMap);
-                    if (!add) {
+                            result.add(object);
+                        }
+                    }
+                    if (getLimit() != null && result.size() == (start + getLimit())) {
                         break;
                     }
                 }
-                if (add) {
-                    if(groupResult) {
-                        if(!(object instanceof Groupable)) {
-                            //Creates an instance of groupable index
-                            int i = 0;
-                            indexes = new Object[groupParameters.size()];
-                            for (QueryField field : groupParameters) {
-                                indexes[i++] = consumer.get(object, field);
-                            }
-                            groupableIndex = new GroupableIndex(indexes);
-                            functionMap = groupingMap.get(groupableIndex);
-                            if (functionMap == null) {
-                                functionMap = new HashMap<>();
-                                parcelMap.put(groupableIndex, (Groupable) object);
-                                groupingMap.put(groupableIndex, functionMap);
-                            }
-                            for (QueryReturnParameter returnParameter : getReturnParameters()) {
-                                if (returnParameter instanceof QueryReturnGroupingFunction) {
-                                    valuesByfunction = functionMap.get(returnParameter);
-                                    if (valuesByfunction == null) {
-                                        valuesByfunction = new ArrayList<>();
-                                        functionMap.put((QueryReturnGroupingFunction) returnParameter, valuesByfunction);
-                                    }
-                                    valuesByfunction.add(object);
-                                }
-                            }
-                        } else {
-                            throw new IllegalArgumentException("");
-                        }
-                    } else {
-                        if(object instanceof Enlarged) {
-                            for(QueryReturnParameter returnParameter : getReturnParameters()) {
-                                if(returnParameter instanceof QueryReturnField) {
-                                    QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                    if (returnField.getAlias() != null) {
-                                        ((Enlarged) object).put(returnField.getAlias(), ((Enlarged) object).get(returnField.getFieldName()));
-                                    }
-                                } else if(returnParameter instanceof QueryReturnGroupingFunction) {
-                                    //Do nothing because the grouping functions only must be used when the query is grouped
-                                } else if(returnParameter instanceof QueryReturnFunction) {
-                                    QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                    ((Enlarged)object).put(function.getAlias(),
-                                            consumer.resolveFunction(function, object));
-                                }
-                            }
+
+                if (start > 0) {
+                    result = result.stream().skip(start).collect(Collectors.toSet());
+                }
+
+                if (groupResult) {
+                    for (GroupableIndex index : parcelMap.keySet()) {
+                        Groupable groupable = parcelMap.get(index);
+                        groupable.clear();
+                        int i = 0;
+                        for (QueryReturnField field : groupParameters) {
+                            groupable.put(field.getAlias(), index.indexes[i++]);
                         }
 
-                        result.add(object);
+                        for (QueryReturnGroupingFunction queryReturnGroupingFunction : groupingMap.get(index).keySet()) {
+                            groupable.put(queryReturnGroupingFunction.getAlias(),
+                                    consumer.resolveFunction(queryReturnGroupingFunction,
+                                            groupingMap.get(index).get(queryReturnGroupingFunction)));
+                        }
                     }
-                }
-                if (getLimit() != null && result.size() == (start + getLimit())) {
-                    break;
                 }
             }
 
-            if (start > 0) {
-                result = result.stream().skip(start).collect(Collectors.toSet());
-            }
+            return result;
+        } finally {
+            clearEvaluatorsCache();
+        }
+    }
 
-            if(groupResult) {
-                for(GroupableIndex index : parcelMap.keySet()) {
-                    Groupable groupable = parcelMap.get(index);
-                    groupable.clear();
-                    int i = 0;
-                    for (QueryReturnField field : groupParameters) {
-                        groupable.put(field.getAlias(), index.indexes[i++]);
-                    }
+    /**
+     * This method check if the evaluator is evaluated previously into the current session.
+     * @param evaluator Checking evaluator.
+     * @return Return true if the evaluator is done and false in the otherwise.
+     */
+    private boolean isEvaluatorDone(Evaluator evaluator) {
+        boolean result = false;
 
-                    for (QueryReturnGroupingFunction queryReturnGroupingFunction : groupingMap.get(index).keySet()) {
-                        groupable.put(queryReturnGroupingFunction.getAlias(),
-                                consumer.resolveFunction(queryReturnGroupingFunction,
-                                        groupingMap.get(index).get(queryReturnGroupingFunction)));
-                    }
-                }
+        ServiceSession session = ServiceSession.getCurrentSession();
+        if(session != null) {
+            List<Evaluator> evaluatorsCache = (List<Evaluator>) session.getProperties().get(
+                    SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
+            if(evaluatorsCache != null) {
+                result = evaluatorsCache.contains(evaluator);
             }
         }
 
         return result;
+    }
+
+    /**
+     * Initialize the evaluators cache into the current session.
+     */
+    private void initializeEvaluatorsCache() {
+        ServiceSession session = ServiceSession.getCurrentSession();
+        if(session != null) {
+            session.getProperties().put(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME),
+                    new ArrayList<Evaluator>());
+        }
+    }
+
+    /**
+     * Removes the evaluators cache of the current session.
+     */
+    private void clearEvaluatorsCache() {
+        ServiceSession session = ServiceSession.getCurrentSession();
+        if(session != null) {
+            session.getProperties().remove(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
+        }
+    }
+
+    /**
+     * This method add into the current session an instance that must be skipped of the
+     * platform evaluation process.
+     * @param evaluator Evaluator to skip.
+     */
+    public static void skipEvaluator(Evaluator evaluator) {
+        ServiceSession session = ServiceSession.getCurrentSession();
+        if(session != null) {
+            List<Evaluator> evaluatorsCache = (List<Evaluator>) session.getProperties().get(
+                    SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
+            if(evaluatorsCache != null) {
+                evaluatorsCache.add(evaluator);
+            }
+        }
     }
 
     /**

@@ -11,6 +11,9 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -21,6 +24,8 @@ public class HttpServerTestSuit {
 
     public static void main(String[] args) {
 
+        StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
 
@@ -29,6 +34,15 @@ public class HttpServerTestSuit {
         Layers.publishLayer(TestCrud.class);
         Layers.publishLayer(Test1Crud.class);
         Layers.publishLayer(TestMapCrud.class);
+
+
+        try {
+            HttpClient client = new HttpClient(new URL("https://www.amazon.com"));
+            HttpResponse response = client.request();
+            System.out.println(response);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
 
         HttpServer server = new HttpServer(8080);
         server.addContext(new EndPoint("example", "crud"));
@@ -39,6 +53,7 @@ public class HttpServerTestSuit {
 
         @Override
         public String getImplName() {
+            Method m= getClass().getEnclosingMethod();
             return "Test2";
         }
 

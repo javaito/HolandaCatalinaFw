@@ -333,7 +333,8 @@ public interface CrudLayerInterface<O extends Object> extends LayerInterface {
             }
 
             if(statement != null) {
-                result = new Introspection.InvokerEntry<>(statement, new CrudInvoker(CrudLayerInterface.class, method));
+                result = new Introspection.InvokerEntry<>(statement,
+                        new CrudInvoker(CrudLayerInterface.class, method), method.toString());
             }
 
             return result;
