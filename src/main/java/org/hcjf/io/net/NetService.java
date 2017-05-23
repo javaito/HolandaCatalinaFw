@@ -705,12 +705,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                 portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
 
                 if(client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                    SSLHelper sslHelper = new SSLHelper(client.createSSLEngine(), channel);
+                    SSLHelper sslHelper = new SSLHelper(client.createSSLEngine(), channel, client, client.getSession());
                     sslHelpers.put(client.getSession(), sslHelper);
+                } else {
+                    NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
+                    onAction(connectionPackage, client);
                 }
-
-                NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
-                onAction(connectionPackage, client);
             } catch (Exception ex){
                 Log.w(NET_SERVICE_LOG_TAG, "Error creating new client connection.", ex);
             }
@@ -824,10 +824,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                             }
 
                             if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                                System.out.println("READ SSL " + netPackage.getPayload().length);
-                                netPackage = sslHelpers.get(session).read(netPackage);
+                                sslHelpers.get(session).read(netPackage);
+                            } else {
+                                onAction(netPackage, consumer);
                             }
-                            onAction(netPackage, consumer);
                         }
                     }
                 } catch (Exception ex){
@@ -963,6 +963,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
                                                     session.getConsumer().getOutputBufferSize() : byteData.length - begin;
                                         }
+                                        onAction(netPackage, consumer);
                                     }
 
                                     if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.STREAMING) && channel instanceof SocketChannel){
@@ -976,10 +977,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                             } catch (Exception ex){
                                 netPackage.setPackageStatus(NetPackage.PackageStatus.IO_ERROR);
                                 throw ex;
-                            } finally {
-                                if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.WRITE)) {
-                                    onAction(netPackage, consumer);
-                                }
                             }
 
                             //Change the key operation to finish write loop

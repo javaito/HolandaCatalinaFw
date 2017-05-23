@@ -1,6 +1,9 @@
 package org.hcjf.io.net.ssl;
 
+import org.hcjf.io.net.DefaultNetPackage;
 import org.hcjf.io.net.NetPackage;
+import org.hcjf.io.net.NetServiceConsumer;
+import org.hcjf.io.net.NetSession;
 import org.hcjf.properties.SystemProperties;
 
 import javax.net.ssl.SSLEngine;
@@ -28,6 +31,9 @@ public final class SSLHelper implements Runnable {
     private final ByteBuffer srcUnwrap;
     private final ByteBuffer destUnwrap;
     private SSLHelperStatus status;
+    private  final Object handShakingSemaphore;
+    private final NetServiceConsumer consumer;
+    private final NetSession session;
     private Object result;
 
     /**
@@ -35,23 +41,26 @@ public final class SSLHelper implements Runnable {
      * @param sslEngine SSL Engine.
      * @param selectableChannel Selectable channel.
      */
-    public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel) {
+    public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel, NetServiceConsumer consumer, NetSession session) {
         this.sslEngine = sslEngine;
         this.selectableChannel = selectableChannel;
         this.ioExecutor = Executors.newSingleThreadExecutor();
+        this.consumer = consumer;
+        this.session = session;
         this.engineTaskExecutor = Executors.newFixedThreadPool(
                 SystemProperties.getInteger(SystemProperties.Net.SSL_MAX_IO_THREAD_POOL_SIZE));
         if(SystemProperties.getBoolean(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
-            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
-            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
+            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
+            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
         } else {
-            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
-            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
+            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
+            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
         }
+        handShakingSemaphore = new Object();
         srcUnwrap.limit(0);
         status = SSLHelperStatus.WAITING;
         this.ioExecutor.execute(this);
@@ -72,9 +81,10 @@ public final class SSLHelper implements Runnable {
     private void onRead(ByteBuffer decrypted) {
         byte[] decryptedArray = new byte[decrypted.limit()];
         decrypted.get(decryptedArray);
-        result = decryptedArray;
-        synchronized (this) {
-            notifyAll();
+        if(status.equals(SSLHelperStatus.READY)) {
+            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "", 0, consumer.getPort(), decryptedArray, NetPackage.ActionEvent.READ);
+            defaultNetPackage.setSession(session);
+            consumer.onRead(defaultNetPackage);
         }
     }
 
@@ -93,8 +103,10 @@ public final class SSLHelper implements Runnable {
         encrypted.rewind();
         encrypted.get(decryptedArray);
         result = decryptedArray;
-        synchronized (this) {
-            notifyAll();
+        if(status.equals(SSLHelperStatus.READY)) {
+            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "", 0, consumer.getPort(), decryptedArray, NetPackage.ActionEvent.WRITE);
+            defaultNetPackage.setSession(session);
+            consumer.onWrite(defaultNetPackage);
         }
     }
 
@@ -111,13 +123,15 @@ public final class SSLHelper implements Runnable {
      */
     private void onSuccess() {
         status = SSLHelperStatus.READY;
+        DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "", 0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.CONNECT);
+        defaultNetPackage.setSession(session);
+        consumer.onConnect(defaultNetPackage);
     }
 
     /**
      * This method is called when the helper is closed.
      */
     private void onClosed() {
-
     }
 
     /**
@@ -149,7 +163,7 @@ public final class SSLHelper implements Runnable {
      * @param netPackage Net package.
      * @return Input data.
      */
-    public synchronized NetPackage read(NetPackage netPackage) {
+    public NetPackage read(NetPackage netPackage) {
         this.ioExecutor.execute(() -> {
             srcUnwrap.put(netPackage.getPayload());
             SSLHelper.this.run();
@@ -162,16 +176,17 @@ public final class SSLHelper implements Runnable {
      * Return boolean to indicate if the hand shaking process is running.
      * @return True if the process is running and false in otherwise.
      */
-    private synchronized boolean isHandShaking() {
+    private boolean isHandShaking() {
         switch (sslEngine.getHandshakeStatus()) {
             case NOT_HANDSHAKING:
-                boolean occupied = false;{
+                boolean occupied = false;
+                {
                 if (srcWrap.position() > 0)
                     occupied |= this.wrap();
                 if (srcUnwrap.position() > 0)
                     occupied |= this.unwrap();
-            }
-            return occupied;
+                }
+                return occupied;
 
             case NEED_WRAP:
                 if (!this.wrap())
@@ -213,7 +228,6 @@ public final class SSLHelper implements Runnable {
         try {
             srcWrap.flip();
             wrapResult = sslEngine.wrap(srcWrap, destWrap);
-            System.out.println(wrapResult.getStatus().toString());
             srcWrap.compact();
         }
         catch (SSLException exc) {

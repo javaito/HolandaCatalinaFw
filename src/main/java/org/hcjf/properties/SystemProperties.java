@@ -116,7 +116,6 @@ public final class SystemProperties extends Properties {
             public static final String OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
             public static final String DEFAULT_SERVER_PORT = "hcjf.http.default.server.port";
             public static final String DEFAULT_CLIENT_PORT = "hcjf.http.default.client.port";
-            public static final String DEFAULT_SSL_CLIENT_PORT = "hcjf.http.default.ssl.client.port";
             public static final String STREAMING_LIMIT_FILE_SIZE = "hcjf.http.streaming.limit.file.size";
             public static final String DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.http.default.error.format.show.stack";
             public static final String DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.http.default.client.connect.timeout";
@@ -184,6 +183,7 @@ public final class SystemProperties extends Properties {
             public static final String DESC = "hcjf.query.desc.reserved.word";
             public static final String LIMIT = "hcjf.query.limit.reserved.word";
             public static final String START = "hcjf.query.start.reserved.word";
+            public static final String RETURN_ALL = "hcjf.query.return.all.reserved.word";
             public static final String ARGUMENT_SEPARATOR = "hcjf.query.argument.separator";
             public static final String EQUALS = "hcjf.query.equals.reserved.word";
             public static final String DISTINCT = "hcjf.query.distinct.reserved.word";
@@ -326,7 +326,6 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, "128");
         defaults.put(Net.Http.DEFAULT_SERVER_PORT, "80");
         defaults.put(Net.Http.DEFAULT_CLIENT_PORT, "80");
-        defaults.put(Net.Http.DEFAULT_SSL_CLIENT_PORT, "443");
         defaults.put(Net.Http.STREAMING_LIMIT_FILE_SIZE, "10240");
         defaults.put(Net.Http.DEFAULT_ERROR_FORMAT_SHOW_STACK, "true");
         defaults.put(Net.Http.DEFAULT_CLIENT_CONNECT_TIMEOUT, "10000");
@@ -382,6 +381,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.DESC, "DESC");
         defaults.put(Query.ReservedWord.LIMIT, "LIMIT");
         defaults.put(Query.ReservedWord.START, "START");
+        defaults.put(Query.ReservedWord.RETURN_ALL, "*");
         defaults.put(Query.ReservedWord.ARGUMENT_SEPARATOR, ",");
         defaults.put(Query.ReservedWord.EQUALS, "=");
         defaults.put(Query.ReservedWord.DISTINCT, "<>");

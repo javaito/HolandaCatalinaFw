@@ -386,7 +386,11 @@ public class Query extends EvaluatorCollection {
                 } else {
                     resolveQuery.setLimit(getLimit());
                 }
-                resolveQuery.returnParameters.addAll(this.returnParameters);
+                for(QueryReturnParameter queryReturnParameter : this.returnParameters) {
+                    if(queryReturnParameter instanceof QueryReturnField) {
+                        resolveQuery.returnParameters.add(new QueryReturnField(((QueryReturnField)queryReturnParameter).getFieldName()));
+                    }
+                }
                 copyEvaluators(resolveQuery, this, valuesMap);
 
                 //Initialize the evaluators cache because the evaluators in the simple
@@ -617,7 +621,7 @@ public class Query extends EvaluatorCollection {
 
         //Creates the first query for the original resource.
         Query joinQuery = new Query(getResourceName());
-        joinQuery.returnParameters.addAll(this.returnParameters);
+        joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
         for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResource())) {
             joinQuery.addEvaluator(((FieldEvaluator)evaluator).copy(valuesMap.get(evaluator)));
         }
@@ -634,7 +638,7 @@ public class Query extends EvaluatorCollection {
         for (int i = 0; i < joins.size(); i++) {
             Join join = joins.get(i);
             joinQuery = new Query(join.getResourceName());
-            joinQuery.addReturnField("*");
+            joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             for (Evaluator evaluator : join.getEvaluators()) {
                 joinQuery.addEvaluator(evaluator);
             }

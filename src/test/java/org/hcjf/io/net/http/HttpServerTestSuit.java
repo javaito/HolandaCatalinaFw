@@ -9,6 +9,8 @@ import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Method;
@@ -28,6 +30,8 @@ public class HttpServerTestSuit {
 
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
+        System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
+        System.setProperty(SystemProperties.Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, Integer.toString(Integer.MAX_VALUE));
 
         Layers.publishLayer(EndPointDecoderLayerInterface.JsonEndPointDecoder.class);
         Layers.publishLayer(EndPointEncoderLayerInterface.JsonEndPointEncoder.class);
@@ -35,18 +39,40 @@ public class HttpServerTestSuit {
         Layers.publishLayer(Test1Crud.class);
         Layers.publishLayer(TestMapCrud.class);
 
-
         try {
-            HttpClient client = new HttpClient(new URL("https://www.amazon.com"));
+            HttpClient client = new HttpClient(new URL("https://downstream.ypf.com/pls/extra/Pkg_Ip_General.PRC_DETALLE_TRANSAN_EXCEL?p_fecha_desde=01/04/2017&p_fecha_hasta=01/04/2017&p_fecha_desde_dT=&p_fecha_hasta_dT=&p_fecha_desde_d=&p_fecha_hasta_d=&p_contrato=112559&p_cuenta=&p_patente=&p_id_estacion=&p_id_producto=&p_orden=&p_orderby=&p_nro_factura=&p_id_producto_res="));
+            client.addHttpHeader(new HttpHeader("Cookie", "TS010b4846=014224af285826071fb9a9c592b3ad632f9118fff86ba345b99e5341407c599b88baf382908214309d93d65db6d25bf120e7903c81fc3ef10fe4caa17cb68e69201d47d8bccc44ac20db6533906dca4c7d8a87d861683cdbd8e9c8a6110a7ad5c0e19af30d; ORA_WX_SESSION=AECECA30A434965855B0D45AFA382376B560FADC-6#4; YESESSION=tt9a8fB7IS/YbFZi+xHN2dQWkyz9NQxy9zYfDZWfYH1/l5DWBLeDnssGLcRT62Q7o5aKXZff2d8+u4ulSucoBWg2PtF8RAFlraTaWWOh4RYl2ax8PTM1N6D+0SHsFd6zRAtWaXOBTWtNLU33r76rn9Gi3quUFJklShmJd5e7p1KXR2QZrtU9fy4+z9hEqxkCp/+Rbcs4NHFdCMbPDn/fdznbi5lq+DUZjwExOsFLnKLjRoJfcNcAL0gwJGClzu6XY05SOm25ha/Qti3eMga+osJYMKfZzPZuAAq5xhwrhStSDoaZtGNkge0egHISz/BYfICIaSYuAXn1lR9yHDqjJ2TQxJqt+Inj0I+nI/Uy6MACM5ruGzZTFpr/De9QWAII27JKmvnLvLoSKMM71EG9Y23oqO3lLMBf6SpjJt2qTCOd8SAJnk+3SwJw9qs5mBC87ScVWi2ikg9YR4S4kYUN3yKxMNoF+KtvSpUMRgqgQu9LBoIvQ7ds2wSP2LDfWUPWfD//lhSIBitP4XtSvNWytoa0sGZgA+aqRefI51ssGz2i+rAL5h+NDYSO17X5UZ59a9wawsq5tF8iCPmzTQcGyrJUxtd9aPnEc6DEoKY92hyUfCiSDsXepS2Gvq8QTXB7Z9eQErBSYw74wKeTDjrJT/BN2pTmMkA/OmcA4jLjjhrE7atMnWeaqROjH3NyR1c/plslD57T57dFNNxyzZiVaKTVele+BnGLRZqW81REeXeEd5HbX51YJuP8p2lc4SLo09IlhE3hagnNPu4JVXsJl6Teg0VukRDraxH/KHelIs7Cr/7PDdXSsk53nEaeKLGfqLOS/ucrh93heaJA1dld4T5r83fFBGtIzIFbbnjtEPnlJiXNhN7IrZzne8aJLN8GZbWcZ/54FlVPOsdI/5SYvp4USd6OkowUBJLsTBFvAc7jeP7Du3McqS2dL89U3GnuHuNbwM0SD7kFZFOM9ZaU1p6opOnE5nko5wj9B8iCIj8tnA5FpZhl2dLk4tQ+FwHnuGdZvuuMgLTbYifpcCHMkUfkhbr8i1lAQ85VAAwr9/r9Pwtm5YGz8zPWUCVjjmjuqQ6+k6mgEW1H1auhEuCzNk9Gm/sPL9khvzWR8HOp8+dzSEmCjdhFS+MkiHFRvjarPSd8ab6aNqXRTxXOytKBAKLb8iqOW42B3b39UD7Ow30gNbJS0HYaz0sZ8JXE2M2+J4q+aR2NCaZ/biEMTRcXtSyUzHT5qWaWUIjFmGMo4O4="));
+            client.addHttpHeader("Accept-Encoding: gzip,deflate");
+            client.addHttpHeader("User-Agent: HCJF");
+            client.addHttpHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE));
             HttpResponse response = client.request();
-            System.out.println(response);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
 
-        HttpServer server = new HttpServer(8080);
-        server.addContext(new EndPoint("example", "crud"));
-        server.start();
+        try {
+            HttpClient client = new HttpClient(new URL("https://www.amazon.com"));
+            client.addHttpHeader("Accept-Encoding: gzip,deflate");
+            client.addHttpHeader("User-Agent: HCJF");
+            client.addHttpHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+            HttpResponse response = client.request();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            HttpClient client = new HttpClient(new URL("https://www.google.com.ar/?gfe_rd=cr&ei=T6EkWYu0CpCq8wfG0aXgAg"));
+            client.addHttpHeader("Accept: text/html");
+            client.addHttpHeader("User-Agent: HCJF");
+            client.addHttpHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+            HttpResponse response = client.request();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+
+//        HttpServer server = new HttpServer(8080);
+//        server.addContext(new EndPoint("example", "crud"));
+//        server.start();
     }
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {
