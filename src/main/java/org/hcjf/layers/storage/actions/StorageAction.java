@@ -85,13 +85,6 @@ public abstract class StorageAction<S extends StorageSession> {
      * @param object Data source object.
      */
     public final void add(Object object) {
-        for(Introspection.Getter getter : Introspection.getGetters(object.getClass()).values()) {
-            try {
-                add(getter.getResourceName(), new FieldStorageValue(getter.get(object), getter.getAnnotationsMap()));
-            } catch(Exception ex) {
-                Log.w(StorageLayer.STORAGE_LOG_TAG, "Invoke getter method fail: $s", ex, getter.getResourceName());
-            }
-        }
         onAdd(object);
     }
 
@@ -119,7 +112,7 @@ public abstract class StorageAction<S extends StorageSession> {
      * @param fieldName Name of the value.
      * @param value Value.
      */
-    private void add(String fieldName, StorageValue value) {
+    protected void add(String fieldName, StorageValue value) {
         values.put(fieldName, value);
     }
 
