@@ -232,6 +232,7 @@ public class MimeType {
     public static final MimeType APPLICATION_X_X509_CA_CERT = new MimeType("application/x-x509-ca-cert");
     public static final MimeType APPLICATION_X_X509_USER_CERT = new MimeType("application/x-x509-user-cert");
     public static final MimeType APPLICATION_X_ZIP_COMPRESSED = new MimeType("application/x-zip-compressed");
+    public static final MimeType APPLICATION_YAML = new MimeType("application/yaml");
     public static final MimeType APPLICATION_ZIP = new MimeType("application/zip");
     public static final MimeType AUDIO_AIFF = new MimeType("audio/aiff");
     public static final MimeType AUDIO_BASIC = new MimeType("audio/basic");
