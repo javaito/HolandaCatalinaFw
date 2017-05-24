@@ -109,6 +109,7 @@ public final class Cloud extends Service<CloudConsumer> {
      * and this resource has locked for all the thread for execution.
      * This method is blocked until you can get the lock.
      * @param resourceName The name of the resource to lock.
+     * @throws InterruptedException Interrupted exception
      */
     public static void lock(String resourceName) throws InterruptedException {
         getInstance().impl.lock(resourceName);
@@ -117,6 +118,7 @@ public final class Cloud extends Service<CloudConsumer> {
     /**
      * This method unlocks a previously locked resource.
      * @param resourceName The name of the resource locked.
+     * @throws InterruptedException Interrupted exception
      */
     public static void unlock(String resourceName) throws InterruptedException {
         getInstance().impl.unlock(resourceName);

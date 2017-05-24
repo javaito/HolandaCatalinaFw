@@ -58,12 +58,14 @@ public interface CloudServiceImpl {
      * and this resource has locked for all the thread for execution.
      * This method is blocked until you can get the lock.
      * @param resourceName The name of the resource to lock.
+     * @throws InterruptedException Interrupted exception
      */
     public void lock(String resourceName) throws InterruptedException;
 
     /**
      * This method unlocks a previously locked resource.
      * @param resourceName The name of the resource locked.
+     * @throws InterruptedException Interrupted exception.
      */
     public void unlock(String resourceName) throws InterruptedException;
 

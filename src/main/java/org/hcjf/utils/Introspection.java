@@ -32,8 +32,8 @@ public final class Introspection {
      * @param getterName Specific getter name.
      * @param <O> Expected result type.
      * @return Return the value that is a result of the specific getter method.
-     * @throws InvocationTargetException
-     * @throws IllegalAccessException
+     * @throws InvocationTargetException Invocation target exception.
+     * @throws IllegalAccessException Illegal access exception.
      */
     public static <O extends Object> O get(Object instance, String getterName) throws InvocationTargetException, IllegalAccessException {
         return getGetters(instance.getClass()).get(getterName).get(instance);
@@ -44,8 +44,8 @@ public final class Introspection {
      * @param instance Instance to invoke each of getters.
      * @param getters Specific getter names.
      * @return Return a list with each of the results.
-     * @throws InvocationTargetException
-     * @throws IllegalAccessException
+     * @throws InvocationTargetException Invocation target exception.
+     * @throws IllegalAccessException Illegal access exception.
      */
     public static List get(Object instance, String... getters) throws InvocationTargetException, IllegalAccessException {
         List result = new ArrayList();
@@ -78,6 +78,7 @@ public final class Introspection {
      * @param instance Instance to transform.
      * @param consumer Instance of the consumer to transform the values of the
      *                 instance to the expected values into the map.
+     * @param <O> Expected return value into the map.
      * @return Map
      */
     public static <O extends Object> Map<String, O> toMap(Object instance, Consumer consumer) {
@@ -106,8 +107,8 @@ public final class Introspection {
      * @param clazz Instance class.
      * @param <O> Expected type.
      * @return Instance.
-     * @throws IllegalAccessException
-     * @throws InstantiationException
+     * @throws IllegalAccessException Illegal access exception.
+     * @throws InstantiationException Instantiation exception.
      */
     public static <O extends Object> O toInstance(Map<String, Object> map, Class<O> clazz) throws IllegalAccessException, InstantiationException {
         O result = clazz.newInstance();
@@ -127,7 +128,7 @@ public final class Introspection {
      * by the filter definition.
      * @param clazz Class to be inspected.
      * @param filter Filter to apply.
-     * @param <I>
+     * @param <I> Expected return value into the map.
      * @return Return the founded invokers.
      */
     public static <I extends Invoker> Map<String, I> getInvokers(Class clazz, InvokerFilter<I> filter) {
@@ -175,10 +176,10 @@ public final class Introspection {
      * The accessor instances contains all the information about accessor method and the annotation
      * bounded to the method.
      * The found methods comply with the following regular expression and conditions:
-     * <li>^(get|is)([1,A-Z]|[1,0-9])(.*)</li>
-     * <li>must return something distinct to void type</li>
-     * <li>without parameters</li>
-     * <li>must be a public method</li>
+     *  - ^(get|is)([1,A-Z]|[1,0-9])(.*)
+     *  - must return something distinct to void type
+     *  - without parameters
+     *  - must be a public method
      * @param clazz Class definition to found the getters method.
      * @param namingImpl Name of the naming implementation.
      * @return All the accessors founded indexed by the possible field name.
@@ -200,10 +201,10 @@ public final class Introspection {
      * The accessor instances contains all the information about accessor method and the annotation
      * bounded to the method.
      * The found methods comply with the following regular expression and conditions:
-     * <li>^(get|is)([1,A-Z]|[1,0-9])(.*)</li>
-     * <li>must return something distinct to void type</li>
-     * <li>without parameters</li>
-     * <li>must be a public method</li>
+     *  - ^(get|is)([1,A-Z]|[1,0-9])(.*)
+     *  - must return something distinct to void type
+     *  - without parameters
+     *  - must be a public method
      * @param clazz Class definition `to found the getters method.
      * @return All the accessors founded indexed by the possible field name.
      */
@@ -232,11 +233,12 @@ public final class Introspection {
      * The accessor instances contains all the information about accessor method and the annotation
      * bounded to the method.
      * The found methods comply with the following regular expression and conditions:
-     * <li>^(set)([1,A-Z]|[1,0-9])(.*)</li>
-     * <li>must return void type.</li>
-     * <li>with only one parameter</li>
-     * <li>must be a public method</li>
+     *  - ^(set)([1,A-Z]|[1,0-9])(.*)
+     *  - must return void type.
+     *  - with only one parameter
+     *  - must be a public method
      * @param clazz Class definition to found the setter method.
+     * @param namingImpl Naming service implementation.
      * @return All the accessors founded indexed by the possible field name.
      */
     public static Map<String, Setter> getSetters(Class clazz, String namingImpl) {
@@ -256,10 +258,10 @@ public final class Introspection {
      * The accessor instances contains all the information about accessor method and the annotation
      * bounded to the method.
      * The found methods comply with the following regular expression and conditions:
-     * <li>^(set)([1,A-Z]|[1,0-9])(.*)</li>
-     * <li>must return void type.</li>
-     * <li>with only one parameter</li>
-     * <li>must be a public method</li>
+     *  - ^(set)([1,A-Z]|[1,0-9])(.*)
+     *  - must return void type.
+     *  - with only one parameter
+     *  - must be a public method
      * @param clazz Class definition to found the setter method.
      * @return All the accessors founded indexed by the possible field name.
      */
@@ -332,6 +334,7 @@ public final class Introspection {
          * Return the instance of the annotation class associated to the accessor method, or null if
          * the annotation doesn't exist.
          * @param annotationClass Annotation class.
+         * @param <A> Expected annotation type.
          * @return Annotation instance or null.
          */
         public final <A extends Annotation> A getAnnotation(Class<? extends A> annotationClass) {
@@ -355,7 +358,9 @@ public final class Introspection {
          * Wrapper method to get the storage method.
          * @param instance Instance to get the mehtod.
          * @param params Method parameters.
-         * @return Invokation result.
+         * @return Invocation result.
+         * @throws InvocationTargetException Invocation Target Exception
+         * @throws IllegalAccessException Illegal Access Exception
          */
         public Object invoke(Object instance, Object... params) throws InvocationTargetException, IllegalAccessException {
             return getMethod().invoke(instance, params);
@@ -433,8 +438,8 @@ public final class Introspection {
          * @param instance Instance to do reflection.
          * @param <O> Expected result type for the client.
          * @return Resource value.
-         * @throws InvocationTargetException
-         * @throws IllegalAccessException
+         * @throws InvocationTargetException Invocation target exception.
+         * @throws IllegalAccessException Illegal access exception.
          */
         public <O extends Object> O get(Object instance) throws InvocationTargetException, IllegalAccessException {
             return (O) invoke(instance);
@@ -515,8 +520,8 @@ public final class Introspection {
          * Reflection invoked by the underlying method to set the resource value.
          * @param instance Instance to do reflection.
          * @param value Parameter value.
-         * @throws InvocationTargetException
-         * @throws IllegalAccessException
+         * @throws InvocationTargetException Invocation target exception.
+         * @throws IllegalAccessException Illegal access exception.
          */
         public void set(Object instance, Object value) throws InvocationTargetException, IllegalAccessException {
             invoke(instance, value);
@@ -552,7 +557,7 @@ public final class Introspection {
     /**
      * This interface must be implemented to found some kind of methods implemented
      * in the any class.
-     * @param <I>
+     * @param <I> Invoker type.
      */
     public interface InvokerFilter<I extends Invoker> {
 
@@ -567,7 +572,7 @@ public final class Introspection {
 
     /**
      * This class represents the object returned by the invoker filter.
-     * @param <I>
+     * @param <I> Invoker type.
      */
     public static class InvokerEntry<I extends Invoker> {
 
@@ -615,6 +620,7 @@ public final class Introspection {
         /**
          * The implementation of this method consume the value a return
          * the same value or other instance based on this value.
+         * @param value Instance to consume.
          * @return Return a new representation of the value or the same object
          * depends the consumer implementation.
          */

@@ -11,7 +11,6 @@ import java.lang.reflect.Method;
  * All the layer implementation extends this class, and this class is a proxy
  * between the layer client and implementation.
  * @author javaito
- *
  */
 public abstract class Layer implements LayerInterface {
 
@@ -56,6 +55,7 @@ public abstract class Layer implements LayerInterface {
     /**
      * This method must be override to add restrictions over particular
      * implementations of the layers.
+     * @return Access object.
      */
     protected Access checkAccess(){
         return new Access(true);
@@ -113,7 +113,7 @@ public abstract class Layer implements LayerInterface {
      * @param method Method to be called.
      * @param args Method to invoke the method.
      * @return Return the value returned for the proxy method.
-     * @throws Throwable
+     * @throws Throwable Throw all the generated exceptions.
      */
     @Override
     public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

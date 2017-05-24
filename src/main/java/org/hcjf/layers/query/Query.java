@@ -270,6 +270,7 @@ public class Query extends EvaluatorCollection {
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -286,6 +287,7 @@ public class Query extends EvaluatorCollection {
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -301,6 +303,7 @@ public class Query extends EvaluatorCollection {
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -317,6 +320,7 @@ public class Query extends EvaluatorCollection {
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
+     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
@@ -382,7 +386,11 @@ public class Query extends EvaluatorCollection {
                 } else {
                     resolveQuery.setLimit(getLimit());
                 }
-                resolveQuery.returnParameters.addAll(this.returnParameters);
+                for(QueryReturnParameter queryReturnParameter : this.returnParameters) {
+                    if(queryReturnParameter instanceof QueryReturnField) {
+                        resolveQuery.returnParameters.add(new QueryReturnField(((QueryReturnField)queryReturnParameter).getFieldName()));
+                    }
+                }
                 copyEvaluators(resolveQuery, this, valuesMap);
 
                 //Initialize the evaluators cache because the evaluators in the simple
@@ -414,7 +422,7 @@ public class Query extends EvaluatorCollection {
                 for (O object : data) {
                     add = true;
                     for (Evaluator evaluator : getEvaluators()) {
-                        if (isEvaluatorDone(evaluator)) {
+                        if (!isEvaluatorDone(evaluator)) {
                             add = evaluator.evaluate(object, consumer, valuesMap);
                             if (!add) {
                                 break;
@@ -530,7 +538,7 @@ public class Query extends EvaluatorCollection {
     private void initializeEvaluatorsCache() {
         ServiceSession session = ServiceSession.getCurrentSession();
         if(session != null) {
-            session.getProperties().put(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME),
+            session.put(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME),
                     new ArrayList<Evaluator>());
         }
     }
@@ -541,7 +549,7 @@ public class Query extends EvaluatorCollection {
     private void clearEvaluatorsCache() {
         ServiceSession session = ServiceSession.getCurrentSession();
         if(session != null) {
-            session.getProperties().remove(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
+            session.remove(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
         }
     }
 
@@ -613,7 +621,7 @@ public class Query extends EvaluatorCollection {
 
         //Creates the first query for the original resource.
         Query joinQuery = new Query(getResourceName());
-        joinQuery.returnParameters.addAll(this.returnParameters);
+        joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
         for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResource())) {
             joinQuery.addEvaluator(((FieldEvaluator)evaluator).copy(valuesMap.get(evaluator)));
         }
@@ -630,7 +638,7 @@ public class Query extends EvaluatorCollection {
         for (int i = 0; i < joins.size(); i++) {
             Join join = joins.get(i);
             joinQuery = new Query(join.getResourceName());
-            joinQuery.addReturnField("*");
+            joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             for (Evaluator evaluator : join.getEvaluators()) {
                 joinQuery.addEvaluator(evaluator);
             }
@@ -1439,6 +1447,7 @@ public class Query extends EvaluatorCollection {
          * Get naming information from an instance.
          * @param instance Data source.
          * @param queryParameter Query parameter.
+         * @param <R> Expected response type.
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
@@ -1532,9 +1541,9 @@ public class Query extends EvaluatorCollection {
     public static class CrudDataSource implements DataSource<JoinableMap> {
 
         /**
-         *
+         * Return the collection of data as query response.
          * @param query Query object.
-         * @return
+         * @return Collection of data.
          */
         @Override
         public Collection<JoinableMap> getResourceData(Query query) {

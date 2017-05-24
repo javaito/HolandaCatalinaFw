@@ -99,11 +99,19 @@ public abstract class NetPackage {
         return new NetPackageWrapper(netPackage, newPayLoad);
     }
 
+    /**
+     * Net package wrapper.
+     */
     public static final class NetPackageWrapper extends NetPackage {
 
         private final NetPackage netPackage;
         private final byte[] payLoad;
 
+        /**
+         * Constructor by net package to wrap and new payload.
+         * @param netPackage Net package to wrap.
+         * @param payLoad New payload.
+         */
         private NetPackageWrapper(NetPackage netPackage, byte[] payLoad) {
             this.netPackage = netPackage;
             if(payLoad != null) {
@@ -113,60 +121,97 @@ public abstract class NetPackage {
             }
         }
 
+        /**
+         * Return the wrapped net package.
+         * @return Wrapped net package.
+         */
         public NetPackage getNetPackage() {
             return netPackage;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public NetSession getSession() {
             return netPackage.getSession();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public void setSession(NetSession session) {
             netPackage.setSession(session);
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public byte[] getPayload() {
             return payLoad;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public String getRemoteAddress() {
             return netPackage.getRemoteAddress();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public String getRemoteHost() {
             return netPackage.getRemoteHost();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public int getRemotePort() {
             return netPackage.getRemotePort();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public int getLocalPort() {
             return netPackage.getLocalPort();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public Date getDate() {
             return netPackage.getDate();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public ActionEvent getActionEvent() {
             return netPackage.getActionEvent();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public PackageStatus getPackageStatus() {
             return netPackage.getPackageStatus();
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public void setPackageStatus(PackageStatus packageStatus) {
             netPackage.setPackageStatus(packageStatus);

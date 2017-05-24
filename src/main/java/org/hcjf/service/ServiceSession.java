@@ -170,6 +170,16 @@ public class ServiceSession implements Comparable {
     }
 
     /**
+     * Remove a session property.
+     * @param propertyName Session property name.
+     * @param <O> Expected return type.
+     * @return Session value removed.
+     */
+    public <O extends Object> O remove(String propertyName) {
+        return (O) properties.get(Thread.currentThread().getId()).remove(propertyName);
+    }
+
+    /**
      * Add an element into the layer stack.
      * @param layerClass Layer class.
      */

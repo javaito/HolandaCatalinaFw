@@ -1,6 +1,9 @@
 package org.hcjf.io.net.ssl;
 
+import org.hcjf.io.net.DefaultNetPackage;
 import org.hcjf.io.net.NetPackage;
+import org.hcjf.io.net.NetServiceConsumer;
+import org.hcjf.io.net.NetSession;
 import org.hcjf.properties.SystemProperties;
 
 import javax.net.ssl.SSLEngine;
@@ -28,43 +31,67 @@ public final class SSLHelper implements Runnable {
     private final ByteBuffer srcUnwrap;
     private final ByteBuffer destUnwrap;
     private SSLHelperStatus status;
+    private  final Object handShakingSemaphore;
+    private final NetServiceConsumer consumer;
+    private final NetSession session;
     private Object result;
 
-    public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel) {
+    /**
+     * SSL Helper default constructor.
+     * @param sslEngine SSL Engine.
+     * @param selectableChannel Selectable channel.
+     */
+    public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel, NetServiceConsumer consumer, NetSession session) {
         this.sslEngine = sslEngine;
         this.selectableChannel = selectableChannel;
         this.ioExecutor = Executors.newSingleThreadExecutor();
+        this.consumer = consumer;
+        this.session = session;
         this.engineTaskExecutor = Executors.newFixedThreadPool(
                 SystemProperties.getInteger(SystemProperties.Net.SSL_MAX_IO_THREAD_POOL_SIZE));
         if(SystemProperties.getBoolean(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
-            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
-            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
+            srcWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            destWrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            srcUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
+            destUnwrap = ByteBuffer.allocateDirect(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
         } else {
-            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 32);
-            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
-            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 32);
+            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
+            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE) * 128);
         }
+        handShakingSemaphore = new Object();
         srcUnwrap.limit(0);
         status = SSLHelperStatus.WAITING;
         this.ioExecutor.execute(this);
     }
 
+    /**
+     * Return the helper status.
+     * @return Helper status.
+     */
     public SSLHelperStatus getStatus() {
         return status;
     }
 
+    /**
+     * This method is called when there are data into the read buffer.
+     * @param decrypted Read buffer.
+     */
     private void onRead(ByteBuffer decrypted) {
         byte[] decryptedArray = new byte[decrypted.limit()];
         decrypted.get(decryptedArray);
-        result = decryptedArray;
-        synchronized (this) {
-            notifyAll();
+        if(status.equals(SSLHelperStatus.READY)) {
+            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "", 0, consumer.getPort(), decryptedArray, NetPackage.ActionEvent.READ);
+            defaultNetPackage.setSession(session);
+            consumer.onRead(defaultNetPackage);
         }
     }
 
+    /**
+     * This method is called when there are data into the write buffer.
+     * @param encrypted Write buffer.
+     */
     private void onWrite(ByteBuffer encrypted) {
         try {
             ((SocketChannel)selectableChannel).write(encrypted);
@@ -73,25 +100,43 @@ public final class SSLHelper implements Runnable {
         }
         encrypted.rewind();
         byte[] decryptedArray = new byte[encrypted.limit()];
+        encrypted.rewind();
         encrypted.get(decryptedArray);
         result = decryptedArray;
-        synchronized (this) {
-            notifyAll();
+        if(status.equals(SSLHelperStatus.READY)) {
+            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "", 0, consumer.getPort(), decryptedArray, NetPackage.ActionEvent.WRITE);
+            defaultNetPackage.setSession(session);
+            consumer.onWrite(defaultNetPackage);
         }
     }
 
+    /**
+     * This method is called when the operation fail.
+     * @param ex Fail exception.
+     */
     private void onFailure(Exception ex) {
         status = SSLHelperStatus.FAIL;
     }
 
+    /**
+     * This method is called when the operation is success.
+     */
     private void onSuccess() {
         status = SSLHelperStatus.READY;
+        DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "", 0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.CONNECT);
+        defaultNetPackage.setSession(session);
+        consumer.onConnect(defaultNetPackage);
     }
 
+    /**
+     * This method is called when the helper is closed.
+     */
     private void onClosed() {
-
     }
 
+    /**
+     * Run method of the helper.
+     */
     @Override
     public void run() {
         while (this.isHandShaking()) {
@@ -100,8 +145,9 @@ public final class SSLHelper implements Runnable {
     }
 
     /**
-     *
-     * @param netPackage
+     * Write data into the associated channel.
+     * @param netPackage Net package.
+     * @return Net package.
      */
     public NetPackage write(NetPackage netPackage) {
         this.ioExecutor.execute(() -> {
@@ -109,60 +155,38 @@ public final class SSLHelper implements Runnable {
             SSLHelper.this.run();
         });
 
-//        while(result == null) {
-//            try {
-//                synchronized (this) {
-//                    wait();
-//                }
-//            } catch (InterruptedException e) }
-//        }
-
-//        if(result instanceof Exception) {
-//            throw new RuntimeException((Exception) result);
-//        }
-//
-//        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
-//        result = null;
-//        return resultNetPackage;
-
         return netPackage;
     }
 
-    public synchronized NetPackage read(NetPackage netPackage) {
+    /**
+     * Read data from the associated channel.
+     * @param netPackage Net package.
+     * @return Input data.
+     */
+    public NetPackage read(NetPackage netPackage) {
         this.ioExecutor.execute(() -> {
             srcUnwrap.put(netPackage.getPayload());
             SSLHelper.this.run();
         });
 
-//        while(result == null) {
-//            try {
-//                synchronized (this) {
-//                    wait();
-//                }
-//            } catch (InterruptedException e) {}
-//        }
-//
-//        if(result instanceof Exception) {
-//            throw new RuntimeException((Exception) result);
-//        }
-//
-//        NetPackage resultNetPackage = NetPackage.wrap(netPackage, (byte[])result);
-//        result = null;
-//        return resultNetPackage;
-
         return netPackage;
     }
 
-    private synchronized boolean isHandShaking() {
+    /**
+     * Return boolean to indicate if the hand shaking process is running.
+     * @return True if the process is running and false in otherwise.
+     */
+    private boolean isHandShaking() {
         switch (sslEngine.getHandshakeStatus()) {
             case NOT_HANDSHAKING:
-                boolean occupied = false;{
+                boolean occupied = false;
+                {
                 if (srcWrap.position() > 0)
                     occupied |= this.wrap();
                 if (srcUnwrap.position() > 0)
                     occupied |= this.unwrap();
-            }
-            return occupied;
+                }
+                return occupied;
 
             case NEED_WRAP:
                 if (!this.wrap())
@@ -194,13 +218,16 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
+    /**
+     * Wrap the output data.
+     * @return Return true if the process was success.
+     */
     private boolean wrap() {
         SSLEngineResult wrapResult;
 
         try {
             srcWrap.flip();
             wrapResult = sslEngine.wrap(srcWrap, destWrap);
-            System.out.println(wrapResult.getStatus().toString());
             srcWrap.compact();
         }
         catch (SSLException exc) {
@@ -232,6 +259,10 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
+    /**
+     * Unwrap the input data.
+     * @return Return true if the process was success.
+     */
     private boolean unwrap() {
         SSLEngineResult unwrapResult;
 
@@ -273,6 +304,9 @@ public final class SSLHelper implements Runnable {
         return true;
     }
 
+    /**
+     * Contains all the possible helper status.
+     */
     public static enum SSLHelperStatus {
 
         WAITING,

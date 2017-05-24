@@ -23,7 +23,6 @@ import java.util.jar.Manifest;
 /**
  * This class manage all the published layers.
  * @author javaito
- *
  */
 public final class Layers {
 
@@ -141,6 +140,7 @@ public final class Layers {
 
     /**
      * Return the instance of layer that match.
+     * @param layerClass Layer class.
      * @param matcher Layer matcher.
      * @param <L> Expected layer class.
      * @return Layer instance.
@@ -187,9 +187,9 @@ public final class Layers {
     /**
      * This method publish the layers in order to be used by anyone
      * that has the credentials to use the layer.
-     * @param layerClass
+     * @param layerClass Layer class.
      * @return Implementation name.
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException If the layer class is null.
      */
     public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
         if(layerClass == null) {
@@ -220,6 +220,7 @@ public final class Layers {
     /**
      * This method publish all the layer into the plugin jar.
      * @param jarBuffer Plugin jar.
+     * @return Plugin instance.
      */
     public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer) {
         return publishPlugin(jarBuffer, DeploymentService.DeploymentConsumer.DEFAULT_FILTER);
@@ -228,6 +229,8 @@ public final class Layers {
     /**
      * This method publish all the layer into the plugin jar.
      * @param jarBuffer Plugin jar.
+     * @param filter Deployment filter.
+     * @return Plugin instance.
      */
     public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer, DeploymentService.DeploymentConsumer.DeploymentFilter filter) {
         String pluginGroupName = Strings.EMPTY_STRING;

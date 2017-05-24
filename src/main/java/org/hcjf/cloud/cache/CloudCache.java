@@ -77,6 +77,7 @@ public abstract class CloudCache {
     /**
      * Return the information indexed by the specific id.
      * @param id Information index.
+     * @param resultType Result type.
      * @param <O> Expected kind of information.
      * @return Return the information associated to the specific id.
      */

@@ -6,7 +6,6 @@ import java.util.Map;
  * Evaluate if the field's value of the instance is greater than the
  * parameter value.
  * @author javaito
- *
  */
 public class GreaterThan extends FieldEvaluator {
 
@@ -38,9 +37,9 @@ public class GreaterThan extends FieldEvaluator {
      * @return True if he field's value is greater than the parameter value and
      * false in the other ways.
      * @throws IllegalArgumentException
-     * <li> If the introspection accessor fail: 'Greater than evaluator fail' </li>
-     * <li> If the parameter value or field's value are not comparable: 'Unsupported evaluator type'</li>
-     * <li> If the parameter value and field's valur are incompatible: 'Incompatible types between value and field's value'</li>
+     * If the introspection accessor fail: 'Greater than evaluator fail'
+     * If the parameter value or field's value are not comparable: 'Unsupported evaluator type'
+     * If the parameter value and field's value are incompatible: 'Incompatible types between value and field's value'
      */
     @Override
     public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {

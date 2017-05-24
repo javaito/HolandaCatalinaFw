@@ -142,8 +142,8 @@ public final class Strings {
      * Return the list with all the groups and sub groups of the value.
      * A group is the char sequence between the start group character '('
      * and the end group character ')'
-     * @param value
-     * @return
+     * @param value Groupable value.
+     * @return List with all the groups.
      */
     public static List<String> group(String value) {
         Set<Integer> startIndexes = allIndexOf(value, START_GROUP);
@@ -196,7 +196,7 @@ public final class Strings {
     /**
      * Return a list with all groups and sub groups in ascendant order with replacement
      * places that refer some index into the same list.
-     * e.g. "Hello (world)" -> ["world", "Hello $0"]
+     * e.g. "Hello (world)" - ["world", "Hello $0"]
      * @param value String to group.
      * @return List with groups.
      */

@@ -10,7 +10,6 @@ import java.util.concurrent.*;
  * This abstract class contains all the implementations and
  * the interfaces that describe the behavior of the system service.
  * @author javaito
- *
  */
 public abstract class Service<C extends ServiceConsumer> {
 
@@ -25,6 +24,7 @@ public abstract class Service<C extends ServiceConsumer> {
     /**
      * Service constructor.
      * @param serviceName Name of the service, can't be null.
+     * @param priority Service execution priority.
      * @throws NullPointerException If the name is null.
      */
     protected Service(String serviceName, Integer priority) {
@@ -70,6 +70,7 @@ public abstract class Service<C extends ServiceConsumer> {
     /**
      * This method execute any callable over service thread with a service session.
      * @param callable Callable to execute.
+     * @param <R> Expected result.
      * @return Callable's future.
      */
     protected final <R extends Object> Future<R> fork(Callable<R> callable) {
@@ -81,6 +82,7 @@ public abstract class Service<C extends ServiceConsumer> {
      * custom thread pool executor. This thread pool executor must create only Service thread implementations.
      * @param callable Callable to execute.
      * @param executor Custom thread pool executor.
+     * @param <R> Expected return type.
      * @return Callable's future.
      */
     protected final <R extends Object> Future<R> fork(Callable<R> callable, ThreadPoolExecutor executor) {
@@ -180,8 +182,8 @@ public abstract class Service<C extends ServiceConsumer> {
     public abstract void registerConsumer(C consumer);
 
     /**
-     *
-     * @param consumer
+     * Unregister a specific consumer.
+     * @param consumer Consumer to unregister.
      */
     public abstract void unregisterConsumer(C consumer);
 

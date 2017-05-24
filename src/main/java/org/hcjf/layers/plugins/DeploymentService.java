@@ -68,15 +68,15 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
     }
 
     /**
-     *
-     * @return
+     * Return the instance of the service.
+     * @return Deployment service instance.
      */
     public static DeploymentService getInstance() {
         return instance;
     }
 
     /**
-     *
+     * Init the service.
      */
     @Override
     protected void init() {
@@ -109,9 +109,9 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
     }
 
     /**
-     *
-     * @param jarBuffer
-     * @param filter
+     * Deploy a plugin into the cloud.
+     * @param jarBuffer Jar buffer of the plugin.
+     * @param filter Deployment filter.
      */
     private synchronized void deploy(ByteBuffer jarBuffer, DeploymentConsumer.DeploymentFilter filter, boolean remote) {
         Plugin plugin = Layers.publishPlugin(jarBuffer, filter);
@@ -128,7 +128,7 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
     }
 
     /**
-     *
+     * Shutdown method of the service.
      * @param stage Shutdown stage.
      */
     @Override
@@ -138,7 +138,7 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
     }
 
     /**
-     *
+     * Register deployment consumer.
      * @param consumer Object with the logic to consume the service.
      */
     @Override
@@ -147,8 +147,8 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
     }
 
     /**
-     *
-     * @param consumer
+     * Unregister deployment consumer.
+     * @param consumer Deployment consumer.
      */
     @Override
     public void unregisterConsumer(DeploymentConsumer consumer) {

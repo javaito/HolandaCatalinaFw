@@ -2,7 +2,6 @@ package org.hcjf.layers.storage.values;
 
 /**
  * @author javaito
- *
  */
 public class StorageValue {
 
@@ -13,8 +12,8 @@ public class StorageValue {
     }
 
     /**
-     *
-     * @return
+     * Return the value.
+     * @return Storage value.
      */
     public final Object getValue() {
         return value;

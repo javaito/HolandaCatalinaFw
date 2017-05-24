@@ -419,7 +419,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param session Net session.
      * @param data Data to create the package.
      * @return Return the id of the created package.
-     * @throws IOException
+     * @throws IOException Exception of the write operation.
      */
     public final NetPackage writeData(NetSession session, byte[] data) throws IOException {
         return writeData(session, data, null);
@@ -431,7 +431,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param data Data to create the package.
      * @param source Data source.
      * @return Return the id of the created package.
-     * @throws IOException
+     * @throws IOException Exception of the write operation.
      */
     public final NetPackage writeData(NetSession session, byte[] data, NetStreamingSource source) throws IOException {
         NetPackage netPackage;
@@ -450,9 +450,9 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     *
-     * @param session
-     * @param message
+     * Disconnect a specific session.
+     * @param session Session to disconnect.
+     * @param message Disconnection message.
      */
     public final void disconnect(NetSession session, String message) {
         SelectableChannel channel = channels.get(session);
@@ -705,12 +705,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                 portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
 
                 if(client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                    SSLHelper sslHelper = new SSLHelper(client.createSSLEngine(), channel);
+                    SSLHelper sslHelper = new SSLHelper(client.createSSLEngine(), channel, client, client.getSession());
                     sslHelpers.put(client.getSession(), sslHelper);
+                } else {
+                    NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
+                    onAction(connectionPackage, client);
                 }
-
-                NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
-                onAction(connectionPackage, client);
             } catch (Exception ex){
                 Log.w(NET_SERVICE_LOG_TAG, "Error creating new client connection.", ex);
             }
@@ -824,9 +824,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                             }
 
                             if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                                netPackage = sslHelpers.get(session).read(netPackage);
+                                sslHelpers.get(session).read(netPackage);
+                            } else {
+                                onAction(netPackage, consumer);
                             }
-                            onAction(netPackage, consumer);
                         }
                     }
                 } catch (Exception ex){
@@ -962,6 +963,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
                                                     session.getConsumer().getOutputBufferSize() : byteData.length - begin;
                                         }
+                                        onAction(netPackage, consumer);
                                     }
 
                                     if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.STREAMING) && channel instanceof SocketChannel){
@@ -975,10 +977,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                             } catch (Exception ex){
                                 netPackage.setPackageStatus(NetPackage.PackageStatus.IO_ERROR);
                                 throw ex;
-                            } finally {
-                                if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.WRITE)) {
-                                    onAction(netPackage, consumer);
-                                }
                             }
 
                             //Change the key operation to finish write loop

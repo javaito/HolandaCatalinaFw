@@ -41,8 +41,12 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
     public HttpClient(URL url) {
         super(url.getHost(), url.getPort() != -1 ? url.getPort() :
-                SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_CLIENT_PORT),
-                url.getProtocol().equals(HTTPS_PROTOCOL) ? NetService.TransportLayerProtocol.TCP_SSL : NetService.TransportLayerProtocol.TCP);
+                    url.getProtocol().equals(HTTPS_PROTOCOL) ?
+                            SystemProperties.getInteger(SystemProperties.Net.Https.DEFAULT_CLIENT_PORT) :
+                            SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_CLIENT_PORT),
+                    url.getProtocol().equals(HTTPS_PROTOCOL) ?
+                            NetService.TransportLayerProtocol.TCP_SSL :
+                            NetService.TransportLayerProtocol.TCP);
         this.url = url;
         this.connectTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_CONNECT_TIMEOUT);
         this.writeTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_WRITE_TIMEOUT);
@@ -310,8 +314,10 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             synchronized (this) {
                 Log.out(HTTP_CLIENT_LOG_TAG, "Request\r\n%s", request.toString());
                 try {
+//                    System.out.println("WAITING SSL");
+//                    Thread.sleep(5000);
                     write(getSession(), request);
-                } catch (IOException ex) {
+                } catch (Exception ex) {
                     status = Status.ERROR;
                     errorCode = HttpResponseCode.BAD_REQUEST;
                     errorPhrase = ex.getMessage();
