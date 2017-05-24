@@ -4,6 +4,7 @@ import org.hcjf.io.net.ssl.SSLHelper;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
 import java.io.ByteArrayOutputStream;
@@ -705,7 +706,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
 
                 if(client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                    SSLHelper sslHelper = new SSLHelper(client.createSSLEngine(), channel, client, client.getSession());
+                    SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, client.getSession());
                     sslHelpers.put(client.getSession(), sslHelper);
                 } else {
                     NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
@@ -736,6 +737,26 @@ public final class NetService extends Service<NetServiceConsumer> {
                 if(socketOptions != null){
                     for(SocketOption socketOption : socketOptions.keySet()){
                         socketChannel.setOption(socketOption, socketOptions.get(socketOption));
+                    }
+                }
+
+                if(server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                    NetSession session = getSession(server, null);
+                    SSLHelper sslHelper = new SSLHelper(server.getSSLEngine(), socketChannel, server, session);
+                    sslHelpers.put(session, sslHelper);
+
+                    if(!sessionsByChannel.containsKey(socketChannel)){
+                        if(channels.containsKey(session)){
+                            updateChannel((SocketChannel) channels.remove(session), socketChannel);
+                        } else {
+                            sessionsByChannel.put(socketChannel, createSessionSet(session));
+                            outputQueue.put(socketChannel, new LinkedBlockingQueue<>());
+                            lastWrite.put(socketChannel, System.currentTimeMillis());
+                            channels.put(session, socketChannel);
+                        }
+                    } else if(portMultiSessionChannel.get(socketChannel.socket().getLocalPort())) {
+                        sessionsByChannel.get(socketChannel).add(session);
+                        channels.put(session, socketChannel);
                     }
                 }
 

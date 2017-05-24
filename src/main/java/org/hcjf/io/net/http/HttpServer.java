@@ -29,7 +29,12 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     public HttpServer(Integer port) {
-        super(port, NetService.TransportLayerProtocol.TCP, false, true);
+        this(port, false);
+    }
+
+    protected HttpServer(Integer port, boolean sslProtocol) {
+        super(port, sslProtocol ? NetService.TransportLayerProtocol.TCP_SSL :
+                NetService.TransportLayerProtocol.TCP, false, true);
         requestBuffers = new HashMap<>();
         contexts = new ArrayList<>();
     }

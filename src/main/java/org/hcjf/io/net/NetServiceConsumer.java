@@ -119,7 +119,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * This method should create the ssl engine for the consumer.
      * @return SSL engine implementation.
      */
-    protected SSLEngine createSSLEngine() {
+    protected SSLEngine getSSLEngine() {
         throw new  UnsupportedOperationException("Unsupported ssl engine");
     }
 

@@ -132,6 +132,7 @@ public final class SSLHelper implements Runnable {
      * This method is called when the helper is closed.
      */
     private void onClosed() {
+        System.out.println("SSL CLOSE");
     }
 
     /**
@@ -200,13 +201,9 @@ public final class SSLHelper implements Runnable {
 
             case NEED_TASK:
                 final Runnable sslTask = sslEngine.getDelegatedTask();
-                Runnable wrappedTask = new Runnable() {
-                    @Override
-                    public void run()
-                    {
-                        sslTask.run();
-                        ioExecutor.execute(SSLHelper.this);
-                    }
+                Runnable wrappedTask = () -> {
+                    sslTask.run();
+                    ioExecutor.execute(SSLHelper.this);
                 };
                 engineTaskExecutor.execute(wrappedTask);
                 return false;
@@ -254,6 +251,11 @@ public final class SSLHelper implements Runnable {
             case CLOSED:
                 this.onClosed();
                 return false;
+        }
+
+        if (wrapResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
+            this.onSuccess();
+            return false;
         }
 
         return true;

@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
@@ -136,6 +138,12 @@ public final class SystemProperties extends Properties {
         public static final class Https {
             public static final String DEFAULT_SERVER_PORT = "hcjf.https.default.server.port";
             public static final String DEFAULT_CLIENT_PORT = "hcjf.https.default.server.port";
+            public static final String DEFAULT_KEYSTORE_PASSWORD = "hcjf.https.default.keystore.password";
+            public static final String DEFAULT_KEY_PASSWORD = "hcjf.https.default.key.password";
+            public static final String DEFAULT_KEYSTORE_FILE_PATH = "hcjf.https.default.keystore.file.path";
+            public static final String DEFAULT_TRUSTED_CERTS_FILE_PATH = "hcjf.https.default.trusted.certs.file.path";
+            public static final String DEFAULT_KEY_TYPE = "hcjf.https.default.key.type";
+            public static final String DEFAULT_SSL_PROTOCOL = "hcjf.https.default.ssl.protocol";
         }
 
         public static final class Rest {
@@ -342,6 +350,12 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
+        defaults.put(Net.Https.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
+        defaults.put(Net.Https.DEFAULT_KEY_TYPE, "JKS");
+        defaults.put(Net.Https.DEFAULT_KEYSTORE_PASSWORD, "hcjfkeystorepassword");
+        defaults.put(Net.Https.DEFAULT_KEYSTORE_FILE_PATH, "./src/resources/org/hcjf/io/net/https/keystore.jks");
+        defaults.put(Net.Https.DEFAULT_TRUSTED_CERTS_FILE_PATH, "./src/resources/org/hcjf/io/net/https/cacerts.jks");
+        defaults.put(Net.Https.DEFAULT_SSL_PROTOCOL, "TLSv1.2");
 
         defaults.put(Net.Rest.DEFAULT_MIME_TYPE, "application/json");
         defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");
@@ -612,9 +626,9 @@ public final class SystemProperties extends Properties {
     }
 
     /**
-     * This method return the value of the system property as UUID instance.
+     * This method return the value of the system property as {@link UUID} instance.
      * @param propertyName Name of the find property.
-     * @return Value of the system property as UUID instance, or null if the property is not found.
+     * @return Value of the system property as {@link UUID} instance, or null if the property is not found.
      */
     public static UUID getUUID(String propertyName) {
         UUID result = null;
@@ -629,7 +643,34 @@ public final class SystemProperties extends Properties {
                         instance.instancesCache.put(propertyName, result);
                     }
                 } catch (Exception ex) {
-                    throw new IllegalArgumentException("The property value has not a double valid format: '"
+                    throw new IllegalArgumentException("The property value has not a UUID valid format: '"
+                            + propertyName + ":" + propertyValue + "'", ex);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * This method return the value of the system property as {@link Path} instance.
+     * @param propertyName Name of the find property.
+     * @return Value of the system property as {@link Path} instance, or null if the property is not found.
+     */
+    public static Path getPath(String propertyName) {
+        Path result = null;
+
+        synchronized (instance.instancesCache) {
+            result = (Path) instance.instancesCache.get(propertyName);
+            if(result == null) {
+                String propertyValue = get(propertyName);
+                try {
+                    if (propertyValue != null) {
+                        result = Paths.get(propertyValue);
+                        instance.instancesCache.put(propertyName, result);
+                    }
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("The property value has not a path valid format: '"
                             + propertyName + ":" + propertyValue + "'", ex);
                 }
             }

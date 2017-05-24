@@ -178,7 +178,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      * @return SSL engine instance.
      */
     @Override
-    protected SSLEngine createSSLEngine() {
+    protected SSLEngine getSSLEngine() {
         try {
             SSLEngine engine = SSLContext.getDefault().createSSLEngine();
             engine.setUseClientMode(true);
