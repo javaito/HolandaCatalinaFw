@@ -1,5 +1,6 @@
 ![](https://img.shields.io/travis/javaito/HolandaCatalinaFw.svg)
 ![](https://img.shields.io/github/license/javaito/HolandaCatalinaFw.svg)
+![](https://img.shields.io/github/release/javaito/HolandaCatalinaFw.svg)
 
 # Holanda Catalina
 
