@@ -111,6 +111,18 @@ public final class SystemProperties extends Properties {
         public static final String IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
         public static final String SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
 
+        public static final class Ssl {
+            public static final String DEFAULT_PROTOCOL = "hcjf.net.ssl.default.protocol";
+            public static final String IO_THREAD_NAME = "hcjf.net.ssl.io.thread.name";
+            public static final String ENGINE_THREAD_NAME = "hcjf.net.ssl.engine.thread.name";
+            public static final String DEFAULT_KEYSTORE_PASSWORD = "hcjf.net.ssl.default.keystore.password";
+            public static final String DEFAULT_KEY_PASSWORD = "hcjf.net.ssl.default.key.password";
+            public static final String DEFAULT_KEYSTORE_FILE_PATH = "hcjf.net.ssl.default.keystore.file.path";
+            public static final String DEFAULT_TRUSTED_CERTS_FILE_PATH = "hcjf.net.ssl.default.trusted.certs.file.path";
+            public static final String DEFAULT_KEY_TYPE = "hcjf.net.ssl.default.key.type";
+
+        }
+
         public static final class Http {
             public static final String SERVER_NAME = "hcjf.net.http.server.name";
             public static final String RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.net.http.response.date.header.format.value";
@@ -138,14 +150,6 @@ public final class SystemProperties extends Properties {
         public static final class Https {
             public static final String DEFAULT_SERVER_PORT = "hcjf.net.https.default.server.port";
             public static final String DEFAULT_CLIENT_PORT = "hcjf.net.https.default.server.port";
-            public static final String DEFAULT_KEYSTORE_PASSWORD = "hcjf.net.https.default.keystore.password";
-            public static final String DEFAULT_KEY_PASSWORD = "hcjf.net.https.default.key.password";
-            public static final String DEFAULT_KEYSTORE_FILE_PATH = "hcjf.net.https.default.keystore.file.path";
-            public static final String DEFAULT_TRUSTED_CERTS_FILE_PATH = "hcjf.net.https.default.trusted.certs.file.path";
-            public static final String DEFAULT_KEY_TYPE = "hcjf.net.https.default.key.type";
-            public static final String DEFAULT_SSL_PROTOCOL = "hcjf.net.https.default.ssl.protocol";
-            public static final String IO_THREAD_NAME = "hcjf.net.https.io.thread.name";
-            public static final String SSL_ENGINE_THREAD_NAME = "hcjf.net.https.io.ssl.engine.thread.name";
         }
 
         public static final class Rest {
@@ -330,6 +334,15 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
 
+        defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
+        defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
+        defaults.put(Net.Ssl.DEFAULT_KEYSTORE_PASSWORD, "hcjfkeystorepassword");
+        defaults.put(Net.Ssl.DEFAULT_KEYSTORE_FILE_PATH, "./src/resources/org/hcjf/io/net/https/keystore.jks");
+        defaults.put(Net.Ssl.DEFAULT_TRUSTED_CERTS_FILE_PATH, "./src/resources/org/hcjf/io/net/https/cacerts.jks");
+        defaults.put(Net.Ssl.DEFAULT_PROTOCOL, "TLSv1.2");
+        defaults.put(Net.Ssl.IO_THREAD_NAME, "SslIoThread");
+        defaults.put(Net.Ssl.ENGINE_THREAD_NAME, "SslEngineThread");
+
         defaults.put(Net.Http.SERVER_NAME, "HCJF Web Server");
         defaults.put(Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
         defaults.put(Net.Http.INPUT_LOG_BODY_MAX_LENGTH, "128");
@@ -352,14 +365,6 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
-        defaults.put(Net.Https.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
-        defaults.put(Net.Https.DEFAULT_KEY_TYPE, "JKS");
-        defaults.put(Net.Https.DEFAULT_KEYSTORE_PASSWORD, "hcjfkeystorepassword");
-        defaults.put(Net.Https.DEFAULT_KEYSTORE_FILE_PATH, "./src/resources/org/hcjf/io/net/https/keystore.jks");
-        defaults.put(Net.Https.DEFAULT_TRUSTED_CERTS_FILE_PATH, "./src/resources/org/hcjf/io/net/https/cacerts.jks");
-        defaults.put(Net.Https.DEFAULT_SSL_PROTOCOL, "TLSv1.2");
-        defaults.put(Net.Https.IO_THREAD_NAME, "SslIoThread");
-        defaults.put(Net.Https.SSL_ENGINE_THREAD_NAME, "SslEngineThread");
 
         defaults.put(Net.Rest.DEFAULT_MIME_TYPE, "application/json");
         defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");

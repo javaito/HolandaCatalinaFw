@@ -23,8 +23,6 @@ public class HttpsServer extends HttpServer {
     private String keyType;
     private Provider provider;
     private String sslProtocol;
-    private SSLContext context;
-    private SSLEngine engine;
 
     public HttpsServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Https.DEFAULT_SERVER_PORT));
@@ -32,30 +30,12 @@ public class HttpsServer extends HttpServer {
 
     public HttpsServer(Integer port) {
         super(port, true);
-        keystorePassword = SystemProperties.get(SystemProperties.Net.Https.DEFAULT_KEYSTORE_PASSWORD);
-        keyPassword = SystemProperties.get(SystemProperties.Net.Https.DEFAULT_KEY_PASSWORD);
-        keystoreFilePath = SystemProperties.getPath(SystemProperties.Net.Https.DEFAULT_KEYSTORE_FILE_PATH);
-        trustedCertsFilePath = SystemProperties.getPath(SystemProperties.Net.Https.DEFAULT_TRUSTED_CERTS_FILE_PATH);
-        keyType = SystemProperties.get(SystemProperties.Net.Https.DEFAULT_KEY_TYPE);
-        sslProtocol = SystemProperties.get(SystemProperties.Net.Https.DEFAULT_SSL_PROTOCOL);
-    }
-
-    @Override
-    protected void onStart() {
-        try {
-            context = SSLContext.getInstance(getSslProtocol());
-            context.init(createKeyManagers(), createTrustManagers(), new SecureRandom());
-
-            SSLSession dummySession = context.createSSLEngine().getSession();
-            dummySession.invalidate();
-
-            engine = context.createSSLEngine();
-            engine.setUseClientMode(false);
-            engine.beginHandshake();
-        } catch (Exception ex) {
-            throw new RuntimeException("", ex);
-        }
-        super.onStart();
+        keystorePassword = SystemProperties.get(SystemProperties.Net.Ssl.DEFAULT_KEYSTORE_PASSWORD);
+        keyPassword = SystemProperties.get(SystemProperties.Net.Ssl.DEFAULT_KEY_PASSWORD);
+        keystoreFilePath = SystemProperties.getPath(SystemProperties.Net.Ssl.DEFAULT_KEYSTORE_FILE_PATH);
+        trustedCertsFilePath = SystemProperties.getPath(SystemProperties.Net.Ssl.DEFAULT_TRUSTED_CERTS_FILE_PATH);
+        keyType = SystemProperties.get(SystemProperties.Net.Ssl.DEFAULT_KEY_TYPE);
+        sslProtocol = SystemProperties.get(SystemProperties.Net.Ssl.DEFAULT_PROTOCOL);
     }
 
     /**
@@ -65,6 +45,12 @@ public class HttpsServer extends HttpServer {
     @Override
     protected SSLEngine getSSLEngine() {
         try {
+            SSLContext context = SSLContext.getInstance(getSslProtocol());
+            context.init(createKeyManagers(), createTrustManagers(), new SecureRandom());
+
+            SSLSession dummySession = context.createSSLEngine().getSession();
+            dummySession.invalidate();
+
             SSLEngine engine = context.createSSLEngine();
             engine.setUseClientMode(false);
             engine.beginHandshake();

@@ -68,9 +68,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             sessionManager = HttpSessionManager.DEFAULT;
         }
 
-        System.out.println(Arrays.toString(Thread.currentThread().getStackTrace()));
-        System.out.println(Thread.currentThread());
-
         HttpSession session = sessionManager.createSession(this, netPackage);
 
         Log.d(HTTP_SERVER_LOG_TAG, "[CREATE_SESSION] Http session %s", session);
@@ -262,11 +259,11 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 Log.out(HTTP_SERVER_LOG_TAG, "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());
             } catch (Throwable throwable) {
-                Log.e(NetService.NET_SERVICE_LOG_TAG, "Http server error", throwable);
+                Log.e(HTTP_SERVER_LOG_TAG, "Http server error", throwable);
                 connectionKeepAlive = false;
             } finally {
                 if(!connectionKeepAlive) {
-                    System.out.println("END!!!!");
+                    Log.d(HTTP_SERVER_LOG_TAG, "Http connection closed by server.");
                     disconnect(session, "Http request end");
                 }
             }

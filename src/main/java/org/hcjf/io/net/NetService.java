@@ -1098,14 +1098,14 @@ public final class NetService extends Service<NetServiceConsumer> {
             this.consumer = consumer;
             this.session = session;
             this.ioExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-            this.ioExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Https.IO_THREAD_NAME))));
+            this.ioExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Ssl.IO_THREAD_NAME))));
             this.engineTaskExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(
                     SystemProperties.getInteger(SystemProperties.Net.SSL_MAX_IO_THREAD_POOL_SIZE));
-            this.engineTaskExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Https.SSL_ENGINE_THREAD_NAME))));
-            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
-            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE)  * 128);
-            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE)  * 128);
-            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE)  * 128);
+            this.engineTaskExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Ssl.ENGINE_THREAD_NAME))));
+            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE));
+            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE));
+            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE));
+            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE));
             srcUnwrap.limit(0);
 
             //SSL Helper first status
@@ -1117,14 +1117,6 @@ public final class NetService extends Service<NetServiceConsumer> {
 
             //Start handshaking
             instance.fork(this, ioExecutor);
-        }
-
-        /**
-         * Return the helper status.
-         * @return Helper status.
-         */
-        public SSLHelper.SSLHelperStatus getStatus() {
-            return status;
         }
 
         /**
@@ -1177,7 +1169,7 @@ public final class NetService extends Service<NetServiceConsumer> {
          * This method is called when the operation is success.
          */
         private void onSuccess() {
-            System.out.println("ON SUCCESS");
+            Log.d(NET_SERVICE_LOG_TAG, "SSL handshaking success");
             status = SSLHelper.SSLHelperStatus.READY;
             DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
                     0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.CONNECT);
@@ -1191,7 +1183,9 @@ public final class NetService extends Service<NetServiceConsumer> {
          * This method is called when the helper is closed.
          */
         private void onClosed() {
-            System.out.println("SSL CLOSE");
+            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
+                    0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.DISCONNECT);
+            consumer.onDisconnect(session, defaultNetPackage);
         }
 
         /**
@@ -1220,7 +1214,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 synchronized (writeSemaphore) {
                     try {
                         if (!written) {
-                            System.out.println("WAIT WRITE");
                             readSemaphore.wait();
                             defaultNetPackage = new DefaultNetPackage("", "",
                                     0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.READ);
@@ -1252,7 +1245,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 synchronized (readSemaphore) {
                     try {
                         if(!read) {
-                            System.out.println("WAIT READ");
                             readSemaphore.wait();
                         }
                         defaultNetPackage = new DefaultNetPackage("", "",
@@ -1268,12 +1260,13 @@ public final class NetService extends Service<NetServiceConsumer> {
             return defaultNetPackage;
         }
 
+        /**
+         * Close the ssl engine instance.
+         */
         public void close() {
             try {
                 sslEngine.closeInbound();
-            } catch (SSLException e) {
-                e.printStackTrace();
-            }
+            } catch (SSLException e) {}
             sslEngine.closeOutbound();
         }
 
@@ -1312,7 +1305,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     return false;
 
                 case FINISHED:
-                    throw new IllegalStateException("FINISHED");
+                    throw new IllegalStateException("SSL handshaking fail");
             }
 
             return true;
@@ -1349,7 +1342,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     break;
 
                 case BUFFER_OVERFLOW:
-                    throw new IllegalStateException("failed to wrap");
+                    throw new IllegalStateException("SSL failed to wrap");
 
                 case CLOSED:
                     this.onClosed();
@@ -1396,7 +1389,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     return false;
 
                 case BUFFER_OVERFLOW:
-                    throw new IllegalStateException("failed to unwrap");
+                    throw new IllegalStateException("SSL failed to unwrap");
 
                 case BUFFER_UNDERFLOW:
                     return false;
