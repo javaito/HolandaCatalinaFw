@@ -112,38 +112,40 @@ public final class SystemProperties extends Properties {
         public static final String SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
 
         public static final class Http {
-            public static final String SERVER_NAME = "hcjf.http.server.name";
-            public static final String RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.http.response.date.header.format.value";
-            public static final String INPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.input.log.body.max.length";
-            public static final String OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.http.output.log.body.max.length";
-            public static final String DEFAULT_SERVER_PORT = "hcjf.http.default.server.port";
-            public static final String DEFAULT_CLIENT_PORT = "hcjf.http.default.client.port";
-            public static final String STREAMING_LIMIT_FILE_SIZE = "hcjf.http.streaming.limit.file.size";
-            public static final String DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.http.default.error.format.show.stack";
-            public static final String DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.http.default.client.connect.timeout";
-            public static final String DEFAULT_CLIENT_READ_TIMEOUT = "hcjf.http.default.client.read.timeout";
-            public static final String DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.http.default.client.write.timeout";
-            public static final String DEFAULT_GUEST_SESSION_NAME = "hcjf.http.default.guest.session.name";
-            public static final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.http.default.file.checksum.algorithm";
+            public static final String SERVER_NAME = "hcjf.net.http.server.name";
+            public static final String RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.net.http.response.date.header.format.value";
+            public static final String INPUT_LOG_BODY_MAX_LENGTH = "hcjf.net.http.input.log.body.max.length";
+            public static final String OUTPUT_LOG_BODY_MAX_LENGTH = "hcjf.net.http.output.log.body.max.length";
+            public static final String DEFAULT_SERVER_PORT = "hcjf.net.http.default.server.port";
+            public static final String DEFAULT_CLIENT_PORT = "hcjf.net.http.default.client.port";
+            public static final String STREAMING_LIMIT_FILE_SIZE = "hcjf.net.http.streaming.limit.file.size";
+            public static final String DEFAULT_ERROR_FORMAT_SHOW_STACK = "hcjf.net.http.default.error.format.show.stack";
+            public static final String DEFAULT_CLIENT_CONNECT_TIMEOUT = "hcjf.net.http.default.client.connect.timeout";
+            public static final String DEFAULT_CLIENT_READ_TIMEOUT = "hcjf.net.http.default.client.read.timeout";
+            public static final String DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.net.http.default.client.write.timeout";
+            public static final String DEFAULT_GUEST_SESSION_NAME = "hcjf.net.http.default.guest.session.name";
+            public static final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.net.http.default.file.checksum.algorithm";
 
             public static final class Folder {
-                public static final String FORBIDDEN_CHARACTERS = "hcjf.http.folder.forbidden.characters";
-                public static final String FILE_EXTENSION_REGEX = "hcjf.http.folder.file.extension.regex";
-                public static final String DEFAULT_HTML_DOCUMENT = "hcjf.http.folder.default.html.document";
-                public static final String DEFAULT_HTML_BODY = "hcjf.http.folder.default.html.body";
-                public static final String DEFAULT_HTML_ROW = "hcjf.http.folder.default.html.row";
+                public static final String FORBIDDEN_CHARACTERS = "hcjf.net.http.folder.forbidden.characters";
+                public static final String FILE_EXTENSION_REGEX = "hcjf.net.http.folder.file.extension.regex";
+                public static final String DEFAULT_HTML_DOCUMENT = "hcjf.net.http.folder.default.html.document";
+                public static final String DEFAULT_HTML_BODY = "hcjf.net.http.folder.default.html.body";
+                public static final String DEFAULT_HTML_ROW = "hcjf.net.http.folder.default.html.row";
             }
         }
 
         public static final class Https {
-            public static final String DEFAULT_SERVER_PORT = "hcjf.https.default.server.port";
-            public static final String DEFAULT_CLIENT_PORT = "hcjf.https.default.server.port";
-            public static final String DEFAULT_KEYSTORE_PASSWORD = "hcjf.https.default.keystore.password";
-            public static final String DEFAULT_KEY_PASSWORD = "hcjf.https.default.key.password";
-            public static final String DEFAULT_KEYSTORE_FILE_PATH = "hcjf.https.default.keystore.file.path";
-            public static final String DEFAULT_TRUSTED_CERTS_FILE_PATH = "hcjf.https.default.trusted.certs.file.path";
-            public static final String DEFAULT_KEY_TYPE = "hcjf.https.default.key.type";
-            public static final String DEFAULT_SSL_PROTOCOL = "hcjf.https.default.ssl.protocol";
+            public static final String DEFAULT_SERVER_PORT = "hcjf.net.https.default.server.port";
+            public static final String DEFAULT_CLIENT_PORT = "hcjf.net.https.default.server.port";
+            public static final String DEFAULT_KEYSTORE_PASSWORD = "hcjf.net.https.default.keystore.password";
+            public static final String DEFAULT_KEY_PASSWORD = "hcjf.net.https.default.key.password";
+            public static final String DEFAULT_KEYSTORE_FILE_PATH = "hcjf.net.https.default.keystore.file.path";
+            public static final String DEFAULT_TRUSTED_CERTS_FILE_PATH = "hcjf.net.https.default.trusted.certs.file.path";
+            public static final String DEFAULT_KEY_TYPE = "hcjf.net.https.default.key.type";
+            public static final String DEFAULT_SSL_PROTOCOL = "hcjf.net.https.default.ssl.protocol";
+            public static final String IO_THREAD_NAME = "hcjf.net.https.io.thread.name";
+            public static final String SSL_ENGINE_THREAD_NAME = "hcjf.net.https.io.ssl.engine.thread.name";
         }
 
         public static final class Rest {
@@ -356,6 +358,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Https.DEFAULT_KEYSTORE_FILE_PATH, "./src/resources/org/hcjf/io/net/https/keystore.jks");
         defaults.put(Net.Https.DEFAULT_TRUSTED_CERTS_FILE_PATH, "./src/resources/org/hcjf/io/net/https/cacerts.jks");
         defaults.put(Net.Https.DEFAULT_SSL_PROTOCOL, "TLSv1.2");
+        defaults.put(Net.Https.IO_THREAD_NAME, "SslIoThread");
+        defaults.put(Net.Https.SSL_ENGINE_THREAD_NAME, "SslEngineThread");
 
         defaults.put(Net.Rest.DEFAULT_MIME_TYPE, "application/json");
         defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");

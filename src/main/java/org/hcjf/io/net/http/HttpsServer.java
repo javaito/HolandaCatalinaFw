@@ -24,6 +24,7 @@ public class HttpsServer extends HttpServer {
     private Provider provider;
     private String sslProtocol;
     private SSLContext context;
+    private SSLEngine engine;
 
     public HttpsServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Https.DEFAULT_SERVER_PORT));
@@ -47,6 +48,10 @@ public class HttpsServer extends HttpServer {
 
             SSLSession dummySession = context.createSSLEngine().getSession();
             dummySession.invalidate();
+
+            engine = context.createSSLEngine();
+            engine.setUseClientMode(false);
+            engine.beginHandshake();
         } catch (Exception ex) {
             throw new RuntimeException("", ex);
         }

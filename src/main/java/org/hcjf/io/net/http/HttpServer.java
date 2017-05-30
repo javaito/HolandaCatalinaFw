@@ -68,7 +68,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             sessionManager = HttpSessionManager.DEFAULT;
         }
 
-
+        System.out.println(Arrays.toString(Thread.currentThread().getStackTrace()));
+        System.out.println(Thread.currentThread());
 
         HttpSession session = sessionManager.createSession(this, netPackage);
 
@@ -245,7 +246,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     }
 
                     response.addHeader(new HttpHeader(HttpHeader.DATE,
-
                             SystemProperties.getDateFormat(
                                     SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
                     response.addHeader(new HttpHeader(HttpHeader.SERVER,
@@ -266,6 +266,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 connectionKeepAlive = false;
             } finally {
                 if(!connectionKeepAlive) {
+                    System.out.println("END!!!!");
                     disconnect(session, "Http request end");
                 }
             }

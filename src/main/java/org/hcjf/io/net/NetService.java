@@ -1,23 +1,23 @@
 package org.hcjf.io.net;
 
-import org.hcjf.io.net.ssl.SSLHelper;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
-import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 /**
  * This class implements a service that provide an
@@ -38,18 +38,16 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     private final List<ServerSocketChannel> tcpServers;
     private final Map<NetSession, SelectableChannel> channels;
-    private final Map<SelectableChannel, Set<NetSession>> sessionsByChannel;
+    private final Map<SelectableChannel, NetSession> sessionsByChannel;
 
     private DatagramChannel udpServer;
     private final Map<NetSession, SocketAddress> addresses;
-    private final Map<SocketAddress, Set<NetSession>> sessionsByAddress;
+    private final Map<SocketAddress, NetSession> sessionsByAddress;
 
     private final Map<SelectableChannel, Long> lastWrite;
     private final Map<SelectableChannel, Queue<NetPackage>> outputQueue;
-    private final Map<Integer, Boolean> portMultiSessionChannel;
 
     private final Set<NetSession> sessions;
-    private final List<NetServiceConsumer> consumers;
     private final Map<NetSession, SSLHelper> sslHelpers;
 
     private Selector selector;
@@ -74,17 +72,15 @@ public final class NetService extends Service<NetServiceConsumer> {
             throw new IllegalArgumentException("Illegal creation timeout value: " + creationTimeout);
         }
 
-        lastWrite = Collections.synchronizedMap(new HashMap<SelectableChannel, Long>());
-        outputQueue = Collections.synchronizedMap(new HashMap<SelectableChannel, Queue<NetPackage>>());
-        portMultiSessionChannel = Collections.synchronizedMap(new HashMap<Integer, Boolean>());
-        tcpServers = Collections.synchronizedList(new ArrayList<ServerSocketChannel>());
-        channels = Collections.synchronizedMap(new TreeMap<NetSession, SelectableChannel>());
-        sessionsByChannel = Collections.synchronizedMap(new HashMap<SelectableChannel, Set<NetSession>>());
-        sessionsByAddress = Collections.synchronizedMap(new HashMap<SocketAddress, Set<NetSession>>());
-        sessions = Collections.synchronizedSet(new TreeSet<NetSession>());
-        consumers = Collections.synchronizedList(new ArrayList<NetServiceConsumer>());
+        lastWrite = Collections.synchronizedMap(new HashMap<>());
+        outputQueue = Collections.synchronizedMap(new HashMap<>());
+        tcpServers = Collections.synchronizedList(new ArrayList<>());
+        channels = Collections.synchronizedMap(new TreeMap<>());
+        sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
+        sessionsByAddress = Collections.synchronizedMap(new HashMap<>());
+        sessions = Collections.synchronizedSet(new TreeSet<>());
         sslHelpers = Collections.synchronizedMap(new HashMap<>());
-        addresses = Collections.synchronizedMap(new HashMap<NetSession, SocketAddress>());
+        addresses = Collections.synchronizedMap(new HashMap<>());
     }
 
     /**
@@ -232,7 +228,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         tcpServer.socket().bind(tcpAddress);
         registerChannel(tcpServer, SelectionKey.OP_ACCEPT, server);
         tcpServers.add(tcpServer);
-        portMultiSessionChannel.put(server.getPort(), server.isMultiSession());
     }
 
     /**
@@ -256,7 +251,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         InetSocketAddress udpAddress = new InetSocketAddress(server.getPort());
         udpServer.socket().bind(udpAddress);
         registerChannel(udpServer, SelectionKey.OP_READ, server);
-        portMultiSessionChannel.put(server.getPort(), server.isMultiSession());
     }
 
     /**
@@ -271,8 +265,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         sessions.add(client.getSession());
         addresses.put(client.getSession(), address);
-        sessionsByAddress.put(channel.getRemoteAddress(), createSessionSet(client.getSession()));
-        portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
+        sessionsByAddress.put(channel.getRemoteAddress(), client.getSession());
 
         registerChannel(channel, SelectionKey.OP_READ, client);
     }
@@ -348,18 +341,6 @@ public final class NetService extends Service<NetServiceConsumer> {
             result = channel.isOpen();
         }
 
-        return result;
-    }
-
-    /**
-     * Create the correct implementation of the add containing
-     * the sessions associated with the same channel
-     * @param firstValue First value of the add.
-     * @return Return the add implementation.
-     */
-    private Set<NetSession> createSessionSet(NetSession firstValue) {
-        Set<NetSession> result = new TreeSet<>();
-        result.add(firstValue);
         return result;
     }
 
@@ -477,24 +458,25 @@ public final class NetService extends Service<NetServiceConsumer> {
      */
     private void destroyChannel(SocketChannel channel) {
         synchronized (channel) {
-            Set<NetSession> sessions = sessionsByChannel.remove(channel);
+            NetSession session = sessionsByChannel.remove(channel);
             lastWrite.remove(channel);
             outputQueue.remove(channel);
+            if(sslHelpers.containsKey(sessions)) {
+                sslHelpers.remove(sessions).close();
+            }
             List<NetSession> removedSessions = new ArrayList<>();
 
             try {
-                if (sessions != null) {
-                    for (NetSession session : sessions) {
-                        channels.remove(session);
-                        if (session.getConsumer() instanceof NetServer) {
-                            NetServer server = (NetServer) session.getConsumer();
-                            if (server.isDisconnectAndRemove()) {
-                                sessions.remove(session);
-                                destroySession(session);
-                            }
+                if (session != null) {
+                    channels.remove(session);
+                    if (session.getConsumer() instanceof NetServer) {
+                        NetServer server = (NetServer) session.getConsumer();
+                        if (server.isDisconnectAndRemove()) {
+                            sessions.remove(session);
+                            destroySession(session);
                         }
-                        removedSessions.add(session);
                     }
+                    removedSessions.add(session);
                 }
 
                 if (channel.isConnected()) {
@@ -512,7 +494,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param newChannel New channel.
      */
     private void updateChannel(SocketChannel oldChannel, SocketChannel newChannel) {
-        Set<NetSession> sessions = sessionsByChannel.remove(oldChannel);
+        NetSession session = sessionsByChannel.remove(oldChannel);
 
         try {
             if (oldChannel.isConnected()) {
@@ -521,12 +503,10 @@ public final class NetService extends Service<NetServiceConsumer> {
             }
         } catch (Exception ex) {
         } finally {
-            for(NetSession session : sessions) {
-                channels.put(session, newChannel);
-            }
+            channels.put(session, newChannel);
         }
 
-        sessionsByChannel.put(newChannel, sessions);
+        sessionsByChannel.put(newChannel, session);
         outputQueue.put(newChannel, outputQueue.remove(oldChannel));
         lastWrite.put(newChannel, lastWrite.remove(oldChannel));
     }
@@ -698,16 +678,16 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
                 }
 
-                sessions.add(client.getSession());
-                sessionsByChannel.put(channel, createSessionSet(client.getSession()));
-                channels.put(client.getSession(), channel);
+                NetSession session = getSession(client, null);
+                sessions.add(session);
+                sessionsByChannel.put(channel, session);
+                channels.put(session, channel);
                 outputQueue.put(channel, new LinkedBlockingQueue<>());
                 lastWrite.put(channel, System.currentTimeMillis());
-                portMultiSessionChannel.put(channel.socket().getLocalPort(), false);
 
                 if(client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                    SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, client.getSession());
-                    sslHelpers.put(client.getSession(), sslHelper);
+                    SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, session);
+                    sslHelpers.put(session, sslHelper);
                 } else {
                     NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
                     onAction(connectionPackage, client);
@@ -740,24 +720,19 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
                 }
 
+                NetSession session = getSession(server, null);
+                if(channels.containsKey(session)){
+                    updateChannel((SocketChannel) channels.remove(session), socketChannel);
+                } else {
+                    sessionsByChannel.put(socketChannel, session);
+                    outputQueue.put(socketChannel, new LinkedBlockingQueue<>());
+                    lastWrite.put(socketChannel, System.currentTimeMillis());
+                    channels.put(session, socketChannel);
+                }
+
                 if(server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                    NetSession session = getSession(server, null);
                     SSLHelper sslHelper = new SSLHelper(server.getSSLEngine(), socketChannel, server, session);
                     sslHelpers.put(session, sslHelper);
-
-                    if(!sessionsByChannel.containsKey(socketChannel)){
-                        if(channels.containsKey(session)){
-                            updateChannel((SocketChannel) channels.remove(session), socketChannel);
-                        } else {
-                            sessionsByChannel.put(socketChannel, createSessionSet(session));
-                            outputQueue.put(socketChannel, new LinkedBlockingQueue<>());
-                            lastWrite.put(socketChannel, System.currentTimeMillis());
-                            channels.put(session, socketChannel);
-                        }
-                    } else if(portMultiSessionChannel.get(socketChannel.socket().getLocalPort())) {
-                        sessionsByChannel.get(socketChannel).add(session);
-                        channels.put(session, socketChannel);
-                    }
                 }
 
                 //A new readable key is created associated to the channel.
@@ -812,44 +787,17 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 channel.socket().getPort(), channel.socket().getLocalPort(),
                                 readData.toByteArray(), NetPackage.ActionEvent.READ);
 
-                        NetSession session = null;
-                        Set<NetSession> sessions = sessionsByChannel.get(channel);
-                        if(sessions != null && !portMultiSessionChannel.get(channel.socket().getLocalPort())) {
-                            session = sessions.iterator().next();
+                        NetSession session = sessionsByChannel.get(channel);
+                        //Here the session is linked with the current thread
+                        ((ServiceThread)Thread.currentThread()).setSession(session);
+
+                        netPackage.setSession(session);
+
+                        if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                            netPackage = sslHelpers.get(session).read(netPackage);
                         }
 
-                        if(session == null){
-                            session = getSession(consumer, netPackage);
-                        }
-
-                        //If there an't any session the channel must be destroyed.
-                        if(session == null){
-                            destroyChannel(channel);
-                        } else {
-                            //Here the session is linked with the current thread
-                            ((ServiceThread)Thread.currentThread()).setSession(session);
-
-                            netPackage.setSession(session);
-                            if(!sessionsByChannel.containsKey(channel)){
-                                if(channels.containsKey(session)){
-                                    updateChannel((SocketChannel) channels.remove(session), channel);
-                                } else {
-                                    sessionsByChannel.put(channel, createSessionSet(session));
-                                    outputQueue.put(channel, new LinkedBlockingQueue<>());
-                                    lastWrite.put(channel, System.currentTimeMillis());
-                                    channels.put(session, channel);
-                                }
-                            } else if(portMultiSessionChannel.get(channel.socket().getLocalPort())) {
-                                sessionsByChannel.get(channel).add(session);
-                                channels.put(session, channel);
-                            }
-
-                            if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                                sslHelpers.get(session).read(netPackage);
-                            } else {
-                                onAction(netPackage, consumer);
-                            }
-                        }
+                        onAction(netPackage, consumer);
                     }
                 } catch (Exception ex){
                     Log.e(NET_SERVICE_LOG_TAG, "Net service read exception, on TCP context", ex);
@@ -876,15 +824,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 channel.socket().getPort(), channel.socket().getLocalPort(),
                                 readData.toByteArray(), NetPackage.ActionEvent.READ);
 
-                        NetSession session = null;
-                        Set<NetSession> sessions = sessionsByAddress.get(address);
-                        if(sessions != null && !portMultiSessionChannel.get(channel.socket().getLocalPort())) {
-                            session = sessions.iterator().next();
-                        }
-
-                        if(session == null){
-                            session = getSession(consumer, netPackage);
-                        }
+                        NetSession session = sessionsByAddress.get(address);
 
                         if(session != null){
                             //Here the session is linked with the current thread
@@ -893,11 +833,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                             netPackage.setSession(session);
                             if(addresses.containsKey(session)) {
                                 addresses.put(session, address);
-                                if (sessions != null) {
-                                    sessions.add(session);
-                                } else if (portMultiSessionChannel.get(channel.socket().getLocalPort())) {
-                                    sessionsByAddress.put(address, createSessionSet(session));
-                                }
                             }
 
                             if(!channels.containsKey(session)){
@@ -953,7 +888,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
                                         netPackage = sslHelpers.get(session).write(netPackage);
                                     } else {
-
                                         byte[] byteData = netPackage.getPayload();
                                         if (byteData.length == 0) {
                                             Log.d(NET_SERVICE_LOG_TAG, "Empty write data");
@@ -984,13 +918,14 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
                                                     session.getConsumer().getOutputBufferSize() : byteData.length - begin;
                                         }
-                                        onAction(netPackage, consumer);
                                     }
 
-                                    if(netPackage.getActionEvent().equals(NetPackage.ActionEvent.STREAMING) && channel instanceof SocketChannel){
-                                        streamingInit((SocketChannel)channel, (StreamingNetPackage) netPackage);
-                                    } else {
-                                        netPackage.setPackageStatus(NetPackage.PackageStatus.OK);
+                                    if(netPackage != null) {
+                                        if (netPackage.getActionEvent().equals(NetPackage.ActionEvent.STREAMING) && channel instanceof SocketChannel) {
+                                            streamingInit((SocketChannel) channel, (StreamingNetPackage) netPackage);
+                                        } else {
+                                            netPackage.setPackageStatus(NetPackage.PackageStatus.OK);
+                                        }
                                     }
                                 } else {
                                     netPackage.setPackageStatus(NetPackage.PackageStatus.REJECTED_SESSION_LOCK);
@@ -998,6 +933,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                             } catch (Exception ex){
                                 netPackage.setPackageStatus(NetPackage.PackageStatus.IO_ERROR);
                                 throw ex;
+                            } finally {
+                                onAction(netPackage, consumer);
                             }
 
                             //Change the key operation to finish write loop
@@ -1067,15 +1004,25 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param consumer Consumer associated to the session.
      */
     private void onAction(final NetPackage netPackage, final NetServiceConsumer consumer){
-        try {
-            switch (netPackage.getActionEvent()) {
-                case CONNECT: consumer.onConnect(netPackage); break;
-                case DISCONNECT: consumer.onDisconnect(netPackage); break;
-                case READ: consumer.onRead(netPackage); break;
-                case WRITE: consumer.onWrite(netPackage); break;
+        if(netPackage != null) {
+            try {
+                switch (netPackage.getActionEvent()) {
+                    case CONNECT:
+                        consumer.onConnect(netPackage);
+                        break;
+                    case DISCONNECT:
+                        consumer.onDisconnect(netPackage);
+                        break;
+                    case READ:
+                        consumer.onRead(netPackage);
+                        break;
+                    case WRITE:
+                        consumer.onWrite(netPackage);
+                        break;
+                }
+            } catch (Exception ex) {
+                Log.e(NET_SERVICE_LOG_TAG, "Action consumer exception", ex);
             }
-        } catch (Exception ex){
-            Log.e(NET_SERVICE_LOG_TAG, "Action consumer exception", ex);
         }
     }
 
@@ -1118,4 +1065,363 @@ public final class NetService extends Service<NetServiceConsumer> {
         UDP
     }
 
+    private static class SSLHelper implements Runnable {
+
+        private SSLEngine sslEngine;
+        private final SelectableChannel selectableChannel;
+        private final NetServiceConsumer consumer;
+        private final NetSession session;
+
+        private final ThreadPoolExecutor ioExecutor;
+        private final ThreadPoolExecutor engineTaskExecutor;
+        private final ByteBuffer srcWrap;
+        private final ByteBuffer destWrap;
+        private final ByteBuffer srcUnwrap;
+        private final ByteBuffer destUnwrap;
+
+        private SSLHelper.SSLHelperStatus status;
+
+        private final Object writeSemaphore;
+        private final Object readSemaphore;
+        private ByteBuffer decryptedPlace;
+        private boolean read;
+        private boolean written;
+
+        /**
+         * SSL Helper default constructor.
+         * @param sslEngine SSL Engine.
+         * @param selectableChannel Selectable channel.
+         */
+        public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel, NetServiceConsumer consumer, NetSession session) {
+            this.sslEngine = sslEngine;
+            this.selectableChannel = selectableChannel;
+            this.consumer = consumer;
+            this.session = session;
+            this.ioExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
+            this.ioExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Https.IO_THREAD_NAME))));
+            this.engineTaskExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(
+                    SystemProperties.getInteger(SystemProperties.Net.SSL_MAX_IO_THREAD_POOL_SIZE));
+            this.engineTaskExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Https.SSL_ENGINE_THREAD_NAME))));
+            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE) * 128);
+            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE)  * 128);
+            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE)  * 128);
+            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE)  * 128);
+            srcUnwrap.limit(0);
+
+            //SSL Helper first status
+            status = SSLHelper.SSLHelperStatus.WAITING;
+
+            //IO Semaphores
+            readSemaphore = new Object();
+            writeSemaphore = new Object();
+
+            //Start handshaking
+            instance.fork(this, ioExecutor);
+        }
+
+        /**
+         * Return the helper status.
+         * @return Helper status.
+         */
+        public SSLHelper.SSLHelperStatus getStatus() {
+            return status;
+        }
+
+        /**
+         * This method is called when there are data into the read buffer.
+         * @param decrypted Read buffer.
+         */
+        private void onRead(ByteBuffer decrypted) {
+            byte[] decryptedArray = new byte[decrypted.limit()];
+            decrypted.get(decryptedArray);
+            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+                synchronized (readSemaphore) {
+                    read = true;
+                    decryptedPlace = ByteBuffer.wrap(decryptedArray);
+                    readSemaphore.notifyAll();
+                }
+            }
+        }
+
+        /**
+         * This method is called when there are data into the write buffer.
+         * @param encrypted Write buffer.
+         */
+        private void onWrite(ByteBuffer encrypted) {
+            try {
+                long size = encrypted.limit();
+                long total = 0;
+                while(total < size) {
+                    total += ((SocketChannel) selectableChannel).write(encrypted);
+                }
+            } catch (IOException ex) {
+                throw new RuntimeException("", ex);
+            }
+            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+                synchronized (writeSemaphore) {
+                    written = true;
+                    writeSemaphore.notifyAll();
+                }
+            }
+        }
+
+        /**
+         * This method is called when the operation fail.
+         * @param ex Fail exception.
+         */
+        private void onFailure(Exception ex) {
+            status = SSLHelper.SSLHelperStatus.FAIL;
+        }
+
+        /**
+         * This method is called when the operation is success.
+         */
+        private void onSuccess() {
+            System.out.println("ON SUCCESS");
+            status = SSLHelper.SSLHelperStatus.READY;
+            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
+                    0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.CONNECT);
+            defaultNetPackage.setSession(session);
+            if(consumer instanceof NetClient) {
+                consumer.onConnect(defaultNetPackage);
+            }
+        }
+
+        /**
+         * This method is called when the helper is closed.
+         */
+        private void onClosed() {
+            System.out.println("SSL CLOSE");
+        }
+
+        /**
+         * Run method of the helper.
+         */
+        @Override
+        public void run() {
+            while (this.isHandShaking()) {
+                continue;
+            }
+        }
+
+        /**
+         * Write data into the associated channel.
+         * @param netPackage Net package.
+         * @return Net package.
+         */
+        public synchronized NetPackage write(NetPackage netPackage) {
+            instance.fork(() -> {
+                srcWrap.put(netPackage.getPayload());
+                SSLHelper.this.run();
+            }, ioExecutor);
+
+            DefaultNetPackage defaultNetPackage = null;
+            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+                synchronized (writeSemaphore) {
+                    try {
+                        if (!written) {
+                            System.out.println("WAIT WRITE");
+                            readSemaphore.wait();
+                            defaultNetPackage = new DefaultNetPackage("", "",
+                                    0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.READ);
+                            defaultNetPackage.setSession(netPackage.getSession());
+                        }
+                    } catch (Exception ex){
+                    } finally {
+                        written = false;
+                    }
+                }
+            }
+
+            return defaultNetPackage;
+        }
+
+        /**
+         * Read data from the associated channel.
+         * @param netPackage Net package.
+         * @return Input data.
+         */
+        public synchronized NetPackage read(NetPackage netPackage) {
+            instance.fork(() -> {
+                srcUnwrap.put(netPackage.getPayload());
+                SSLHelper.this.run();
+            }, ioExecutor);
+
+            DefaultNetPackage defaultNetPackage = null;
+            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+                synchronized (readSemaphore) {
+                    try {
+                        if(!read) {
+                            System.out.println("WAIT READ");
+                            readSemaphore.wait();
+                        }
+                        defaultNetPackage = new DefaultNetPackage("", "",
+                                0, consumer.getPort(), decryptedPlace.array(), NetPackage.ActionEvent.READ);
+                        defaultNetPackage.setSession(netPackage.getSession());
+                    } catch (InterruptedException e) {
+                    } finally {
+                        read = false;
+                    }
+                }
+            }
+
+            return defaultNetPackage;
+        }
+
+        public void close() {
+            try {
+                sslEngine.closeInbound();
+            } catch (SSLException e) {
+                e.printStackTrace();
+            }
+            sslEngine.closeOutbound();
+        }
+
+        /**
+         * Return boolean to indicate if the hand shaking process is running.
+         * @return True if the process is running and false in otherwise.
+         */
+        private boolean isHandShaking() {
+            switch (sslEngine.getHandshakeStatus()) {
+                case NOT_HANDSHAKING:
+                    boolean occupied = false;
+                {
+                    if (srcWrap.position() > 0)
+                        occupied |= this.wrap();
+                    if (srcUnwrap.position() > 0)
+                        occupied |= this.unwrap();
+                }
+                return occupied;
+
+                case NEED_WRAP:
+                    if (!this.wrap())
+                        return false;
+                    break;
+
+                case NEED_UNWRAP:
+                    if (!this.unwrap())
+                        return false;
+                    break;
+
+                case NEED_TASK:
+                    final Runnable sslTask = sslEngine.getDelegatedTask();
+                    instance.fork(() -> {
+                        sslTask.run();
+                        instance.fork(SSLHelper.this, ioExecutor);
+                    }, engineTaskExecutor);
+                    return false;
+
+                case FINISHED:
+                    throw new IllegalStateException("FINISHED");
+            }
+
+            return true;
+        }
+
+        /**
+         * Wrap the output data.
+         * @return Return true if the process was success.
+         */
+        private boolean wrap() {
+            SSLEngineResult wrapResult;
+
+            try {
+                srcWrap.flip();
+                wrapResult = sslEngine.wrap(srcWrap, destWrap);
+                srcWrap.compact();
+            }
+            catch (SSLException exc) {
+                this.onFailure(exc);
+                return false;
+            }
+
+            switch (wrapResult.getStatus()) {
+                case OK:
+                    if (destWrap.position() > 0) {
+                        destWrap.flip();
+                        this.onWrite(destWrap);
+                        destWrap.compact();
+                    }
+                    break;
+
+                case BUFFER_UNDERFLOW:
+                    // try again later
+                    break;
+
+                case BUFFER_OVERFLOW:
+                    throw new IllegalStateException("failed to wrap");
+
+                case CLOSED:
+                    this.onClosed();
+                    return false;
+            }
+
+            if (consumer instanceof NetServer &&
+                    wrapResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
+                this.onSuccess();
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * Unwrap the input data.
+         * @return Return true if the process was success.
+         */
+        private boolean unwrap() {
+            SSLEngineResult unwrapResult;
+
+            try {
+                srcUnwrap.flip();
+                unwrapResult = sslEngine.unwrap(srcUnwrap, destUnwrap);
+                srcUnwrap.compact();
+            }
+            catch (SSLException ex) {
+                this.onFailure(ex);
+                return false;
+            }
+
+            switch (unwrapResult.getStatus()) {
+                case OK:
+                    if (destUnwrap.position() > 0) {
+                        destUnwrap.flip();
+                        this.onRead(destUnwrap);
+                        destUnwrap.compact();
+                    }
+                    break;
+
+                case CLOSED:
+                    this.onClosed();
+                    return false;
+
+                case BUFFER_OVERFLOW:
+                    throw new IllegalStateException("failed to unwrap");
+
+                case BUFFER_UNDERFLOW:
+                    return false;
+            }
+
+            if (consumer instanceof NetClient &&
+                    unwrapResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
+                this.onSuccess();
+                return false;
+            }
+
+            return true;
+        }
+
+        /**
+         * Contains all the possible helper status.
+         */
+        public enum SSLHelperStatus {
+
+            WAITING,
+
+            READY,
+
+            FAIL
+
+        }
+    }
 }
