@@ -23,6 +23,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     private Map<NetSession, HttpRequest> requestBuffers;
     private List<Context> contexts;
     private HttpSessionManager sessionManager;
+    private HttpPackage.HttpProtocol httpProtocol;
 
     public HttpServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_SERVER_PORT));
@@ -37,6 +38,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 NetService.TransportLayerProtocol.TCP, false, true);
         requestBuffers = new HashMap<>();
         contexts = new ArrayList<>();
+        httpProtocol = sslProtocol ? HttpPackage.HttpProtocol.HTTPS : HttpPackage.HttpProtocol.HTTP;
     }
 
     /**
@@ -126,6 +128,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(request == null){
             synchronized (requestBuffers) {
                 request = new HttpRequest();
+                request.setProtocol(httpProtocol);
                 requestBuffers.put(netPackage.getSession(), request);
             }
         }
@@ -255,6 +258,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             }
 
             try {
+                response.setProtocol(httpProtocol);
                 write(session, response, response.getNetStreamingSource(), false);
                 Log.out(HTTP_SERVER_LOG_TAG, "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());

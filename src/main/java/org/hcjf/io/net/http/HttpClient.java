@@ -22,8 +22,6 @@ import java.util.UUID;
 public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
     public static final String HTTP_CLIENT_LOG_TAG = "HTTP_CLIENT";
-    private static final String HTTP_PROTOCOL = "http";
-    private static final String HTTPS_PROTOCOL = "https";
 
     private static final String CONNECTION_TIMEOUT_MESSAGE = "Connection timeout";
     private static final String READ_TIMEOUT_MESSAGE = "Read timeout";
@@ -38,19 +36,22 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     private Long writeTimeout;
     private Long readTimeout;
     private HttpSession session;
+    private HttpPackage.HttpProtocol httpProtocol;
 
     public HttpClient(URL url) {
         super(url.getHost(), url.getPort() != -1 ? url.getPort() :
-                    url.getProtocol().equals(HTTPS_PROTOCOL) ?
+                    url.getProtocol().equalsIgnoreCase(HttpPackage.HttpProtocol.HTTPS.toString()) ?
                             SystemProperties.getInteger(SystemProperties.Net.Https.DEFAULT_CLIENT_PORT) :
                             SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_CLIENT_PORT),
-                    url.getProtocol().equals(HTTPS_PROTOCOL) ?
+                    url.getProtocol().equalsIgnoreCase(HttpPackage.HttpProtocol.HTTPS.toString()) ?
                             NetService.TransportLayerProtocol.TCP_SSL :
                             NetService.TransportLayerProtocol.TCP);
         this.url = url;
         this.connectTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_CONNECT_TIMEOUT);
         this.writeTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_WRITE_TIMEOUT);
         this.readTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT);
+        this.httpProtocol = url.getProtocol().equalsIgnoreCase(HttpPackage.HttpProtocol.HTTPS.toString()) ?
+                HttpPackage.HttpProtocol.HTTPS : HttpPackage.HttpProtocol.HTTP;
         init();
     }
 
@@ -61,6 +62,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
 
         //Create default request
         request = new HttpRequest();
+        request.setProtocol(httpProtocol);
         request.setHttpVersion(HttpVersion.VERSION_1_1);
         request.setContext(url.getFile());
         request.setMethod(HttpMethod.GET);
@@ -232,6 +234,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     protected HttpPackage decode(NetPackage netPackage) {
         if(response == null) {
             response = new HttpResponse();
+            response.setProtocol(httpProtocol);
         }
         response.addData(netPackage.getPayload());
         return response;

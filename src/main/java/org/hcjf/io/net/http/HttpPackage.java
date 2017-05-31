@@ -22,6 +22,7 @@ public abstract class HttpPackage {
     public static final String HTTP_FIELD_ASSIGNATION = "=";
     public static final String HTTP_CONTEXT_SEPARATOR = "/";
 
+    private HttpProtocol protocol;
     private String httpVersion;
     private final Map<String, HttpHeader> headers;
     private byte[] body;
@@ -36,12 +37,30 @@ public abstract class HttpPackage {
         this.httpVersion = HttpVersion.VERSION_1_1;
         this.headers = new HashMap<>();
         this.body = new byte[0];
+        this.protocol = HttpProtocol.HTTP;
     }
 
     protected HttpPackage(HttpPackage httpPackage) {
         this.httpVersion = httpPackage.httpVersion;
         this.headers = httpPackage.headers;
-        this.body = httpPackage.getBody();
+        this.body = httpPackage.body;
+        this.protocol = httpPackage.protocol;
+    }
+
+    /**
+     * Return the http protocol.
+     * @return Http protocol
+     */
+    public HttpProtocol getProtocol() {
+        return protocol;
+    }
+
+    /**
+     * Set the http protocol.
+     * @param protocol Http protocol
+     */
+    public void setProtocol(HttpProtocol protocol) {
+        this.protocol = protocol;
     }
 
     /**
@@ -212,5 +231,16 @@ public abstract class HttpPackage {
      * @return Protocol name bytes.
      */
     public abstract byte[] getProtocolHeader();
+
+    /**
+     * Enum with the http protocols
+     */
+    public enum HttpProtocol {
+
+        HTTP,
+
+        HTTPS
+
+    }
 
 }
