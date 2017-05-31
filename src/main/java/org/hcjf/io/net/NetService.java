@@ -363,11 +363,9 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param channel
      * @param data
      * @param event
-     * @param source
      * @return
      */
-    private NetPackage createPackage(SelectableChannel channel, byte[] data,
-                                     NetPackage.ActionEvent event, NetStreamingSource source) {
+    private NetPackage createPackage(SelectableChannel channel, byte[] data, NetPackage.ActionEvent event) {
         NetPackage netPackage;
         String remoteHost;
         String remoteAddress;
@@ -386,13 +384,10 @@ public final class NetService extends Service<NetServiceConsumer> {
         } else {
             throw new IllegalArgumentException("Unknown channel type");
         }
-        if (source == null) {
-            netPackage = new DefaultNetPackage(remoteHost, remoteAddress, remotePort,
-                    localPort, data, event);
-        } else {
-            netPackage = new StreamingNetPackage(remoteHost, remoteAddress, remotePort,
-                    localPort, data, source);
-        }
+
+        netPackage = new DefaultNetPackage(remoteHost, remoteAddress, remotePort,
+                localPort, data, event);
+
         return netPackage;
     }
 
@@ -404,22 +399,10 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @throws IOException Exception of the write operation.
      */
     public final NetPackage writeData(NetSession session, byte[] data) throws IOException {
-        return writeData(session, data, null);
-    }
-
-    /**
-     * This method put a net package on the output queue of the session.
-     * @param session Net session.
-     * @param data Data to create the package.
-     * @param source Data source.
-     * @return Return the id of the created package.
-     * @throws IOException Exception of the write operation.
-     */
-    public final NetPackage writeData(NetSession session, byte[] data, NetStreamingSource source) throws IOException {
         NetPackage netPackage;
         SelectableChannel channel = channels.get(session);
         if(channel != null) {
-            netPackage = createPackage(channel, data, NetPackage.ActionEvent.WRITE, source);
+            netPackage = createPackage(channel, data, NetPackage.ActionEvent.WRITE);
             netPackage.setSession(session);
             outputQueue.get(channel).add(netPackage);
             channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
@@ -441,7 +424,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         if(channel != null){
             synchronized (channel) {
                 if(channels.containsKey(session)) {
-                    NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.DISCONNECT, null);
+                    NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.DISCONNECT);
                     netPackage.setSession(session);
                     outputQueue.get(channel).add(netPackage);
                     channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
@@ -689,7 +672,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, session);
                     sslHelpers.put(session, sslHelper);
                 } else {
-                    NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT, null);
+                    NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT);
                     onAction(connectionPackage, client);
                 }
             } catch (Exception ex){
@@ -880,8 +863,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     NetSession session = netPackage.getSession();
 
                     switch(netPackage.getActionEvent()) {
-                        case WRITE:
-                        case STREAMING: {
+                        case WRITE: {
                             try {
                                 if(!session.isLocked()){
 
@@ -921,11 +903,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     }
 
                                     if(netPackage != null) {
-                                        if (netPackage.getActionEvent().equals(NetPackage.ActionEvent.STREAMING) && channel instanceof SocketChannel) {
-                                            streamingInit((SocketChannel) channel, (StreamingNetPackage) netPackage);
-                                        } else {
-                                            netPackage.setPackageStatus(NetPackage.PackageStatus.OK);
-                                        }
+                                        netPackage.setPackageStatus(NetPackage.PackageStatus.OK);
                                     }
                                 } else {
                                     netPackage.setPackageStatus(NetPackage.PackageStatus.REJECTED_SESSION_LOCK);
@@ -969,19 +947,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         } finally {
             ioThread.getOutputBuffer().clear();
             ioThread.getOutputBuffer().rewind();
-        }
-    }
-
-    /**
-     * Start the streaming process.
-     * @param channel Represents the client side of the pipe.
-     * @param netPackage Net package.
-     */
-    private void streamingInit(SocketChannel channel, StreamingNetPackage netPackage) {
-        netPackage.getSource().init(this, channel, netPackage);
-        synchronized(netPackage.getSession()){
-            netPackage.getSession().lock();
-            fork(netPackage.getSource());
         }
     }
 
@@ -1127,6 +1092,9 @@ public final class NetService extends Service<NetServiceConsumer> {
             byte[] decryptedArray = new byte[decrypted.limit()];
             decrypted.get(decryptedArray);
             if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+
+                System.out.println("ON READ " + new String(decryptedArray));
+
                 synchronized (readSemaphore) {
                     read = true;
                     decryptedPlace = ByteBuffer.wrap(decryptedArray);

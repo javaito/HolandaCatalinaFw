@@ -1,6 +1,5 @@
 package org.hcjf.io.net.http;
 
-import org.hcjf.io.net.NetStreamingSource;
 import org.hcjf.properties.SystemProperties;
 
 /**
@@ -16,7 +15,6 @@ public class HttpResponse extends HttpPackage {
 
     private Integer responseCode;
     private String reasonPhrase;
-    private NetStreamingSource netStreamingSource;
 
     public HttpResponse() {
     }
@@ -82,14 +80,6 @@ public class HttpResponse extends HttpPackage {
             setReasonPhrase(parts[REASON_PHRASE_INDEX]);
             setHttpVersion(parts[VERSION_INDEX]);
         }
-    }
-
-    public NetStreamingSource getNetStreamingSource() {
-        return netStreamingSource;
-    }
-
-    public void setNetStreamingSource(NetStreamingSource netStreamingSource) {
-        this.netStreamingSource = netStreamingSource;
     }
 
     /**

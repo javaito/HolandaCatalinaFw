@@ -149,7 +149,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @throws IOException Exception for the io operations
      */
     protected final void write(S session, D payLoad) throws IOException {
-        write(session, payLoad, null, true);
+        write(session, payLoad, true);
     }
 
     /**
@@ -158,10 +158,9 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param payLoad Data to be written.
      * @param waitFor If this parameter is true then the operation generate
      *                a blocking over the communication channel.
-     * @param source Streaming source.
      * @throws IOException Exception for io operations
      */
-    protected final void write(S session, D payLoad, NetStreamingSource source, boolean waitFor) throws IOException {
+    protected final void write(S session, D payLoad, boolean waitFor) throws IOException {
         if(waitFor) {
             NetPackage netPackage;
             synchronized (session) {

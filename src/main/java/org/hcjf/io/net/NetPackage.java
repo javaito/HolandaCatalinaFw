@@ -229,9 +229,7 @@ public abstract class NetPackage {
 
         READ,
 
-        WRITE,
-
-        STREAMING;
+        WRITE
 
     }
 

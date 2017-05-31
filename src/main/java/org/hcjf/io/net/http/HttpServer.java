@@ -227,9 +227,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                 }
                                 response.addHeader(request.getHeader(HttpHeader.CONNECTION));
                             }
-                            if(response.getNetStreamingSource() != null) {
-                                connectionKeepAlive = true;
-                            }
                         } catch (Throwable throwable) {
                             Log.e(HTTP_SERVER_LOG_TAG, "Exception on context %s", throwable, context.getContextRegex());
                             response = context.onError(request, throwable);
@@ -259,7 +256,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
             try {
                 response.setProtocol(httpProtocol);
-                write(session, response, response.getNetStreamingSource(), false);
+                write(session, response, false);
                 Log.out(HTTP_SERVER_LOG_TAG, "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());
             } catch (Throwable throwable) {
