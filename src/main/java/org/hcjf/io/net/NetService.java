@@ -1092,9 +1092,6 @@ public final class NetService extends Service<NetServiceConsumer> {
             byte[] decryptedArray = new byte[decrypted.limit()];
             decrypted.get(decryptedArray);
             if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
-
-                System.out.println("ON READ " + new String(decryptedArray));
-
                 synchronized (readSemaphore) {
                     read = true;
                     decryptedPlace = ByteBuffer.wrap(decryptedArray);
