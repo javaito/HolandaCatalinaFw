@@ -15,6 +15,7 @@ public class MimeType {
     public static final MimeType APPLICATION_BINHEX = new MimeType("application/binhex");
     public static final MimeType APPLICATION_BINHEX4 = new MimeType("application/binhex4");
     public static final MimeType APPLICATION_BOOK = new MimeType("application/book");
+    public static final MimeType APPLICATION_BSON = new MimeType("application/bson");
     public static final MimeType APPLICATION_CDF = new MimeType("application/cdf");
     public static final MimeType APPLICATION_CLARISCAD = new MimeType("application/clariscad");
     public static final MimeType APPLICATION_COMMONGROUND = new MimeType("application/commonground");
@@ -464,6 +465,7 @@ public class MimeType {
     public static final String BOO = "boo";
     public static final String BOOK = "book";
     public static final String BOZ = "boz";
+    public static final String BSON = "bson";
     public static final String BSH = "bsh";
     public static final String BZ = "bz";
     public static final String BZ2 = "bz2";
@@ -888,6 +890,7 @@ public class MimeType {
         types.put(APPLICATION_BINHEX.toString(), APPLICATION_BINHEX);
         types.put(APPLICATION_BINHEX4.toString(), APPLICATION_BINHEX4);
         types.put(APPLICATION_BOOK.toString(), APPLICATION_BOOK);
+        types.put(APPLICATION_BSON.toString(), APPLICATION_BSON);
         types.put(APPLICATION_CDF.toString(), APPLICATION_CDF);
         types.put(APPLICATION_CLARISCAD.toString(), APPLICATION_CLARISCAD);
         types.put(APPLICATION_COMMONGROUND.toString(), APPLICATION_COMMONGROUND);
@@ -1329,6 +1332,7 @@ public class MimeType {
         typesBySuffix.put(BIN, APPLICATION_MAC_BINARY);
         typesBySuffix.put(BM, IMAGE_BMP);
         typesBySuffix.put(BOO, APPLICATION_BOOK);
+        typesBySuffix.put(BSON, APPLICATION_BSON);
         typesBySuffix.put(BOZ, APPLICATION_X_BZIP2);
         typesBySuffix.put(BSH, APPLICATION_X_BSH);
         typesBySuffix.put(BZ, APPLICATION_X_BZIP);
