@@ -317,7 +317,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             synchronized (this) {
                 Log.out(HTTP_CLIENT_LOG_TAG, "Request\r\n%s", request.toString());
                 try {
-                    Thread.sleep(5000);
                     write(getSession(), request, false);
                 } catch (Exception ex) {
                     status = Status.ERROR;
