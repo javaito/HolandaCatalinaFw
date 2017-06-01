@@ -135,7 +135,7 @@ public class HttpRequest extends HttpPackage {
     protected void processBody(byte[] body) {
         HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
         if(contentType != null &&
-                contentType.getHeaderValue().equals(HttpHeader.APPLICATION_X_WWW_FORM_URLENCODED)) {
+                contentType.getHeaderValue().startsWith(HttpHeader.APPLICATION_X_WWW_FORM_URLENCODED)) {
             parseHttpParameters(new String(body));
         }
     }
