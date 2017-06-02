@@ -690,8 +690,11 @@ public class Query extends EvaluatorCollection {
                 joinQuery.addEvaluator(new In(secondField.toString(), keys));
                 rightJoinables.addAll(dataSource.getResourceData(joinQuery));
                 for (Joinable rightJoinable : rightJoinables) {
-                    for (Joinable leftJoinable : indexedJoineables.get(consumer.get(rightJoinable, secondField))) {
-                        leftJoinables.add(leftJoinable.join(rightJoinable));
+                    Set<Joinable> joinables = indexedJoineables.get(consumer.get(rightJoinable, secondField));
+                    if(joinables != null) {
+                        for (Joinable leftJoinable : joinables) {
+                            leftJoinables.add(leftJoinable.join(rightJoinable));
+                        }
                     }
                 }
                 j++;
@@ -725,8 +728,11 @@ public class Query extends EvaluatorCollection {
             joinQuery.addEvaluator(new In(secondField.toString(), keys));
             leftJoinables.addAll(dataSource.getResourceData(joinQuery));
             for (Joinable leftJoinable : leftJoinables) {
-                for (Joinable rightJoinable : indexedJoineables.get(consumer.get(leftJoinable, secondField))) {
-                    rightJoinables.add(rightJoinable.join(leftJoinable));
+                Set<Joinable> joinables = indexedJoineables.get(consumer.get(leftJoinable, secondField));
+                if(joinables != null) {
+                    for (Joinable rightJoinable : joinables) {
+                        rightJoinables.add(rightJoinable.join(leftJoinable));
+                    }
                 }
             }
         }
