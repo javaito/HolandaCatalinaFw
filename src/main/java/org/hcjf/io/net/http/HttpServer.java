@@ -256,6 +256,11 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
             try {
                 response.setProtocol(httpProtocol);
+                if(!response.containsHeader(HttpHeader.CONTENT_LENGTH) &&
+                        SystemProperties.getBoolean(SystemProperties.Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH)) {
+                    Integer length = response.getBody() == null ? 0 : response.getBody().length;
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, length.toString()));
+                }
                 write(session, response, false);
                 Log.out(HTTP_SERVER_LOG_TAG, "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());

@@ -137,6 +137,7 @@ public final class SystemProperties extends Properties {
             public static final String DEFAULT_CLIENT_WRITE_TIMEOUT = "hcjf.net.http.default.client.write.timeout";
             public static final String DEFAULT_GUEST_SESSION_NAME = "hcjf.net.http.default.guest.session.name";
             public static final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.net.http.default.file.checksum.algorithm";
+            public static final String ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH = "hcjf.net.http.enable.automatic.response.content.length";
 
             public static final class Folder {
                 public static final String FORBIDDEN_CHARACTERS = "hcjf.net.http.folder.forbidden.characters";
@@ -357,6 +358,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.DEFAULT_CLIENT_WRITE_TIMEOUT, "10000");
         defaults.put(Net.Http.DEFAULT_GUEST_SESSION_NAME, "Http guest session");
         defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
+        defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
 
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
         defaults.put(Net.Http.Folder.FILE_EXTENSION_REGEX, "\\.(?=[^\\.]+$)");
