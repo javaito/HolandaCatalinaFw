@@ -98,15 +98,15 @@ public class HttpServerTestSuit {
 //            e.printStackTrace();
 //        }
 
-//        HttpServer server = new HttpServer(8080);
-//        server.addContext(new EndPoint("example", "crud"));
-//        server.start();
-
-        HttpsServer server = new HttpsServer(8080);
+        HttpServer server = new HttpServer(8080);
         server.addContext(new EndPoint("example", "crud"));
-        server.setKeystoreFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/keystore.jks"));
-        server.setTrustedCertsFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/cacerts.jks"));
         server.start();
+
+//        HttpsServer server = new HttpsServer(8080);
+//        server.addContext(new EndPoint("example", "crud"));
+//        server.setKeystoreFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/keystore.jks"));
+//        server.setTrustedCertsFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/cacerts.jks"));
+//        server.start();
     }
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {
