@@ -43,7 +43,6 @@ public class SizeStrategy implements CloudCacheStrategy {
      * Add a new id into the internal collection.
      * @param id Id added into the cache instance.
      * @param value Value added into cache.
-     * @return Return only the last id of the internal collection.
      */
     @Override
     public void onAdd(Object id, Object value) {

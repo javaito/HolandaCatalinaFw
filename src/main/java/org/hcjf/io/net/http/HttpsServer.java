@@ -175,7 +175,7 @@ public class HttpsServer extends HttpServer {
     /**
      * Creates the key managers required to initiate the {@link SSLContext}.
      * @return {@link KeyManager} array that will be used to initiate the {@link SSLContext}.
-     * @throws Exception
+     * @throws Exception Key managers creation exception
      */
     protected KeyManager[] createKeyManagers() throws Exception {
         KeyStore keyStore = getProvider() == null ? KeyStore.getInstance(getKeyType()) : KeyStore.getInstance(getKeyType(), getProvider());
@@ -195,7 +195,7 @@ public class HttpsServer extends HttpServer {
     /**
      * Creates the trust managers required to initiate the {@link SSLContext}, using a JKS keystore as an input.
      * @return {@link TrustManager} array, that will be used to initiate the {@link SSLContext}.
-     * @throws Exception
+     * @throws Exception Trust manager creation exception
      */
     protected TrustManager[] createTrustManagers() throws Exception {
         KeyStore trustStore = getProvider() == null ? KeyStore.getInstance(getKeyType()) : KeyStore.getInstance(getKeyType(), getProvider());

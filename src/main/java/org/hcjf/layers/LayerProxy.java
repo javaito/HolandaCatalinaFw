@@ -14,6 +14,7 @@ public interface LayerProxy {
      * This method is called before of layer invocation.
      * @param method Layer's method to invoke.
      * @param params Parameter's method.
+     * @return Proxy interceptor instance.
      */
     public ProxyInterceptor onBeforeInvoke(Method method, Object... params);
 

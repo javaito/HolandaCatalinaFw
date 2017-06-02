@@ -147,10 +147,10 @@ public final class Cloud extends Service<CloudConsumer> {
      * Creates a instance of cache into the cloud using the specific strategy to
      * specify the behavior of the cache instance.
      * @param cacheName Name of the cache instance.
-     * @param strategy Cache strategy.
+     * @param strategies Set with the strategies for the cache instance.
      */
-    public static void createCache(String cacheName, CloudCacheStrategy strategy) {
-        getInstance().impl.createCache(cacheName, strategy);
+    public static void createCache(String cacheName, Set<CloudCacheStrategy> strategies) {
+        getInstance().impl.createCache(cacheName, strategies);
     }
 
     /**

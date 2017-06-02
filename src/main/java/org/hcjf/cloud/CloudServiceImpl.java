@@ -88,9 +88,9 @@ public interface CloudServiceImpl {
      * Creates a instance of cache into the cloud using the specific strategy to
      * specify the behavior of the cache instance.
      * @param cacheName Name of the cache instance.
-     * @param strategy Cache strategy.
+     * @param strategies Set with the strategies for the cache instance.
      */
-    public void createCache(String cacheName, CloudCacheStrategy strategy);
+    public void createCache(String cacheName, Set<CloudCacheStrategy> strategies);
 
     /**
      * Return the instance of cache named with specific name.
