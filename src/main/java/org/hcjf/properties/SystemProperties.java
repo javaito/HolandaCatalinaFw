@@ -242,6 +242,7 @@ public final class SystemProperties extends Properties {
             public static final String MAP_SUFFIX_NAME = "hcjf.cloud.cache.map.suffix.name";
             public static final String LOCK_SUFFIX_NAME = "hcjf.cloud.cache.lock.suffix.name";
             public static final String CONDITION_SUFFIX_NAME = "hcjf.cloud.cache.condition.suffix.name";
+            public static final String SIZE_STRATEGY_MAP_SUFFIX_NAME = "hcjf.cloud.cache.size.strategy.map.suffix.name";
         }
     }
 
@@ -440,6 +441,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Cache.MAP_SUFFIX_NAME, "hcjf.cloud.cache.map.");
         defaults.put(Cloud.Cache.LOCK_SUFFIX_NAME, "hcjf.cloud.cache.lock.");
         defaults.put(Cloud.Cache.CONDITION_SUFFIX_NAME, "hcjf.cloud.cache.condition.");
+        defaults.put(Cloud.Cache.SIZE_STRATEGY_MAP_SUFFIX_NAME, "hcjf.cloud.cache.size.strategy.map.");
 
         Properties system = System.getProperties();
         putAll(system);

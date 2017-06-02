@@ -4,8 +4,7 @@ import org.hcjf.cloud.Cloud;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -31,6 +30,26 @@ public abstract class CloudCache {
                 SystemProperties.get(SystemProperties.Cloud.Cache.LOCK_SUFFIX_NAME) + cacheName);
         this.condition = Cloud.getCondition(
                 SystemProperties.get(SystemProperties.Cloud.Cache.CONDITION_SUFFIX_NAME) + cacheName, lock);
+
+        strategies.forEach(S -> S.init(this));
+    }
+
+    /**
+     * Return the name of the cache.
+     * @return Name of the cache.
+     */
+    public final String getCacheName() {
+        return cacheName;
+    }
+
+    /**
+     * Apply all the strategies of the cache instance an remove all
+     * the instances that the strategies return.
+     */
+    private void applyStrategies() {
+        Set<Object> ids = new TreeSet<>();
+        strategies.forEach(S -> ids.addAll(S.applyStrategy()));
+        ids.forEach(instances::remove);
     }
 
     /**
@@ -42,10 +61,8 @@ public abstract class CloudCache {
             lock.lock();
             try {
                 instances.remove(id);
-
-                for (CloudCacheStrategy strategy : strategies) {
-                    strategy.onRemove(id);
-                }
+                strategies.forEach(S -> S.onRemove(id));
+                applyStrategies();
             } finally {
                 lock.unlock();
             }
@@ -61,14 +78,8 @@ public abstract class CloudCache {
         lock.lock();
         try {
             instances.put(id, Introspection.toMap(value));
-
-            Object toRemove;
-            for (CloudCacheStrategy strategy : strategies) {
-                toRemove = strategy.onAdd(id, value);
-                if (toRemove != null) {
-                    instances.remove(toRemove);
-                }
-            }
+            strategies.forEach(S -> S.onAdd(id, value));
+            applyStrategies();
         } finally {
             lock.unlock();
         }
@@ -83,6 +94,7 @@ public abstract class CloudCache {
      */
     public final <O extends Object> O get(Object id, Class<? extends O> resultType) {
         O result = null;
+        applyStrategies();
         Map<String,Object> instance = instances.get(id);
         if(instance != null) {
             try {
