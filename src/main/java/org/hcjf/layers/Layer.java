@@ -6,6 +6,7 @@ import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
 import java.lang.reflect.Method;
+import java.util.Set;
 
 /**
  * All the layer implementation extends this class, and this class is a proxy
@@ -17,9 +18,19 @@ public abstract class Layer implements LayerInterface {
     private final String implName;
     private final boolean stateful;
 
+    /**
+     * This is the end point for all the layers constructor.
+     * @param implName Implementation name.
+     * @param stateful Stateful status.
+     */
     public Layer(String implName, boolean stateful) {
         this.implName = implName;
         this.stateful = stateful;
+
+        System.out.println("LAYERS STACK TRACE");
+        for (int i = 0; i < Thread.currentThread().getStackTrace().length; i++) {
+            System.out.println(Thread.currentThread().getStackTrace()[i]);
+        }
     }
 
     public Layer(String implName) {
@@ -50,6 +61,23 @@ public abstract class Layer implements LayerInterface {
     @Override
     public final boolean isStateful() {
         return stateful;
+    }
+
+    /**
+     * Return the string set with all the aliases for this implementation.
+     * @return Aliases for this implementation.
+     */
+    public Set<String> getAliases() {
+        return null;
+    }
+
+    /**
+     * This method return true if the layer instance is overwritable for other instance
+     * whit the same name.
+     * @return True if the layer is overwritable or false in the otherwise.
+     */
+    public boolean isOverwritable() {
+        return true;
     }
 
     /**

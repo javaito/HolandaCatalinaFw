@@ -46,26 +46,26 @@ public interface EndPointEncoderLayerInterface extends LayerInterface {
         @Override
         public HttpResponse encode(EndPointRequest request, EndPointResponse response) {
             HttpResponse httpResponse = new HttpResponse();
-            String body = gson.toJson(response.getLayerResponse());
+            byte[] body = gson.toJson(response.getLayerResponse()).getBytes();
             httpResponse.setResponseCode(HttpResponseCode.OK);
             httpResponse.setReasonPhrase("OK");
-            httpResponse.setBody(body.getBytes());
+            httpResponse.setBody(body);
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
-            httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+            httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
             return httpResponse;
         }
 
         @Override
         public HttpResponse encode(HttpRequest request, Throwable throwable) {
             HttpResponse httpResponse = new HttpResponse();
-            String body = gson.toJson(throwable);
+            byte[] body = gson.toJson(throwable).getBytes();
             httpResponse.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
             httpResponse.setReasonPhrase("Internal server error");
-            httpResponse.setBody(body.getBytes());
+            httpResponse.setBody(body);
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
-            httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
+            httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
             return httpResponse;
         }
 

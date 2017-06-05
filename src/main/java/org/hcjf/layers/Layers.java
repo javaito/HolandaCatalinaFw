@@ -38,6 +38,7 @@ public final class Layers {
         instance = new Layers();
     }
 
+    private final Map<Class<? extends Layer>, Object> initialInstances;
     private final Map<Class<? extends LayerInterface>, Map<String, Class<? extends Layer>>> layerImplementations;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> pluginLayerImplementations;
     private final Map<Class<? extends Layer>, LayerInterface> instanceCache;
@@ -45,6 +46,7 @@ public final class Layers {
     private final Map<String, Layer> pluginCache;
 
     private Layers() {
+        initialInstances = new HashMap<>();
         layerImplementations = new HashMap<>();
         pluginLayerImplementations = new HashMap<>();
         instanceCache = new HashMap<>();
@@ -65,7 +67,7 @@ public final class Layers {
         result = (L) instance.instanceCache.get(clazz);
         if (result == null) {
             try {
-                result = (L) clazz.newInstance();
+                result = (L) instance.initialInstances.get(clazz);
                 result = (L) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
                         new Class[]{layerClass}, result);
 
@@ -213,8 +215,44 @@ public final class Layers {
         if(!instance.layerImplementations.containsKey(layerInterfaceClass)) {
             instance.layerImplementations.put(layerInterfaceClass, new HashMap<>());
         }
+
+        boolean overwrite = instance.layerImplementations.get(layerInterfaceClass).containsKey(layerInstance.getImplName());
+        if(overwrite) {
+            checkOverwrite(layerInterfaceClass, layerInstance);
+        }
+
+        if(!overwrite && layerInstance.getAliases() != null) {
+            for(String alias : layerInstance.getAliases()) {
+                overwrite = instance.layerImplementations.get(layerInterfaceClass).containsKey(alias);
+                if(overwrite) {
+                    checkOverwrite(layerInterfaceClass, layerInstance);
+                }
+            }
+        }
+
+        instance.initialInstances.put(layerClass, layerInstance);
         instance.layerImplementations.get(layerInterfaceClass).put(layerInstance.getImplName(), layerClass);
         return layerInstance.getImplName();
+    }
+
+    /**
+     *
+     * @param layerInterfaceClass
+     * @param layerInstance
+     */
+    private static void checkOverwrite(Class<? extends LayerInterface> layerInterfaceClass, Layer layerInstance) {
+        Layer initialImplementation =
+                (Layer) instance.initialInstances.get(
+                        instance.layerImplementations.get(layerInterfaceClass).get(layerInstance.getImplName()));
+        if(initialImplementation.isOverwritable()) {
+            Log.w(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
+                    "The alias %s for the instance %s will be overwrite for instance of %s",
+                    layerInstance.getImplName(),
+                    initialImplementation.getClass().getName(),
+                    layerInstance.getClass().getName());
+        } else {
+            throw new SecurityException("This implementation " + initialImplementation.getClass().toString() + " is not overwritable");
+        }
     }
 
     /**
