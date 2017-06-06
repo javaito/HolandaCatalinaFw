@@ -39,6 +39,7 @@ public final class Layers {
     }
 
     private final Map<Class<? extends Layer>, Object> initialInstances;
+    private final Map<Class<? extends LayerInterface>, Map<String, String>> implAlias;
     private final Map<Class<? extends LayerInterface>, Map<String, Class<? extends Layer>>> layerImplementations;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> pluginLayerImplementations;
     private final Map<Class<? extends Layer>, LayerInterface> instanceCache;
@@ -47,6 +48,7 @@ public final class Layers {
 
     private Layers() {
         initialInstances = new HashMap<>();
+        implAlias = new HashMap<>();
         layerImplementations = new HashMap<>();
         pluginLayerImplementations = new HashMap<>();
         instanceCache = new HashMap<>();
@@ -116,8 +118,18 @@ public final class Layers {
      */
     public static <L extends LayerInterface> L get(Class<? extends L> layerClass, String implName) {
         L result = null;
+
+        //Check if the implementation name is an alias
         if(instance.layerImplementations.containsKey(layerClass)) {
+
             Class<? extends Layer> clazz = instance.layerImplementations.get(layerClass).get(implName);
+            //If the implementation class is not founded with the specific alias then we check
+            //if the implementation name is an alias.
+            if(clazz == null && instance.implAlias.get(layerClass).containsKey(implName)) {
+                clazz = instance.layerImplementations.get(layerClass).get(
+                        instance.implAlias.get(layerClass).get(implName));
+            }
+
             if(clazz != null) {
                 result = getImplementationInstance(layerClass, clazz);
             }
@@ -198,8 +210,6 @@ public final class Layers {
             throw new IllegalArgumentException("Unable to publish a null class");
         }
 
-        Class<? extends LayerInterface> layerInterfaceClass = getLayerInterfaceClass(layerClass);
-
         Layer layerInstance;
         try {
             layerInstance = layerClass.newInstance();
@@ -208,48 +218,58 @@ public final class Layers {
                     " because fail to create a new instance", ex);
         }
 
-        if(layerInstance.getImplName() == null) {
+        String implName = layerInstance.getImplName();
+        if(implName == null) {
             throw new IllegalArgumentException("Unable to publish " + layerClass +
                     " because the implementation is not name declared");
         }
-        if(!instance.layerImplementations.containsKey(layerInterfaceClass)) {
-            instance.layerImplementations.put(layerInterfaceClass, new HashMap<>());
-        }
 
-        boolean overwrite = instance.layerImplementations.get(layerInterfaceClass).containsKey(layerInstance.getImplName());
-        if(overwrite) {
-            checkOverwrite(layerInterfaceClass, layerInstance);
-        }
+        for(Class<? extends LayerInterface> layerInterfaceClass : getLayerInterfaceClass(layerClass)) {
+            //Creates the map for the implementations and aliases
+            if (!instance.layerImplementations.containsKey(layerInterfaceClass)) {
+                instance.layerImplementations.put(layerInterfaceClass, new HashMap<>());
+                instance.implAlias.put(layerInterfaceClass, new HashMap<>());
+            }
 
-        if(!overwrite && layerInstance.getAliases() != null) {
-            for(String alias : layerInstance.getAliases()) {
-                overwrite = instance.layerImplementations.get(layerInterfaceClass).containsKey(alias);
-                if(overwrite) {
-                    checkOverwrite(layerInterfaceClass, layerInstance);
+            //Check if the impl name exist into the implementations.
+            if (instance.layerImplementations.get(layerInterfaceClass).containsKey(implName)) {
+                checkOverwriteAlias(layerInterfaceClass, layerInstance, implName);
+            }
+
+            //Check if the some alias exist into the map of aliases for the specific interface.
+            if (layerInstance.getAliases() != null) {
+                for (String alias : layerInstance.getAliases()) {
+                    checkOverwriteAlias(layerInterfaceClass, layerInstance, alias);
+                }
+            }
+
+            instance.initialInstances.put(layerClass, layerInstance);
+            instance.layerImplementations.get(layerInterfaceClass).put(implName, layerClass);
+
+            //Add one map entry for each alias with the same implementation name.
+            if (layerInstance.getAliases() != null) {
+                for (String alias : layerInstance.getAliases()) {
+                    instance.implAlias.get(layerInterfaceClass).put(alias, implName);
                 }
             }
         }
 
-        instance.initialInstances.put(layerClass, layerInstance);
-        instance.layerImplementations.get(layerInterfaceClass).put(layerInstance.getImplName(), layerClass);
-        return layerInstance.getImplName();
+        return implName;
     }
 
     /**
-     *
-     * @param layerInterfaceClass
-     * @param layerInstance
+     * Check if the implementation could be overwritten.
+     * @param layerInterfaceClass Layer interface.
+     * @param layerInstance Layer instance.
      */
-    private static void checkOverwrite(Class<? extends LayerInterface> layerInterfaceClass, Layer layerInstance) {
+    private static void checkOverwriteAlias(Class<? extends LayerInterface> layerInterfaceClass, Layer layerInstance, String alias) {
         Layer initialImplementation =
                 (Layer) instance.initialInstances.get(
                         instance.layerImplementations.get(layerInterfaceClass).get(layerInstance.getImplName()));
         if(initialImplementation.isOverwritable()) {
-            Log.w(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
-                    "The alias %s for the instance %s will be overwrite for instance of %s",
-                    layerInstance.getImplName(),
-                    initialImplementation.getClass().getName(),
-                    layerInstance.getClass().getName());
+            Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
+                    "The alias %s for the instance %s will be overwritten for instance of %s", alias,
+                    initialImplementation.getClass().getName(), layerInstance.getClass().getName());
         } else {
             throw new SecurityException("This implementation " + initialImplementation.getClass().toString() + " is not overwritable");
         }
@@ -305,7 +325,6 @@ public final class Layers {
                         instance.getClass().getClassLoader());
 
                 Class<? extends Layer> layerClass;
-                Class<? extends LayerInterface> layerInterfaceClass;
                 List<Layer> toDeployLayers = new ArrayList<>();
                 Layer layer;
                 for (String layerClassName : layers) {
@@ -318,15 +337,16 @@ public final class Layers {
                 }
 
                 for (Layer layerInstance : toDeployLayers) {
-                    layerInterfaceClass = getLayerInterfaceClass(layerInstance.getClass());
                     instance.pluginCache.remove(layerInstance.getClass().getName());
                     instance.pluginCache.put(layerInstance.getClass().getName(), layerInstance);
 
-                    if (!instance.pluginLayerImplementations.containsKey(layerInterfaceClass)) {
-                        instance.pluginLayerImplementations.put(layerInterfaceClass, new HashMap<>());
-                    }
-                    if (!instance.pluginLayerImplementations.get(layerInterfaceClass).containsKey(layerInstance.getImplName())) {
-                        instance.pluginLayerImplementations.get(layerInterfaceClass).put(layerInstance.getImplName(), layerInstance.getClass().getName());
+                    for(Class<? extends LayerInterface> layerInterfaceClass : getLayerInterfaceClass(layerInstance.getClass())) {
+                        if (!instance.pluginLayerImplementations.containsKey(layerInterfaceClass)) {
+                            instance.pluginLayerImplementations.put(layerInterfaceClass, new HashMap<>());
+                        }
+                        if (!instance.pluginLayerImplementations.get(layerInterfaceClass).containsKey(layerInstance.getImplName())) {
+                            instance.pluginLayerImplementations.get(layerInterfaceClass).put(layerInstance.getImplName(), layerInstance.getClass().getName());
+                        }
                     }
                 }
             } else {
@@ -344,30 +364,26 @@ public final class Layers {
      * @param layerClass  Layer class.
      * @return Layer interface implemented.
      */
-    public static Class<? extends LayerInterface> getLayerInterfaceClass(Class<? extends Layer> layerClass) {
-        Class<? extends LayerInterface> layerInterfaceClass = null;
+    public static Set<Class<? extends LayerInterface>> getLayerInterfaceClass(Class<? extends Layer> layerClass) {
+        Set<Class<? extends LayerInterface>> result = new HashSet<>();
         Class introspectedClass = layerClass;
-        while(layerInterfaceClass == null && !introspectedClass.equals(Object.class)) {
+        while(!introspectedClass.equals(Object.class)) {
             for (Class layerInterface : introspectedClass.getInterfaces()) {
                 for (Class superInterface : layerInterface.getInterfaces()) {
                     if (LayerInterface.class.isAssignableFrom(superInterface)) {
-                        layerInterfaceClass = layerInterface;
-                        break;
-                    }
-                    if (layerInterfaceClass != null) {
-                        break;
+                        result.add(layerInterface);
                     }
                 }
             }
             introspectedClass = introspectedClass.getSuperclass();
         }
 
-        if(layerInterfaceClass == null) {
+        if(result.isEmpty()) {
             throw new IllegalArgumentException("Unable to publish " + layerClass +
                     " because must implement a son of LayerClass");
         }
 
-        return layerInterfaceClass;
+        return result;
     }
 
     /**
