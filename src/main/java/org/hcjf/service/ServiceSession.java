@@ -3,6 +3,7 @@ package org.hcjf.service;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.query.Evaluator;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.grants.Grant;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -32,6 +33,7 @@ public class ServiceSession implements Comparable {
     private final Map<Long, Long> systemTimeByThread;
     private final ThreadMXBean threadMXBean;
     private final List<ServiceSession> identities;
+    private final Set<Grant> grants;
     private Locale locale;
 
     public ServiceSession(UUID id) {
@@ -42,6 +44,7 @@ public class ServiceSession implements Comparable {
         threadMXBean = ManagementFactory.getThreadMXBean();
         locale = SystemProperties.getLocale();
         identities = new ArrayList<>();
+        grants = new HashSet<>();
     }
 
     /**
@@ -203,6 +206,102 @@ public class ServiceSession implements Comparable {
     }
 
     /**
+     * Return locale of the session.
+     * @return Session locale.
+     */
+    public Locale getLocale() {
+        return locale;
+    }
+
+    /**
+     * Set locale of the session.
+     * @param locale Session locale.
+     */
+    public void setLocale(Locale locale) {
+        this.locale = locale;
+    }
+
+    /**
+     * Add system use time to specific session in nanoseconds.
+     * @param time System use time in nanoseconds.
+     */
+    protected void addThreadTime(long time){
+    }
+
+    /**
+     * Add a grant into the session.
+     * @param grant Grant instance.
+     */
+    public final void addGrant(Grant grant) {
+        grants.add(grant);
+    }
+
+    /**
+     * Remove the grant of the session.
+     * @param grant Grant instance.
+     */
+    public final void removeGrant(Grant grant) {
+        grants.remove(grant);
+    }
+
+    /**
+     * Return the grants set of the session.
+     * @return Grants set.
+     */
+    public final Set<Grant> getGrants() {
+        return Collections.unmodifiableSet(grants);
+    }
+
+    /**
+     * Verify if the current session is the system session.
+     * @return True if the current session is the system session.
+     */
+    public final boolean isSystemSession() {
+        return equals(getSystemSession());
+    }
+
+    /**
+     * Verify if the current session is the guest session.
+     * @return True if the current session is the guest session.
+     */
+    public final boolean isGuestSession() {
+        return equals(getGuestSession());
+    }
+
+    /**
+     * Compare this session with other object.
+     * @param object Object to compare.
+     * @return Return an integer to represent the difference between this session
+     * an the object.
+     */
+    @Override
+    public int compareTo(Object object) {
+        int result = hashCode() - object.hashCode();
+        if(getClass().equals(object.getClass())) {
+            ServiceSession otherSession = (ServiceSession) object;
+            if (getId().equals(otherSession.getId())) {
+                result = 0;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Verify if the object to compare is an instance of service session and then verify if the current id is equals to
+     * the id of the service session into the parameter object.
+     * @param obj Other service session.
+     * @return Return true if the id of both service session are equals.
+     */
+    @Override
+    public final boolean equals(Object obj) {
+        boolean result = false;
+        if(obj instanceof ServiceSession) {
+            result = ((ServiceSession)obj).getId().equals(getId());
+        }
+        return result;
+    }
+
+    /**
      * Return the instance of the system session.
      * @return System session.
      */
@@ -244,47 +343,6 @@ public class ServiceSession implements Comparable {
         } else {
             throw new IllegalStateException("The current thread is not a service thread.");
         }
-    }
-
-    /**
-     * Return locale of the session.
-     * @return Session locale.
-     */
-    public Locale getLocale() {
-        return locale;
-    }
-
-    /**
-     * Set locale of the session.
-     * @param locale Session locale.
-     */
-    public void setLocale(Locale locale) {
-        this.locale = locale;
-    }
-
-    /**
-     * Compare this session with other object.
-     * @param object Object to compare.
-     * @return Return an integer to represent the difference between this session
-     * an the object.
-     */
-    @Override
-    public int compareTo(Object object) {
-        int result = hashCode() - object.hashCode();
-        if(getClass().equals(object.getClass())) {
-            ServiceSession otherSession = (ServiceSession) object;
-            if (getId().equals(otherSession.getId())) {
-                result = 0;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Add system use time to specific session in nanoseconds.
-     * @param time System use time in nanoseconds.
-     */
-    protected void addThreadTime(long time){
     }
 
     /**

@@ -26,11 +26,6 @@ public abstract class Layer implements LayerInterface {
     public Layer(String implName, boolean stateful) {
         this.implName = implName;
         this.stateful = stateful;
-
-        System.out.println("LAYERS STACK TRACE");
-        for (int i = 0; i < Thread.currentThread().getStackTrace().length; i++) {
-            System.out.println(Thread.currentThread().getStackTrace()[i]);
-        }
     }
 
     public Layer(String implName) {

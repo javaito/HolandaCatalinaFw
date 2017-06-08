@@ -11,6 +11,7 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.service.grants.Grant;
 import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Method;
@@ -98,18 +99,26 @@ public class HttpServerTestSuit {
 //            e.printStackTrace();
 //        }
 
-        HttpServer server = new HttpServer(8080);
-        server.addContext(new EndPoint("example", "crud"));
-        server.start();
-
-//        HttpsServer server = new HttpsServer(8080);
+//        HttpServer server = new HttpServer(8080);
 //        server.addContext(new EndPoint("example", "crud"));
-//        server.setKeystoreFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/keystore.jks"));
-//        server.setTrustedCertsFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/cacerts.jks"));
 //        server.start();
+
+        HttpsServer server = new HttpsServer(8080);
+        server.addContext(new EndPoint("example", "crud"));
+        server.setKeystoreFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/keystore.jks"));
+        server.setTrustedCertsFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/cacerts.jks"));
+        server.start();
     }
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {
+
+        private final Grant createGrant;
+        private final Grant customGrant;
+
+        public TestMapCrud() {
+            createGrant = Grant.publishGrant("CREATE");
+            customGrant = Grant.publishGrant("CACA");
+        }
 
         @Override
         public String getImplName() {
@@ -119,6 +128,9 @@ public class HttpServerTestSuit {
 
         @Override
         public Collection<Map<String, Object>> read(Query query) {
+
+            Grant.validateGrant(createGrant);
+
             Collection<Map<String, Object>> result = new ArrayList<>();
             Collection<Test> tests = Layers.get(CrudLayerInterface.class, "Test").read(query);
             for(Test test : tests) {

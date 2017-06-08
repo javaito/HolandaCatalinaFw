@@ -247,6 +247,10 @@ public final class SystemProperties extends Properties {
         }
     }
 
+    public static class Grant {
+        public static final String LOG_TAG = "hcjf.grant.log.tag";
+    }
+
     //Java property names
     public static final String FILE_ENCODING = "file.encoding";
 
@@ -444,6 +448,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Cache.LOCK_SUFFIX_NAME, "hcjf.cloud.cache.lock.");
         defaults.put(Cloud.Cache.CONDITION_SUFFIX_NAME, "hcjf.cloud.cache.condition.");
         defaults.put(Cloud.Cache.SIZE_STRATEGY_MAP_SUFFIX_NAME, "hcjf.cloud.cache.size.strategy.map.");
+
+        defaults.put(Grant.LOG_TAG, "GRANT");
 
         Properties system = System.getProperties();
         putAll(system);
