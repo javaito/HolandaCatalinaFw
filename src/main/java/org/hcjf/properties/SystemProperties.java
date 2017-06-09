@@ -249,6 +249,8 @@ public final class SystemProperties extends Properties {
 
     public static class Grant {
         public static final String LOG_TAG = "hcjf.grant.log.tag";
+        public static final String CLOUD_DEPLOYMENT = "hcjf.grant.cloud.deployment";
+        public static final String CLOUD_MAP_NAME = "hcjf.grant.cloud.map.name";
     }
 
     //Java property names
@@ -450,6 +452,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Cache.SIZE_STRATEGY_MAP_SUFFIX_NAME, "hcjf.cloud.cache.size.strategy.map.");
 
         defaults.put(Grant.LOG_TAG, "GRANT");
+        defaults.put(Grant.CLOUD_DEPLOYMENT, "false");
+        defaults.put(Grant.CLOUD_MAP_NAME, "hcjf.grant.cloud.map.name");
 
         Properties system = System.getProperties();
         putAll(system);
