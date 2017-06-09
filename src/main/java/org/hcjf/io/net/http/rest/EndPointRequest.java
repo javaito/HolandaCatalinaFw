@@ -2,7 +2,6 @@ package org.hcjf.io.net.http.rest;
 
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.layered.LayeredRequest;
-import org.hcjf.layers.crud.CrudLayerInterface;
 
 /**
  * This package is the request for the end point implementation interface.

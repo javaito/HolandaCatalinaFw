@@ -1,7 +1,6 @@
 package org.hcjf.service;
 
 import org.hcjf.layers.Layer;
-import org.hcjf.layers.query.Evaluator;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.grants.Grant;
 
