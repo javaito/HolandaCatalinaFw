@@ -10,6 +10,7 @@ import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.query.Query;
+import org.hcjf.properties.SystemProperties;
 
 /**
  * This layer interface provides the statement to decode a http request and
@@ -31,18 +32,17 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
      */
     public static class JsonEndPointDecoder extends Layer implements EndPointDecoderLayerInterface {
 
-        private final JsonParser parser;
         private final Gson gson;
 
         public JsonEndPointDecoder() {
             super(MimeType.APPLICATION_JSON.toString());
-            parser = new JsonParser();
             gson = new Gson();
         }
 
         /**
          * Decode de request to create a crud invocation from the request data.
          * @param request Http request.
+         * @param layer Crud layer to call.
          * @return End point request.
          */
         @Override
@@ -57,8 +57,8 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
                     break;
                 }
                 case GET: {
-                    if(request.getParameters().containsKey("q")) {
-                        Query query = Query.compile(request.getParameter("q"));
+                    if(request.getParameters().containsKey(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH))) {
+                        Query query = Query.compile(request.getParameter(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH)));
                         result = new EndPointCrudRequest(request, layer,
                                 (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(CrudLayerInterface.CrudMethodStatement.READ_QUERY.toString()),
                                 query);
@@ -87,7 +87,7 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
             }
 
             if(result == null) {
-                throw new RuntimeException("");
+                throw new NullPointerException("Null end point result");
             }
 
             return result;

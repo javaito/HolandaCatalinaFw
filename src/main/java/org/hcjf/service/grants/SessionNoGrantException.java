@@ -4,7 +4,6 @@ import org.hcjf.service.ServiceSession;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
  */
 public final class SessionNoGrantException extends RuntimeException {
 
