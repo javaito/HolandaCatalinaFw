@@ -1,5 +1,8 @@
 package org.hcjf.io.net.http;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Contains commons http response codes.
  * @author javaito
@@ -200,4 +203,61 @@ public interface HttpResponseCode {
      * href=https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.1.110.5.6
      */
     Integer HTTP_VERSION_NOT_SUPPORTED = 505;
+
+    final class DefaultPhrase {
+
+        private static final Map<Integer, String> phrases;
+
+        static {
+            phrases = new HashMap<>();
+            phrases.put(CONTINUE, "Continue");
+            phrases.put(SWITCHING_PROTOCOLS, "Switching protocols");
+            phrases.put(OK, "Ok");
+            phrases.put(CREATED, "Created");
+            phrases.put(ACCEPTED, "Accepted");
+            phrases.put(NON_AUTHORITATIVE_INFOTMATION, "Non authoritative information");
+            phrases.put(NO_CONTENT, "No content");
+            phrases.put(RESET_CONTENT, "Reset content");
+            phrases.put(PARTIAL_CONTENT, "Partial content");
+            phrases.put(MULTIPLE_CHOICES, "Multiple choices");
+            phrases.put(MOVED_PERMANENTLY, "Moved permanently");
+            phrases.put(FOUND, "Found");
+            phrases.put(SEE_OTHER, "See other");
+            phrases.put(NOT_MODIFIED, "Not modified");
+            phrases.put(USE_PROXY, "Use proxy");
+            phrases.put(TEMPORARY_REDIRECT, "Temporary redirect");
+            phrases.put(BAD_REQUEST, "Bad request");
+            phrases.put(UNAUTHORIZED, "Unauthorized");
+            phrases.put(PAYMENT_REQUIRED, "Payment required");
+            phrases.put(FORBIDDEN, "Forbidden");
+            phrases.put(NOT_FOUND, "Not found");
+            phrases.put(METHOD_NOT_ALLOWED, "Method not allowed");
+            phrases.put(NOT_ACCEPTABLE, "Not acceptable");
+            phrases.put(REQUEST_TIMEOUT, "Request timeout");
+            phrases.put(CONFLICT, "Conflict");
+            phrases.put(GONE, "Gone");
+            phrases.put(LENGTH_REQUIRED, "Length required");
+            phrases.put(PRECONDITION_FAILED, "Precondition failed");
+            phrases.put(REQUEST_ENTITY_TOO_LARGE, "Request entity too large");
+            phrases.put(REQUEST_URI_TOO_LARGE, "Request uri too large");
+            phrases.put(UNSUPPORTED_MEDIA_TYPE, "Unsupported media type.");
+            phrases.put(REQUESTED_RANGE_NOT_SATISFIABLE, "Requested range not satisfiable");
+            phrases.put(EXPECTATION_FAILED, "Expectation failed");
+            phrases.put(INTERNAL_SERVER_ERROR, "Internal server error");
+            phrases.put(NOT_IMPLEMENTED, "Not implemented");
+            phrases.put(BAD_GATEWAY, "Bad gateway");
+            phrases.put(SERVICE_UNAVAILABLE, "Service unavailable");
+            phrases.put(GATEWAY_TIMEOUT, "Gateway timeout");
+            phrases.put(HTTP_VERSION_NOT_SUPPORTED, "Http version not supported");
+        }
+
+        /**
+         * Returns the default phrase for the specific response code.
+         * @param httpResponseCode Http response code.
+         * @return Response phrase.
+         */
+        public static String getDefaultPhrase(Integer httpResponseCode) {
+            return DefaultPhrase.phrases.get(httpResponseCode);
+        }
+    }
 }

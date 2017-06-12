@@ -101,7 +101,6 @@ public class FolderContext extends Context {
                 String htmlBody = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_BODY), list.toString());
                 String document = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_DOCUMENT), file.getName(), htmlBody);
                 byte[] body = document.getBytes();
-                response.setReasonPhrase(file.getName());
                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.HTML));
                 response.setResponseCode(HttpResponseCode.OK);
@@ -130,7 +129,6 @@ public class FolderContext extends Context {
                 String[] nameExtension = file.getName().split(SystemProperties.get(SystemProperties.Net.Http.Folder.FILE_EXTENSION_REGEX));
                 String extension = nameExtension.length == 2 ? nameExtension[1] : MimeType.BIN;
                 response.setResponseCode(responseCode);
-                response.setReasonPhrase(file.getName());
                 MimeType mimeType = MimeType.fromSuffix(extension);
                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, mimeType == null ? MimeType.BIN : mimeType.toString()));
                 response.addHeader(new HttpHeader(HttpHeader.E_TAG, checksum));

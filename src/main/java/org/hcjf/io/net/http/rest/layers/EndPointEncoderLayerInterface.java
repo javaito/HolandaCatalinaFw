@@ -48,7 +48,6 @@ public interface EndPointEncoderLayerInterface extends LayerInterface {
             HttpResponse httpResponse = new HttpResponse();
             byte[] body = gson.toJson(response.getLayerResponse()).getBytes();
             httpResponse.setResponseCode(HttpResponseCode.OK);
-            httpResponse.setReasonPhrase("OK");
             httpResponse.setBody(body);
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
@@ -61,7 +60,6 @@ public interface EndPointEncoderLayerInterface extends LayerInterface {
             HttpResponse httpResponse = new HttpResponse();
             byte[] body = gson.toJson(throwable).getBytes();
             httpResponse.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
-            httpResponse.setReasonPhrase("Internal server error");
             httpResponse.setBody(body);
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
             httpResponse.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));

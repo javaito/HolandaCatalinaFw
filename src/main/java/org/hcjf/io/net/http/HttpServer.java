@@ -283,7 +283,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     private HttpResponse createDefaultErrorResponse(Throwable throwable) {
         HttpResponse response = new HttpResponse();
-        response.setReasonPhrase(throwable.getMessage());
         response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
 
         byte[] body;
@@ -311,7 +310,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         HttpResponse response = new HttpResponse();
         String body = "Context not found: " + request.getContext();
         response.setResponseCode(HttpResponseCode.NOT_FOUND);
-        response.setReasonPhrase("Context not found: " + request.getContext());
         response.setBody(body.getBytes());
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
@@ -328,7 +326,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         HttpResponse response = new HttpResponse();
         String body = "Context unresponsive: " + request.getContext();
         response.setResponseCode(HttpResponseCode.NO_CONTENT);
-        response.setReasonPhrase("Context unresponsive: " + request.getContext());
         response.setBody(body.getBytes());
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
@@ -344,7 +341,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     protected HttpResponse onNotCheckedSession(HttpRequest request) {
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.UNAUTHORIZED);
-        response.setReasonPhrase("Unchecked session: " + request.getContext());
         response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
         return response;
     }

@@ -62,13 +62,11 @@ public class EnumContext extends Context{
             byte[] body = jsonBody.toString().getBytes();
 
             response.setResponseCode(HttpResponseCode.OK);
-            response.setReasonPhrase("OK");
             response.setBody(body);
             response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
             response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
         } else {
             response.setResponseCode(HttpResponseCode.NOT_FOUND);
-            response.setReasonPhrase("Enum class not found: " + enumClassName);
         }
 
         return response;

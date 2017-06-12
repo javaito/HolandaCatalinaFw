@@ -290,7 +290,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         session.setRequest(request);
         session.setSessionName(SESSION_NAME);
         Integer errorCode = null;
-        String errorPhrase = null;
 
         //Connection block
         status = Status.CONNECTING;
@@ -305,7 +304,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             if (status == Status.CONNECTING) {
                 status = Status.ERROR;
                 errorCode = HttpResponseCode.REQUEST_TIMEOUT;
-                errorPhrase = CONNECTION_TIMEOUT_MESSAGE;
             }
         }
 
@@ -320,7 +318,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
                 } catch (Exception ex) {
                     status = Status.ERROR;
                     errorCode = HttpResponseCode.BAD_REQUEST;
-                    errorPhrase = ex.getMessage();
                 }
 
                 if (status == Status.WRITING) {
@@ -333,7 +330,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
                 if (status == Status.WRITING) {
                     status = Status.ERROR;
                     errorCode = HttpResponseCode.REQUEST_TIMEOUT;
-                    errorPhrase = READ_TIMEOUT_MESSAGE;
                 }
             }
         }
@@ -343,7 +339,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             response = new HttpResponse();
             response.setHttpVersion(HttpVersion.VERSION_1_1);
             response.setResponseCode(errorCode);
-            response.setReasonPhrase(errorPhrase);
         } else {
             response = this.response;
         }

@@ -52,7 +52,6 @@ public abstract class Context {
      */
     protected HttpResponse onError(HttpRequest request, Throwable throwable) {
         HttpResponse response = new HttpResponse();
-        response.setReasonPhrase(throwable.getMessage());
         response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
 
         byte[] body;

@@ -11,13 +11,11 @@ import java.util.UUID;
 public abstract class NetSession extends ServiceSession {
 
     private final NetServiceConsumer consumer;
-    private boolean locked;
     private boolean checked;
 
     public NetSession(UUID id, NetServiceConsumer consumer) {
         super(id);
         this.consumer = consumer;
-        this.locked = false;
     }
 
     /**
@@ -26,28 +24,6 @@ public abstract class NetSession extends ServiceSession {
      */
     public NetServiceConsumer getConsumer() {
         return consumer;
-    }
-
-    /**
-     * Lock session.
-     */
-    public final void lock() {
-        locked = true;
-    }
-
-    /**
-     * Unlock session.
-     */
-    public final void unlock() {
-        locked = false;
-    }
-
-    /**
-     * Return the lock status of the session.
-     * @return True if the session is locked and false otherwise
-     */
-    public final boolean isLocked() {
-        return locked;
     }
 
     /**

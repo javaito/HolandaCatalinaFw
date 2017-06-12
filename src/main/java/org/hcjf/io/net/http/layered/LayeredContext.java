@@ -94,7 +94,6 @@ public abstract class LayeredContext<L extends LayerInterface,
     protected HttpResponse onError(HttpRequest request, Throwable throwable) {
         HttpResponse result = new HttpResponse();
         result.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
-        result.setReasonPhrase(throwable.getMessage());
         return result;
     }
 
