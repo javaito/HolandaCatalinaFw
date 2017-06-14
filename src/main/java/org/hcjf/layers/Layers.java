@@ -4,6 +4,8 @@ import org.hcjf.layers.plugins.DeploymentService;
 import org.hcjf.layers.plugins.Plugin;
 import org.hcjf.layers.plugins.PluginClassLoader;
 import org.hcjf.layers.plugins.PluginLayer;
+import org.hcjf.layers.resources.Resource;
+import org.hcjf.layers.resources.Resourceable;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
@@ -16,9 +18,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 
 /**
  * This class manage all the published layers.
@@ -45,6 +49,7 @@ public final class Layers {
     private final Map<Class<? extends Layer>, LayerInterface> instanceCache;
     private final Map<String, LayerInterface> pluginWrapperCache;
     private final Map<String, Layer> pluginCache;
+    private final Set<Resource> resources;
 
     private Layers() {
         initialInstances = new HashMap<>();
@@ -54,6 +59,7 @@ public final class Layers {
         instanceCache = new HashMap<>();
         pluginWrapperCache = new HashMap<>();
         pluginCache = new HashMap<>();
+        resources = new HashSet<>();
     }
 
     /**
@@ -252,6 +258,11 @@ public final class Layers {
                     instance.implAlias.get(layerInterfaceClass).put(alias, implName);
                 }
             }
+
+            if(layerInstance instanceof Resourceable) {
+                ((Resourceable)layerInstance).createResource(layerInterfaceClass).forEach(
+                        R->instance.resources.add(R));
+            }
         }
 
         return implName;
@@ -387,6 +398,23 @@ public final class Layers {
     }
 
     /**
+     * Returns all the resources published into the system.
+     * @return Set with all the resources.
+     */
+    public static Set<Resource> getResources() {
+        return getResources(R->true);
+    }
+
+    /**
+     * Returns the resources that meet the predicate.
+     * @param predicate Resource predicate.
+     * @return Set with the resources.
+     */
+    public static Set<Resource> getResources(ResourcePredicate predicate) {
+        return instance.resources.stream().filter(predicate).collect(Collectors.toSet());
+    }
+
+    /**
      * This interface verify if the layer instance match with some particular
      * filter or not.
      * @param <L> Kind of layer
@@ -397,4 +425,5 @@ public final class Layers {
 
     }
 
+    public interface ResourcePredicate extends Predicate<Resource> {}
 }
