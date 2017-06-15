@@ -124,6 +124,7 @@ public final class SystemProperties extends Properties {
         }
 
         public static final class Http {
+            public static final String LOG_TAG = "hcjf.net.http.server.log.tag";
             public static final String SERVER_NAME = "hcjf.net.http.server.name";
             public static final String RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.net.http.response.date.header.format.value";
             public static final String INPUT_LOG_BODY_MAX_LENGTH = "hcjf.net.http.input.log.body.max.length";
@@ -351,6 +352,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Ssl.IO_THREAD_NAME, "SslIoThread");
         defaults.put(Net.Ssl.ENGINE_THREAD_NAME, "SslEngineThread");
 
+        defaults.put(Net.Http.LOG_TAG, "HTTP_SERVER");
         defaults.put(Net.Http.SERVER_NAME, "HCJF Web Server");
         defaults.put(Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");
         defaults.put(Net.Http.INPUT_LOG_BODY_MAX_LENGTH, "128");

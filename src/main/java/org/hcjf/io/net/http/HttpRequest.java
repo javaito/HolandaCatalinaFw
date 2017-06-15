@@ -201,7 +201,7 @@ public class HttpRequest extends HttpPackage {
             try {
                 parameters.put(URLDecoder.decode(key, charset), value == null ? null : URLDecoder.decode(value, charset));
             } catch (UnsupportedEncodingException e) {
-                Log.w(HttpServer.HTTP_SERVER_LOG_TAG, "Unable to decode http parameter, %s:%s", key, value);
+                Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Unable to decode http parameter, %s:%s", key, value);
                 parameters.put(key, value);
             }
         }

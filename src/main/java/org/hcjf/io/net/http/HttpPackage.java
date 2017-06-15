@@ -1,6 +1,7 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.log.Log;
+import org.hcjf.properties.SystemProperties;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -210,7 +211,7 @@ public abstract class HttpPackage {
                 }
             }
         } else {
-            Log.d(HttpServer.HTTP_SERVER_LOG_TAG, "Trying to add data into a complete http package.");
+            Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Trying to add data into a complete http package.");
         }
     }
 

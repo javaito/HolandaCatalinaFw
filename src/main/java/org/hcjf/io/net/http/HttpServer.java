@@ -18,8 +18,6 @@ import java.util.*;
  */
 public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
-    public static final String HTTP_SERVER_LOG_TAG = "HTTP_SERVER";
-
     private Map<NetSession, HttpRequest> requestBuffers;
     private List<Context> contexts;
     private HttpSessionManager sessionManager;
@@ -72,7 +70,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
         HttpSession session = sessionManager.createSession(this, netPackage);
 
-        Log.d(HTTP_SERVER_LOG_TAG, "[CREATE_SESSION] Http session %s", session);
+        Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "[CREATE_SESSION] Http session %s", session);
 
         return session;
     }
@@ -93,7 +91,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
         HttpSession session1 = sessionManager.checkSession(session, (HttpRequest) payLoad);
 
-        Log.d(HTTP_SERVER_LOG_TAG, "[CHECK_SESSION] Http session %s", session);
+        Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "[CHECK_SESSION] Http session %s", session);
 
         return session1;
     }
@@ -151,10 +149,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
         if(!duplicated) {
             contexts.add(context);
-            Log.i(HTTP_SERVER_LOG_TAG, "Context added: [%s] %s",
+            Log.i(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Context added: [%s] %s",
                     context.getClass().getName(),  context.getContextRegex());
         } else {
-            Log.w(HTTP_SERVER_LOG_TAG, "Duplicated context: [%s] %s",
+            Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Duplicated context: [%s] %s",
                     context.getClass().getName(),  context.getContextRegex());
         }
     }
@@ -212,23 +210,23 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
             HttpResponse response;
             HttpRequest request = (HttpRequest) payLoad;
-            Log.in(HTTP_SERVER_LOG_TAG, "Request\r\n%s", request.toString());
+            Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
             try {
                 if(netPackage.getSession().isChecked()) {
                     Context context = findContext(request.getContext());
                     if (context != null) {
                         try {
-                            Log.d(HTTP_SERVER_LOG_TAG, "Request context: %s", request.getContext());
+                            Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
                             response = context.onContext(request);
                             if(request.containsHeader(HttpHeader.CONNECTION)) {
                                 if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
-                                    Log.d(HTTP_SERVER_LOG_TAG, "Http connection keep alive");
+                                    Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
                                     connectionKeepAlive = true;
                                 }
                                 response.addHeader(request.getHeader(HttpHeader.CONNECTION));
                             }
                         } catch (Throwable throwable) {
-                            Log.e(HTTP_SERVER_LOG_TAG, "Exception on context %s", throwable, context.getContextRegex());
+                            Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
                             response = context.onError(request, throwable);
                             if (response == null) {
                                 response = createDefaultErrorResponse(throwable);
@@ -262,14 +260,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, length.toString()));
                 }
                 write(session, response, false);
-                Log.out(HTTP_SERVER_LOG_TAG, "Response -> [Time: %d ms] \r\n%s",
+                Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());
             } catch (Throwable throwable) {
-                Log.e(HTTP_SERVER_LOG_TAG, "Http server error", throwable);
+                Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
                 connectionKeepAlive = false;
             } finally {
                 if(!connectionKeepAlive) {
-                    Log.d(HTTP_SERVER_LOG_TAG, "Http connection closed by server.");
+                    Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
                     disconnect(session, "Http request end");
                 }
             }
@@ -369,7 +367,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected void onStart() {
-        Log.d(HTTP_SERVER_LOG_TAG, "Http server started, listening on port %d", getPort());
+        Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server started, listening on port %d", getPort());
     }
 
     /**
@@ -377,7 +375,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected void onStop() {
-        Log.d(HTTP_SERVER_LOG_TAG, "Http server stopped.");
+        Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server stopped.");
     }
 
 }
