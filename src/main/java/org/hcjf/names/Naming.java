@@ -15,10 +15,10 @@ public final class Naming extends Service<NamingConsumer> {
     public static final String NAMING_LOG_TAG = "NAMING";
     private static final String NAME = "NamingService";
 
-    private static final Naming instace;
+    private static final Naming instance;
 
     static {
-        instace = new Naming();
+        instance = new Naming();
     }
 
     private final Map<String, NamingConsumer> consumers;
@@ -56,7 +56,7 @@ public final class Naming extends Service<NamingConsumer> {
      * @param consumer Naming consumer.
      */
     public static void addNamingConsumer(NamingConsumer consumer) {
-        instace.registerConsumer(consumer);
+        instance.registerConsumer(consumer);
     }
 
     /**
@@ -68,8 +68,8 @@ public final class Naming extends Service<NamingConsumer> {
     public static String normalize(String implName, String value) {
         String result = value;
 
-        if(instace.consumers.containsKey(implName)) {
-            result = instace.consumers.get(implName).normalize(value);
+        if(instance.consumers.containsKey(implName)) {
+            result = instance.consumers.get(implName).normalize(value);
         } else {
             Log.w(NAMING_LOG_TAG, "Naming implementation not found: %s", implName);
         }

@@ -57,7 +57,7 @@ public class IntrospectionTest {
         }
     }
 
-    private static class TestEntity {
+    private static class TestEntity extends InheritanceTestEntity<String, Integer> {
 
         private Integer integer;
         private Map<String, String> map1;
@@ -94,6 +94,33 @@ public class IntrospectionTest {
 
         public void setCollection1(Collection<String> collection1) {
             this.collection1 = collection1;
+        }
+
+        @Override
+        public Map<String, Integer> getGenericMap() {
+            return super.getGenericMap();
+        }
+    }
+
+    private static class InheritanceTestEntity<K extends Object, V extends Object> {
+
+        private Collection<V> genericCollection;
+        private Map<K,V> genericMap;
+
+        public Collection<V> getGenericCollection() {
+            return genericCollection;
+        }
+
+        public void setGenericCollection(Collection<V> genericCollection) {
+            this.genericCollection = genericCollection;
+        }
+
+        public Map<K, V> getGenericMap() {
+            return genericMap;
+        }
+
+        public void setGenericMap(Map<K, V> genericMap) {
+            this.genericMap = genericMap;
         }
     }
 }

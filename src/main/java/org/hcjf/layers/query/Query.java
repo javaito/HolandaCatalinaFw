@@ -2,6 +2,7 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
@@ -1553,7 +1554,7 @@ public class Query extends EvaluatorCollection {
          */
         @Override
         public Collection<JoinableMap> getResourceData(Query query) {
-            return Layers.get(CrudLayerInterface.class, query.getResourceName()).readRows(query);
+            return Layers.get(ReadRowsLayerInterface.class, query.getResourceName()).readRows(query);
         }
 
     }

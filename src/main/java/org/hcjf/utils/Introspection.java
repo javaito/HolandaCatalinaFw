@@ -3,10 +3,7 @@ package org.hcjf.utils;
 import org.hcjf.names.Naming;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -139,6 +136,11 @@ public final class Introspection {
             synchronized (invokerCache) {
                 if(!invokerCache.containsKey(invokerKey)) {
                     invokerCache.put(invokerKey, result);
+
+                    if(clazz.getSuperclass() != null && !clazz.getSuperclass().equals(Objects.class)) {
+                        result.putAll(getInvokers(clazz.getSuperclass(), filter));
+                    }
+
                     for(Method method : clazz.getDeclaredMethods()) {
                         InvokerEntry<I> entry = filter.filter(method);
                         if(entry != null) {
@@ -147,9 +149,6 @@ public final class Introspection {
                                 result.put(alias, entry.getInvoker());
                             }
                         }
-                    }
-                    if(clazz.getSuperclass() != null && !clazz.getSuperclass().equals(Objects.class)) {
-                        result.putAll(getInvokers(clazz.getSuperclass(), filter));
                     }
                 } else {
                     result = (Map<String, I>) invokerCache.get(invokerKey);
@@ -409,17 +408,23 @@ public final class Introspection {
                     returnKeyType = null;
                     if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
                         returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        returnCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
                         returnCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
                 } else if(Map.class.isAssignableFrom(returnType)) {
                     if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
                         returnKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        returnKeyType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
                         returnKeyType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
                     if(parameterizedType.getActualTypeArguments()[1] instanceof Class) {
                         returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                    } else if(parameterizedType.getActualTypeArguments()[1] instanceof TypeVariable) {
+                        returnCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[1]).getBounds()[0];
                     } else {
                         returnCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[1]).getRawType();
                     }
@@ -491,18 +496,24 @@ public final class Introspection {
                     parameterKeyType = null;
                     if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
                         parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        parameterCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
                         parameterCollectionType = (Class) ((ParameterizedType) parameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
                 } else if(Map.class.isAssignableFrom(parameterType)) {
                     if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
                         parameterKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        parameterKeyType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
                         parameterKeyType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
 
                     if(parameterizedType.getActualTypeArguments()[1] instanceof Class) {
                         parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
+                    } else if(parameterizedType.getActualTypeArguments()[1] instanceof TypeVariable) {
+                        parameterCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[1]).getBounds()[0];
                     } else {
                         parameterCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[1]).getRawType();
                     }
