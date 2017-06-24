@@ -45,6 +45,15 @@ public class HttpHeader {
     public static final String COOKIE = "Cookie";
     public static final String SET_COOKIE = "Set-Cookie";
     public static final String SOAP_ACTION = "SOAPAction";
+    public static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
+    public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
+    public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
+    public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS = "Access-Control-Allow-Credentials";
+    public static final String ACCESS_CONTROL_EXPOSE_HEADERS = "Access-Control-Expose-Headers";
+    public static final String ACCESS_CONTROL_MAX_AGE = "Access-Control-Max-Age";
+    public static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
+    public static final String ACCESS_CONTROL_REQUEST_ORIGIN = "Access-Control-Request-Origin";
+    public static final String ACCESS_CONTROL_REQUEST_METHODS = "Access-Control-Request-Methods";
 
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";

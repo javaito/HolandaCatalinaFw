@@ -217,7 +217,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     if (context != null) {
                         try {
                             Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
-                            response = context.onContext(request);
+                            response = context.onRequest(request);
                             if(request.containsHeader(HttpHeader.CONNECTION)) {
                                 if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
                                     Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
