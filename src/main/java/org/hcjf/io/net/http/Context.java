@@ -39,31 +39,6 @@ public abstract class Context {
     }
 
     /**
-     * This method is called when there comes a http package addressed to this
-     * context.
-     * If there's a Cross-Origin-Resource-Sharing
-     * @param request
-     * @return
-     */
-    public HttpResponse onRequest(HttpRequest request){
-        HttpResponse response;
-        boolean originHeaderPresent = request.containsHeader(HttpHeader.ORIGIN);
-
-        if(originHeaderPresent && request.getMethod().equals(HttpMethod.OPTIONS)){
-            response = new HttpResponse();
-        } else{
-            response = onContext(request);
-        }
-
-        if(originHeaderPresent){
-            for(HttpHeader header : getCrossOriginHeaders(request)){
-                response.addHeader(header);
-            }
-        }
-        return response;
-    }
-
-    /**
      * It returns a CORS headers set for this context. The headers are used for the CORS preflight request and the successive request.
      * Overwrite this method to implement a particular cross-origin restriction
      * <br><br>

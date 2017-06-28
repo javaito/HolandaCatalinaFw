@@ -875,6 +875,7 @@ public class MimeType {
     public static final String XSR = "xsr";
     public static final String XWD = "xwd";
     public static final String XYZ = "xyz";
+    public static final String YAML = "yaml";
     public static final String Z = "z";
     public static final String ZIP = "zip";
     public static final String ZOO = "zoo";
