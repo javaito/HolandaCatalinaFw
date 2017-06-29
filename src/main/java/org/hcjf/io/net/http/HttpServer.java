@@ -208,16 +208,22 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             //Value to calculate the request execution time
             long time = System.currentTimeMillis();
 
-            HttpResponse response;
+            HttpResponse response = null;
             HttpRequest request = (HttpRequest) payLoad;
             Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
             try {
                 if(netPackage.getSession().isChecked()) {
                     Context context = findContext(request.getContext());
                     if (context != null) {
+                        boolean originHeaderPresent = request.containsHeader(HttpHeader.ORIGIN);
                         try {
                             Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
-                            response = context.onRequest(request);
+                            if(originHeaderPresent && request.getMethod().equals(HttpMethod.OPTIONS)){
+                                //If there's a Cross-Origin-Resource-Sharing preflight request returns a empty response
+                                response = new HttpResponse();
+                            } else{
+                                response = context.onContext(request);
+                            }
                             if(request.containsHeader(HttpHeader.CONNECTION)) {
                                 if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
                                     Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
@@ -230,6 +236,12 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             response = context.onError(request, throwable);
                             if (response == null) {
                                 response = createDefaultErrorResponse(throwable);
+                            }
+                        } finally{
+                            if(originHeaderPresent){
+                                for(HttpHeader header : context.getCrossOriginHeaders(request)){
+                                    response.addHeader(header);
+                                }
                             }
                         }
                     } else {
