@@ -5,6 +5,8 @@ import org.hcjf.properties.SystemProperties;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * This class represents a standard web context that can be published
@@ -34,6 +36,46 @@ public abstract class Context {
      */
     public final String getContextRegex() {
         return contextRegex;
+    }
+
+    /**
+     * This method is called when there comes a http package addressed to this
+     * context.
+     * If there's a Cross-Origin-Resource-Sharing
+     * @param request
+     * @return
+     */
+    public HttpResponse onRequest(HttpRequest request){
+        HttpResponse response;
+        boolean originHeaderPresent = request.containsHeader(HttpHeader.ORIGIN);
+
+        if(originHeaderPresent && request.getMethod().equals(HttpMethod.OPTIONS)){
+            response = new HttpResponse();
+        } else{
+            response = onContext(request);
+        }
+
+        if(originHeaderPresent){
+            for(HttpHeader header : getCrossOriginHeaders(request)){
+                response.addHeader(header);
+            }
+        }
+        return response;
+    }
+
+    /**
+     * It returns a CORS headers set for this context. The headers are used for the CORS preflight request and the successive request.
+     * Overwrite this method to implement a particular cross-origin restriction
+     * <br><br>
+     * More information at <a href="https://www.w3.org/TR/cors/#access-control-allow-origin-response-header">www.w3.org</a>
+     * <br>
+     * Usage guide <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS">developer.mozilla.org</a>
+     *
+     * @param request A request that has the origin header present
+     * @return A headers list to add in the HttpResponse
+     */
+    protected Set<HttpHeader> getCrossOriginHeaders(HttpRequest request){
+        return Collections.EMPTY_SET;
     }
 
     /**
