@@ -1,7 +1,6 @@
 package org.hcjf.layers.query;
 
 import org.hcjf.layers.Layers;
-import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
@@ -1233,7 +1232,8 @@ public class Query extends EvaluatorCollection {
                     evaluatorValue = evaluatorValue.trim();
                     if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT))) {
                         operator += evaluatorValue + Strings.WHITE_SPACE;
-                        operatorDone = true;
+                    } else if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_2))) {
+                        operator += evaluatorValue;
                     } else if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
                             || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT_2))
                             || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
@@ -1270,9 +1270,8 @@ public class Query extends EvaluatorCollection {
                     throw new IllegalArgumentException("");
                 }
 
-                if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))) {
-                    evaluator = new Distinct(queryParameter, value);
-                } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT_2))) {
+                if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)) ||
+                        operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT_2))) {
                     evaluator = new Distinct(queryParameter, value);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))) {
                     evaluator = new Equals(queryParameter, value);

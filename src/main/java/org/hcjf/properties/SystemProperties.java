@@ -79,6 +79,7 @@ public final class SystemProperties extends Properties {
         public static final String DATE_FORMAT = "hcfj.log.date.format";
         public static final String CONSUMERS = "hcjf.log.consumers";
         public static final String SYSTEM_OUT_ENABLED = "hcjf.log.system.out.enabled";
+        public static final String JAVA_STANDARD_LOGGER_ENABLED = "hcjf.log.java.standard.logger.enabled";
         public static final String QUEUE_INITIAL_SIZE = "hcjf.log.queue.initial.size";
         public static final String TRUNCATE_TAG = "hcjf.log.truncate.tag";
         public static final String TRUNCATE_TAG_SIZE = "hcjf.log.truncate.tag.size";
@@ -97,6 +98,8 @@ public final class SystemProperties extends Properties {
     }
 
     public static final class Net {
+        public static final String SERVICE_NAME = "hcjf.net.service.name";
+        public static final String LOG_TAG = "hcjf.net.log.tag";
         public static final String INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
         public static final String OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
         public static final String DISCONNECT_AND_REMOVE = "hcfj.net.disconnect.and.remove";
@@ -110,6 +113,13 @@ public final class SystemProperties extends Properties {
         public static final String DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
         public static final String IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
         public static final String SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
+
+        public static final class Broadcast {
+            public static final String SERVICE_NAME = "hcjf.net.broadcast.service.name";
+            public static final String LOG_TAG = "hcjf.net.broadcast.log.tag";
+            public static final String INTERFACE_NAME = "hcjf.net.broadcast.interface.name";
+            public static final String IP_VERSION = "hcjf.net.broadcast.ip.version";
+        }
 
         public static final class Ssl {
             public static final String DEFAULT_PROTOCOL = "hcjf.net.ssl.default.protocol";
@@ -211,6 +221,7 @@ public final class SystemProperties extends Properties {
             public static final String IN = "hcjf.query.in.reserved.word";
             public static final String NOT_IN = "hcjf.query.not.in.reserved.word";
             public static final String NOT = "hcjf.query.not.reserved.word";
+            public static final String NOT_2 = "hcjf.query.not.2.reserved.word";
             public static final String LIKE = "hcjf.query.like.reserved.word";
             public static final String AND = "hcjf.query.and.reserved.word";
             public static final String OR = "hcjf.query.or.reserved.word";
@@ -324,11 +335,14 @@ public final class SystemProperties extends Properties {
         defaults.put(Log.DATE_FORMAT, "yyyy-MM-dd HH:mm:ss,SSS");
         defaults.put(Log.CONSUMERS, "[]");
         defaults.put(Log.SYSTEM_OUT_ENABLED, "false");
+        defaults.put(Log.JAVA_STANDARD_LOGGER_ENABLED, "false");
         defaults.put(Log.QUEUE_INITIAL_SIZE, "10000");
         defaults.put(Log.TRUNCATE_TAG, "false");
         defaults.put(Log.TRUNCATE_TAG_SIZE, "35");
         defaults.put(Log.LOG_CONSUMERS_SIZE, "50");
 
+        defaults.put(Net.SERVICE_NAME, "Net service");
+        defaults.put(Net.LOG_TAG, "NET_SERVICE");
         defaults.put(Net.INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.CONNECTION_TIMEOUT_AVAILABLE, "true");
@@ -342,6 +356,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
+
+        defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
+        defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
+        defaults.put(Net.Broadcast.INTERFACE_NAME, "eth0");
+        defaults.put(Net.Broadcast.IP_VERSION, "4");
 
         defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
         defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
@@ -427,6 +446,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.IN, "IN");
         defaults.put(Query.ReservedWord.NOT_IN, "NOT IN");
         defaults.put(Query.ReservedWord.NOT, "NOT");
+        defaults.put(Query.ReservedWord.NOT_2, "!");
         defaults.put(Query.ReservedWord.LIKE, "LIKE");
         defaults.put(Query.ReservedWord.AND, "AND");
         defaults.put(Query.ReservedWord.OR, "OR");
