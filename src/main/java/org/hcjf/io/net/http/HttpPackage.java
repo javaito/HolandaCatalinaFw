@@ -196,13 +196,7 @@ public abstract class HttpPackage {
             }
 
             if (onBody) {
-                int length = 0;
-                HttpHeader contentLengthHeader = getHeader(HttpHeader.CONTENT_LENGTH);
-                if (contentLengthHeader != null) {
-                    length = Integer.parseInt(contentLengthHeader.getHeaderValue().trim());
-                }
-
-                if (currentBody.size() >= length) {
+                if (bodyDone()) {
                     setBody(currentBody.toByteArray());
                     processFirstLine(lines.get(0));
                     processBody(getBody());
@@ -213,6 +207,29 @@ public abstract class HttpPackage {
         } else {
             Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Trying to add data into a complete http package.");
         }
+    }
+
+    /**
+     * Verify if the body of the package is complete.
+     * @return Return true if the body is complete or false in the otherwise
+     */
+    protected boolean bodyDone() {
+        int length = 0;
+        HttpHeader contentLengthHeader = getHeader(HttpHeader.CONTENT_LENGTH);
+        if (contentLengthHeader != null) {
+            length = Integer.parseInt(contentLengthHeader.getHeaderValue().trim());
+        }
+
+        return currentBody.size() >= length;
+    }
+
+    /**
+     * Return the body trimmed.
+     * @param body Raw body.
+     * @return Trimmed body
+     */
+    protected byte[] trimBody(byte[] body) {
+        return body;
     }
 
     /**

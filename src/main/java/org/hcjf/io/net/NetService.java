@@ -10,9 +10,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketOption;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
@@ -30,13 +28,10 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public final class NetService extends Service<NetServiceConsumer> {
 
-    private static final String NET_SERVICE_NAME = "Net service";
-    public static final String NET_SERVICE_LOG_TAG = "NET_SERVICE";
-
     private static final NetService instance;
 
     static {
-        instance = new NetService(NET_SERVICE_NAME);
+        instance = new NetService(SystemProperties.get(SystemProperties.Net.SERVICE_NAME));
     }
 
     private final List<ServerSocketChannel> tcpServers;
@@ -106,7 +101,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
             fork(() -> runNetService());
         } catch (IOException ex) {
-            Log.e(NET_SERVICE_LOG_TAG, "Unable to init net service $1", ex, this);
+            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to init net service $1", ex, this);
         }
     }
 
@@ -469,7 +464,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     channel.close();
                 }
             } catch (Exception ex) {
-                Log.d(NET_SERVICE_LOG_TAG, "Destroy method exception", ex);
+                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Destroy method exception", ex);
             }
         }
     }
@@ -542,7 +537,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     public final void runNetService() {
         try {
             try {
-                Thread.currentThread().setName(NET_SERVICE_LOG_TAG);
+                Thread.currentThread().setName(SystemProperties.get(SystemProperties.Net.LOG_TAG));
                 Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
             } catch(SecurityException ex){}
 
@@ -592,7 +587,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                             }
                                                         }
                                                     } catch (Exception ex) {
-                                                        Log.d(NET_SERVICE_LOG_TAG, "Internal IO thread exception", ex);
+                                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception", ex);
                                                     } finally {
                                                         ((ServiceThread) Thread.currentThread()).setSession(null);
                                                     }
@@ -605,7 +600,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             }
                                         } catch (Exception ex) {
                                             key.cancel();
-                                            Log.w(NET_SERVICE_LOG_TAG, "Unable to for key");
+                                            Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to for key");
                                         }
                                     } else {
                                         key.cancel();
@@ -613,7 +608,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 }
                             }
                         } catch (CancelledKeyException ex){
-                            Log.d(NET_SERVICE_LOG_TAG, "Cancelled key");
+                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
                         }
                     }
 
@@ -626,7 +621,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             try {
                 getSelector().close();
             } catch (IOException ex) {
-                Log.d(NET_SERVICE_LOG_TAG, "Closing selector...", ex);
+                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing selector...", ex);
             }
 
             //Close all the servers.
@@ -634,14 +629,14 @@ public final class NetService extends Service<NetServiceConsumer> {
                 try {
                     channel.close();
                 } catch (IOException ex) {
-                    Log.d(NET_SERVICE_LOG_TAG, "Closing channel...", ex);
+                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing channel...", ex);
                 }
             }
         } catch (Exception ex){
-            Log.e(NET_SERVICE_LOG_TAG, "Unexpected error", ex);
+            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
         }
 
-        Log.d(NET_SERVICE_LOG_TAG, "Net service stopped");
+        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service stopped");
     }
 
     /**
@@ -679,7 +674,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     onAction(connectionPackage, client);
                 }
             } catch (Exception ex){
-                Log.w(NET_SERVICE_LOG_TAG, "Error creating new client connection.", ex);
+                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error creating new client connection.", ex);
             }
         }
     }
@@ -728,7 +723,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     getTimer().schedule(new ConnectionTimeout(socketChannel), getCreationTimeout());
                 }
             } catch (Exception ex){
-                Log.w(NET_SERVICE_LOG_TAG, "Error accepting a new connection.", ex);
+                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error accepting a new connection.", ex);
             }
         }
     }
@@ -786,7 +781,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         onAction(netPackage, consumer);
                     }
                 } catch (Exception ex){
-                    Log.e(NET_SERVICE_LOG_TAG, "Net service read exception, on TCP context", ex);
+                    Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service read exception, on TCP context", ex);
                     destroyChannel(channel);
                 }
             } else if(keyChannel instanceof DatagramChannel){
@@ -835,7 +830,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         }
                     }
                 } catch (Exception ex){
-                    Log.e(NET_SERVICE_LOG_TAG, "Net service read exception, on UDP context", ex);
+                    Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service read exception, on UDP context", ex);
                 }
             }
         }
@@ -873,7 +868,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 } else {
                                     byte[] byteData = netPackage.getPayload();
                                     if (byteData.length == 0) {
-                                        Log.d(NET_SERVICE_LOG_TAG, "Empty write data");
+                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Empty write data");
                                     }
                                     int begin = 0;
                                     int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
@@ -941,7 +936,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
             }
         } catch (Exception ex){
-            Log.d(NET_SERVICE_LOG_TAG, "Write global thread exception", ex);
+            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Write global thread exception", ex);
         } finally {
             ioThread.getOutputBuffer().clear();
             ioThread.getOutputBuffer().rewind();
@@ -972,7 +967,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         break;
                 }
             } catch (Exception ex) {
-                Log.e(NET_SERVICE_LOG_TAG, "Action consumer exception", ex);
+                Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Action consumer exception", ex);
             }
         }
     }
@@ -1120,7 +1115,7 @@ public final class NetService extends Service<NetServiceConsumer> {
          * This method is called when the operation is success.
          */
         private void onSuccess() {
-            Log.d(NET_SERVICE_LOG_TAG, "SSL handshaking success");
+            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "SSL handshaking success");
             status = SSLHelper.SSLHelperStatus.READY;
             DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
                     0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.CONNECT);

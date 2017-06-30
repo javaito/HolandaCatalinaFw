@@ -170,7 +170,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
                     try {
                         session.wait(getWriteWaitForTimeout());
                     } catch (InterruptedException e) {
-                        Log.w(NetService.NET_SERVICE_LOG_TAG, "Write wait for interrupted", e);
+                        Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Write wait for interrupted", e);
                     }
                 }
             }
@@ -244,7 +244,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
             session = checkSession(session, decodedPackage, netPackage);
             session.setChecked(true);
         } catch (Exception ex){
-            Log.w(NetService.NET_SERVICE_LOG_TAG, "Check session fail", ex);
+            Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Check session fail", ex);
             session.setChecked(false);
         }
 

@@ -96,7 +96,7 @@ public final class Grant {
                 clazz = Class.forName(previousCall.getClassName());
             } catch (ClassNotFoundException e) {
             }
-        } while(clazz != null && !Modifier.isAbstract(clazz.getModifiers()));
+        } while(clazz != null && Modifier.isAbstract(clazz.getModifiers()));
 
         String className = previousCall.getClassName();
         String grantId = createGrantId(className, grantName);

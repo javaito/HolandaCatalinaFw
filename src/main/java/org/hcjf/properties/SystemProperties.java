@@ -113,6 +113,8 @@ public final class SystemProperties extends Properties {
         public static final String DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
         public static final String IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
         public static final String SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
+        public static final String PORT_PROVIDER_TIME_WINDOWS_SIZE = "hcjf.net.port.provider.time.windows.size";
+        public static final String PORT_PROBE_CONNECTION_TIMEOUT = "hcjf.net.port.probe.connection.timeout";
 
         public static final class Broadcast {
             public static final String SERVICE_NAME = "hcjf.net.broadcast.service.name";
@@ -356,6 +358,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
+        defaults.put(Net.PORT_PROVIDER_TIME_WINDOWS_SIZE, "15000");
+        defaults.put(Net.PORT_PROBE_CONNECTION_TIMEOUT, "1000");
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");

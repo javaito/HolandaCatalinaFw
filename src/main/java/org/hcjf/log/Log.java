@@ -1,5 +1,6 @@
 package org.hcjf.log;
 
+import com.sun.deploy.trace.LoggerTraceListener;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.utils.Strings;
@@ -9,10 +10,13 @@ import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 /**
- * Static class that contains the funcionality in order to
+ * Static class that contains the functionality in order to
  * maintain and organize a log file with the same records format
  * The log behavior is affected by the following system properties
  * <br><b>hcfj_log_path</b>: work directory of the log, by default app work directory
@@ -123,6 +127,16 @@ public final class Log extends Service<LogPrinter> {
     }
 
     /**
+     * Returns an array that contains al the call stack information to store into the
+     * log record. The array contains the element in the next order [className, methodName, lineNumber]
+     * @return Call stack information.
+     */
+    private static String[] getCallStackInformation() {
+        StackTraceElement element = Thread.currentThread().getStackTrace()[3];
+        return new String[] {element.getClassName(), element.getMethodName(), Integer.toString(element.getLineNumber())};
+    }
+
+    /**
      * This method register a printer.
      * @param printer Printer.
      * @throws NullPointerException If the printer is null.
@@ -145,7 +159,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message, params));
+            result = instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message,
+                    getCallStackInformation(), params));
         }
         return result;
     }
@@ -165,7 +180,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message, throwable, params));
+            result = instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message,
+                    getCallStackInformation(), throwable, params));
         }
         return result;
     }
@@ -184,7 +200,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.INFO, tag, message, params));
+            result = instance.addRecord(new LogRecord(LogGroup.INFO, tag, message,
+                    getCallStackInformation(), params));
         }
         return result;
     }
@@ -203,7 +220,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.INPUT, tag, message, params));
+            result = instance.addRecord(new LogRecord(LogGroup.INPUT, tag, message,
+                    getCallStackInformation(), params));
         }
         return result;
     }
@@ -222,7 +240,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.OUTPUT, tag, message, params));
+            result = instance.addRecord(new LogRecord(LogGroup.OUTPUT, tag, message,
+                    getCallStackInformation(), params));
         }
         return result;
     }
@@ -241,7 +260,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message, params));
+            result = instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message,
+                    getCallStackInformation(), params));
         }
         return result;
     }
@@ -261,7 +281,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message, throwable, params));
+            result = instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message,
+                    getCallStackInformation(), throwable, params));
         }
         return result;
     }
@@ -280,7 +301,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message, params));
+            result = instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message,
+                    getCallStackInformation(), params));
         }
         return result;
     }
@@ -300,7 +322,8 @@ public final class Log extends Service<LogPrinter> {
         UUID result = null;
         if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
                 instance.printers.size() > 0) {
-            result = instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message, throwable, params));
+            result = instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message,
+                    getCallStackInformation(), throwable, params));
         }
         return result;
     }
@@ -346,8 +369,20 @@ public final class Log extends Service<LogPrinter> {
             }
 
             if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED)) {
-                System.out.println(record.toString());
-                System.out.flush();
+                if(SystemProperties.getBoolean(SystemProperties.Log.JAVA_STANDARD_LOGGER_ENABLED)) {
+                    if(record.getThrowable() != null) {
+                        Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
+                                record.getClassName(), record.getMethodName(), record.getThrowable(),
+                                ()->String.format(record.getOriginalMessage(), record.getParams()));
+                    } else {
+                        Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
+                                record.getClassName(), record.getMethodName(),
+                                ()->String.format(record.getOriginalMessage(), record.getParams()));
+                    }
+                } else {
+                    System.out.println(record.toString());
+                    System.out.flush();
+                }
             }
         }
     }
@@ -364,9 +399,13 @@ public final class Log extends Service<LogPrinter> {
         private final LogGroup group;
         private final String tag;
         private final String originalMessage;
-        private final String message;
+        private String message;
+        private final String className;
+        private final String methodName;
+        private final String lineNumber;
         private final SimpleDateFormat dateFormat;
         private final Object[] params;
+        private final Throwable throwable;
 
         /**
          * Constructor
@@ -376,15 +415,19 @@ public final class Log extends Service<LogPrinter> {
          * @param throwable The error object, could be null
          * @param params Values that will be put in the each places of the message.
          */
-        private LogRecord(LogGroup group, String tag, String message, Throwable throwable, Object... params) {
+        private LogRecord(LogGroup group, String tag, String message, String[] callStackInformation,
+                          Throwable throwable, Object... params) {
             this.id = UUID.randomUUID();
             this.date = new Date();
             this.group = group;
             this.tag = tag;
             this.dateFormat = new SimpleDateFormat(SystemProperties.get(SystemProperties.Log.DATE_FORMAT));
             this.originalMessage = message;
-            this.message = createMessage(message, throwable, params);
+            this.className = callStackInformation[0];
+            this.methodName = callStackInformation[1];
+            this.lineNumber = callStackInformation[2];
             this.params = params;
+            this.throwable = throwable;
         }
 
         /**
@@ -394,12 +437,13 @@ public final class Log extends Service<LogPrinter> {
          * @param message Message with wildcard for the parameters.
          * @param params Values that will be put in the each places of the message.
          */
-        private LogRecord(LogGroup group, String tag, String message, Object... params) {
-            this(group, tag, message, null, params);
+        private LogRecord(LogGroup group, String tag, String message,
+                          String[] callStackInformation, Object... params) {
+            this(group, tag, message, callStackInformation, null, params);
         }
 
         /**
-         * Return the id of log record.
+         * Returns the id of log record.
          * @return Log record id.
          */
         public UUID getId() {
@@ -407,13 +451,10 @@ public final class Log extends Service<LogPrinter> {
         }
 
         /**
-         * Create a final version of string to print the record.
-         * @param message Message to be format
-         * @param throwable The error object, could be null.
-         * @param params Parameters to format the message.
+         * Creates a final version of string to print the record.
          * @return Return the last version of the message.
          */
-        private String createMessage(String message, Throwable throwable, Object... params) {
+        private String createMessage() {
             StringWriter stringWriter = new StringWriter();
             PrintWriter printWriter = new PrintWriter(stringWriter);
 
@@ -433,8 +474,14 @@ public final class Log extends Service<LogPrinter> {
             printWriter.print(group);
             printWriter.print("][");
             printWriter.print(tag);
+            printWriter.print("][");
+            printWriter.print(getClassName());
+            printWriter.print("][");
+            printWriter.print(getMethodName());
+            printWriter.print("][");
+            printWriter.print(getLineNumber());
             printWriter.print("] ");
-            printWriter.printf(message, params);
+            printWriter.printf(originalMessage, params);
 
             if(throwable != null) {
                 printWriter.print("\r\n");
@@ -448,7 +495,7 @@ public final class Log extends Service<LogPrinter> {
         }
 
         /**
-         * Return the record date
+         * Returns the record date
          * @return Record date.
          */
         public Date getDate() {
@@ -456,7 +503,7 @@ public final class Log extends Service<LogPrinter> {
         }
 
         /**
-         * Return the record group.
+         * Returns the record group.
          * @return Record group.
          */
         public LogGroup getGroup() {
@@ -464,7 +511,7 @@ public final class Log extends Service<LogPrinter> {
         }
 
         /**
-         * Return the log record tag.
+         * Returns the log record tag.
          * @return Log record tag.
          */
         public String getTag() {
@@ -472,15 +519,18 @@ public final class Log extends Service<LogPrinter> {
         }
 
         /**
-         * Return the last version of the message.
+         * Returns the last version of the message.
          * @return Record message.
          */
-        public String getMessage() {
+        public synchronized String getMessage() {
+            if(message == null) {
+                message = createMessage();
+            }
             return message;
         }
 
         /**
-         * Return the original message.
+         * Returns the original message.
          * @return Original message.
          */
         public String getOriginalMessage() {
@@ -488,7 +538,7 @@ public final class Log extends Service<LogPrinter> {
         }
 
         /**
-         * Return de format message.
+         * Returns de format message.
          * @return Format message.
          */
         @Override
@@ -497,11 +547,43 @@ public final class Log extends Service<LogPrinter> {
         }
 
         /**
-         * Return the log record params.
+         * Returns the log record params.
          * @return Log record params.
          */
         public Object[] getParams() {
             return params;
+        }
+
+        /**
+         * Returns the throwable instance of the record.
+         * @return Throwable instance.
+         */
+        public Throwable getThrowable() {
+            return throwable;
+        }
+
+        /**
+         * Returns the name of the class where the log is written.
+         * @return Class name.
+         */
+        public String getClassName() {
+            return className;
+        }
+
+        /**
+         * Returns the name of the method where the log is written.
+         * @return Method name.
+         */
+        public String getMethodName() {
+            return methodName;
+        }
+
+        /**
+         * Returns the line number where the log is written.
+         * @return Line number.
+         */
+        public String getLineNumber() {
+            return lineNumber;
         }
     }
 
@@ -560,6 +642,24 @@ public final class Log extends Service<LogPrinter> {
                         findFirst().get();
             } catch (NoSuchElementException ex) {}
 
+            return result;
+        }
+
+        public Level getStandardLevel() {
+            Level result;
+            switch(this) {
+                case ERROR:{
+                    result = Level.SEVERE;
+                    break;
+                }
+                case WARNING: {
+                    result = Level.WARNING;
+                    break;
+                }
+                default: {
+                    result = Level.INFO;
+                }
+            }
             return result;
         }
     }
