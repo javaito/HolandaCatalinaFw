@@ -14,6 +14,7 @@ import java.util.*;
  */
 public abstract class HttpPackage {
 
+    private static BodyWriter bodyWriter;
     private static final byte LINE_SEPARATOR_CR = '\r';
     private static final byte LINE_SEPARATOR_LF = '\n';
     public static final String STRING_LINE_SEPARATOR = "\r\n";
@@ -163,7 +164,7 @@ public abstract class HttpPackage {
 
             if (onBody) {
                 try {
-                    currentBody.write(data);
+                    bodyWriter.write(data);
                 } catch (IOException ex) {
                 }
             } else {
@@ -171,14 +172,20 @@ public abstract class HttpPackage {
                 for (int i = 0; i < data.length - 1; i++) {
                     if (data[i] == LINE_SEPARATOR_CR && data[i + 1] == LINE_SEPARATOR_LF) {
                         if (currentBody.size() == 0) {
-                            //The previous line is empty
-                            //Start body, because there are two CRLF together
-                            currentBody.reset();
-                            currentBody.write(data, i + 2, data.length - (i + 2));
                             onBody = true;
                             for(int j = 1; j < lines.size(); j++) {
                                 addHeader(new HttpHeader(lines.get(j)));
                             }
+                            HttpHeader transferEncodingHeader = getHeader(HttpHeader.TRANSFER_ENCODING);
+                            if(transferEncodingHeader != null && transferEncodingHeader.getHeaderValue().equals(HttpHeader.CHUNKED)){
+                                bodyWriter = new ChunkedBodyWriter();
+                            }else{
+                                bodyWriter = new StandardBodyWriter();
+                            }
+                            //The previous line is empty
+                            //Start body, because there are two CRLF together
+                            currentBody.reset();
+                            bodyWriter.write(data, i + 2, data.length - (i + 2));
                             break;
                         } else {
                             //The current body is a new line
@@ -196,13 +203,7 @@ public abstract class HttpPackage {
             }
 
             if (onBody) {
-                int length = 0;
-                HttpHeader contentLengthHeader = getHeader(HttpHeader.CONTENT_LENGTH);
-                if (contentLengthHeader != null) {
-                    length = Integer.parseInt(contentLengthHeader.getHeaderValue().trim());
-                }
-
-                if (currentBody.size() >= length) {
+                if (bodyWriter.isComplete()) {
                     setBody(currentBody.toByteArray());
                     processFirstLine(lines.get(0));
                     processBody(getBody());
@@ -242,6 +243,144 @@ public abstract class HttpPackage {
 
         HTTPS
 
+    }
+
+    /**
+     * Implement this interface to handle different types of body encodings
+     */
+    private interface BodyWriter{
+        /**
+         * Write len bytes in the body
+         * @param data the data
+         * @throws IOException
+         */
+        void write(byte[] data) throws IOException;
+
+        /**
+         * Writes len bytes from the specified byte array starting at offset off
+         * to this byte array output stream.
+         * @param data the data
+         * @param offset the start offset in the data
+         * @param length the number of bytes to write
+         */
+        void write(byte[] data, int offset, int length);
+
+        /**
+         * @return true if everything has been received
+         */
+        boolean isComplete();
+    }
+
+    /**
+     * BodyWriter class for chunked type transfer-encoding
+     */
+    private class ChunkedBodyWriter implements BodyWriter{
+        private boolean lastChunkReceived = false;
+        private int dataToRead = 0;
+        private int nextChunkSizeIndex = 0;
+
+        /**
+         * {@inheritDoc}
+         */
+        public void write(byte[] data){
+            write(data, 0, data.length);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void write(byte[] data, int offset, int length){
+            nextChunkSizeIndex += offset;
+            length += offset;
+
+            for(int i = offset+1; i < length; i++){
+                if(dataToRead > 0){
+                    currentBody.write(data[i]);
+                    dataToRead--;
+                } else if(nextChunkSizeIndex < i && data[i-1] == LINE_SEPARATOR_CR && data[i] == LINE_SEPARATOR_LF){
+                    //Read the chunk size and parse to integer
+                    dataToRead = numeric(data, nextChunkSizeIndex,i-1);
+
+                    if(dataToRead == 0){
+                        lastChunkReceived = true;
+                        return;
+                    }
+                    nextChunkSizeIndex = i /* actual position */ + 1 /* \n */ + dataToRead + 2 /* \r\n */;
+                }
+            }
+            // If there are more chunks the index position is changed to the following data array
+            nextChunkSizeIndex -= data.length;
+        }
+
+        /**
+         * Parse hexadecimal bytes from the specified byte array starting at offset off
+         * to the equivalent int.
+         * <br>
+         * Adapted from {@link sun.net.httpserver.ChunkedInputStream}
+         *
+         * @param data the data
+         * @param offset the start offset in the data
+         * @param length the number of bytes to write
+         * @return the int value
+         */
+        private int numeric(byte[] data, int offset, int length){
+            int result = 0;
+
+            for(int i = offset; i < length; ++i) {
+                byte character = data[i];
+                int value;
+                if(character >= 48 && character <= 57) {
+                    value = character - 48;
+                } else if(character >= 97 && character <= 102) {
+                    value = character - 97 + 10;
+                } else {
+                    if(character < 65 || character > 70) {
+                        throw new RuntimeException("invalid chunk length");
+                    }
+                    value = character - 65 + 10;
+                }
+                result = result * 16 + value;
+            }
+            return result;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public boolean isComplete(){
+            return lastChunkReceived;
+        }
+    }
+
+    /**
+     * BodyWriter class for standard encoding
+     */
+    private class StandardBodyWriter implements BodyWriter{
+        /**
+         * {@inheritDoc}
+         */
+        public void write(byte[] data) throws IOException{
+            write(data, 0, data.length);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public void write(byte[] data, int offset, int length){
+            currentBody.write(data, offset, length);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public boolean isComplete(){
+            int length = 0;
+            HttpHeader contentLengthHeader = getHeader(HttpHeader.CONTENT_LENGTH);
+            if (contentLengthHeader != null) {
+                length = Integer.parseInt(contentLengthHeader.getHeaderValue().trim());
+            }
+            return currentBody.size() >= length;
+        }
     }
 
 }

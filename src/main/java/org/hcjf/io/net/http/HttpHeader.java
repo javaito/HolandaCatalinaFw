@@ -54,6 +54,7 @@ public class HttpHeader {
     public static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
     public static final String ACCESS_CONTROL_REQUEST_ORIGIN = "Access-Control-Request-Origin";
     public static final String ACCESS_CONTROL_REQUEST_METHODS = "Access-Control-Request-Methods";
+    public static final String TRANSFER_ENCODING = "Transfer-Encoding";
 
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
@@ -63,6 +64,7 @@ public class HttpHeader {
     public static final String DEFLATE = "deflate";
     public static final String GZIP = "gzip";
     public static final String IDENTITY = "identity";
+    public static final String CHUNKED = "chunked";
 
     private static final String HEADER_ASSIGNATION = ":";
     private static final String HEADER_GROUPS_SEPARATOR = ",";
