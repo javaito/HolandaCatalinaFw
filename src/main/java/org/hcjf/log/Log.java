@@ -1,6 +1,5 @@
 package org.hcjf.log;
 
-import com.sun.deploy.trace.LoggerTraceListener;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.utils.Strings;
@@ -10,7 +9,6 @@ import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
