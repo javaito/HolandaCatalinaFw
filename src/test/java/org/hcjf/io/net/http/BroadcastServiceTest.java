@@ -46,7 +46,7 @@ public class BroadcastServiceTest {
 
         @Override
         public Integer getBasePort() {
-            return 9090;
+            return 10025;
         }
 
         @Override

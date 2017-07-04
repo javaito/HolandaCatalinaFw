@@ -10,15 +10,10 @@ import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.Service;
-import org.hcjf.service.ServiceSession;
 import org.hcjf.service.grants.Grant;
 import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -100,7 +95,7 @@ public class HttpServerTestSuit {
 //            e.printStackTrace();
 //        }
 
-        HttpServer server = new HttpServer(InetPortProvider.getPort(8080));
+        HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
         server.addContext(new EndPoint("example", "crud"));
         server.start();
 
