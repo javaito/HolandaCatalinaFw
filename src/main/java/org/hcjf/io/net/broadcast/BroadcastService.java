@@ -103,7 +103,9 @@ public class BroadcastService extends Service<BroadcastConsumer> {
                                             consumer.getNetInterfaceName(), port,
                                             interfaceAddress.getAddress(), interfaceAddress.getBroadcast());
                                     interfaces.put(result.getId(), result);
-                                    fork(receivers.put(result.getId(), new BroadcastReceiver(result)));
+                                    BroadcastReceiver broadcastReceiver = new BroadcastReceiver(result);
+                                    receivers.put(result.getId(), broadcastReceiver);
+                                    fork(broadcastReceiver);
                                     done = true;
                                 }
                                 break;
@@ -114,7 +116,9 @@ public class BroadcastService extends Service<BroadcastConsumer> {
                                             consumer.getNetInterfaceName(), port,
                                             interfaceAddress.getAddress(), interfaceAddress.getBroadcast());
                                     interfaces.put(result.getId(), result);
-                                    fork(receivers.put(result.getId(), new BroadcastReceiver(result)));
+                                    BroadcastReceiver broadcastReceiver = new BroadcastReceiver(result);
+                                    receivers.put(result.getId(), broadcastReceiver);
+                                    fork(broadcastReceiver);
                                     done = true;
                                 }
                                 break;
