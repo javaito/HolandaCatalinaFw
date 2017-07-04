@@ -2,6 +2,8 @@ package org.hcjf.io.net.broadcast;
 
 import org.hcjf.service.ServiceConsumer;
 
+import java.util.Map;
+
 /**
  * @author javaito
  */
@@ -36,4 +38,28 @@ public interface BroadcastConsumer extends ServiceConsumer {
      * @return Base port.
      */
     public Integer getBasePort();
+
+    /**
+     * Returns the map with the implementation parameters for the broadcast ping message.
+     * @return Parameters map.
+     */
+    public Map<String, Object> getPingParameters();
+
+    /**
+     * This method is invoked when the instance receive a broadcast ping message.
+     * @param pingMessage Broadcast ping message.
+     */
+    public void onPing(BroadcastService.PingMessage pingMessage);
+
+    /**
+     * This method is invoked when the instance receive a broadcast pong message.
+     * @param pongMessage Broadcast pong message.
+     */
+    public void onPong(BroadcastService.PongMessage pongMessage);
+
+    /**
+     * This method is invoked when the instance receive a broadcast shutdown massage.
+     * @param shutdownMessage Broadcast shutdown message.
+     */
+    public void onShutdown(BroadcastService.ShutdownMessage shutdownMessage);
 }

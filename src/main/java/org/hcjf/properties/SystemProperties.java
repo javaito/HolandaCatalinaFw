@@ -121,6 +121,9 @@ public final class SystemProperties extends Properties {
             public static final String LOG_TAG = "hcjf.net.broadcast.log.tag";
             public static final String INTERFACE_NAME = "hcjf.net.broadcast.interface.name";
             public static final String IP_VERSION = "hcjf.net.broadcast.ip.version";
+            public static final String SENDER_DELAY = "hcjf.net.broadcast.sender.delay";
+            public static final String SIGNATURE_ALGORITHM = "hcjf.net.broadcast.signature.algorithm";
+            public static final String RECEIVER_BUFFER_SIZE = "hcjf.net.broadcast.receiver.buffer.size";
         }
 
         public static final class Ssl {
@@ -365,6 +368,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
         defaults.put(Net.Broadcast.INTERFACE_NAME, "eth0");
         defaults.put(Net.Broadcast.IP_VERSION, "4");
+        defaults.put(Net.Broadcast.SENDER_DELAY, "30000");
+        defaults.put(Net.Broadcast.SIGNATURE_ALGORITHM, "SHA-1");
+        defaults.put(Net.Broadcast.RECEIVER_BUFFER_SIZE, "1024");
 
         defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
         defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
