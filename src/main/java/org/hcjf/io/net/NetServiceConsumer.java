@@ -268,7 +268,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param netPackage Net package.
      * @param cause
      */
-    protected void onCheckSessionError(S session, D payLoad, org.hcjf.io.net.NetPackage netPackage, Throwable cause) {}
+    protected void onCheckSessionError(S session, D payLoad, NetPackage netPackage, Throwable cause) {}
 
     /**
      * When the net service write data then call this method to process the package.
