@@ -243,21 +243,32 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         try {
             session = checkSession(session, decodedPackage, netPackage);
             session.setChecked(true);
+            onRead(session, decodedPackage, netPackage);
         } catch (Exception ex){
             Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Check session fail", ex);
             session.setChecked(false);
+            onCheckSessionError(session, decodedPackage, netPackage, ex);
         }
-
-        onRead(session, decodedPackage, netPackage);
     }
 
     /**
-     * When the net service receive data call this method to process the package
+     * When the net service receive data, this method is called to process the package.
      * @param session Net session.
      * @param payLoad Net package decoded
      * @param netPackage Net package.
      */
     protected void onRead(S session, D payLoad, NetPackage netPackage) {}
+
+
+    /**
+     * When an exception is occurred while checking session,
+     * this method is called to process the package according the exception information.
+     * @param session Net session.
+     * @param payLoad Net package decoded
+     * @param netPackage Net package.
+     * @param cause
+     */
+    protected void onCheckSessionError(S session, D payLoad, NetPackage netPackage, Throwable cause) {}
 
     /**
      * When the net service write data then call this method to process the package.

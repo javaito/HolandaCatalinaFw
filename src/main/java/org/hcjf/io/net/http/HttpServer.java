@@ -279,10 +279,36 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 connectionKeepAlive = false;
             } finally {
                 if(!connectionKeepAlive) {
+                    disconnect(session, "Http request end.");
                     Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
-                    disconnect(session, "Http request end");
                 }
             }
+        }
+    }
+
+    /**
+     * Manages an exception thrown while trying to check session (authenticate)
+     * by calling to the specific context for get an error response depending on exception information.
+     * Thus, the response is written to the consumer.
+     *
+     * @param session Net session.
+     * @param requestPayLoad Net package decoded as {@link HttpRequest}
+     * @param netPackage Net package.
+     * @param exception exception
+     */
+    @Override
+    protected void onCheckSessionError(HttpSession session, HttpPackage requestPayLoad, NetPackage netPackage, Throwable exception) {
+        HttpRequest request = (HttpRequest)requestPayLoad;
+        Context context = findContext(request.getContext());
+        HttpResponse response = context.onError(request, exception);
+        String logTag = SystemProperties.get(SystemProperties.Net.Http.LOG_TAG);
+        try {
+            write(session, response, false);
+        }catch (Throwable throwable) {
+            Log.e(logTag, "Http server error on check session error.", throwable);
+        } finally {
+            disconnect(session, "Http request denied end.");
+            Log.d(logTag, "Http connection closed by server.");
         }
     }
 
