@@ -5,6 +5,7 @@ import org.hcjf.service.ServiceConsumer;
 import java.util.Map;
 
 /**
+ * This interface provides all the methods as needed to register a broadcast consumer.
  * @author javaito
  */
 public interface BroadcastConsumer extends ServiceConsumer {
@@ -34,10 +35,10 @@ public interface BroadcastConsumer extends ServiceConsumer {
     public String getNetInterfaceName();
 
     /**
-     * Returns the base port to initialize the broadcast server.
-     * @return Base port.
+     * Returns the port to initialize the broadcast server.
+     * @return Port.
      */
-    public Integer getBasePort();
+    public Integer getPort();
 
     /**
      * Returns the map with the implementation parameters for the broadcast ping message.

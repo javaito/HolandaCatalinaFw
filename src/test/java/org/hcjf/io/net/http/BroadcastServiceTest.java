@@ -45,7 +45,7 @@ public class BroadcastServiceTest {
         }
 
         @Override
-        public Integer getBasePort() {
+        public Integer getPort() {
             return 10025;
         }
 
@@ -56,7 +56,7 @@ public class BroadcastServiceTest {
 
         @Override
         public void onPing(BroadcastService.PingMessage pingMessage) {
-            System.out.println("On ping");
+            System.out.println("On ping: " + pingMessage.getHost());
         }
 
         @Override

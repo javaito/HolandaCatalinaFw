@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * This class provides the mechanism to maintains the wrapped collection
+ * elements into the collection some time.
  * @author javaito
  */
 public abstract class TtlCollection<K extends Object> {
@@ -16,10 +18,17 @@ public abstract class TtlCollection<K extends Object> {
         this.timeWindows = new HashMap<>();
     }
 
+    /**
+     * Add instance into the ttl map.
+     * @param instance Instance to add.
+     */
     protected final synchronized void addInstance(K instance) {
         timeWindows.put(System.currentTimeMillis(), instance);
     }
 
+    /**
+     * Removes all the old elements of the wrapped collection.
+     */
     protected final synchronized void removeOldWindows() {
         Long current = System.currentTimeMillis();
         for(Long time : timeWindows.keySet()) {
@@ -29,5 +38,9 @@ public abstract class TtlCollection<K extends Object> {
         }
     }
 
+    /**
+     * This implementation remove the specific instance of the wrapped collection.
+     * @param instanceKey Instance key.
+     */
     protected abstract void removeOldInstance(K instanceKey);
 }
