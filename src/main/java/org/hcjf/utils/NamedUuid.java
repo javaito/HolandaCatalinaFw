@@ -3,6 +3,8 @@ package org.hcjf.utils;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -11,12 +13,40 @@ import java.util.UUID;
  */
 public final class NamedUuid {
 
+    private static final Map<Integer, String> names;
+
+    static {
+        names = new HashMap<>();
+    }
+
     private final UUID id;
     private final Integer hash;
 
     private NamedUuid(UUID id, Integer hash) {
         this.id = id;
         this.hash = hash;
+    }
+
+    /**
+     * Register the hash code for the specific name.
+     * @param name Specific name.
+     */
+    public static void registerName(String name) {
+        names.put(name.hashCode(), name);
+    }
+
+    /**
+     * Returns the name registered for the hash stored into the uuid instance.
+     * @param uuid Uuid instance.
+     * @return Registered name.
+     * @throws IllegalArgumentException id the uuid instance is not a uuid version 5.
+     */
+    public static String getName(UUID uuid) {
+        if(uuid.version() == 5) {
+            return names.get((int)uuid.getLeastSignificantBits());
+        } else {
+            throw new IllegalArgumentException("Only for uuid version 5");
+        }
     }
 
     /**
