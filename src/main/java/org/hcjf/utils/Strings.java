@@ -239,7 +239,7 @@ public final class Strings {
         Integer startIndex = value.indexOf(REPLACEABLE_GROUP);
         StringBuilder resultBuilder = new StringBuilder();
         char current;
-        for (int i = startIndex; i < value.length(); i++) {
+        for (int i = startIndex; i < value.length() && i >= 0; i++) {
             current = value.charAt(i);
             if(Character.isDigit(current) || current == Strings.REPLACEABLE_GROUP.charAt(0)) {
                 resultBuilder.append(current);
@@ -247,7 +247,28 @@ public final class Strings {
                 break;
             }
         }
-        result = resultBuilder.toString();
+        if(resultBuilder.length() > 0) {
+            result = resultBuilder.toString();
+        }
+        return result;
+    }
+
+    /**
+     * Reverts the grouping action over the specific value.
+     * @param value Value to revert.
+     * @param groups Group lists.
+     * @return Reverted value.
+     */
+    public static String reverseGrouping(String value, List<String> groups) {
+        String result = value;
+        String groupIndex = Strings.getGroupIndex(result);
+        Integer index;
+        while(groupIndex != null) {
+            index = Integer.parseInt(groupIndex.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING));
+            result = result.replace(groupIndex,
+                    START_GROUP + groups.get(index) + END_GROUP);
+            groupIndex = Strings.getGroupIndex(result);
+        }
         return result;
     }
 

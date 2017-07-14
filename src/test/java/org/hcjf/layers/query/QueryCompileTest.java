@@ -73,6 +73,15 @@ public class QueryCompileTest {
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }
+
+        try {
+            Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 'POINT (23.34 34.98)'");
+            query = Query.compile(query.toString());
+            Assert.assertNotNull(query);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Assert.fail(ex.getMessage());
+        }
     }
 
     /**

@@ -1270,6 +1270,10 @@ public class Query extends EvaluatorCollection {
                     throw new IllegalArgumentException("");
                 }
 
+                if(value instanceof String) {
+                    value = Strings.reverseGrouping((String) value, groups);
+                }
+
                 if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)) ||
                         operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT_2))) {
                     evaluator = new Distinct(queryParameter, value);
