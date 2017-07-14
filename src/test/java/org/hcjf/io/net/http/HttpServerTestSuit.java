@@ -14,6 +14,7 @@ import org.hcjf.service.grants.Grant;
 import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Method;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -95,15 +96,22 @@ public class HttpServerTestSuit {
 //            e.printStackTrace();
 //        }
 
-        HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
-        server.addContext(new EndPoint("example", "crud"));
-        server.start();
+//        HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
+//        server.addContext(new EndPoint("example", "crud"));
+//        server.start();
 
 //        HttpsServer server = new HttpsServer(8080);
 //        server.addContext(new EndPoint("example", "crud"));
 //        server.setKeystoreFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/keystore.jks"));
 //        server.setTrustedCertsFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/cacerts.jks"));
 //        server.start();
+
+        try {
+            HttpServer server = new HttpServer(8080);
+            FolderContext folderContext = new FolderContext("", Paths.get(HttpServerTestSuit.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
+            server.addContext(folderContext);
+            server.start();
+        } catch (Exception ex){}
     }
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {
