@@ -109,25 +109,37 @@ public class FolderContext extends Context {
         Path tempFolder = Files.createTempDirectory(
                 SystemProperties.getPath(SystemProperties.Net.Http.Folder.ZIP_CONTAINER),
                 SystemProperties.get(SystemProperties.Net.Http.Folder.ZIP_TEMP_PREFIX));
-        Enumeration<? extends ZipEntry> entryEnumeration = zipFile.entries();
-        while(entryEnumeration.hasMoreElements()) {
-            ZipEntry zipEntry = entryEnumeration.nextElement();
-            if(zipEntry.isDirectory()) {
-                Files.createDirectory(tempFolder.resolve(zipEntry.getName()));
-            } else {
-                Path file = Files.createFile(tempFolder.resolve(zipEntry.getName()));
-                try (InputStream inputStream = zipFile.getInputStream(zipEntry);
-                     FileOutputStream fileOutputStream = new FileOutputStream(file.toFile());) {
-                    byte[] buffer = new byte[2048];
-                    int readSize = inputStream.read(buffer);
-                    while (readSize >= 0) {
-                        fileOutputStream.write(buffer, 0, readSize);
-                        fileOutputStream.flush();
-                        readSize = inputStream.read(buffer);
+        int errors;
+        Set<String> processedNames = new TreeSet<>();
+        do {
+            errors = 0;
+            Enumeration<? extends ZipEntry> entryEnumeration = zipFile.entries();
+            while (entryEnumeration.hasMoreElements()) {
+                ZipEntry zipEntry = entryEnumeration.nextElement();
+                if(!processedNames.contains(zipEntry.getName())) {
+                    try {
+                        if (zipEntry.isDirectory()) {
+                            Files.createDirectory(tempFolder.resolve(zipEntry.getName()));
+                        } else {
+                            Path file = Files.createFile(tempFolder.resolve(zipEntry.getName()));
+                            try (InputStream inputStream = zipFile.getInputStream(zipEntry);
+                                 FileOutputStream fileOutputStream = new FileOutputStream(file.toFile())) {
+                                byte[] buffer = new byte[2048];
+                                int readSize = inputStream.read(buffer);
+                                while (readSize >= 0) {
+                                    fileOutputStream.write(buffer, 0, readSize);
+                                    fileOutputStream.flush();
+                                    readSize = inputStream.read(buffer);
+                                }
+                            }
+                        }
+                    } catch (IOException ex) {
+                        errors++;
                     }
+                    processedNames.add(zipEntry.getName());
                 }
             }
-        }
+        } while(errors > 0);
         return tempFolder;
     }
 
@@ -142,25 +154,37 @@ public class FolderContext extends Context {
         Path tempFolder = Files.createTempDirectory(
                 SystemProperties.getPath(SystemProperties.Net.Http.Folder.JAR_CONTAINER),
                 SystemProperties.get(SystemProperties.Net.Http.Folder.JAR_TEMP_PREFIX));
-        Enumeration<JarEntry> entryEnumeration = jarFile.entries();
-        while(entryEnumeration.hasMoreElements()) {
-            JarEntry jarEntry = entryEnumeration.nextElement();
-            if(jarEntry.isDirectory()) {
-                Files.createDirectory(tempFolder.resolve(jarEntry.getName()));
-            } else {
-                Path file = Files.createFile(tempFolder.resolve(jarEntry.getName()));
-                try (InputStream inputStream = jarFile.getInputStream(jarEntry);
-                     FileOutputStream fileOutputStream = new FileOutputStream(file.toFile());) {
-                    byte[] buffer = new byte[2048];
-                    int readSize = inputStream.read(buffer);
-                    while (readSize >= 0) {
-                        fileOutputStream.write(buffer, 0, readSize);
-                        fileOutputStream.flush();
-                        readSize = inputStream.read(buffer);
+        int errors;
+        Set<String> processedNames = new TreeSet<>();
+        do {
+            errors = 0;
+            Enumeration<? extends ZipEntry> entryEnumeration = jarFile.entries();
+            while (entryEnumeration.hasMoreElements()) {
+                ZipEntry zipEntry = entryEnumeration.nextElement();
+                if(!processedNames.contains(zipEntry.getName())) {
+                    try {
+                        if (zipEntry.isDirectory()) {
+                            Files.createDirectory(tempFolder.resolve(zipEntry.getName()));
+                        } else {
+                            Path file = Files.createFile(tempFolder.resolve(zipEntry.getName()));
+                            try (InputStream inputStream = jarFile.getInputStream(zipEntry);
+                                 FileOutputStream fileOutputStream = new FileOutputStream(file.toFile())) {
+                                byte[] buffer = new byte[2048];
+                                int readSize = inputStream.read(buffer);
+                                while (readSize >= 0) {
+                                    fileOutputStream.write(buffer, 0, readSize);
+                                    fileOutputStream.flush();
+                                    readSize = inputStream.read(buffer);
+                                }
+                            }
+                        }
+                    } catch (IOException ex) {
+                        errors++;
                     }
+                    processedNames.add(zipEntry.getName());
                 }
             }
-        }
+        } while(errors > 0);
         return tempFolder;
     }
 
