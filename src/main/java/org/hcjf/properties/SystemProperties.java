@@ -161,6 +161,10 @@ public final class SystemProperties extends Properties {
                 public static final String DEFAULT_HTML_DOCUMENT = "hcjf.net.http.folder.default.html.document";
                 public static final String DEFAULT_HTML_BODY = "hcjf.net.http.folder.default.html.body";
                 public static final String DEFAULT_HTML_ROW = "hcjf.net.http.folder.default.html.row";
+                public static final String ZIP_CONTAINER = "hcjf.net.http.folder.zip.container";
+                public static final String ZIP_TEMP_PREFIX = "hcjf.net.http.folder.zip.temp.prefix";
+                public static final String JAR_CONTAINER = "hcjf.net.http.folder.jar.container";
+                public static final String JAR_TEMP_PREFIX = "hcjf.net.http.folder.jar.temp.prefix";
             }
         }
 
@@ -402,6 +406,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.Folder.DEFAULT_HTML_DOCUMENT, "<!DOCTYPE html><html><head><title>%s</title><body>%s</body></html></head>");
         defaults.put(Net.Http.Folder.DEFAULT_HTML_BODY, "<table>%s</table>");
         defaults.put(Net.Http.Folder.DEFAULT_HTML_ROW, "<tr><th><a href=\"%s\">%s</a></th></tr>");
+        defaults.put(Net.Http.Folder.ZIP_CONTAINER, System.getProperty("user.home"));
+        defaults.put(Net.Http.Folder.ZIP_TEMP_PREFIX, "hcjf_zip_temp");
+        defaults.put(Net.Http.Folder.JAR_CONTAINER, System.getProperty("user.home"));
+        defaults.put(Net.Http.Folder.JAR_TEMP_PREFIX, "hcjf_jar_temp");
 
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
