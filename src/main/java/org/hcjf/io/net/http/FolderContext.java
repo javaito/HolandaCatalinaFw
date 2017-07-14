@@ -55,9 +55,6 @@ public class FolderContext extends Context {
             }
         }
 
-        this.name = name;
-        this.baseFolder = baseFolder;
-
         File file = baseFolder.resolve(defaultFile).toFile();
         if(file.exists()) {
             if(file.isDirectory()) {
@@ -68,6 +65,9 @@ public class FolderContext extends Context {
         } else {
             Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Default file doesn't exist %s", defaultFile);
         }
+
+        this.name = name;
+        this.baseFolder = baseFolder;
         this.names = name.split(URI_FOLDER_SEPARATOR);
         try {
             this.messageDigest = MessageDigest.getInstance(
