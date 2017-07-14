@@ -2,6 +2,7 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.encoding.MimeType;
 import org.hcjf.errors.Errors;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
 import java.io.*;
@@ -25,7 +26,7 @@ public class FolderContext extends Context {
 
     private final Path baseFolder;
     private final String name;
-    private final String defaultFile;
+    private String defaultFile;
     private final String[] names;
     private final MessageDigest messageDigest;
 
@@ -56,7 +57,17 @@ public class FolderContext extends Context {
 
         this.name = name;
         this.baseFolder = baseFolder;
-        this.defaultFile = defaultFile;
+
+        File file = baseFolder.resolve(defaultFile).toFile();
+        if(file.exists()) {
+            if(file.isDirectory()) {
+                baseFolder = baseFolder.resolve(defaultFile);
+            } else {
+                this.defaultFile = defaultFile;
+            }
+        } else {
+            Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Default file doesn't exist %s", defaultFile);
+        }
         this.names = name.split(URI_FOLDER_SEPARATOR);
         try {
             this.messageDigest = MessageDigest.getInstance(

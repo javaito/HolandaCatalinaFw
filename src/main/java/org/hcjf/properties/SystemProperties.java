@@ -156,6 +156,7 @@ public final class SystemProperties extends Properties {
             public static final String ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH = "hcjf.net.http.enable.automatic.response.content.length";
 
             public static final class Folder {
+                public static final String LOG_TAG = "hcjf.net.http.folder.log.tag";
                 public static final String FORBIDDEN_CHARACTERS = "hcjf.net.http.folder.forbidden.characters";
                 public static final String FILE_EXTENSION_REGEX = "hcjf.net.http.folder.file.extension.regex";
                 public static final String DEFAULT_HTML_DOCUMENT = "hcjf.net.http.folder.default.html.document";
@@ -401,6 +402,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
 
+        defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
         defaults.put(Net.Http.Folder.FILE_EXTENSION_REGEX, "\\.(?=[^\\.]+$)");
         defaults.put(Net.Http.Folder.DEFAULT_HTML_DOCUMENT, "<!DOCTYPE html><html><head><title>%s</title><body>%s</body></html></head>");
