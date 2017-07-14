@@ -55,15 +55,17 @@ public class FolderContext extends Context {
             }
         }
 
-        File file = baseFolder.resolve(defaultFile).toFile();
-        if(file.exists()) {
-            if(file.isDirectory()) {
-                baseFolder = baseFolder.resolve(defaultFile);
+        if(defaultFile != null) {
+            File file = baseFolder.resolve(defaultFile).toFile();
+            if (file.exists()) {
+                if (file.isDirectory()) {
+                    baseFolder = baseFolder.resolve(defaultFile);
+                } else {
+                    this.defaultFile = defaultFile;
+                }
             } else {
-                this.defaultFile = defaultFile;
+                Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Default file doesn't exist %s", defaultFile);
             }
-        } else {
-            Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Default file doesn't exist %s", defaultFile);
         }
 
         this.name = name;
