@@ -120,6 +120,7 @@ public class FolderContext extends Context {
         Path tempFolder = Files.createTempDirectory(
                 SystemProperties.getPath(SystemProperties.Net.Http.Folder.ZIP_CONTAINER),
                 SystemProperties.get(SystemProperties.Net.Http.Folder.ZIP_TEMP_PREFIX));
+        tempFolder.toFile().deleteOnExit();
         int errors;
         Set<String> processedNames = new TreeSet<>();
         do {
@@ -165,6 +166,7 @@ public class FolderContext extends Context {
         Path tempFolder = Files.createTempDirectory(
                 SystemProperties.getPath(SystemProperties.Net.Http.Folder.JAR_CONTAINER),
                 SystemProperties.get(SystemProperties.Net.Http.Folder.JAR_TEMP_PREFIX));
+        tempFolder.toFile().deleteOnExit();
         int errors;
         Set<String> processedNames = new TreeSet<>();
         do {
