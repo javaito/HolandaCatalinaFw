@@ -2,20 +2,21 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.encoding.MimeType;
 import org.hcjf.errors.Errors;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
 import java.security.MessageDigest;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * This class publish some local folder in the web environment.
@@ -25,7 +26,7 @@ public class FolderContext extends Context {
 
     private final Path baseFolder;
     private final String name;
-    private final String defaultFile;
+    private String defaultFile;
     private final String[] names;
     private final MessageDigest messageDigest;
 
@@ -40,9 +41,35 @@ public class FolderContext extends Context {
             throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_2));
         }
 
+        if(verifyJatFormat(baseFolder)) {
+            try {
+                baseFolder = unzipJar(baseFolder);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Unable to unzip jar file", e);
+            }
+        } else if(verifyZipFormat(baseFolder)) {
+            try {
+                baseFolder = unzip(baseFolder);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Unable to unzip file", e);
+            }
+        }
+
+        if(defaultFile != null) {
+            File file = baseFolder.resolve(defaultFile).toFile();
+            if (file.exists()) {
+                if (file.isDirectory()) {
+                    baseFolder = baseFolder.resolve(defaultFile);
+                } else {
+                    this.defaultFile = defaultFile;
+                }
+            } else {
+                Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Default file doesn't exist %s", defaultFile);
+            }
+        }
+
         this.name = name;
         this.baseFolder = baseFolder;
-        this.defaultFile = defaultFile;
         this.names = name.split(URI_FOLDER_SEPARATOR);
         try {
             this.messageDigest = MessageDigest.getInstance(
@@ -54,6 +81,126 @@ public class FolderContext extends Context {
 
     public FolderContext(String name, Path baseFolder) {
         this(name, baseFolder, null);
+    }
+
+    /**
+     * Verify if the specific path is a zip file or not.
+     * @param path Specific path.
+     * @return True if the path point to the zip file.
+     */
+    private boolean verifyZipFormat(Path path) {
+        boolean result = false;
+        try {
+            new ZipFile(path.toFile()).getName();
+            result = true;
+        } catch (Exception ex){}
+        return result;
+    }
+
+    /**
+     * Verify if the specific path is a jar file or not.
+     * @param path Specific path.
+     * @return True if the path point to the jar file.
+     */
+    private boolean verifyJatFormat(Path path) {
+        boolean result = false;
+        try {
+            new JarFile(path.toFile()).getName();
+            result = true;
+        } catch (Exception ex) {}
+        return result;
+    }
+
+    /**
+     * Unzip the specific file and create a temporal folder with all the content and returns
+     * the new base folder for the context.
+     * @param zipFilePath Specific file.
+     * @return New base folder.
+     */
+    private Path unzip(Path zipFilePath) throws IOException {
+        ZipFile zipFile = new ZipFile(zipFilePath.toFile());
+        Path tempFolder = Files.createTempDirectory(
+                SystemProperties.getPath(SystemProperties.Net.Http.Folder.ZIP_CONTAINER),
+                SystemProperties.get(SystemProperties.Net.Http.Folder.ZIP_TEMP_PREFIX));
+        tempFolder.toFile().deleteOnExit();
+        int errors;
+        Set<String> processedNames = new TreeSet<>();
+        do {
+            errors = 0;
+            Enumeration<? extends ZipEntry> entryEnumeration = zipFile.entries();
+            while (entryEnumeration.hasMoreElements()) {
+                ZipEntry zipEntry = entryEnumeration.nextElement();
+                if(!processedNames.contains(zipEntry.getName())) {
+                    try {
+                        if (zipEntry.isDirectory()) {
+                            Files.createDirectory(tempFolder.resolve(zipEntry.getName()));
+                        } else {
+                            Path file = Files.createFile(tempFolder.resolve(zipEntry.getName()));
+                            try (InputStream inputStream = zipFile.getInputStream(zipEntry);
+                                 FileOutputStream fileOutputStream = new FileOutputStream(file.toFile())) {
+                                byte[] buffer = new byte[2048];
+                                int readSize = inputStream.read(buffer);
+                                while (readSize >= 0) {
+                                    fileOutputStream.write(buffer, 0, readSize);
+                                    fileOutputStream.flush();
+                                    readSize = inputStream.read(buffer);
+                                }
+                            }
+                        }
+                    } catch (IOException ex) {
+                        errors++;
+                    }
+                    processedNames.add(zipEntry.getName());
+                }
+            }
+        } while(errors > 0);
+        return tempFolder;
+    }
+
+    /**
+     * Unzip the specific file and create a temporal folder with all the content and returns
+     * the new base folder for the context.
+     * @param jarFilePath Specific file.
+     * @return New base folder.
+     */
+    private Path unzipJar(Path jarFilePath) throws IOException {
+        JarFile jarFile = new JarFile(jarFilePath.toFile());
+        Path tempFolder = Files.createTempDirectory(
+                SystemProperties.getPath(SystemProperties.Net.Http.Folder.JAR_CONTAINER),
+                SystemProperties.get(SystemProperties.Net.Http.Folder.JAR_TEMP_PREFIX));
+        tempFolder.toFile().deleteOnExit();
+        int errors;
+        Set<String> processedNames = new TreeSet<>();
+        do {
+            errors = 0;
+            Enumeration<? extends ZipEntry> entryEnumeration = jarFile.entries();
+            while (entryEnumeration.hasMoreElements()) {
+                ZipEntry zipEntry = entryEnumeration.nextElement();
+                if(!processedNames.contains(zipEntry.getName())) {
+                    try {
+                        if (zipEntry.isDirectory()) {
+                            Files.createDirectory(tempFolder.resolve(zipEntry.getName()));
+                        } else {
+                            Path file = Files.createFile(tempFolder.resolve(zipEntry.getName()));
+                            try (InputStream inputStream = jarFile.getInputStream(zipEntry);
+                                 FileOutputStream fileOutputStream = new FileOutputStream(file.toFile())) {
+                                byte[] buffer = new byte[2048];
+                                int readSize = inputStream.read(buffer);
+                                while (readSize >= 0) {
+                                    fileOutputStream.write(buffer, 0, readSize);
+                                    fileOutputStream.flush();
+                                    readSize = inputStream.read(buffer);
+                                }
+                            }
+                        }
+                    } catch (IOException ex) {
+                        errors++;
+                    }
+                    processedNames.add(zipEntry.getName());
+                }
+            }
+        } while(errors > 0);
+        return tempFolder;
     }
 
     /**

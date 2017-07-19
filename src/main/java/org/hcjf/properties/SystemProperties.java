@@ -156,11 +156,16 @@ public final class SystemProperties extends Properties {
             public static final String ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH = "hcjf.net.http.enable.automatic.response.content.length";
 
             public static final class Folder {
+                public static final String LOG_TAG = "hcjf.net.http.folder.log.tag";
                 public static final String FORBIDDEN_CHARACTERS = "hcjf.net.http.folder.forbidden.characters";
                 public static final String FILE_EXTENSION_REGEX = "hcjf.net.http.folder.file.extension.regex";
                 public static final String DEFAULT_HTML_DOCUMENT = "hcjf.net.http.folder.default.html.document";
                 public static final String DEFAULT_HTML_BODY = "hcjf.net.http.folder.default.html.body";
                 public static final String DEFAULT_HTML_ROW = "hcjf.net.http.folder.default.html.row";
+                public static final String ZIP_CONTAINER = "hcjf.net.http.folder.zip.container";
+                public static final String ZIP_TEMP_PREFIX = "hcjf.net.http.folder.zip.temp.prefix";
+                public static final String JAR_CONTAINER = "hcjf.net.http.folder.jar.container";
+                public static final String JAR_TEMP_PREFIX = "hcjf.net.http.folder.jar.temp.prefix";
             }
         }
 
@@ -397,11 +402,16 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
 
+        defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
         defaults.put(Net.Http.Folder.FILE_EXTENSION_REGEX, "\\.(?=[^\\.]+$)");
         defaults.put(Net.Http.Folder.DEFAULT_HTML_DOCUMENT, "<!DOCTYPE html><html><head><title>%s</title><body>%s</body></html></head>");
         defaults.put(Net.Http.Folder.DEFAULT_HTML_BODY, "<table>%s</table>");
         defaults.put(Net.Http.Folder.DEFAULT_HTML_ROW, "<tr><th><a href=\"%s\">%s</a></th></tr>");
+        defaults.put(Net.Http.Folder.ZIP_CONTAINER, System.getProperty("user.home"));
+        defaults.put(Net.Http.Folder.ZIP_TEMP_PREFIX, "hcjf_zip_temp");
+        defaults.put(Net.Http.Folder.JAR_CONTAINER, System.getProperty("user.home"));
+        defaults.put(Net.Http.Folder.JAR_TEMP_PREFIX, "hcjf_jar_temp");
 
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
