@@ -365,7 +365,7 @@ public final class Log extends Service<LogPrinter> {
          */
         private void writeRecord(LogRecord record) {
             ServiceSession serviceSession = ServiceSession.getCurrentIdentity();
-            serviceSession.addIdentity(serviceSession);
+            serviceSession.addIdentity(record.getCurrentSession());
             try {
                 if (record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.Log.LEVEL)) {
                     printers.forEach(printer -> printer.print(record));
