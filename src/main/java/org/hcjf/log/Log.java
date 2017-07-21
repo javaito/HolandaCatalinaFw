@@ -435,7 +435,12 @@ public final class Log extends Service<LogPrinter> {
             this.lineNumber = callStackInformation[2];
             this.params = params;
             this.throwable = throwable;
-            this.currentSession = ServiceSession.getCurrentIdentity();
+
+            if(Thread.currentThread() instanceof ServiceThread) {
+                this.currentSession = ServiceSession.getCurrentIdentity();
+            } else {
+                this.currentSession = ServiceSession.getGuestSession();
+            }
         }
 
         /**
