@@ -2,6 +2,8 @@ package org.hcjf.log;
 
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
+import org.hcjf.service.ServiceThread;
 import org.hcjf.utils.Strings;
 
 import java.io.PrintWriter;
@@ -362,25 +364,31 @@ public final class Log extends Service<LogPrinter> {
          * @param record Record to print.
          */
         private void writeRecord(LogRecord record) {
-            if(record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.Log.LEVEL)) {
-                printers.forEach(printer -> printer.print(record));
-            }
-
-            if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED)) {
-                if(SystemProperties.getBoolean(SystemProperties.Log.JAVA_STANDARD_LOGGER_ENABLED)) {
-                    if(record.getThrowable() != null) {
-                        Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
-                                record.getClassName(), record.getMethodName(), record.getThrowable(),
-                                ()->String.format(record.getOriginalMessage(), record.getParams()));
-                    } else {
-                        Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
-                                record.getClassName(), record.getMethodName(),
-                                ()->String.format(record.getOriginalMessage(), record.getParams()));
-                    }
-                } else {
-                    System.out.println(record.toString());
-                    System.out.flush();
+            ServiceSession serviceSession = ServiceSession.getCurrentIdentity();
+            serviceSession.addIdentity(record.getCurrentSession());
+            try {
+                if (record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.Log.LEVEL)) {
+                    printers.forEach(printer -> printer.print(record));
                 }
+
+                if (SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED)) {
+                    if (SystemProperties.getBoolean(SystemProperties.Log.JAVA_STANDARD_LOGGER_ENABLED)) {
+                        if (record.getThrowable() != null) {
+                            Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
+                                    record.getClassName(), record.getMethodName(), record.getThrowable(),
+                                    () -> String.format(record.getOriginalMessage(), record.getParams()));
+                        } else {
+                            Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
+                                    record.getClassName(), record.getMethodName(),
+                                    () -> String.format(record.getOriginalMessage(), record.getParams()));
+                        }
+                    } else {
+                        System.out.println(record.toString());
+                        System.out.flush();
+                    }
+                }
+            } finally {
+                serviceSession.removeIdentity();
             }
         }
     }
@@ -404,6 +412,7 @@ public final class Log extends Service<LogPrinter> {
         private final SimpleDateFormat dateFormat;
         private final Object[] params;
         private final Throwable throwable;
+        private final ServiceSession currentSession;
 
         /**
          * Constructor
@@ -426,6 +435,12 @@ public final class Log extends Service<LogPrinter> {
             this.lineNumber = callStackInformation[2];
             this.params = params;
             this.throwable = throwable;
+
+            if(Thread.currentThread() instanceof ServiceThread) {
+                this.currentSession = ServiceSession.getCurrentIdentity();
+            } else {
+                this.currentSession = ServiceSession.getGuestSession();
+            }
         }
 
         /**
@@ -490,6 +505,14 @@ public final class Log extends Service<LogPrinter> {
             printWriter.close();
 
             return stringWriter.toString();
+        }
+
+        /**
+         * Returns the session instance owner of this record.
+         * @return Session instance.
+         */
+        public ServiceSession getCurrentSession() {
+            return currentSession;
         }
 
         /**
