@@ -16,9 +16,41 @@ import java.util.Map;
 public abstract class StorageSession implements Closeable {
 
     private final String implName;
+    private PostEvaluationStrategy postEvaluationStrategy;
 
     public StorageSession(String implName) {
         this.implName = implName;
+        this.postEvaluationStrategy = PostEvaluationStrategy.EVALUATE_RAW_DATA;
+    }
+
+    /**
+     * Returns the implementation name.
+     * @return Implementation name.
+     */
+    public final String getImplName() {
+        return implName;
+    }
+
+    /**
+     * Returns the post evaluation strategy of the session.
+     * With this strategy the session decides when evaluate the application query, before or after
+     * the data base data is parsing to create the domain objects.
+     * The default value is {@link PostEvaluationStrategy}.EVALUATE_RAW_DATA
+     * @return Post evaluation strategy.
+     */
+    public final PostEvaluationStrategy getPostEvaluationStrategy() {
+        return postEvaluationStrategy;
+    }
+
+    /**
+     * Set the post evaluation strategy of the session.
+     * With this strategy the session decides when evaluate the application query, before or after
+     * the data base data is parsing to create the domain objects.
+     * The default value is {@link PostEvaluationStrategy}.EVALUATE_RAW_DATA
+     * @param postEvaluationStrategy Post evaluation strategy.
+     */
+    public final void setPostEvaluationStrategy(PostEvaluationStrategy postEvaluationStrategy) {
+        this.postEvaluationStrategy = postEvaluationStrategy;
     }
 
     /**
@@ -200,5 +232,22 @@ public abstract class StorageSession implements Closeable {
      */
     public Query.QueryComponent normalizeApplicationToDataSource(Query.QueryComponent component) {
         return component;
+    }
+
+    /**
+     * This enum contains all the strategies to evaluate the query before data base access.
+     */
+    public enum PostEvaluationStrategy {
+
+        /**
+         * This strategy is to evaluate the data before parsing to create the domain objects.
+         */
+        EVALUATE_RAW_DATA,
+
+        /**
+         * This strategy is to evaluate the data after domain object creation.
+         */
+        EVALUATE_PARSED_DATA,
+
     }
 }
