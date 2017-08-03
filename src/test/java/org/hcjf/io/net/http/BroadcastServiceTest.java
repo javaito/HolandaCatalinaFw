@@ -4,6 +4,7 @@ import org.hcjf.io.net.broadcast.BroadcastConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
 import org.hcjf.properties.SystemProperties;
 
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,8 @@ public class BroadcastServiceTest {
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, Integer.toString(Integer.MAX_VALUE));
+
+        FolderContext folderContext = new FolderContext("", Paths.get("/home/javaito/NetBeansProjects/Test/dist/Test.jar"));
 
         BroadcastService.getInstance().registerConsumer(new BroadcastConsumerTest());
     }
@@ -41,7 +44,7 @@ public class BroadcastServiceTest {
 
         @Override
         public String getNetInterfaceName() {
-            return "wlan0";
+            return "eth0";
         }
 
         @Override

@@ -1,10 +1,13 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.layers.Layer;
+import org.hcjf.layers.LayerInterface;
+import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -23,6 +26,10 @@ public abstract class HttpPackage {
     public static final String HTTP_FIELD_ASSIGNATION = "=";
     public static final String HTTP_CONTEXT_SEPARATOR = "/";
 
+    static {
+        Layers.publishLayer(ChunkedDecoderLayer.class);
+    }
+
     private HttpProtocol protocol;
     private String httpVersion;
     private final Map<String, HttpHeader> headers;
@@ -32,7 +39,8 @@ public abstract class HttpPackage {
     private List<String> lines;
     private boolean onBody;
     private boolean complete;
-    private ByteArrayOutputStream currentBody;
+    private ByteArrayOutputStream currentBuffer;
+    private TransferDecodingLayerInterface transferDecodingLayer;
 
     public HttpPackage() {
         this.httpVersion = HttpVersion.VERSION_1_1;
@@ -154,53 +162,62 @@ public abstract class HttpPackage {
      */
     public final synchronized void addData(byte[] data) {
         if(!complete) {
-            if (currentBody == null) {
-                currentBody = new ByteArrayOutputStream();
+            if (currentBuffer == null) {
+                currentBuffer = new ByteArrayOutputStream();
                 lines = new ArrayList<>();
                 onBody = false;
                 complete = false;
             }
 
             if (onBody) {
-                try {
-                    currentBody.write(data);
-                } catch (IOException ex) {
-                }
+                writeBody(data);
             } else {
                 String line;
                 for (int i = 0; i < data.length - 1; i++) {
                     if (data[i] == LINE_SEPARATOR_CR && data[i + 1] == LINE_SEPARATOR_LF) {
-                        if (currentBody.size() == 0) {
-                            //The previous line is empty
-                            //Start body, because there are two CRLF together
-                            currentBody.reset();
-                            currentBody.write(data, i + 2, data.length - (i + 2));
-                            onBody = true;
+                        if (currentBuffer.size() == 0) {
+
                             for(int j = 1; j < lines.size(); j++) {
                                 addHeader(new HttpHeader(lines.get(j)));
                             }
+
+                            HttpHeader transferEncodingHeader = getHeader(HttpHeader.TRANSFER_ENCODING);
+                            if(transferEncodingHeader != null) {
+                                try {
+                                    transferDecodingLayer = Layers.get(TransferDecodingLayerInterface.class, transferEncodingHeader.getHeaderValue());
+                                } catch (Exception ex) {
+                                    Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                                            "Transfer decoding layer not found", ex);
+                                }
+                            }
+
+                            //The previous line is empty
+                            //Start body, because there are two CRLF together
+                            currentBuffer.reset();
+                            writeBody(data, i + 2, data.length - (i + 2));
+                            onBody = true;
                             break;
                         } else {
                             //The current body is a new line
-                            line = new String(currentBody.toByteArray()).trim();
+                            line = new String(currentBuffer.toByteArray()).trim();
                             if(!line.isEmpty()) {
                                 lines.add(line);
                             }
-                            currentBody.reset();
+                            currentBuffer.reset();
                             i++;
                         }
                     } else {
-                        currentBody.write(data[i]);
+                        currentBuffer.write(data[i]);
                     }
                 }
             }
 
             if (onBody) {
                 if (bodyDone()) {
-                    setBody(currentBody.toByteArray());
+                    setBody(getAccumulatedBody());
                     processFirstLine(lines.get(0));
                     processBody(getBody());
-                    currentBody = null;
+                    currentBuffer = null;
                     complete = true;
                 }
             }
@@ -210,17 +227,60 @@ public abstract class HttpPackage {
     }
 
     /**
+     * This method store the fragment information into the specific
+     * decoder implementation
+     * @param data Fragment information.
+     */
+    private void writeBody(byte[] data) {
+        writeBody(data, 0, data.length);
+    }
+
+    /**
+     * This method store the fragment information into the specific
+     * decoder implementation
+     * @param data Fragment information.
+     * @param off Start index into the array.
+     * @param len End index into the array.
+     */
+    private void writeBody(byte[] data, int off, int len) {
+        if(transferDecodingLayer == null) {
+            currentBuffer.write(data, off, len);
+        } else {
+            transferDecodingLayer.add(ByteBuffer.wrap(data, off, len));
+        }
+    }
+
+    /**
+     * Returns the accumulated body into the specific decode implementation.
+     * @return Accumulated body.
+     */
+    private byte[] getAccumulatedBody() {
+        byte[] result;
+        if(transferDecodingLayer == null) {
+            result = currentBuffer.toByteArray();
+        } else {
+            result = transferDecodingLayer.getBody();
+        }
+        return result;
+    }
+
+    /**
      * Verify if the body of the package is complete.
      * @return Return true if the body is complete or false in the otherwise
      */
     protected boolean bodyDone() {
-        int length = 0;
-        HttpHeader contentLengthHeader = getHeader(HttpHeader.CONTENT_LENGTH);
-        if (contentLengthHeader != null) {
-            length = Integer.parseInt(contentLengthHeader.getHeaderValue().trim());
+        boolean result;
+        if(transferDecodingLayer == null) {
+            int length = 0;
+            HttpHeader contentLengthHeader = getHeader(HttpHeader.CONTENT_LENGTH);
+            if (contentLengthHeader != null) {
+                length = Integer.parseInt(contentLengthHeader.getHeaderValue().trim());
+            }
+            result = currentBuffer.size() >= length;
+        } else {
+            result = transferDecodingLayer.done(this);
         }
-
-        return currentBody.size() >= length;
+        return result;
     }
 
     /**
@@ -261,4 +321,113 @@ public abstract class HttpPackage {
 
     }
 
+    /**
+     * Specify the interface for all the implementations of http body decode method.
+     */
+    public interface TransferDecodingLayerInterface extends LayerInterface {
+
+        /**
+         * Add a new fragment for the current body.
+         * @param bodyFragment Body fragment.
+         */
+        void add(ByteBuffer bodyFragment);
+
+        /**
+         * Verify if the body is done depends of the decode method.
+         * @param httpPackage Package to verify if the body is complete.
+         * @return Body done.
+         */
+        boolean done(HttpPackage httpPackage);
+
+        /**
+         * Returns the decoded instance of the body.
+         * @return Body.
+         */
+        byte[] getBody();
+
+    }
+
+    /**
+     * This decoder implementation resolve the chunked encoding method for http.
+     */
+    public static class ChunkedDecoderLayer extends Layer implements TransferDecodingLayerInterface {
+
+        private static final int DEFAULT_SIZE = -1;
+        private static final byte SLASH_R_BYTE = '\r';
+
+        private int fragmentSize;
+        private int byteWritten;
+        private final ByteArrayOutputStream lengthBuffer;
+        private final ByteArrayOutputStream bodyBuffer;
+        private boolean done;
+
+        public ChunkedDecoderLayer() {
+            super(HttpHeader.CHUNKED, false);
+            fragmentSize = DEFAULT_SIZE;
+            byteWritten = 0;
+            bodyBuffer = new ByteArrayOutputStream();
+            lengthBuffer = new ByteArrayOutputStream();
+            done = false;
+        }
+
+        /**
+         * Adds a fragment of the body into the internal buffer.
+         * @param bodyFragment Body fragment.
+         */
+        @Override
+        public void add(ByteBuffer bodyFragment) {
+            byte currentByte;
+            while(bodyFragment.position() < bodyFragment.limit()) {
+                if(fragmentSize == DEFAULT_SIZE) {
+                    currentByte = bodyFragment.get();
+                    if(currentByte == SLASH_R_BYTE) {
+                        fragmentSize = Integer.parseInt(lengthBuffer.toString(), 16);
+                        lengthBuffer.reset();
+                        byteWritten = DEFAULT_SIZE;
+                        if(fragmentSize == 0) {
+                            done = true;
+                            break;
+                        }
+                    } else {
+                        lengthBuffer.write(currentByte);
+                    }
+                } else {
+                    if(byteWritten == DEFAULT_SIZE) {
+                        bodyFragment.get(); //Discards the '\n' byte
+                        byteWritten++;
+                    } else if(byteWritten == fragmentSize) {
+                        bodyFragment.get(); //Discards the '\r' byte
+                        bodyFragment.get(); //Discards the '\n' byte
+                        fragmentSize = DEFAULT_SIZE;
+                    } else {
+                        bodyBuffer.write(bodyFragment.get());
+                        byteWritten++;
+                    }
+                }
+            }
+        }
+
+        /**
+         * Verify if the body is complete. The body is complete when the
+         * chunked size into the fragment is zero.
+         * * @param httpPackage Package to verify if the body is complete.
+         * For this particular implementation this param is unuseful.
+         * @return True if the body is complete and false in the otherwise
+         */
+        @Override
+        public boolean done(HttpPackage httpPackage) {
+            return done;
+        }
+
+        /**
+         * Returns the accumulated body, if the body is complete then this accumulated body is
+         * the complete body.
+         * @return Accumulated body.
+         */
+        @Override
+        public byte[] getBody() {
+            return bodyBuffer.toByteArray();
+        }
+
+    }
 }

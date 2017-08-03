@@ -298,7 +298,7 @@ public class FolderContext extends Context {
                                     notAcceptable = false;
                                     break;
                                 } catch (Exception ex) {
-                                    //TODO: Log.w();
+                                    Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Zip file process fail", ex);
                                 }
                             } else if (group.equalsIgnoreCase(HttpHeader.IDENTITY)) {
                                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.IDENTITY));

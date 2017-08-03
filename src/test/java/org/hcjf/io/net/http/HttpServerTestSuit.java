@@ -1,7 +1,5 @@
 package org.hcjf.io.net.http;
 
-import org.hcjf.io.net.InetPortProvider;
-import org.hcjf.io.net.http.rest.EndPoint;
 import org.hcjf.io.net.http.rest.layers.EndPointDecoderLayerInterface;
 import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
 import org.hcjf.layers.Layers;
@@ -9,11 +7,17 @@ import org.hcjf.layers.crud.CrudLayer;
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.grants.Grant;
 import org.hcjf.utils.Introspection;
+import org.hcjf.encoding.MimeType;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -37,6 +41,33 @@ public class HttpServerTestSuit {
         Layers.publishLayer(TestCrud.class);
         Layers.publishLayer(Test1Crud.class);
         Layers.publishLayer(TestMapCrud.class);
+
+        for (int i = 0; i < 5; i++) {
+            try {
+                HttpClient client = new HttpClient(new URL("http://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx"));
+                HttpResponse response = client.request();
+
+                FileOutputStream fileOutputStream = new FileOutputStream(new File("/home/javaito/chunked.jpeg"));
+                fileOutputStream.write(response.getBody());
+                fileOutputStream.flush();
+            } catch (Exception ex){
+                ex.printStackTrace();
+            }
+        }
+
+        Log.d("CHAU", "End");
+
+//        HttpServer server = new HttpServer(8080);
+//        server.addContext(new FolderContext("", Paths.get("/home/javaito/Imágenes/test")) {
+//
+//            @Override
+//            public HttpResponse onContext(HttpRequest request) {
+//                HttpResponse response = super.onContext(request);
+//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.JPG));
+//                return response;
+//            }
+//        });
+//        server.start();
 
         ///git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https
 //        HttpsServer server = new HttpsServer(8443);
@@ -106,12 +137,15 @@ public class HttpServerTestSuit {
 //        server.setTrustedCertsFilePath(Paths.get("/home/javaito/git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/cacerts.jks"));
 //        server.start();
 
-        try {
-            HttpServer server = new HttpServer(8080);
-            FolderContext folderContext = new FolderContext("", Paths.get(HttpServerTestSuit.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()));
-            server.addContext(folderContext);
-            server.start();
-        } catch (Exception ex){}
+//        try {
+//            HttpServer server = new HttpServer(8080);
+//            FolderContext folderContext = new FolderContext("",
+//                    Paths.get("/home/javaito/git/HolandaCatalinaFw/out/artifacts/hcjf_jar/hcjf.jar"));
+//            server.addContext(folderContext);
+//            server.start();
+//        } catch (Exception ex){
+//            ex.printStackTrace();
+//        }
     }
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {

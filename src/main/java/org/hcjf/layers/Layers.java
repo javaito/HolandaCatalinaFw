@@ -76,6 +76,9 @@ public final class Layers {
         if (result == null) {
             try {
                 result = (L) instance.initialInstances.get(clazz);
+                if(result == null) {
+                    result = (L) clazz.newInstance();
+                }
                 result = (L) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
                         new Class[]{layerClass}, result);
 
@@ -249,7 +252,9 @@ public final class Layers {
                 }
             }
 
-            instance.initialInstances.put(layerClass, layerInstance);
+            if(layerInstance.isStateful()) {
+                instance.initialInstances.put(layerClass, layerInstance);
+            }
             instance.layerImplementations.get(layerInterfaceClass).put(implName, layerClass);
 
             //Add one map entry for each alias with the same implementation name.
