@@ -109,6 +109,54 @@ public abstract class EvaluatorCollection {
     }
 
     /**
+     * Return the value or set of values that corresponds to evaluators on provided fieldName and types
+     * @param fieldName
+     * @param evaluatorType
+     * @return Object
+     */
+    public Object getFieldEvaluatorValue(String fieldName, Class<? extends FieldEvaluator>... evaluatorType) {
+        Set<Object> results = new HashSet<>();
+        for (Evaluator evaluator : getEvaluators()) {
+            if (evaluator instanceof Or) {
+                Object internalResults = ((Or)evaluator).getFieldEvaluatorValue(fieldName, evaluatorType);
+                if(internalResults instanceof Set) {
+                    results.addAll((Set)internalResults);
+                } else {
+                    results.add(internalResults);
+                }
+
+            } else if (evaluator instanceof And) {
+                Object internalResults = ((And)evaluator).getFieldEvaluatorValue(fieldName, evaluatorType);
+                if(internalResults instanceof Set) {
+                    results.addAll((Set)internalResults);
+                } else {
+                    results.add(internalResults);
+                }
+
+            } else if (evaluator instanceof FieldEvaluator) {
+                FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+                if(fieldEvaluator.getFieldName().equals(fieldName)) {
+                    if(evaluatorType.length == 0) {
+                        results.add(fieldEvaluator.getRawValue());
+                    } else {
+                        for(int i = 0; i < evaluatorType.length; i++) {
+                            if(fieldEvaluator.getClass().isAssignableFrom(evaluatorType[i])) {
+                                results.add(fieldEvaluator.getRawValue());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Object result = null;
+        if(results.iterator().hasNext()) {
+            result = results.iterator().next();
+        }
+        return result;
+    }
+
+    /**
      * Add a particular evaluator that implements 'distinct' method.
      * @param fieldName Name of the pair getter/setter to obtain the evaluable value
      * for each of data collection's object.
