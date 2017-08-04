@@ -56,6 +56,22 @@ public class HttpHeader {
     public static final String ACCESS_CONTROL_REQUEST_METHODS = "Access-Control-Request-Methods";
     public static final String TRANSFER_ENCODING = "Transfer-Encoding";
 
+    //non-standard header names
+    public static final String DNT = "DNT";
+    public static final String FRONT_END_HTTPS = "Front-End-Https";
+    public static final String PROXY_CONNECTION = "Proxy-Connection";
+    public static final String X_ATT_DEVICEID = "X-Att-Deviceid";
+    public static final String X_CORRELATION_ID = "X-Correlation-ID";
+    public static final String X_CSRF_TOKEN = "X-Csrf-Token";
+    public static final String X_FORWARDED_FOR = "X-Forwarded-For";
+    public static final String X_FORWARDED_HOST = "X-Forwarded-Host";
+    public static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
+    public static final String X_HTTP_METHOD_OVERRIDE = "X-Http-Method-Override";
+    public static final String X_REQUEST_ID = "X-Request-ID";
+    public static final String X_REQUESTED_WITH = "X-Requested-With";
+    public static final String X_UIDH = "X-UIDH";
+    public static final String X_WAP_PROFILE = "X-Wap-Profile";
+
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String CLOSED = "Closed";
