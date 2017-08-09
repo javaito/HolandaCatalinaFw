@@ -5,6 +5,7 @@ import org.hcjf.properties.SystemProperties;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -22,7 +23,7 @@ public abstract class EvaluatorCollection {
     }
 
     public EvaluatorCollection(EvaluatorCollection parent) {
-        this.evaluators = new HashSet<>();
+        this.evaluators = new LinkedHashSet<>();
         this.parent = parent;
     }
 
