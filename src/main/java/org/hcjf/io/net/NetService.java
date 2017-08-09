@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * This class implements a service that provide an
  * up-level interface to open tcp and udp connections like a
  * server side or client side.
+ *
  * @author javaito
  */
 public final class NetService extends Service<NetServiceConsumer> {
@@ -66,7 +67,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.Net.CONNECTION_TIMEOUT_AVAILABLE);
         this.creationTimeout = SystemProperties.getLong(SystemProperties.Net.CONNECTION_TIMEOUT);
-        if(creationTimeoutAvailable && creationTimeout <= 0){
+        if (creationTimeoutAvailable && creationTimeout <= 0) {
             throw new IllegalArgumentException("Illegal creation timeout value: " + creationTimeout);
         }
 
@@ -83,6 +84,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Return the unique instance of the service.
+     *
      * @return Instance of the service.
      */
     public static final NetService getInstance() {
@@ -108,6 +110,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * This method will be called immediately after the static
      * method 'shutdown' of the class has been called.
+     *
      * @param stage Shutdown stage.
      */
     @Override
@@ -119,7 +122,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 break;
             }
             case END: {
-                for(NetSession session : getSessions()){
+                for (NetSession session : getSessions()) {
                     disconnect(session, "");
                 }
 
@@ -132,13 +135,14 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Shutdown all the service consumer executors.
+     *
      * @param executor Service consumer executor.
      */
     @Override
     protected void shutdownRegisteredExecutor(ThreadPoolExecutor executor) {
         int activityCount = 0;
-        while(activityCount < 3) {
-            if(executor.getActiveCount() == 0) {
+        while (activityCount < 3) {
+            if (executor.getActiveCount() == 0) {
                 activityCount++;
             } else {
                 activityCount = 0;
@@ -151,7 +155,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         executor.shutdown();
-        while(!executor.isTerminated()) {
+        while (!executor.isTerminated()) {
             try {
                 Thread.sleep(SystemProperties.getLong(
                         SystemProperties.Service.SHUTDOWN_TIME_OUT));
@@ -162,23 +166,25 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method register the consumer in the service.
+     *
      * @param consumer Consumer.
-     * @throws NullPointerException If the consumer is null.
+     * @throws NullPointerException     If the consumer is null.
      * @throws IllegalArgumentException If the consumer is not a NetClient instance
-     * of a NetServer instance.
-     * @throws RuntimeException With a IOException like a cause.
+     *                                  of a NetServer instance.
+     * @throws RuntimeException         With a IOException like a cause.
      */
     @Override
     public final void registerConsumer(NetServiceConsumer consumer) {
 
-        if(consumer == null) {
+        if (consumer == null) {
             throw new NullPointerException("Net consumer null");
         }
 
         boolean illegal = false;
         try {
             switch (consumer.getProtocol()) {
-                case TCP: case TCP_SSL: {
+                case TCP:
+                case TCP_SSL: {
                     if (consumer instanceof NetServer) {
                         registerTCPNetServer((NetServer) consumer);
                     } else if (consumer instanceof NetClient) {
@@ -203,7 +209,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             throw new RuntimeException(ioException);
         }
 
-        if(illegal) {
+        if (illegal) {
             throw new IllegalArgumentException("Is not a legal consumer.");
         }
 
@@ -217,6 +223,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method registers a TCP server service.
+     *
      * @param server TCP Server.
      */
     private void registerTCPNetServer(NetServer server) throws IOException {
@@ -230,6 +237,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method registers a TCP client service.
+     *
      * @param client TCP Client.
      */
     private void registerTCPNetClient(NetClient client) throws IOException {
@@ -241,6 +249,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method registers a UDP server service.
+     *
      * @param server UDP Server.
      */
     private void registerUDPNetServer(NetServer server) throws IOException {
@@ -253,6 +262,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method registers a UDP client service.
+     *
      * @param client UDP Client.
      */
     private void registerUDPNetClient(NetClient client) throws IOException {
@@ -270,6 +280,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Return an unmodificable add with all the sessions created en the service.
+     *
      * @return Set with se sessions.
      */
     public final Set<NetSession> getSessions() {
@@ -278,6 +289,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Return the net selector.
+     *
      * @return Net selector.
      */
     private Selector getSelector() {
@@ -286,6 +298,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Set the net selector.
+     *
      * @param selector Net selector.
      */
     private void setSelector(Selector selector) {
@@ -294,6 +307,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Return a value to indicate if the session creation timeout is available ot not.
+     *
      * @return True if it is available.
      */
     private boolean isCreationTimeoutAvailable() {
@@ -303,6 +317,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * Return the value in milliseconds that the server wait before destroy the channel if
      * it has not session assigned.
+     *
      * @return Session creation timeout.
      */
     private long getCreationTimeout() {
@@ -311,6 +326,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Return the server timer
+     *
      * @return server timer.
      */
     private Timer getTimer() {
@@ -320,6 +336,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * Return a boolean to knows if the instance of the java vm is into the
      * shutdown process or not.
+     *
      * @return True if the vm is into the shutdown porcess and false in the otherwise.
      */
     public final boolean isShuttingDown() {
@@ -328,6 +345,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Check if the specific session is active into the sercie.
+     *
      * @param session Specific session.
      * @return Return true if the session is active into the
      */
@@ -335,7 +353,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         boolean result = false;
 
         SelectableChannel channel = channels.get(session);
-        if(channel != null) {
+        if (channel != null) {
             result = channel.isOpen();
         }
 
@@ -344,20 +362,20 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method blocks the selector to add a new channel to the key system
-     * @param channel The new channel to be register
+     *
+     * @param channel   The new channel to be register
      * @param operation The first channel operation.
-     * @param attach Object to be attached into the registered key.
+     * @param attach    Object to be attached into the registered key.
      * @throws ClosedChannelException
      */
     private void registerChannel(SelectableChannel channel, int operation, Object attach) throws ClosedChannelException {
-        synchronized(selectorMonitor) {
+        synchronized (selectorMonitor) {
             getSelector().wakeup();
             channel.register(getSelector(), operation, attach);
         }
     }
 
     /**
-     *
      * @param channel
      * @param data
      * @param event
@@ -391,15 +409,16 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method put a net package on the output queue of the session.
+     *
      * @param session Net session.
-     * @param data Data to create the package.
+     * @param data    Data to create the package.
      * @return Return the id of the created package.
      * @throws IOException Exception of the write operation.
      */
     public final NetPackage writeData(NetSession session, byte[] data) throws IOException {
         NetPackage netPackage;
         SelectableChannel channel = channels.get(session);
-        if(channel != null) {
+        if (channel != null) {
             netPackage = createPackage(channel, data, NetPackage.ActionEvent.WRITE);
             netPackage.setSession(session);
             outputQueue.get(channel).add(netPackage);
@@ -414,14 +433,15 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Disconnect a specific session.
+     *
      * @param session Session to disconnect.
      * @param message Disconnection message.
      */
     public final void disconnect(NetSession session, String message) {
         SelectableChannel channel = channels.get(session);
-        if(channel != null){
+        if (channel != null) {
             synchronized (channel) {
-                if(channels.containsKey(session)) {
+                if (channels.containsKey(session)) {
                     NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.DISCONNECT);
                     netPackage.setSession(session);
                     outputQueue.get(channel).add(netPackage);
@@ -435,6 +455,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * This method must destroy the channel and remove all the
      * netPackage related.
+     *
      * @param channel Channel that will destroy.
      */
     private void destroyChannel(SocketChannel channel) {
@@ -442,7 +463,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             NetSession session = sessionsByChannel.remove(channel);
             lastWrite.remove(channel);
             outputQueue.remove(channel);
-            if(sslHelpers.containsKey(sessions)) {
+            if (sslHelpers.containsKey(sessions)) {
                 sslHelpers.remove(sessions).close();
             }
             List<NetSession> removedSessions = new ArrayList<>();
@@ -471,6 +492,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method updates the linking information  a channel with a particular session
+     *
      * @param oldChannel Obsolete channel.
      * @param newChannel New channel.
      */
@@ -494,28 +516,30 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Indicates if the session is connected or not
+     *
      * @param session Session
      * @return Return true if the session is connected and false in the other case.
      */
-    public final boolean isConnected(NetSession session){
+    public final boolean isConnected(NetSession session) {
         return channels.containsKey(session);
     }
 
     /**
      * This method call the method to create the session implemented en the
      * instance of the consumer.
-     * @param consumer Net consumer.
+     *
+     * @param consumer   Net consumer.
      * @param netPackage Net package.
      * @return Net session from the consumer.
      * @throws IllegalArgumentException If the consumer is not instance of org.hcjf.io.net.NetServer or org.hcjf.io.net.NetClient
      */
-    private NetSession getSession(NetServiceConsumer consumer, NetPackage netPackage){
+    private NetSession getSession(NetServiceConsumer consumer, NetPackage netPackage) {
         NetSession result;
 
-        if(consumer instanceof NetServer) {
-            result = ((NetServer)consumer).createSession(netPackage);
-        } else if(consumer instanceof NetClient) {
-            result = ((NetClient)consumer).getSession();
+        if (consumer instanceof NetServer) {
+            result = ((NetServer) consumer).createSession(netPackage);
+        } else if (consumer instanceof NetClient) {
+            result = ((NetClient) consumer).getSession();
         } else {
             throw new IllegalArgumentException("The service consumer must be instance of org.hcjf.io.net.NetServer or org.hcjf.io.net.NetClient.");
         }
@@ -525,6 +549,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method destroy the net session.
+     *
      * @param session Net session.
      */
     private void destroySession(NetSession session) {
@@ -539,16 +564,17 @@ public final class NetService extends Service<NetServiceConsumer> {
             try {
                 Thread.currentThread().setName(SystemProperties.get(SystemProperties.Net.LOG_TAG));
                 Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-            } catch(SecurityException ex){}
+            } catch (SecurityException ex) {
+            }
 
             boolean removeKey;
-            while(running){
+            while (running) {
                 //Select the next schedule key or sleep if the aren't any key
                 //to select.
                 getSelector().select();
 
                 Iterator selectedKeys;
-                synchronized(selectorMonitor) {
+                synchronized (selectorMonitor) {
                     selectedKeys = getSelector().selectedKeys().iterator();
                 }
                 while (selectedKeys.hasNext()) {
@@ -557,21 +583,21 @@ public final class NetService extends Service<NetServiceConsumer> {
                     //This flag is to indicate whether the key has to be removed once processed
                     removeKey = true;
 
-                    if(key.isValid()){
+                    if (key.isValid()) {
 
                         try {
                             final NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
                             //If the kind of key is acceptable or connectable then
                             //the processing do over this thread in the other case
                             //the processing is delegated to the thread pool
-                            if(key.isAcceptable()){
+                            if (key.isAcceptable()) {
                                 accept(key.channel(), (NetServer) consumer);
-                            } else if(key.isConnectable()) {
+                            } else if (key.isConnectable()) {
                                 connect(key.channel(), (NetClient) consumer);
                             } else {
                                 final SelectableChannel keyChannel = key.channel();
-                                if(keyChannel != null && key.channel().isOpen()) {
-                                    if(key.isValid()) {
+                                if (keyChannel != null && key.channel().isOpen()) {
+                                    if (key.isValid()) {
                                         try {
                                             fork(() -> {
                                                 synchronized (keyChannel) {
@@ -593,9 +619,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                     }
                                                 }
                                             }, consumer.getIoExecutor());
-                                        } catch (RejectedExecutionException ex){
+                                        } catch (RejectedExecutionException ex) {
                                             //Update the flag in order to process the key again
-                                            if(key.isValid() && sessionsByChannel.containsKey(keyChannel)) {
+                                            if (key.isValid() && sessionsByChannel.containsKey(keyChannel)) {
                                                 removeKey = false;
                                             }
                                         } catch (Exception ex) {
@@ -607,12 +633,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     }
                                 }
                             }
-                        } catch (CancelledKeyException ex){
+                        } catch (CancelledKeyException ex) {
                             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
                         }
                     }
 
-                    if(removeKey) {
+                    if (removeKey) {
                         selectedKeys.remove();
                     }
                 }
@@ -625,14 +651,14 @@ public final class NetService extends Service<NetServiceConsumer> {
             }
 
             //Close all the servers.
-            for(ServerSocketChannel channel : tcpServers){
+            for (ServerSocketChannel channel : tcpServers) {
                 try {
                     channel.close();
                 } catch (IOException ex) {
                     Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing channel...", ex);
                 }
             }
-        } catch (Exception ex){
+        } catch (Exception ex) {
             Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
         }
 
@@ -641,11 +667,12 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method finalize the connection process when start a client connection.
+     *
      * @param keyChannel Key associated to the connection channel.
-     * @param client Net client asociated to the connectable key.
+     * @param client     Net client asociated to the connectable key.
      */
     private void connect(SelectableChannel keyChannel, NetClient client) {
-        if(!isShuttingDown()) {
+        if (!isShuttingDown()) {
             try {
                 SocketChannel channel = (SocketChannel) keyChannel;
                 channel.configureBlocking(false);
@@ -653,8 +680,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                 channel.socket().setSoTimeout(100);
                 channel.finishConnect();
                 Map<SocketOption, Object> socketOptions = client.getSocketOptions();
-                if(socketOptions != null){
-                    for(SocketOption socketOption : socketOptions.keySet()){
+                if (socketOptions != null) {
+                    for (SocketOption socketOption : socketOptions.keySet()) {
                         channel.setOption(socketOption, socketOptions.get(socketOption));
                     }
                 }
@@ -666,14 +693,14 @@ public final class NetService extends Service<NetServiceConsumer> {
                 outputQueue.put(channel, new LinkedBlockingQueue<>());
                 lastWrite.put(channel, System.currentTimeMillis());
 
-                if(client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                if (client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
                     SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, session);
                     sslHelpers.put(session, sslHelper);
                 } else {
                     NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT);
                     onAction(connectionPackage, client);
                 }
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error creating new client connection.", ex);
             }
         }
@@ -684,10 +711,11 @@ public final class NetService extends Service<NetServiceConsumer> {
      * an acceptable key to create a new socket with a remote host.
      * This method only will create a socket but without session because the session
      * depends of the communication payload
+     *
      * @param keyChannel Select's key.
      */
     private void accept(SelectableChannel keyChannel, NetServer server) {
-        if(!isShuttingDown()) {
+        if (!isShuttingDown()) {
             try {
                 ServerSocketChannel serverSocketChannel = (ServerSocketChannel) keyChannel;
 
@@ -695,14 +723,14 @@ public final class NetService extends Service<NetServiceConsumer> {
                 socketChannel.configureBlocking(false);
 
                 Map<SocketOption, Object> socketOptions = server.getSocketOptions();
-                if(socketOptions != null){
-                    for(SocketOption socketOption : socketOptions.keySet()){
+                if (socketOptions != null) {
+                    for (SocketOption socketOption : socketOptions.keySet()) {
                         socketChannel.setOption(socketOption, socketOptions.get(socketOption));
                     }
                 }
 
                 NetSession session = getSession(server, null);
-                if(channels.containsKey(session)){
+                if (channels.containsKey(session)) {
                     updateChannel((SocketChannel) channels.remove(session), socketChannel);
                 } else {
                     sessionsByChannel.put(socketChannel, session);
@@ -711,7 +739,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     channels.put(session, socketChannel);
                 }
 
-                if(server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                if (server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
                     SSLHelper sslHelper = new SSLHelper(server.getSSLEngine(), socketChannel, server, session);
                     sslHelpers.put(session, sslHelper);
                 }
@@ -719,10 +747,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                 //A new readable key is created associated to the channel.
                 socketChannel.register(getSelector(), SelectionKey.OP_READ, server);
 
-                if(isCreationTimeoutAvailable()){
+                if (isCreationTimeoutAvailable()) {
                     getTimer().schedule(new ConnectionTimeout(socketChannel), getCreationTimeout());
                 }
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error accepting a new connection.", ex);
             }
         }
@@ -731,11 +759,12 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * This method is called from the main thread in order to read data
      * from a particular key.
+     *
      * @param keyChannel Readable key from selector.
      */
     private void read(SelectableChannel keyChannel, NetServiceConsumer consumer) {
-        if(!isShuttingDown()) {
-            if(keyChannel instanceof SocketChannel){
+        if (!isShuttingDown()) {
+            if (keyChannel instanceof SocketChannel) {
                 SocketChannel channel = (SocketChannel) keyChannel;
 
                 //Ger the instance of the current IO thread.
@@ -749,7 +778,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         //Put all the bytes into the buffer of the IO thread.
                         ioThread.getInputBuffer().rewind();
                         totalSize += readSize = channel.read(ioThread.getInputBuffer());
-                        while(readSize > 0){
+                        while (readSize > 0) {
                             readData.write(ioThread.getInputBuffer().array(), 0, readSize);
                             readData.flush();
                             ioThread.getInputBuffer().rewind();
@@ -759,9 +788,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                         destroyChannel(channel);
                     }
 
-                    if(totalSize == -1) {
+                    if (totalSize == -1) {
                         destroyChannel(channel);
-                    } else if(readData.size() > 0) {
+                    } else if (readData.size() > 0) {
                         NetPackage netPackage = new DefaultNetPackage(
                                 "",
                                 "",
@@ -770,21 +799,21 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                         NetSession session = sessionsByChannel.get(channel);
                         //Here the session is linked with the current thread
-                        ((ServiceThread)Thread.currentThread()).setSession(session);
+                        ((ServiceThread) Thread.currentThread()).setSession(session);
 
                         netPackage.setSession(session);
 
-                        if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                        if (consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
                             netPackage = sslHelpers.get(session).read(netPackage);
                         }
 
                         onAction(netPackage, consumer);
                     }
-                } catch (Exception ex){
+                } catch (Exception ex) {
                     Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service read exception, on TCP context", ex);
                     destroyChannel(channel);
                 }
-            } else if(keyChannel instanceof DatagramChannel){
+            } else if (keyChannel instanceof DatagramChannel) {
                 DatagramChannel channel = (DatagramChannel) keyChannel;
 
                 //Ger the instance of the current IO thread.
@@ -798,7 +827,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     InetSocketAddress address = (InetSocketAddress) channel.receive(ioThread.getInputBuffer());
                     readData.write(ioThread.getInputBuffer().array(), 0, ioThread.getInputBuffer().position());
 
-                    if(address != null){
+                    if (address != null) {
                         NetPackage netPackage = new DefaultNetPackage(
                                 channel.socket().getInetAddress().getHostName(),
                                 channel.socket().getInetAddress().getHostAddress(),
@@ -807,29 +836,29 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                         NetSession session = sessionsByAddress.get(address);
 
-                        if(session != null){
+                        if (session != null) {
                             //Here the session is linked with the current thread
-                            ((ServiceThread)Thread.currentThread()).setSession(session);
+                            ((ServiceThread) Thread.currentThread()).setSession(session);
 
                             netPackage.setSession(session);
-                            if(addresses.containsKey(session)) {
+                            if (addresses.containsKey(session)) {
                                 addresses.put(session, address);
                             }
 
-                            if(!channels.containsKey(session)){
+                            if (!channels.containsKey(session)) {
                                 channels.put(session, channel);
                             }
-                            if(!outputQueue.containsKey(channel)){
+                            if (!outputQueue.containsKey(channel)) {
                                 outputQueue.put(channel, new LinkedBlockingQueue<>());
                                 lastWrite.put(channel, System.currentTimeMillis());
                             }
 
-                            if(readData.size() > 0) {
+                            if (readData.size() > 0) {
                                 onAction(netPackage, consumer);
                             }
                         }
                     }
-                } catch (Exception ex){
+                } catch (Exception ex) {
                     Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service read exception, on UDP context", ex);
                 }
             }
@@ -841,7 +870,8 @@ public final class NetService extends Service<NetServiceConsumer> {
      * session channel all the packages.
      * If one of the packages is a disconnection package then the channel is closed and
      * the rest of the packages are discarded.
-     * @param channel Session channel.
+     *
+     * @param channel  Session channel.
      * @param consumer Net service consumer.
      */
     private void write(SelectableChannel channel, NetServiceConsumer consumer) {
@@ -849,21 +879,23 @@ public final class NetService extends Service<NetServiceConsumer> {
         try {
             Queue<NetPackage> queue = outputQueue.get(channel);
 
-            if(queue != null) {
+            if (queue != null) {
                 lastWrite.put(channel, System.currentTimeMillis());
                 boolean stop = false;
 
-                while(!queue.isEmpty() && !stop) {
+                int count = 0;
+                while (!queue.isEmpty() && !stop) {
                     NetPackage netPackage = queue.poll();
-                    if(netPackage == null) {
+                    if (netPackage == null) {
                         break;
                     }
+
                     NetSession session = netPackage.getSession();
 
-                    switch(netPackage.getActionEvent()) {
+                    switch (netPackage.getActionEvent()) {
                         case WRITE: {
                             try {
-                                if(consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                                if (consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
                                     netPackage = sslHelpers.get(session).write(netPackage);
                                 } else {
                                     byte[] byteData = netPackage.getPayload();
@@ -898,10 +930,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     }
                                 }
 
-                                if(netPackage != null) {
+                                if (netPackage != null) {
                                     netPackage.setPackageStatus(NetPackage.PackageStatus.OK);
                                 }
-                            } catch (Exception ex){
+                            } catch (Exception ex) {
                                 netPackage.setPackageStatus(NetPackage.PackageStatus.IO_ERROR);
                                 throw ex;
                             } finally {
@@ -914,13 +946,13 @@ public final class NetService extends Service<NetServiceConsumer> {
                             break;
                         }
                         case DISCONNECT: {
-                            if(channel instanceof SocketChannel) {
+                            if (channel instanceof SocketChannel) {
                                 destroyChannel((SocketChannel) channel);
-                            } else if(channel instanceof DatagramChannel && !channel.equals(udpServer)) {
+                            } else if (channel instanceof DatagramChannel && !channel.equals(udpServer)) {
                                 outputQueue.remove(channel);
                                 lastWrite.remove(channel);
                                 channels.remove(netPackage.getSession());
-                                if(netPackage.getSession().getConsumer() instanceof NetServer) {
+                                if (netPackage.getSession().getConsumer() instanceof NetServer) {
                                     NetServer server = (NetServer) netPackage.getSession().getConsumer();
                                     if (server.isDisconnectAndRemove()) {
                                         sessions.remove(netPackage.getSession());
@@ -933,9 +965,11 @@ public final class NetService extends Service<NetServiceConsumer> {
                             break;
                         }
                     }
+                    count++;
                 }
             }
-        } catch (Exception ex){
+        } catch (Exception ex) {
+            ex.printStackTrace();
             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Write global thread exception", ex);
         } finally {
             ioThread.getOutputBuffer().clear();
@@ -946,11 +980,12 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * This method put all the action events in a queue by session and then start a
      * new thread to notify all the consumers
+     *
      * @param netPackage Received data.
-     * @param consumer Consumer associated to the session.
+     * @param consumer   Consumer associated to the session.
      */
-    private void onAction(final NetPackage netPackage, final NetServiceConsumer consumer){
-        if(netPackage != null) {
+    private void onAction(final NetPackage netPackage, final NetServiceConsumer consumer) {
+        if (netPackage != null) {
             try {
                 switch (netPackage.getActionEvent()) {
                     case CONNECT:
@@ -989,10 +1024,11 @@ public final class NetService extends Service<NetServiceConsumer> {
         @Override
         public void run() {
             fork(() -> {
-                if(!sessionsByChannel.containsKey(channel)){
+                if (!sessionsByChannel.containsKey(channel)) {
                     try {
                         destroyChannel(channel);
-                    } catch (Exception ex){}
+                    } catch (Exception ex) {
+                    }
                 }
             });
         }
@@ -1035,7 +1071,8 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * SSL Helper default constructor.
-         * @param sslEngine SSL Engine.
+         *
+         * @param sslEngine         SSL Engine.
          * @param selectableChannel Selectable channel.
          */
         public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel, NetServiceConsumer consumer, NetSession session) {
@@ -1067,12 +1104,13 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * This method is called when there are data into the read buffer.
+         *
          * @param decrypted Read buffer.
          */
         private void onRead(ByteBuffer decrypted) {
             byte[] decryptedArray = new byte[decrypted.limit()];
             decrypted.get(decryptedArray);
-            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
                 synchronized (readSemaphore) {
                     read = true;
                     decryptedPlace = ByteBuffer.wrap(decryptedArray);
@@ -1083,19 +1121,20 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * This method is called when there are data into the write buffer.
+         *
          * @param encrypted Write buffer.
          */
         private void onWrite(ByteBuffer encrypted) {
             try {
                 long size = encrypted.limit();
                 long total = 0;
-                while(total < size) {
+                while (total < size) {
                     total += ((SocketChannel) selectableChannel).write(encrypted);
                 }
             } catch (IOException ex) {
                 throw new RuntimeException("", ex);
             }
-            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
                 synchronized (writeSemaphore) {
                     written = true;
                     writeSemaphore.notifyAll();
@@ -1105,6 +1144,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * This method is called when the operation fail.
+         *
          * @param ex Fail exception.
          */
         private void onFailure(Exception ex) {
@@ -1120,7 +1160,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
                     0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.CONNECT);
             defaultNetPackage.setSession(session);
-            if(consumer instanceof NetClient) {
+            if (consumer instanceof NetClient) {
                 consumer.onConnect(defaultNetPackage);
             }
         }
@@ -1146,6 +1186,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * Write data into the associated channel.
+         *
          * @param netPackage Net package.
          * @return Net package.
          */
@@ -1156,7 +1197,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             }, ioExecutor);
 
             DefaultNetPackage defaultNetPackage = null;
-            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
                 synchronized (writeSemaphore) {
                     try {
                         if (!written) {
@@ -1165,7 +1206,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.READ);
                             defaultNetPackage.setSession(netPackage.getSession());
                         }
-                    } catch (Exception ex){
+                    } catch (Exception ex) {
                     } finally {
                         written = false;
                     }
@@ -1177,6 +1218,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * Read data from the associated channel.
+         *
          * @param netPackage Net package.
          * @return Input data.
          */
@@ -1187,10 +1229,10 @@ public final class NetService extends Service<NetServiceConsumer> {
             }, ioExecutor);
 
             DefaultNetPackage defaultNetPackage = null;
-            if(status.equals(SSLHelper.SSLHelperStatus.READY)) {
+            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
                 synchronized (readSemaphore) {
                     try {
-                        if(!read) {
+                        if (!read) {
                             readSemaphore.wait();
                         }
                         defaultNetPackage = new DefaultNetPackage("", "",
@@ -1212,12 +1254,14 @@ public final class NetService extends Service<NetServiceConsumer> {
         public void close() {
             try {
                 sslEngine.closeInbound();
-            } catch (SSLException e) {}
+            } catch (SSLException e) {
+            }
             sslEngine.closeOutbound();
         }
 
         /**
          * Return boolean to indicate if the hand shaking process is running.
+         *
          * @return True if the process is running and false in otherwise.
          */
         private boolean isHandShaking() {
@@ -1259,6 +1303,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * Wrap the output data.
+         *
          * @return Return true if the process was success.
          */
         private boolean wrap() {
@@ -1268,8 +1313,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 srcWrap.flip();
                 wrapResult = sslEngine.wrap(srcWrap, destWrap);
                 srcWrap.compact();
-            }
-            catch (SSLException exc) {
+            } catch (SSLException exc) {
                 this.onFailure(exc);
                 return false;
             }
@@ -1306,6 +1350,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         /**
          * Unwrap the input data.
+         *
          * @return Return true if the process was success.
          */
         private boolean unwrap() {
@@ -1315,8 +1360,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 srcUnwrap.flip();
                 unwrapResult = sslEngine.unwrap(srcUnwrap, destUnwrap);
                 srcUnwrap.compact();
-            }
-            catch (SSLException ex) {
+            } catch (SSLException ex) {
                 this.onFailure(ex);
                 return false;
             }

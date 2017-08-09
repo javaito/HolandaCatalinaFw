@@ -5,11 +5,13 @@ import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -106,10 +108,21 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     protected final byte[] encode(HttpPackage payLoad) {
         byte[] result = null;
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            out.write(payLoad.getProtocolHeader());
-            out.write(payLoad.getBody());
-            out.flush();
+            if(payLoad instanceof HttpPipelineResponse) {
+                if(((HttpPipelineResponse)payLoad).isFirstRead()) {
+                    out.write(payLoad.getProtocolHeader());
+                }
+                ByteBuffer mainBuffer = ((HttpPipelineResponse)payLoad).getMainBuffer();
+                out.write(mainBuffer.array(), 0, mainBuffer.position());
+                out.flush();
+            } else {
+                out.write(payLoad.getProtocolHeader());
+                out.write(payLoad.getBody());
+                out.flush();
+            }
             result = out.toByteArray();
+
+            Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "%s", new String(result));
         } catch (Exception ex){}
         return result;
     }
@@ -229,7 +242,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                     Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
                                     connectionKeepAlive = true;
                                 }
-                                response.addHeader(request.getHeader(HttpHeader.CONNECTION));
                             }
                         } catch (Throwable throwable) {
                             Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
@@ -267,11 +279,23 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             try {
                 response.setProtocol(httpProtocol);
                 if(!response.containsHeader(HttpHeader.CONTENT_LENGTH) &&
-                        SystemProperties.getBoolean(SystemProperties.Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH)) {
+                        SystemProperties.getBoolean(SystemProperties.Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH) &&
+                        !(response instanceof HttpPipelineResponse)) {
                     Integer length = response.getBody() == null ? 0 : response.getBody().length;
                     response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, length.toString()));
                 }
-                write(session, response, false);
+
+                if(response instanceof HttpPipelineResponse) {
+                    HttpPipelineResponse pipelineResponse = (HttpPipelineResponse) response;
+                    pipelineResponse.onStart();
+                    while(pipelineResponse.read() >= 0) {
+                        write(session, response, false);
+                    }
+                    pipelineResponse.onEnd();
+                } else {
+                    write(session, response, false);
+                }
+
                 Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());
             } catch (Throwable throwable) {

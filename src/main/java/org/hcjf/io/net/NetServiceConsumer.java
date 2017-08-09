@@ -162,20 +162,14 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      */
     protected final void write(S session, D payLoad, boolean waitFor) throws IOException {
         if(waitFor) {
-            NetPackage netPackage;
-            synchronized (session) {
-                waitForMap.put(session, Thread.currentThread());
-                netPackage = service.writeData(session, encode(payLoad));
-                while (netPackage.getPackageStatus().equals(NetPackage.PackageStatus.WAITING)) {
-                    try {
-                        session.wait(getWriteWaitForTimeout());
-                    } catch (InterruptedException e) {
-                        Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Write wait for interrupted", e);
-                    }
+            NetPackage netPackage = service.writeData(session, encode(payLoad));
+            synchronized (netPackage) {
+                try {
+                    netPackage.wait(getWriteWaitForTimeout());
+                } catch (InterruptedException e) {
+                    Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Write wait for interrupted", e);
                 }
             }
-
-            waitForMap.remove(netPackage);
 
             switch (netPackage.getPackageStatus()) {
                 case CONNECTION_CLOSE: {
@@ -217,10 +211,8 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param netPackage Disconnection package.
      */
     public final void onDisconnect(NetPackage netPackage) {
-        synchronized (netPackage.getSession()) {
-            if(waitForMap.containsKey(netPackage.getSession())) {
-                netPackage.getSession().notify();
-            }
+        synchronized (netPackage) {
+            netPackage.notify();
         }
 
         onDisconnect((S) netPackage.getSession(), netPackage);
@@ -275,10 +267,8 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param netPackage Net package.
      */
     public final void onWrite(NetPackage netPackage) {
-        synchronized (netPackage.getSession()) {
-            if(waitForMap.containsKey(netPackage.getSession())) {
-                netPackage.getSession().notify();
-            }
+        synchronized (netPackage) {
+            netPackage.notify();
         }
         onWrite((S)netPackage.getSession(), netPackage);
     }
