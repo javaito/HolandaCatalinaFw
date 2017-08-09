@@ -95,6 +95,18 @@ public abstract class FieldEvaluator implements Evaluator {
     }
 
     /**
+     * Return the evaluated field name in case this is a QueryField and not a QueryFunction
+     * @return string
+     */
+    public final String getFieldName() {
+        String result = null;
+        if(getQueryParameter() instanceof Query.QueryField) {
+            result = ((Query.QueryField)getQueryParameter()).getFieldName();
+        }
+        return result;
+    }
+
+    /**
      * Copy this field evaluator with other value.
      * @param newValue New value.
      * @return New instance.
@@ -103,6 +115,21 @@ public abstract class FieldEvaluator implements Evaluator {
         try {
             return getClass().getConstructor(Query.QueryParameter.class, Object.class).
                     newInstance(getQueryParameter(), newValue);
+        } catch (Exception e) {
+            throw new RuntimeException("");
+        }
+    }
+
+    /**
+     * Copy this field evaluator with other field and other value.
+     * @param newFieldName
+     * @param newValue New value.
+     * @return New instance.
+     */
+    public final FieldEvaluator copy(String newFieldName, Object newValue) {
+        try {
+            return getClass().getConstructor(Query.QueryParameter.class, Object.class).
+                    newInstance(new Query.QueryField(newFieldName), newValue);
         } catch (Exception e) {
             throw new RuntimeException("");
         }
