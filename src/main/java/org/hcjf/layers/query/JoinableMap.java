@@ -140,7 +140,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, O
 
     @Override
     public Object get(Object key) {
-        return mapInstance.get(key);
+        return get(key.toString());
     }
 
     @Override
