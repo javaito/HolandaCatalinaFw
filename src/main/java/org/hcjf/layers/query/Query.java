@@ -32,6 +32,7 @@ public class Query extends EvaluatorCollection {
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
+    private boolean returnAll;
 
     public Query(String resource, QueryId id) {
         this.id = id;
@@ -235,7 +236,12 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addReturnField(String returnField) {
-        return addReturnField(new QueryReturnField(returnField));
+        if(returnField.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
+            returnAll = true;
+        } else {
+            addReturnField(new QueryReturnField(returnField));
+        }
+        return this;
     }
 
     /**
@@ -244,7 +250,12 @@ public class Query extends EvaluatorCollection {
      * @return Return the same instance of this class.
      */
     public final Query addReturnField(QueryReturnParameter returnParameter) {
-        returnParameters.add((QueryReturnParameter) checkQueryParameter((QueryParameter) returnParameter));
+        if(returnParameter instanceof QueryReturnField && ((QueryReturnField)returnParameter).getFieldName().equals(
+                SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
+            returnAll = true;
+        } else {
+            returnParameters.add((QueryReturnParameter) checkQueryParameter((QueryParameter) returnParameter));
+        }
         return this;
     }
 
@@ -345,11 +356,11 @@ public class Query extends EvaluatorCollection {
                     }
 
                     if(comparable1 == null ^ comparable2 == null) {
-                        compareResult += (comparable1 == null) ? -1 : 1;
+                        compareResult = (comparable1 == null) ? -1 : 1;
                     } else if(comparable1 == null && comparable2 == null) {
-                        compareResult += 0;
+                        compareResult = 0;
                     } else {
-                        compareResult += comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+                        compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
                     }
 
                     if(compareResult != 0) {
@@ -460,18 +471,27 @@ public class Query extends EvaluatorCollection {
                             }
                         } else {
                             if (object instanceof Enlarged) {
+                                Enlarged originalObject = (Enlarged) object;
+                                Enlarged enlargedObject = (Enlarged) object;
+                                if(!returnAll) {
+                                    //Clone the object and set the new result instance.
+                                    enlargedObject = enlargedObject.cloneEmpty();
+                                    object = (O) enlargedObject;
+                                }
                                 for (QueryReturnParameter returnParameter : getReturnParameters()) {
                                     if (returnParameter instanceof QueryReturnField) {
                                         QueryReturnField returnField = (QueryReturnField) returnParameter;
                                         if (returnField.getAlias() != null) {
-                                            ((Enlarged) object).put(returnField.getAlias(), ((Enlarged) object).get(returnField.getFieldName()));
+                                            enlargedObject.put(returnField.getAlias(), originalObject.get(returnField.getFieldName()));
+                                        } else {
+                                            enlargedObject.put(returnField.getFieldName(), originalObject.get(returnField.getFieldName()));
                                         }
                                     } else if (returnParameter instanceof QueryReturnGroupingFunction) {
                                         //Do nothing because the grouping functions only must be used when the query is grouped
                                     } else if (returnParameter instanceof QueryReturnFunction) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                        ((Enlarged) object).put(function.getAlias(),
-                                                consumer.resolveFunction(function, object));
+                                        enlargedObject.put(function.getAlias(),
+                                                consumer.resolveFunction(function, originalObject));
                                     }
                                 }
                             }
@@ -845,6 +865,11 @@ public class Query extends EvaluatorCollection {
         //Print select
         result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));
         result.append(Strings.WHITE_SPACE);
+        if(returnAll) {
+            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
+            SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+            result.append(Strings.WHITE_SPACE);
+        }
         for(QueryReturnParameter field : getReturnParameters()) {
             result.append(field);
             if(field.getAlias() != null) {
@@ -1732,8 +1757,8 @@ public class Query extends EvaluatorCollection {
             }
 
             if(fieldName.contains(Strings.START_SUB_GROUP)) {
-                fieldName = fieldName.substring(0, field.indexOf(Strings.START_SUB_GROUP)).trim();
                 index = fieldName.substring(field.indexOf(Strings.START_SUB_GROUP) + 1, field.indexOf(Strings.END_SUB_GROUP)).trim();
+                fieldName = fieldName.substring(0, field.indexOf(Strings.START_SUB_GROUP)).trim();
             } else {
                 index = null;
             }

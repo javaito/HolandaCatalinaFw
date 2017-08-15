@@ -3,8 +3,8 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.layers.LayerInterface;
 
 /**
- * @author javaito.
  *
+ * @author javaito.
  */
 public interface QueryFunctionInterface extends LayerInterface {
 

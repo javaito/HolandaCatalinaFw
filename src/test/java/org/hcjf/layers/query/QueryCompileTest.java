@@ -13,6 +13,15 @@ public class QueryCompileTest {
 
     @Test()
     public void testCompile() {
+
+        try {
+            Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = '2017-07-07 22:15:32'");
+            query = Query.compile(query.toString());
+            Assert.assertNotNull(query);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6");
             query = Query.compile(query.toString());
@@ -132,6 +141,9 @@ public class QueryCompileTest {
         }
     }
 
+    /**
+     * Test uuid type
+     */
     @Test
     public void testCompileNumericUUIDType() {
         try {

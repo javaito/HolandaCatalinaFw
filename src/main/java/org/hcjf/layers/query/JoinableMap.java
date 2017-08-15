@@ -35,6 +35,17 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, O
     }
 
     /**
+     * Clone the joinable map without domain information.
+     * @return Joinable map clone.
+     */
+    @Override
+    public Enlarged cloneEmpty() {
+        JoinableMap clone = new JoinableMap(this);
+        clone.clear();
+        return clone;
+    }
+
+    /**
      * Return the value of the field name.
      * @param fieldName Field name.
      * @return Value of the field.

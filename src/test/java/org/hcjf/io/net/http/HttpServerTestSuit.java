@@ -1,5 +1,7 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.encoding.MimeType;
+import org.hcjf.io.net.http.pipeline.ChunkedHttpPipelineResponse;
 import org.hcjf.io.net.http.rest.layers.EndPointDecoderLayerInterface;
 import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
 import org.hcjf.layers.Layers;
@@ -11,12 +13,11 @@ import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.grants.Grant;
 import org.hcjf.utils.Introspection;
-import org.hcjf.encoding.MimeType;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -31,10 +32,11 @@ public class HttpServerTestSuit {
 
         StackTraceElement[] elements = Thread.currentThread().getStackTrace();
 
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
-        System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
+//        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+//        System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
-        System.setProperty(SystemProperties.Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, Integer.toString(Integer.MAX_VALUE));
+//        System.setProperty(SystemProperties.Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, Integer.toString(Integer.MAX_VALUE));
+//        System.setProperty(SystemProperties.Net.IO_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
 
         Layers.publishLayer(EndPointDecoderLayerInterface.JsonEndPointDecoder.class);
         Layers.publishLayer(EndPointEncoderLayerInterface.JsonEndPointEncoder.class);
@@ -42,32 +44,87 @@ public class HttpServerTestSuit {
         Layers.publishLayer(Test1Crud.class);
         Layers.publishLayer(TestMapCrud.class);
 
-        for (int i = 0; i < 5; i++) {
-            try {
-                HttpClient client = new HttpClient(new URL("http://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx"));
-                HttpResponse response = client.request();
+//        for (int i = 0; i < 1; i++) {
+//            try {
+//                HttpClient client = new HttpClient(new URL("http://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx"));
+//                HttpResponse response = client.request();
+//                System.out.println(response);
+//
+//                FileOutputStream fileOutputStream = new FileOutputStream(new File("/home/javaito/chunked.jpeg"));
+//                fileOutputStream.write(response.getBody());
+//                fileOutputStream.flush();
+//            } catch (Exception ex){
+//                ex.printStackTrace();
+//            }
+//        }
 
-                FileOutputStream fileOutputStream = new FileOutputStream(new File("/home/javaito/chunked.jpeg"));
-                fileOutputStream.write(response.getBody());
-                fileOutputStream.flush();
-            } catch (Exception ex){
-                ex.printStackTrace();
-            }
-        }
+        try {
+            HttpServer server = new HttpServer(9091);
+            server.addContext(new Context("/test.*") {
+                @Override
+                public HttpResponse onContext(HttpRequest request) {
+                    HttpResponse response = new ChunkedHttpPipelineResponse(32) {
+
+                        private FileInputStream fileInputStream;
+
+                        @Override
+                        public void onStart() {
+                            try {
+                                fileInputStream = new FileInputStream(new File("/home/javaito/chunked.jpeg"));
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        public void onEnd() {
+                            try {
+                                fileInputStream.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        @Override
+                        protected int readPipeline(byte[] buffer) {
+                            try {
+                                return fileInputStream.read(buffer);
+                            } catch (IOException e) {
+                                throw new RuntimeException();
+                            }
+                        }
+                    };
+
+//                    HttpResponse response = new HttpResponse();
+                    response.setResponseCode(200);
+                    response.setReasonPhrase("OK");
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "image/jpeg; charset=utf-8"));
+                    response.addHeader(new HttpHeader("Cache-Control", "no-cache, no-store"));
+                    response.addHeader(new HttpHeader("Expires", "-1"));
+//                    try {
+//                        response.setBody(Files.readAllBytes(Paths.get("/home/javaito/chunked.jpeg")));
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+                    return response;
+                }
+            });
+            server.start();
+        } catch (Exception ex){}
 
         Log.d("CHAU", "End");
 
-//        HttpServer server = new HttpServer(8080);
-//        server.addContext(new FolderContext("", Paths.get("/home/javaito/Imágenes/test")) {
-//
-//            @Override
-//            public HttpResponse onContext(HttpRequest request) {
-//                HttpResponse response = super.onContext(request);
-//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.JPG));
-//                return response;
-//            }
-//        });
-//        server.start();
+        HttpServer server = new HttpServer(8080);
+        server.addContext(new FolderContext("", Paths.get("/home/javaito/Imágenes/test")) {
+
+            @Override
+            public HttpResponse onContext(HttpRequest request) {
+                HttpResponse response = super.onContext(request);
+                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.JPG));
+                return response;
+            }
+        });
+        server.start();
 
         ///git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https
 //        HttpsServer server = new HttpsServer(8443);

@@ -5,8 +5,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * @author javaito.
  *
+ * @author javaito.
  */
 public final class Group {
 
