@@ -282,12 +282,14 @@ public final class Layers {
         Layer initialImplementation =
                 (Layer) instance.initialInstances.get(
                         instance.layerImplementations.get(layerInterfaceClass).get(layerInstance.getImplName()));
-        if(initialImplementation.isOverwritable()) {
-            Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
-                    "The alias %s for the instance %s will be overwritten for instance of %s", alias,
-                    initialImplementation.getClass().getName(), layerInstance.getClass().getName());
-        } else {
-            throw new SecurityException("This implementation " + initialImplementation.getClass().toString() + " is not overwritable");
+        if(initialImplementation != null) {
+            if (initialImplementation.isOverwritable()) {
+                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
+                        "The alias %s for the instance %s will be overwritten for instance of %s", alias,
+                        initialImplementation.getClass().getName(), layerInstance.getClass().getName());
+            } else {
+                throw new SecurityException("This implementation " + initialImplementation.getClass().toString() + " is not overwritable");
+            }
         }
     }
 

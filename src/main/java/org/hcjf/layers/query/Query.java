@@ -1402,8 +1402,6 @@ public class Query extends EvaluatorCollection {
             } catch (ParseException e) {
                 throw new IllegalArgumentException("Unable to parse scientific number");
             }
-        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
-
         } else {
             //Default case, only must be a query parameter.
             String functionName = null;
