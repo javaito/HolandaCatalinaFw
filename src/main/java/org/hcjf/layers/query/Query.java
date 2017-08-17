@@ -2,6 +2,7 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.functions.MathQueryFunctionLayer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
@@ -33,6 +34,11 @@ public class Query extends EvaluatorCollection {
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
     private boolean returnAll;
+
+    static {
+        //Publishing function layers...
+        Layers.publishLayer(MathQueryFunctionLayer.class);
+    }
 
     public Query(String resource, QueryId id) {
         this.id = id;
@@ -87,6 +93,14 @@ public class Query extends EvaluatorCollection {
             checkQueryParameter(((FieldEvaluator)evaluator).getQueryParameter());
         }
         return evaluator;
+    }
+
+    /**
+     * Verify if the query indicates return all the fields of the result set.
+     * @return Return all.
+     */
+    public final boolean returnAll() {
+        return returnAll;
     }
 
     /**
@@ -1388,6 +1402,8 @@ public class Query extends EvaluatorCollection {
             } catch (ParseException e) {
                 throw new IllegalArgumentException("Unable to parse scientific number");
             }
+        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
+
         } else {
             //Default case, only must be a query parameter.
             String functionName = null;
