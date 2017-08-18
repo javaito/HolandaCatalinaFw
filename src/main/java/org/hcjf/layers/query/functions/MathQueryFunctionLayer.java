@@ -20,6 +20,7 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
     private static final String LONG_VALUE = "longValue";
     private static final String FLOAT_VALUE = "floatValue";
     private static final String DOUBLE_VALUE = "doubleValue";
+    private static final String EVAL_EXPRESSION = SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME);
 
     private final Set<String> aliases;
 
@@ -30,6 +31,9 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
         for(String functionName : MathIntrospection.getMethodsSet()){
             aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + functionName);
         }
+
+        //Add the eval expression alias.
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + EVAL_EXPRESSION);
     }
 
     @Override
@@ -63,7 +67,36 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
             case LONG_VALUE: result = ((Number)checkSize(1, parameters)[0]).longValue(); break;
             case FLOAT_VALUE: result = ((Number)checkSize(1, parameters)[0]).floatValue(); break;
             case DOUBLE_VALUE: result = ((Number)checkSize(1, parameters)[0]).doubleValue(); break;
-            default: result = MathIntrospection.invoke(functionName, parameters);
+            default: {
+                if(functionName.equals(EVAL_EXPRESSION)) {
+                    result = evalExpression(parameters);
+                } else {
+                    result = MathIntrospection.invoke(functionName, parameters);
+                }
+            }
+        }
+        return result;
+    }
+
+    private Number evalExpression(Object... parameters) {
+        double result = 0.0;
+        String currentOperation = SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION);
+        for(Object parameter : parameters) {
+            if(parameter instanceof String) {
+                currentOperation = (String) parameter;
+            } else if(parameter instanceof Number) {
+                if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION))) {
+                    result += ((Number)parameter).doubleValue();
+                } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_SUBTRACTION))) {
+                    result -= ((Number)parameter).doubleValue();
+                } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_MULTIPLICATION))) {
+                    result *= ((Number)parameter).doubleValue();
+                } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DIVISION))) {
+                    result /= ((Number)parameter).doubleValue();
+                }
+            } else {
+                throw new IllegalArgumentException();
+            }
         }
         return result;
     }

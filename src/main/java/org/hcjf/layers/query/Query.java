@@ -3,6 +3,7 @@ package org.hcjf.layers.query;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.MathQueryFunctionLayer;
+import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
@@ -505,7 +506,7 @@ public class Query extends EvaluatorCollection {
                                     } else if (returnParameter instanceof QueryReturnFunction) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                         enlargedObject.put(function.getAlias(),
-                                                consumer.resolveFunction(function, originalObject));
+                                                consumer.resolveFunction(function, consumer, enlargedObject, originalObject));
                                     }
                                 }
                             }
@@ -531,11 +532,11 @@ public class Query extends EvaluatorCollection {
                             groupable.put(field.getAlias(), index.indexes[i++]);
                         }
 
-                        for (QueryReturnGroupingFunction queryReturnGroupingFunction : groupingMap.get(index).keySet()) {
-                            groupable.put(queryReturnGroupingFunction.getAlias(),
-                                    consumer.resolveFunction(queryReturnGroupingFunction,
-                                            groupingMap.get(index).get(queryReturnGroupingFunction)));
-                        }
+//                        for (QueryReturnGroupingFunction queryReturnGroupingFunction : groupingMap.get(index).keySet()) {
+//                            groupable.put(queryReturnGroupingFunction.getAlias(),
+//                                    consumer.resolveFunction(queryReturnGroupingFunction,
+//                                            groupingMap.get(index).get(queryReturnGroupingFunction)));
+//                        }
                     }
                 }
             }
@@ -1351,30 +1352,31 @@ public class Query extends EvaluatorCollection {
      */
     private static Object processStringValue(List<String> groups, String stringValue, AtomicInteger placesIndex, Class parameterClass) {
         Object result = null;
-        if(stringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
+        String trimmedStringValue = stringValue.trim();
+        if(trimmedStringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
             //If the string value is equals than "?" then the value object is an instance of ReplaceableValue.
             result = new FieldEvaluator.ReplaceableValue(placesIndex.getAndAdd(1));
-        } else if(stringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL))) {
+        } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL))) {
             result = null;
-        } else if(stringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.TRUE))) {
+        } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.TRUE))) {
             result = true;
-        } else if(stringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FALSE))) {
+        } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FALSE))) {
             result = false;
-        } else if(stringValue.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
-            if (stringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
+        } else if(trimmedStringValue.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
+            if (trimmedStringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
                 //If the string value start and end with "'" then the value can be a string or a date object.
-                stringValue = stringValue.substring(1, stringValue.length() - 1);
+                trimmedStringValue = trimmedStringValue.substring(1, trimmedStringValue.length() - 1);
                 try {
-                    result = SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).parse(stringValue);
+                    result = SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).parse(trimmedStringValue);
                 } catch (Exception ex) {
                     //The value is not a date
-                    result = stringValue;
+                    result = trimmedStringValue;
                 }
             } else {
                 throw new IllegalArgumentException("");
             }
-        } else if(stringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
-            Integer index = Integer.parseInt(stringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
+        } else if(trimmedStringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
+            Integer index = Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 result = new FieldEvaluator.QueryValue(Query.compile(groups, index));
@@ -1386,22 +1388,34 @@ public class Query extends EvaluatorCollection {
                 }
                 result = collection;
             }
-        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
-            result = UUID.fromString(stringValue);
-        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
-            result = Long.parseLong(stringValue);
-        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
+            result = UUID.fromString(trimmedStringValue);
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
+            result = Long.parseLong(trimmedStringValue);
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
             try {
-                result = SystemProperties.getDecimalFormat(SystemProperties.Query.DECIMAL_FORMAT).parse(stringValue);
+                result = SystemProperties.getDecimalFormat(SystemProperties.Query.DECIMAL_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
                 throw new IllegalArgumentException("Unable to parse decimal number");
             }
-        } else if(stringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
             try {
-                result = SystemProperties.getDecimalFormat(SystemProperties.Query.SCIENTIFIC_NOTATION_FORMAT).parse(stringValue);
+                result = SystemProperties.getDecimalFormat(SystemProperties.Query.SCIENTIFIC_NOTATION_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
                 throw new IllegalArgumentException("Unable to parse scientific number");
             }
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
+                trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
+            String[] mathExpressionParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.HCJF_MATH_SPLITTER_REGULAR_EXPRESSION));
+            Object[] parameters = new Object[mathExpressionParts.length];
+            for (int i = 0; i < mathExpressionParts.length; i++) {
+                if(mathExpressionParts[i].matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION))) {
+                    parameters[i] = mathExpressionParts[i].trim();
+                } else {
+                    parameters[i] = processStringValue(groups, mathExpressionParts[i], placesIndex, QueryParameter.class);
+                }
+            }
+
         } else {
             //Default case, only must be a query parameter.
             String functionName = null;
@@ -1410,25 +1424,25 @@ public class Query extends EvaluatorCollection {
             String group = null;
             List<Object> functionParameters = null;
             Boolean function = false;
-            if(stringValue.contains(Strings.REPLACEABLE_GROUP)) {
-                replaceValue = Strings.getGroupIndex(stringValue);
+            if(trimmedStringValue.contains(Strings.REPLACEABLE_GROUP)) {
+                replaceValue = Strings.getGroupIndex(trimmedStringValue);
                 group = groups.get(Integer.parseInt(replaceValue.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING)));
-                functionName = stringValue.substring(0, stringValue.indexOf(Strings.REPLACEABLE_GROUP));
-                originalValue = stringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
+                functionName = trimmedStringValue.substring(0, trimmedStringValue.indexOf(Strings.REPLACEABLE_GROUP));
+                originalValue = trimmedStringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
                 functionParameters = new ArrayList<>();
                 for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                     functionParameters.add(processStringValue(groups, param, placesIndex, parameterClass));
                 }
                 function = true;
             } else {
-                originalValue = stringValue;
+                originalValue = trimmedStringValue;
             }
 
             if(parameterClass.equals(QueryParameter.class)) {
                 if(function) {
                     result = new QueryFunction(originalValue, functionName, functionParameters);
                 } else {
-                    result = new QueryField(stringValue);
+                    result = new QueryField(trimmedStringValue);
                 }
             } else if(parameterClass.equals(QueryReturnParameter.class)) {
                 String alias = null;
@@ -1509,7 +1523,7 @@ public class Query extends EvaluatorCollection {
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        public <R extends Object> R resolveFunction(QueryFunction function, Object... parameters);
+        public <R extends Object> R resolveFunction(QueryFunction function, Consumer consumer, Object instance, Object... parameters);
 
     }
 
@@ -1522,8 +1536,23 @@ public class Query extends EvaluatorCollection {
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        public <R extends Object> R resolveFunction(QueryFunction function, Object... parameters) {
-            return null;
+        public <R extends Object> R resolveFunction(QueryFunction function, Consumer consumer, Object instance, Object... parameters) {
+            Object[] parameterValues = new Object[parameters.length];
+            for (int i = 0; i < parameters.length; i++) {
+                if(parameters[i] instanceof Query.QueryFunction) {
+                    Query.QueryFunction innerFunction = (Query.QueryFunction) parameters[i];
+                    parameterValues[i] = consumer.resolveFunction(
+                            innerFunction, consumer, innerFunction.getParameters());
+                } else if(parameters[i] instanceof Query.QueryParameter) {
+                    parameterValues[i] = consumer.get(instance, ((QueryParameter)parameters[i]));
+                } else {
+                    parameterValues[i] = parameters[i];
+                }
+            }
+
+            QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
+                    SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
+            return (R) queryFunctionLayerInterface.evaluate(function.getFunctionName(), parameterValues);
         }
 
     }

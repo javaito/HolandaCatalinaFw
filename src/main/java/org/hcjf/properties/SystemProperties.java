@@ -35,6 +35,8 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DECIMAL_NUMBER_REGEX = "hcjf.decimal.number.regex";
     public static final String HCJF_SCIENTIFIC_NUMBER_REGEX = "hcjf.scientific.number.regex";
     public static final String HCJF_MATH_REGULAR_EXPRESSION = "hcjf.math.regular.expression";
+    public static final String HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION = "hcjf.math.connector.regular.expression";
+    public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
 
     public static final class Layer {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
@@ -249,7 +251,12 @@ public final class SystemProperties extends Properties {
         public static class Function {
 
             public static final String NAME_PREFIX = "hcjf.query.function.name.prefix";
+            public static final String MATH_EVAL_EXPRESSION_NAME = "hcjf.query.function.math.eval.expression.name";
             public static final String MATH_LAYER_NAME = "hcjf.query.function.math.layer.name";
+            public static final String MATH_ADDITION = "hcjf.query.function.math.addition";
+            public static final String MATH_SUBTRACTION = "hcjf.query.function.math.subtraction";
+            public static final String MATH_MULTIPLICATION = "hcjf.query.function.math.multiplication";
+            public static final String MATH_DIVISION = "hcjf.query.function.math.division";
 
         }
     }
@@ -312,6 +319,8 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DECIMAL_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
         defaults.put(HCJF_SCIENTIFIC_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}E[-]?[0-9]{1,}$");
         defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([-+/*\\^]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
+        defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/].*");
+        defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/))|(?=(\\+|\\-|\\*|/))");
 
         defaults.put(Layer.LOG_TAG, "LAYER");
         defaults.put(Layer.Deployment.SERVICE_NAME, "DeploymentService");
@@ -486,8 +495,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.FALSE, "FALSE");
         defaults.put(Query.ReservedWord.AS, "AS");
         defaults.put(Query.ReservedWord.GROUP_BY, "GROUP BY");
-        defaults.put(Query.Function.NAME_PREFIX, "query-");
+        defaults.put(Query.Function.NAME_PREFIX, "query.math.");
         defaults.put(Query.Function.MATH_LAYER_NAME, "math");
+        defaults.put(Query.Function.MATH_EVAL_EXPRESSION_NAME, "evalExpression");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");
