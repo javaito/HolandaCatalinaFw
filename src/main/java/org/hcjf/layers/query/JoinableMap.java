@@ -97,6 +97,33 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, O
         return result;
     }
 
+    @Override
+    public Groupable group(Groupable groupable) {
+
+        Object instanceValue;
+        Object groupableValue;
+        GroupableSet groupSet;
+
+        for(String key : groupable.keySet()) {
+            if(containsKey(key)) {
+                instanceValue = get(key);
+                groupableValue = groupable.get(key);
+                if(instanceValue instanceof GroupableSet) {
+                    ((GroupableSet)instanceValue).add(groupableValue);
+                } else if(!get(key).equals(groupable.get(key))) {
+                    groupSet = new GroupableSet();
+                    groupSet.add(instanceValue);
+                    groupSet.add(groupableValue);
+                    put(key, groupSet);
+                }
+            } else {
+                put(key, groupable.get(key));
+            }
+        }
+
+        return this;
+    }
+
     /**
      * Write all the elements of the map.
      * @return Map print.
@@ -256,4 +283,11 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, O
     public Object merge(String key, Object value, BiFunction<? super Object, ? super Object, ?> remappingFunction) {
         return mapInstance.merge(key, value, remappingFunction);
     }
+
+    /**
+     * This private class is only to knows if the set implementation
+     * into the groupable object is because the groupable object was grouped
+     * whit other instance or the set is domains information.
+     */
+    public static final class GroupableSet extends HashSet<Object> {}
 }

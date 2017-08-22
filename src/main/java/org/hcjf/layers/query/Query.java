@@ -428,17 +428,25 @@ public class Query extends EvaluatorCollection {
                 data = dataSource.getResourceData(resolveQuery);
             }
 
-            boolean groupResult = false;
-            Map<GroupableIndex, Map<Query.QueryReturnGroupingFunction, List<Object>>> groupingMap = null;
-            Map<GroupableIndex, Groupable> parcelMap = null;
-            Map<Query.QueryReturnGroupingFunction, List<Object>> functionMap;
-            List<Object> valuesByFunction;
-            GroupableIndex groupableIndex;
-            Object[] indexes;
             if (!groupParameters.isEmpty()) {
-                groupingMap = new HashMap<>();
-                parcelMap = new HashMap<>();
-                groupResult = true;
+                StringBuilder hashCode;
+
+                Groupable groupable;
+                Map<String, Groupable> groupables = new HashMap<>();
+                for (O object : data) {
+                    if (object instanceof Groupable) {
+                        groupable = (Groupable) object;
+                        hashCode = new StringBuilder();
+                        groupParameters.stream().mapToInt(groupField -> consumer.get(object, groupField).hashCode()).forEach(hashCode::append);
+                        if(groupables.containsKey(hashCode.toString())) {
+                            groupables.get(hashCode.toString()).group(groupable);
+                        } else {
+                            groupables.put(hashCode.toString(), groupable);
+                        }
+                    }
+                }
+
+                data = (Collection<O>) groupables.values();
             }
 
             //Filtering data
@@ -456,63 +464,31 @@ public class Query extends EvaluatorCollection {
                         }
                     }
                     if (add) {
-                        if (groupResult) {
-                            if (!(object instanceof Groupable)) {
-                                //Creates an instance of groupable index
-                                int i = 0;
-                                indexes = new Object[groupParameters.size()];
-                                for (QueryField field : groupParameters) {
-                                    indexes[i++] = consumer.get(object, field);
-                                }
-                                groupableIndex = new GroupableIndex(indexes);
-                                functionMap = groupingMap.get(groupableIndex);
-                                if (functionMap == null) {
-                                    functionMap = new HashMap<>();
-                                    parcelMap.put(groupableIndex, (Groupable) object);
-                                    groupingMap.put(groupableIndex, functionMap);
-                                }
-                                for (QueryReturnParameter returnParameter : getReturnParameters()) {
-                                    if (returnParameter instanceof QueryReturnGroupingFunction) {
-                                        valuesByFunction = functionMap.get(returnParameter);
-                                        if (valuesByFunction == null) {
-                                            valuesByFunction = new ArrayList<>();
-                                            functionMap.put((QueryReturnGroupingFunction) returnParameter, valuesByFunction);
-                                        }
-                                        valuesByFunction.add(object);
-                                    }
-                                }
-                            } else {
-                                throw new IllegalArgumentException("");
+                        if (object instanceof Enlarged) {
+                            Enlarged originalObject = (Enlarged) object;
+                            Enlarged enlargedObject = (Enlarged) object;
+                            if(!returnAll) {
+                                //Clone the object and set the new result instance.
+                                enlargedObject = enlargedObject.cloneEmpty();
+                                object = (O) enlargedObject;
                             }
-                        } else {
-                            if (object instanceof Enlarged) {
-                                Enlarged originalObject = (Enlarged) object;
-                                Enlarged enlargedObject = (Enlarged) object;
-                                if(!returnAll) {
-                                    //Clone the object and set the new result instance.
-                                    enlargedObject = enlargedObject.cloneEmpty();
-                                    object = (O) enlargedObject;
-                                }
-                                for (QueryReturnParameter returnParameter : getReturnParameters()) {
-                                    if (returnParameter instanceof QueryReturnField) {
-                                        QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                        if (returnField.getAlias() != null) {
-                                            enlargedObject.put(returnField.getAlias(), originalObject.get(returnField.getFieldName()));
-                                        } else {
-                                            enlargedObject.put(returnField.getFieldName(), originalObject.get(returnField.getFieldName()));
-                                        }
-                                    } else if (returnParameter instanceof QueryReturnGroupingFunction) {
-                                        //Do nothing because the grouping functions only must be used when the query is grouped
-                                    } else if (returnParameter instanceof QueryReturnFunction) {
-                                        QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                        enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                                                consumer.resolveFunction(function, consumer, originalObject, parameters));
+                            for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                                if (returnParameter instanceof QueryReturnField) {
+                                    QueryReturnField returnField = (QueryReturnField) returnParameter;
+                                    if (returnField.getAlias() != null) {
+                                        enlargedObject.put(returnField.getAlias(), originalObject.get(returnField.getFieldName()));
+                                    } else {
+                                        enlargedObject.put(returnField.getFieldName(), originalObject.get(returnField.getFieldName()));
                                     }
+                                } else if (returnParameter instanceof QueryReturnFunction) {
+                                    QueryReturnFunction function = (QueryReturnFunction) returnParameter;
+                                    enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
+                                            consumer.resolveFunction(function, consumer, originalObject, parameters));
                                 }
                             }
-
-                            result.add(object);
                         }
+
+                        result.add(object);
                     }
                     if (getLimit() != null && result.size() == (start + getLimit())) {
                         break;
@@ -521,23 +497,6 @@ public class Query extends EvaluatorCollection {
 
                 if (start > 0) {
                     result = result.stream().skip(start).collect(Collectors.toSet());
-                }
-
-                if (groupResult) {
-                    for (GroupableIndex index : parcelMap.keySet()) {
-                        Groupable groupable = parcelMap.get(index);
-                        groupable.clear();
-                        int i = 0;
-                        for (QueryReturnField field : groupParameters) {
-                            groupable.put(field.getAlias(), index.indexes[i++]);
-                        }
-
-//                        for (QueryReturnGroupingFunction queryReturnGroupingFunction : groupingMap.get(index).keySet()) {
-//                            groupable.put(queryReturnGroupingFunction.getAlias(),
-//                                    consumer.resolveFunction(queryReturnGroupingFunction,
-//                                            groupingMap.get(index).get(queryReturnGroupingFunction)));
-//                        }
-                    }
                 }
             }
 
@@ -1948,14 +1907,6 @@ public class Query extends EvaluatorCollection {
         public String getAlias() {
             return alias;
         }
-    }
-
-    public static class QueryReturnGroupingFunction extends QueryReturnFunction {
-
-        public QueryReturnGroupingFunction(String originalFunction, String functionName, List<Object> parameters, String alias) {
-            super(originalFunction, functionName, parameters, alias);
-        }
-
     }
 
     public interface QueryOrderParameter extends QueryComponent {

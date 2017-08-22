@@ -143,6 +143,10 @@ public class QueryRunningTest {
                     result = simpsonCharacters.values();
                     break;
                 }
+                case ADDRESS: {
+                    result = simpsonAddresses.values();
+                    break;
+                }
                 default:{
                     throw new IllegalArgumentException("Resource not found " + query.getResourceName());
                 }
@@ -178,6 +182,10 @@ public class QueryRunningTest {
             resultSet = query.evaluate(dataSource);
             JoinableMap first = resultSet.iterator().next();
             Assert.assertEquals(first.get("nombre"), first.get("name"));
+
+            query = Query.compile("SELECT street, sum(weight) FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+            resultSet = query.evaluate(dataSource);
+            Assert.assertEquals(resultSet.size(), simpsonAddresses.size());
 
         }, ServiceSession.getSystemSession(), true, 0);
     }

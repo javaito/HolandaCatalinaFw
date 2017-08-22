@@ -4,6 +4,7 @@ import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.MathIntrospection;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -67,7 +68,13 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
             case SUM: {
                 Number accumulator = 0;
                 for(Object numericParameter : parameters) {
-                    accumulator = accumulator.doubleValue() + ((Number) numericParameter).doubleValue();
+                    if(numericParameter instanceof Collection) {
+                        for(Number collectionNumber : ((Collection<Number>)numericParameter)) {
+                            accumulator = accumulator.doubleValue() + collectionNumber.doubleValue();
+                        }
+                    } else {
+                        accumulator = accumulator.doubleValue() + ((Number) numericParameter).doubleValue();
+                    }
                 }
                 result = accumulator;
                 break;
