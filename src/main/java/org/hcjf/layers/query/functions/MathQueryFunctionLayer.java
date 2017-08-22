@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * This layer implements all the math functions to invoke from the query scope.
  * @author javaito
  */
 public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerInterface {
@@ -32,15 +33,33 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
             aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + functionName);
         }
 
-        //Add the eval expression alias.
+        //Add static aliases
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + SUM);
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PRODUCT);
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + BYTE_VALUE);
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + SHORT_VALUE);
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + INTEGER_VALUE);
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + LONG_VALUE);
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + FLOAT_VALUE);
+        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + DOUBLE_VALUE);
         aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + EVAL_EXPRESSION);
     }
 
+    /**
+     * Returns all the aliases for this layer.
+     * @return Layers aliases.
+     */
     @Override
     public Set<String> getAliases() {
         return aliases;
     }
 
+    /**
+     * Evaluates the math function.
+     * @param functionName Function name.
+     * @param parameters Function's parameters.
+     * @return Returns the numeric value that represents the result of the function evaluation.
+     */
     @Override
     public Object evaluate(String functionName, Object... parameters) {
         Object result;
@@ -78,6 +97,12 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
         return result;
     }
 
+    /**
+     * This method iterate all the parameter to evaluate math expression. Each parameter contains
+     * a number value or operator.
+     * @param parameters Math expression parameters.
+     * @return Returns the number that results of evaluate the math expression.
+     */
     private Number evalExpression(Object... parameters) {
         double result = 0.0;
         String currentOperation = SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION);
@@ -101,6 +126,13 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
         return result;
     }
 
+    /**
+     * Check the number of parameter before call the specific function.
+     * @param size Parameters size to check.
+     * @param parameters Original array of parameters.
+     * @return Return the same original array of parameters.
+     * @throws IllegalArgumentException if the size to check is not equals to the length of original parameters array.
+     */
     private Object[] checkSize(int size, Object... parameters) {
         if(parameters.length != size) {
             throw new IllegalArgumentException("Illegal parameters length");

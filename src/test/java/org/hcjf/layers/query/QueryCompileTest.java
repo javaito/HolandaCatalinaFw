@@ -6,13 +6,21 @@ import org.junit.Test;
 import java.util.UUID;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class QueryCompileTest {
 
     @Test()
     public void testCompile() {
+
+        try {
+            Query query = Query.compile("SELECT 2+2*field1 as suma FROM resource WHERE resource.field != log(5)+2 AND resource.field = '2017-07-07 22:15:32'");
+            query = Query.compile(query.toString());
+            Assert.assertNotNull(query);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = '2017-07-07 22:15:32'");

@@ -447,7 +447,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on )");
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
-        defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)( desc )");
+        defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)(.* desc)");
         defaults.put(Query.SELECT_GROUP_INDEX, "1");
         defaults.put(Query.FROM_GROUP_INDEX, "2");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "3");
@@ -498,6 +498,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.Function.NAME_PREFIX, "query.math.");
         defaults.put(Query.Function.MATH_LAYER_NAME, "math");
         defaults.put(Query.Function.MATH_EVAL_EXPRESSION_NAME, "evalExpression");
+        defaults.put(Query.Function.MATH_ADDITION, "+");
+        defaults.put(Query.Function.MATH_SUBTRACTION, "-");
+        defaults.put(Query.Function.MATH_MULTIPLICATION, "*");
+        defaults.put(Query.Function.MATH_DIVISION, "/");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");

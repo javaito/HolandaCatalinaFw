@@ -505,8 +505,8 @@ public class Query extends EvaluatorCollection {
                                         //Do nothing because the grouping functions only must be used when the query is grouped
                                     } else if (returnParameter instanceof QueryReturnFunction) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                        enlargedObject.put(function.getAlias(),
-                                                consumer.resolveFunction(function, consumer, enlargedObject, originalObject));
+                                        enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
+                                                consumer.resolveFunction(function, consumer, originalObject, parameters));
                                     }
                                 }
                             }
@@ -1406,16 +1406,52 @@ public class Query extends EvaluatorCollection {
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
+            //If the string matchs with a math expression then creates a function that resolves this math expression.
             String[] mathExpressionParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.HCJF_MATH_SPLITTER_REGULAR_EXPRESSION));
-            Object[] parameters = new Object[mathExpressionParts.length];
+            List<Object> parameters = new ArrayList<>();
+            String currentValue;
+            String alias = null;
+            boolean desc = false;
             for (int i = 0; i < mathExpressionParts.length; i++) {
-                if(mathExpressionParts[i].matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION))) {
-                    parameters[i] = mathExpressionParts[i].trim();
+                currentValue = mathExpressionParts[i];
+                if(i == mathExpressionParts.length - 1){
+                    //This code run only one time for the last part.
+                    if(parameterClass.equals(QueryReturnParameter.class)) {
+                        //Check if the last part contains the 'AS' word
+                        String[] parts = currentValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
+                        if (parts.length == 3) {
+                            currentValue = parts[0].trim();
+                            alias = parts[2].trim();
+                        }
+                    } else if(parameterClass.equals(QueryOrderParameter.class)) {
+                        //Check if the last part contains the 'DESC' word
+                        if(currentValue.matches(SystemProperties.get(SystemProperties.Query.DESC_REGULAR_EXPRESSION))) {
+                            currentValue = currentValue.substring(0, currentValue.indexOf(SystemProperties.get(
+                                    SystemProperties.Query.ReservedWord.DESC))).trim();
+                            desc = true;
+                        }
+                    }
+                }
+
+                if(currentValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION))) {
+                    //If the current value is a math connector (+-*/) the this connector is a function parameter.
+                    parameters.add(currentValue.trim());
                 } else {
-                    parameters[i] = processStringValue(groups, mathExpressionParts[i], placesIndex, QueryParameter.class);
+                    //If the current value is not a math connector then this string is evaluated recursively.
+                    parameters.add(processStringValue(groups, currentValue, placesIndex, QueryParameter.class));
                 }
             }
 
+            if(parameterClass.equals(QueryParameter.class)) {
+                result = new QueryFunction(Strings.reverseGrouping(trimmedStringValue, groups),
+                        SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters);
+            } else if(parameterClass.equals(QueryReturnParameter.class)) {
+                result = new QueryReturnFunction(Strings.reverseGrouping(trimmedStringValue, groups),
+                        SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters, alias);
+            } else if(parameterClass.equals(QueryOrderParameter.class)) {
+                result = new QueryOrderFunction(Strings.reverseGrouping(trimmedStringValue, groups),
+                        SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters, desc);
+            }
         } else {
             //Default case, only must be a query parameter.
             String functionName = null;
@@ -1425,6 +1461,7 @@ public class Query extends EvaluatorCollection {
             List<Object> functionParameters = null;
             Boolean function = false;
             if(trimmedStringValue.contains(Strings.REPLACEABLE_GROUP)) {
+                //If the string contains a replaceable group character then the parameter is a function.
                 replaceValue = Strings.getGroupIndex(trimmedStringValue);
                 group = groups.get(Integer.parseInt(replaceValue.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING)));
                 functionName = trimmedStringValue.substring(0, trimmedStringValue.indexOf(Strings.REPLACEABLE_GROUP));
@@ -1439,12 +1476,16 @@ public class Query extends EvaluatorCollection {
             }
 
             if(parameterClass.equals(QueryParameter.class)) {
+                //If the parameter class is the default class then the result will be a
+                //QueryFunction.class instance or QueryField.class instance.
                 if(function) {
                     result = new QueryFunction(originalValue, functionName, functionParameters);
                 } else {
                     result = new QueryField(trimmedStringValue);
                 }
             } else if(parameterClass.equals(QueryReturnParameter.class)) {
+                //If the parameter class is the QueryReturnParameter.class then the result will be a
+                //QueryReturnFunction.class instance or QueryReturnField.class instance.
                 String alias = null;
                 String[] parts = originalValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
                 if(parts.length == 3) {
@@ -1458,9 +1499,12 @@ public class Query extends EvaluatorCollection {
                     result = new QueryReturnField(originalValue, alias);
                 }
             } else if(parameterClass.equals(QueryOrderParameter.class)) {
+                //If the parameter class is the QueryOrderParameter.class then the result will be a
+                //QueryOrderFunction.class instance or QueryOrderField.class instance.
                 boolean desc = false;
-                if(originalValue.contains(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
-                    originalValue = originalValue.substring(0, originalValue.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))).trim();
+                if(originalValue.matches(SystemProperties.get(SystemProperties.Query.DESC_REGULAR_EXPRESSION))) {
+                    originalValue = originalValue.substring(0, originalValue.indexOf(SystemProperties.get(
+                            SystemProperties.Query.ReservedWord.DESC))).trim();
                     desc = true;
                 }
 
@@ -1537,16 +1581,17 @@ public class Query extends EvaluatorCollection {
          * @return Return the value obtained of the function resolution.
          */
         public <R extends Object> R resolveFunction(QueryFunction function, Consumer consumer, Object instance, Object... parameters) {
-            Object[] parameterValues = new Object[parameters.length];
-            for (int i = 0; i < parameters.length; i++) {
-                if(parameters[i] instanceof Query.QueryFunction) {
-                    Query.QueryFunction innerFunction = (Query.QueryFunction) parameters[i];
-                    parameterValues[i] = consumer.resolveFunction(
-                            innerFunction, consumer, innerFunction.getParameters());
-                } else if(parameters[i] instanceof Query.QueryParameter) {
-                    parameterValues[i] = consumer.get(instance, ((QueryParameter)parameters[i]));
+            Object[] parameterValues = new Object[function.getParameters().size()];
+            Object currentParameter;
+            for (int i = 0; i < function.getParameters().size(); i++) {
+                currentParameter = function.getParameters().get(i);
+                if(currentParameter instanceof Query.QueryFunction) {
+                    Query.QueryFunction innerFunction = (Query.QueryFunction) currentParameter;
+                    parameterValues[i] = consumer.resolveFunction(innerFunction, consumer, instance, parameters);
+                } else if(currentParameter instanceof Query.QueryParameter) {
+                    parameterValues[i] = consumer.get(instance, ((QueryParameter)currentParameter));
                 } else {
-                    parameterValues[i] = parameters[i];
+                    parameterValues[i] = currentParameter;
                 }
             }
 

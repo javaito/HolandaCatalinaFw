@@ -160,6 +160,16 @@ public class QueryRunningTest {
             Set<JoinableMap> resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
+            query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(integerValue(weight), integerValue(50.1)) ,2) AS smartWeight FROM character");
+            resultSet = query.evaluate(dataSource);
+            for(JoinableMap joinableMap : resultSet) {
+                if(((Number)joinableMap.get(WEIGHT)).doubleValue() > 50) {
+                    Assert.assertTrue(((Number)joinableMap.get("smartWeight")).doubleValue() > 2500);
+                } else {
+                    Assert.assertTrue(((Number)joinableMap.get("smartWeight")).intValue() == 2500);
+                }
+            }
+
             query = Query.compile("SELECT name, nickname FROM character");
             resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.iterator().next().size(), 2);
