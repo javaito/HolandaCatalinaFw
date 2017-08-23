@@ -12,7 +12,7 @@ import java.util.Set;
  * This layer implements all the math functions to invoke from the query scope.
  * @author javaito
  */
-public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerInterface {
+public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
     private static final String SUM = "sum";
     private static final String PRODUCT = "product";
@@ -82,7 +82,13 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
             case PRODUCT: {
                 Number accumulator = 1;
                 for(Object numericParameter : parameters) {
-                    accumulator = accumulator.doubleValue() * ((Number) numericParameter).doubleValue();
+                    if(numericParameter instanceof Collection) {
+                        for(Number collectionNumber : ((Collection<Number>)numericParameter)) {
+                            accumulator = accumulator.doubleValue() * collectionNumber.doubleValue();
+                        }
+                    } else {
+                        accumulator = accumulator.doubleValue() * ((Number) numericParameter).doubleValue();
+                    }
                 }
                 result = accumulator;
                 break;
@@ -133,17 +139,4 @@ public class MathQueryFunctionLayer extends Layer implements QueryFunctionLayerI
         return result;
     }
 
-    /**
-     * Check the number of parameter before call the specific function.
-     * @param size Parameters size to check.
-     * @param parameters Original array of parameters.
-     * @return Return the same original array of parameters.
-     * @throws IllegalArgumentException if the size to check is not equals to the length of original parameters array.
-     */
-    private Object[] checkSize(int size, Object... parameters) {
-        if(parameters.length != size) {
-            throw new IllegalArgumentException("Illegal parameters length");
-        }
-        return parameters;
-    }
 }

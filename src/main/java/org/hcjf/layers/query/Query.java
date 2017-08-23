@@ -2,8 +2,10 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.functions.DateQueryFunctionLayer;
 import org.hcjf.layers.query.functions.MathQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
+import org.hcjf.layers.query.functions.StringQueryFunctionLayer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
@@ -30,7 +32,7 @@ public class Query extends EvaluatorCollection {
     private final QueryResource resource;
     private Integer limit;
     private Integer start;
-    private final List<QueryReturnField> groupParameters;
+    private final List<QueryReturnParameter> groupParameters;
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
@@ -39,6 +41,8 @@ public class Query extends EvaluatorCollection {
     static {
         //Publishing function layers...
         Layers.publishLayer(MathQueryFunctionLayer.class);
+        Layers.publishLayer(StringQueryFunctionLayer.class);
+        Layers.publishLayer(DateQueryFunctionLayer.class);
     }
 
     public Query(String resource, QueryId id) {
@@ -173,7 +177,7 @@ public class Query extends EvaluatorCollection {
      * Return all the group fields of the query.
      * @return Group field of the query.
      */
-    public List<QueryField> getGroupParameters() {
+    public List<QueryReturnParameter> getGroupParameters() {
         return Collections.unmodifiableList(groupParameters);
     }
 
@@ -193,8 +197,8 @@ public class Query extends EvaluatorCollection {
      * @param groupField Name of the pair getter/setter.
      * @return Return the same instance of this class.
      */
-    public final Query addGroupField(QueryReturnField groupField) {
-        groupParameters.add((QueryReturnField) checkQueryParameter(groupField));
+    public final Query addGroupField(QueryReturnParameter groupField) {
+        groupParameters.add((QueryReturnParameter)checkQueryParameter((QueryParameter) groupField));
         return this;
     }
 
@@ -438,7 +442,13 @@ public class Query extends EvaluatorCollection {
                     if (object instanceof Groupable) {
                         groupable = (Groupable) object;
                         hashCode = new StringBuilder();
-                        groupParameters.stream().mapToInt(groupField -> consumer.get(object, groupField).hashCode()).forEach(hashCode::append);
+                        for(QueryReturnParameter returnParameter : groupParameters) {
+                            if(returnParameter instanceof QueryReturnField) {
+                                hashCode.append(consumer.get(object, ((QueryReturnField)returnParameter)).hashCode());
+                            } else {
+                                hashCode.append(consumer.resolveFunction(((QueryReturnFunction)returnParameter), object, parameters).hashCode());
+                            }
+                        }
                         if(groupables.containsKey(hashCode.toString())) {
                             groupables.get(hashCode.toString()).group(groupable);
                         } else {
@@ -484,7 +494,7 @@ public class Query extends EvaluatorCollection {
                                 } else if (returnParameter instanceof QueryReturnFunction) {
                                     QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                     enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                                            consumer.resolveFunction(function, consumer, originalObject, parameters));
+                                            consumer.resolveFunction(function, originalObject, parameters));
                                 }
                             }
                         }
@@ -887,7 +897,7 @@ public class Query extends EvaluatorCollection {
 
         if(groupParameters.size() > 0) {
             result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
-            for(QueryField groupParameter : groupParameters) {
+            for(QueryReturnParameter groupParameter : groupParameters) {
                 result.append(groupParameter, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
             }
             result.cleanBuffer();
@@ -1110,7 +1120,7 @@ public class Query extends EvaluatorCollection {
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                            query.addGroupField((QueryReturnField)
+                            query.addGroupField((QueryReturnParameter)
                                     processStringValue(groups, orderField, null, QueryReturnParameter.class));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
@@ -1530,7 +1540,7 @@ public class Query extends EvaluatorCollection {
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        public <R extends Object> R resolveFunction(QueryFunction function, Consumer consumer, Object instance, Object... parameters);
+        public <R extends Object> R resolveFunction(QueryFunction function, Object instance, Object... parameters);
 
     }
 
@@ -1543,24 +1553,33 @@ public class Query extends EvaluatorCollection {
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        public <R extends Object> R resolveFunction(QueryFunction function, Consumer consumer, Object instance, Object... parameters) {
-            Object[] parameterValues = new Object[function.getParameters().size()];
+        public <R extends Object> R resolveFunction(QueryFunction function, Object instance, Object... parameters) {
+            List<Object> parameterValues = new ArrayList<>();
             Object currentParameter;
+            Object value;
             for (int i = 0; i < function.getParameters().size(); i++) {
                 currentParameter = function.getParameters().get(i);
-                if(currentParameter instanceof Query.QueryFunction) {
-                    Query.QueryFunction innerFunction = (Query.QueryFunction) currentParameter;
-                    parameterValues[i] = consumer.resolveFunction(innerFunction, consumer, instance, parameters);
-                } else if(currentParameter instanceof Query.QueryParameter) {
-                    parameterValues[i] = consumer.get(instance, ((QueryParameter)currentParameter));
-                } else {
-                    parameterValues[i] = currentParameter;
+                if(currentParameter != null) {
+                    if (currentParameter instanceof Query.QueryFunction) {
+                        Query.QueryFunction innerFunction = (Query.QueryFunction) currentParameter;
+                        value = resolveFunction(innerFunction, instance, parameters);
+                        if(value != null) {
+                            parameterValues.add(value);
+                        }
+                    } else if (currentParameter instanceof Query.QueryParameter) {
+                        value = get((O) instance, ((QueryParameter) currentParameter));
+                        if(value != null) {
+                            parameterValues.add(value);
+                        }
+                    } else {
+                        parameterValues.add(currentParameter);
+                    }
                 }
             }
 
             QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
                     SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-            return (R) queryFunctionLayerInterface.evaluate(function.getFunctionName(), parameterValues);
+            return (R) queryFunctionLayerInterface.evaluate(function.getFunctionName(), parameterValues.toArray());
         }
 
     }

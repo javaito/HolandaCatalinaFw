@@ -2,6 +2,8 @@ package org.hcjf.utils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -12,6 +14,18 @@ import java.util.Set;
 public class MathIntrospection {
 
     private static final MathInvokerFilter filter = new MathInvokerFilter();
+    private static final Map<String, Integer> typeWeight;
+
+    static {
+        typeWeight = new HashMap<>();
+        typeWeight.put("byte", 1);
+        typeWeight.put("short", 2);
+        typeWeight.put("int", 3);
+        typeWeight.put("integer", 3);
+        typeWeight.put("long", 4);
+        typeWeight.put("float", 5);
+        typeWeight.put("double", 6);
+    }
 
     /**
      * This method invokes the specific method of the {@link java.lang.Math} class
@@ -53,6 +67,12 @@ public class MathIntrospection {
      */
     private static class MathInvokerFilter implements Introspection.InvokerFilter<MathInvoker> {
 
+        private final Map<String, Integer> weightByMethodName;
+
+        public MathInvokerFilter() {
+            weightByMethodName = new HashMap<>();
+        }
+
         /**
          * If the method is implemented into the {@link java.lang.Math} class and this
          * method is static then the method is accepted.
@@ -66,8 +86,36 @@ public class MathIntrospection {
             if(Modifier.isPublic(method.getModifiers()) &&
                     Modifier.isStatic(method.getModifiers()) &&
                     method.getDeclaringClass().equals(Math.class)) {
-                result = new Introspection.InvokerEntry<>(method.getName(),
-                        new MathInvoker(method.getDeclaringClass(), method));
+
+                Boolean create = false;
+                Integer weight = calculateMethodWeight(method);
+                if(weightByMethodName.containsKey(method.getName())) {
+                    if(weight > weightByMethodName.get(method.getName())) {
+                        create = true;
+                    }
+                } else {
+                    create = true;
+                }
+
+                if(create) {
+                    result = new Introspection.InvokerEntry<>(method.getName(),
+                            new MathInvoker(method.getDeclaringClass(), method));
+                    weightByMethodName.put(method.getName(), weight);
+                }
+            }
+
+            return result;
+        }
+
+        private Integer calculateMethodWeight(Method method) {
+            Integer result = 0;
+
+            Integer weight;
+            for(Class dataType : method.getParameterTypes()) {
+                weight = typeWeight.get(dataType.getSimpleName().toLowerCase());
+                if(weight != null) {
+                    result += weight;
+                }
             }
 
             return result;

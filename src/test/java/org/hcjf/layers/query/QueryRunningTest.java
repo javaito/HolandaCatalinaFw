@@ -1,5 +1,9 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.layers.Layers;
+import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
+import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
+import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.junit.Assert;
@@ -36,7 +40,7 @@ public class QueryRunningTest {
 
     static {
         try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd");
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
             JoinableMap map = new JoinableMap(ADDRESS);
             UUID addressId = UUID.randomUUID();
@@ -136,15 +140,19 @@ public class QueryRunningTest {
 
         @Override
         public Collection<JoinableMap> getResourceData(Query query) {
-            Collection<JoinableMap> result;
+            Collection<JoinableMap> result = new HashSet<>();
 
             switch (query.getResourceName()) {
                 case CHARACTER: {
-                    result = simpsonCharacters.values();
+                    for(JoinableMap map : simpsonCharacters.values()) {
+                        result.add(new JoinableMap(map));
+                    }
                     break;
                 }
                 case ADDRESS: {
-                    result = simpsonAddresses.values();
+                    for(JoinableMap map : simpsonAddresses.values()) {
+                        result.add(new JoinableMap(map));
+                    }
                     break;
                 }
                 default:{
@@ -160,9 +168,17 @@ public class QueryRunningTest {
     @Test
     public void select() {
         Service.run(() -> {
+
             Query query = Query.compile("SELECT * FROM character");
             Set<JoinableMap> resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+            query = Query.compile("SELECT now(), getYear(birthday), periodInDays(birthday), getMonth(birthday) FROM character");
+            resultSet = query.evaluate(dataSource);
+            Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+            query = Query.compile("SELECT * FROM character GROUP BY getMonth(birthday)");
+            resultSet = query.evaluate(dataSource);
 
             query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(integerValue(weight), integerValue(50.1)) ,2) AS smartWeight FROM character");
             resultSet = query.evaluate(dataSource);
@@ -174,6 +190,9 @@ public class QueryRunningTest {
                 }
             }
 
+            query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
+            resultSet = query.evaluate(dataSource);
+
             query = Query.compile("SELECT name, nickname FROM character");
             resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.iterator().next().size(), 2);
@@ -183,10 +202,29 @@ public class QueryRunningTest {
             JoinableMap first = resultSet.iterator().next();
             Assert.assertEquals(first.get("nombre"), first.get("name"));
 
-            query = Query.compile("SELECT street, sum(weight) FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+            query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight) FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
             resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.size(), simpsonAddresses.size());
 
+
+            Layers.publishLayer(CustomFunciton.class);
+
+            query = Query.compile("SELECT name, customFunction(integerValue(weight)) FROM character");
+            resultSet = query.evaluate(dataSource);
+            System.out.println();
+
         }, ServiceSession.getSystemSession(), true, 0);
+    }
+
+    public static class CustomFunciton extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
+
+        public CustomFunciton() {
+            super(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + "customFunction");
+        }
+
+        @Override
+        public Object evaluate(String functionName, Object... parameters) {
+            return ((Integer)parameters[0]) % 2 == 0 ? "P" : "I";
+        }
     }
 }

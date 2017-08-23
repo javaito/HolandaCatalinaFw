@@ -253,6 +253,8 @@ public final class SystemProperties extends Properties {
             public static final String NAME_PREFIX = "hcjf.query.function.name.prefix";
             public static final String MATH_EVAL_EXPRESSION_NAME = "hcjf.query.function.math.eval.expression.name";
             public static final String MATH_LAYER_NAME = "hcjf.query.function.math.layer.name";
+            public static final String STRING_LAYER_NAME = "hcjf.query.function.string.layer.name";
+            public static final String DATE_LAYER_NAME = "hcjf.query.function.date.layer.name";
             public static final String MATH_ADDITION = "hcjf.query.function.math.addition";
             public static final String MATH_SUBTRACTION = "hcjf.query.function.math.subtraction";
             public static final String MATH_MULTIPLICATION = "hcjf.query.function.math.multiplication";
@@ -495,8 +497,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.FALSE, "FALSE");
         defaults.put(Query.ReservedWord.AS, "AS");
         defaults.put(Query.ReservedWord.GROUP_BY, "GROUP BY");
-        defaults.put(Query.Function.NAME_PREFIX, "query.math.");
+        defaults.put(Query.Function.NAME_PREFIX, "query.");
         defaults.put(Query.Function.MATH_LAYER_NAME, "math");
+        defaults.put(Query.Function.STRING_LAYER_NAME, "string");
+        defaults.put(Query.Function.DATE_LAYER_NAME, "date");
         defaults.put(Query.Function.MATH_EVAL_EXPRESSION_NAME, "evalExpression");
         defaults.put(Query.Function.MATH_ADDITION, "+");
         defaults.put(Query.Function.MATH_SUBTRACTION, "-");
