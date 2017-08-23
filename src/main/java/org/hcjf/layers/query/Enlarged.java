@@ -12,7 +12,7 @@ public interface Enlarged {
      * @param fieldName Field name.
      * @return Field value.
      */
-    public Object get(String fieldName);
+    Object get(String fieldName);
 
     /**
      * Add a new value to the instance.
@@ -20,6 +20,11 @@ public interface Enlarged {
      * @param value Value instance.
      * @return Return the value added.
      */
-    public Object put(String key, Object value);
+    Object put(String key, Object value);
 
+    /**
+     * Clone the enlarged object without domain information.
+     * @return Enlarged clone.
+     */
+    Enlarged cloneEmpty();
 }

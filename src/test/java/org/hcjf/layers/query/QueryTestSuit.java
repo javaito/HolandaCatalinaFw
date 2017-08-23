@@ -4,12 +4,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        QueryCompileTest.class
+        QueryCompileTest.class,
+        QueryRunningTest.class
 })
 public class QueryTestSuit {
 }

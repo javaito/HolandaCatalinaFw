@@ -17,7 +17,6 @@ public class TTLMapTest {
         TtlMap<String, String> ttlMap = new TtlMap<>(new HashMap<>(), 1000L);
         ttlMap.put("hello", "world");
 
-        System.out.println(ttlMap.get("hello"));
         Assert.assertNotNull(ttlMap.get("hello"));
 
         try {
@@ -25,7 +24,6 @@ public class TTLMapTest {
         } catch (InterruptedException e) {
         }
 
-        System.out.println(ttlMap.get("hello"));
         Assert.assertNull(ttlMap.get("hello"));
     }
 

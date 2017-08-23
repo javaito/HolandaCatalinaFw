@@ -1,5 +1,8 @@
 package org.hcjf.layers.query;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * This interface represents all object capable of being grouped
  * @author javaito.
@@ -15,12 +18,17 @@ public interface Groupable {
     public Object get(String fieldName);
 
     /**
-     * Put a value indexed by name.
-     * @param fieldName Field name.
-     * @param value Value.
-     * @return Value
+     * Returns all the labels into the groupable instance.
+     * @return Set with all the labels.
      */
-    public Object put(String fieldName, Object value);
+    public Set<String> keySet();
+
+    /**
+     * Group this instance with the parameter instance.
+     * @param groupable Other instance to group.
+     * @return Return this instance grouped.
+     */
+    public Groupable group(Groupable groupable);
 
     /**
      * Remove all the elements of the groupable object.

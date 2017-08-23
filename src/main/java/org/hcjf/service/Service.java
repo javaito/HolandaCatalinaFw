@@ -201,8 +201,31 @@ public abstract class Service<C extends ServiceConsumer> {
      * @param session Custom session.
      */
     public static final void run(Runnable runnable, ServiceSession session) {
+        run(runnable, session, false, 0);
+    }
+
+    /**
+     * This method is the gateway to the service subsystem from context out of
+     * the hcjf domain.
+     * @param runnable Custom runnable.
+     * @param session Custom session.
+     * @param waitFor Wait fot the execution ends.
+     * @param timeout Wait time out, if this value is lower than 0 then the timeout is infinite.
+     */
+    public static final void run(Runnable runnable, ServiceSession session, boolean waitFor, long timeout) {
         RunnableWrapper serviceRunnable = new RunnableWrapper(runnable, session);
-        SystemServices.instance.serviceExecutor.execute(serviceRunnable);
+        Future future = SystemServices.instance.serviceExecutor.submit(serviceRunnable);
+        if(waitFor) {
+            try {
+                if(timeout > 0) {
+                    future.get(timeout, TimeUnit.MILLISECONDS);
+                } else {
+                    future.get();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
