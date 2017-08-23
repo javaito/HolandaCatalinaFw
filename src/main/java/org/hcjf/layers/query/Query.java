@@ -60,6 +60,7 @@ public class Query extends EvaluatorCollection {
         this.resource = source.resource;
         this.limit = source.limit;
         this.start = source.start;
+        this.returnAll = source.returnAll;
         this.orderParameters = new ArrayList<>();
         this.orderParameters.addAll(source.orderParameters);
         this.returnParameters = new ArrayList<>();
@@ -101,7 +102,7 @@ public class Query extends EvaluatorCollection {
      * @return Return all.
      */
     public final boolean returnAll() {
-        return returnAll;
+        return returnAll || returnParameters.isEmpty();
     }
 
     /**
@@ -1328,7 +1329,10 @@ public class Query extends EvaluatorCollection {
                 try {
                     result = SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).parse(trimmedStringValue);
                 } catch (Exception ex) {
-                    //The value is not a date
+                    //The value is not a date then the value is a string
+                    while(trimmedStringValue.contains(Strings.REPLACEABLE_GROUP)) {
+                        trimmedStringValue = Strings.reverseGrouping(trimmedStringValue, groups);
+                    }
                     result = trimmedStringValue;
                 }
             } else {
