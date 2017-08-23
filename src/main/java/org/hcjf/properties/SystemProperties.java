@@ -233,6 +233,7 @@ public final class SystemProperties extends Properties {
             public static final String NOT = "hcjf.query.not.reserved.word";
             public static final String NOT_2 = "hcjf.query.not.2.reserved.word";
             public static final String LIKE = "hcjf.query.like.reserved.word";
+            public static final String LIKE_WILDCARD = "hcjf.query.like.wildcard.reserved.word";
             public static final String AND = "hcjf.query.and.reserved.word";
             public static final String OR = "hcjf.query.or.reserved.word";
             public static final String STATEMENT_END = "hcjf.query.statement.end.reserved.word";
@@ -468,6 +469,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.NOT, "NOT");
         defaults.put(Query.ReservedWord.NOT_2, "!");
         defaults.put(Query.ReservedWord.LIKE, "LIKE");
+        defaults.put(Query.ReservedWord.LIKE_WILDCARD, "%");
         defaults.put(Query.ReservedWord.AND, "AND");
         defaults.put(Query.ReservedWord.OR, "OR");
         defaults.put(Query.ReservedWord.STATEMENT_END, ";");
