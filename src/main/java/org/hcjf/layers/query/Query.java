@@ -1034,16 +1034,6 @@ public class Query extends EvaluatorCollection {
         return result;
     }
 
-    /**
-     * Create a query instance from sql definition.
-     * @param sql Sql definition.
-     * @return Query instance.
-     */
-    public static Query compile(String sql) {
-        List<String> groups = Strings.replaceableGroup(sql);
-        return compile(groups, groups.size() -1);
-    }
-
     public static Collection<JoinableMap> evaluate(String query) {
         return compile(query).evaluate(new CrudDataSource());
     }
@@ -1054,11 +1044,22 @@ public class Query extends EvaluatorCollection {
 
     /**
      * Create a query instance from sql definition.
+     * @param sql Sql definition.
+     * @return Query instance.
+     */
+    public static Query compile(String sql) {
+        List<String> richTexts = Strings.groupRichText(sql);
+        List<String> groups = Strings.replaceableGroup(richTexts.get(richTexts.size() -1));
+        return compile(groups, richTexts, groups.size() -1);
+    }
+
+    /**
+     * Create a query instance from sql definition.
      * @param groups
      * @param startGroup
      * @return Query instance.
      */
-    private static Query compile(List<String> groups, Integer startGroup) {
+    private static Query compile(List<String> groups, List<String> richTexts, Integer startGroup) {
         Query query;
         Pattern pattern = SystemProperties.getPattern(SystemProperties.Query.SELECT_REGULAR_EXPRESSION);
         Matcher matcher = pattern.matcher(groups.get(startGroup));
@@ -1078,7 +1079,7 @@ public class Query extends EvaluatorCollection {
             for(String returnField : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                 query.addReturnField((QueryReturnParameter)
-                        processStringValue(groups, returnField, null, QueryReturnParameter.class));
+                        processStringValue(groups, richTexts, returnField, null, QueryReturnParameter.class));
             }
 
             if(conditionalBody != null) {
@@ -1107,21 +1108,21 @@ public class Query extends EvaluatorCollection {
                         }
 
                         Join join = new Join(query, joinResource, type);
-                        completeEvaluatorCollection(joinEvaluators, groups, join, 0, new AtomicInteger(0));
+                        completeEvaluatorCollection(joinEvaluators, groups, richTexts, join, 0, new AtomicInteger(0));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
-                        completeEvaluatorCollection(elementValue, groups, query, 0, new AtomicInteger(0));
+                        completeEvaluatorCollection(elementValue, groups, richTexts, query, 0, new AtomicInteger(0));
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addOrderField((QueryOrderParameter)
-                                    processStringValue(groups, orderField, null, QueryOrderParameter.class));
+                                    processStringValue(groups, richTexts, orderField, null, QueryOrderParameter.class));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addGroupField((QueryReturnParameter)
-                                    processStringValue(groups, orderField, null, QueryReturnParameter.class));
+                                    processStringValue(groups, richTexts, orderField, null, QueryReturnParameter.class));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         query.setLimit(Integer.parseInt(elementValue));
@@ -1144,7 +1145,7 @@ public class Query extends EvaluatorCollection {
      * @param parentCollection Parent collection.
      * @param definitionIndex Definition index into the groups.
      */
-    private static final void completeEvaluatorCollection(String startElement, List<String> groups,
+    private static final void completeEvaluatorCollection(String startElement, List<String> groups, List<String> richTexts,
                                                           EvaluatorCollection parentCollection,
                                                           Integer definitionIndex,
                                                           AtomicInteger placesIndex) {
@@ -1191,7 +1192,7 @@ public class Query extends EvaluatorCollection {
                 pendingDefinitions.add(definition);
                 if(collection != null) {
                     for(String pendingDefinition : pendingDefinitions) {
-                        processDefinition(pendingDefinition, collection, groups, placesIndex);
+                        processDefinition(pendingDefinition, collection, groups, richTexts, placesIndex);
                     }
                     pendingDefinitions.clear();
                 } else if(pendingDefinitions.size() > 1) {
@@ -1202,9 +1203,9 @@ public class Query extends EvaluatorCollection {
 
         for(String pendingDefinition : pendingDefinitions) {
             if(collection != null) {
-                processDefinition(pendingDefinition, collection, groups, placesIndex);
+                processDefinition(pendingDefinition, collection, groups, richTexts, placesIndex);
             } else {
-                processDefinition(pendingDefinition, parentCollection, groups, placesIndex);
+                processDefinition(pendingDefinition, parentCollection, groups, richTexts, placesIndex);
             }
         }
     }
@@ -1216,7 +1217,7 @@ public class Query extends EvaluatorCollection {
      * @param groups Sub representation of the main representation.
      * @param placesIndex Place counter of the group list.
      */
-    private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, AtomicInteger placesIndex) {
+    private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, List<String> richTexts, AtomicInteger placesIndex) {
         String[] evaluatorValues;
         Object firstObject;
         Object secondObject;
@@ -1229,7 +1230,7 @@ public class Query extends EvaluatorCollection {
 
         if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
-            completeEvaluatorCollection(null, groups, collection, index, placesIndex);
+            completeEvaluatorCollection(null, groups, richTexts, collection, index, placesIndex);
         } else {
             evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
             if (evaluatorValues.length >= 3) {
@@ -1266,8 +1267,8 @@ public class Query extends EvaluatorCollection {
                     throw new IllegalArgumentException("Operator not found for expression: " + definition);
                 }
 
-                firstObject = processStringValue(groups, firstArgument.trim(), placesIndex, QueryParameter.class);
-                secondObject = processStringValue(groups, secondArgument.trim(), placesIndex, QueryParameter.class);
+                firstObject = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class);
+                secondObject = processStringValue(groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class);
                 operator = operator.trim();
 
                 if(firstObject instanceof QueryParameter) {
@@ -1320,7 +1321,7 @@ public class Query extends EvaluatorCollection {
      * @param parameterClass Parameter class.
      * @return Return the specific implementation of the string representation.
      */
-    private static Object processStringValue(List<String> groups, String stringValue, AtomicInteger placesIndex, Class parameterClass) {
+    private static Object processStringValue(List<String> groups, List<String> richTexts, String stringValue, AtomicInteger placesIndex, Class parameterClass) {
         Object result = null;
         String trimmedStringValue = stringValue.trim();
         if(trimmedStringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
@@ -1336,6 +1337,7 @@ public class Query extends EvaluatorCollection {
             if (trimmedStringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
                 //If the string value start and end with "'" then the value can be a string or a date object.
                 trimmedStringValue = trimmedStringValue.substring(1, trimmedStringValue.length() - 1);
+                trimmedStringValue = richTexts.get(Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_RICH_TEXT, Strings.EMPTY_STRING)));
                 try {
                     result = SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).parse(trimmedStringValue);
                 } catch (Exception ex) {
@@ -1352,12 +1354,12 @@ public class Query extends EvaluatorCollection {
             Integer index = Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
-                result = new FieldEvaluator.QueryValue(Query.compile(groups, index));
+                result = new FieldEvaluator.QueryValue(Query.compile(groups, richTexts, index));
             } else {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 for (String subStringValue : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(groups, subStringValue.trim(), placesIndex, parameterClass));
+                    collection.add(processStringValue(groups, richTexts, subStringValue.trim(), placesIndex, parameterClass));
                 }
                 result = collection;
             }
@@ -1411,7 +1413,7 @@ public class Query extends EvaluatorCollection {
                     parameters.add(currentValue.trim());
                 } else {
                     //If the current value is not a math connector then this string is evaluated recursively.
-                    parameters.add(processStringValue(groups, currentValue, placesIndex, QueryParameter.class));
+                    parameters.add(processStringValue(groups, richTexts, currentValue, placesIndex, QueryParameter.class));
                 }
             }
 
@@ -1441,7 +1443,7 @@ public class Query extends EvaluatorCollection {
                 originalValue = trimmedStringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
                 functionParameters = new ArrayList<>();
                 for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    functionParameters.add(processStringValue(groups, param, placesIndex, parameterClass));
+                    functionParameters.add(processStringValue(groups, richTexts, param, placesIndex, parameterClass));
                 }
                 function = true;
             } else {

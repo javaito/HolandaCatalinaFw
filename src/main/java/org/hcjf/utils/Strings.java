@@ -22,6 +22,9 @@ public final class Strings {
     public static final String CASE_INSENSITIVE_REGEX_FLAG = "(?i)";
     public static final String ARGUMENT_SEPARATOR = ",";
     public static final String ASSIGNATION = "=";
+    public static final String REPLACEABLE_RICH_TEXT = "&";
+    public static final String RICH_TEXT_SEPARATOR = "'";
+    public static final char RICH_TEXT_SKIP_CHARACTER = '\\';
 
     /**
      * Return the string that result of join all the values separated by the
@@ -135,6 +138,47 @@ public final class Strings {
             index = value.indexOf(foundedValue, index + 1);
         }
 
+        return result;
+    }
+
+    /**
+     * Returns all the rich texts contained into the value and the value (in the last place)
+     * with all the replaceable places for each rich text.
+     * @param value Value to get the rich texts.
+     * @return List with the rich text and the original value.
+     */
+    public static List<String> groupRichText(String value) {
+        List<String> result = new ArrayList<>();
+        Set<Integer> indexes = allIndexOf(value, RICH_TEXT_SEPARATOR, true);
+        Integer counter = 0;
+        Integer startIndex = -1;
+        Integer endIndex = 0;
+        StringBuilder newValue = new StringBuilder();
+        String richText;
+        for (Integer index : indexes) {
+            if (index == 0 || value.charAt(index - 1) != RICH_TEXT_SKIP_CHARACTER) {
+                if (startIndex == -1) {
+                    startIndex = index;
+                } else {
+                    richText = value.substring(startIndex + 1, index);
+                    newValue.append(value.substring(endIndex, startIndex));
+                    newValue.append(RICH_TEXT_SEPARATOR).append(REPLACEABLE_RICH_TEXT).append(counter++).append(RICH_TEXT_SEPARATOR);
+                    result.add(richText);
+                    endIndex = index;
+                    startIndex = -1;
+                }
+            }
+        }
+
+        if(endIndex + 1 < value.length()) {
+            newValue.append(value.substring(endIndex + 1));
+        }
+
+        if(result.isEmpty()) {
+            result.add(value);
+        } else {
+            result.add(newValue.toString());
+        }
         return result;
     }
 
