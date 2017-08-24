@@ -24,7 +24,7 @@ public final class Strings {
     public static final String ASSIGNATION = "=";
     public static final String REPLACEABLE_RICH_TEXT = "&";
     public static final String RICH_TEXT_SEPARATOR = "'";
-    public static final char RICH_TEXT_SKIP_CHARACTER = '\\';
+    public static final String RICH_TEXT_SKIP_CHARACTER = "\\";
 
     /**
      * Return the string that result of join all the values separated by the
@@ -156,7 +156,7 @@ public final class Strings {
         StringBuilder newValue = new StringBuilder();
         String richText;
         for (Integer index : indexes) {
-            if (index == 0 || value.charAt(index - 1) != RICH_TEXT_SKIP_CHARACTER) {
+            if (index == 0 || value.charAt(index - 1) != RICH_TEXT_SKIP_CHARACTER.charAt(0)) {
                 if (startIndex == -1) {
                     startIndex = index;
                 } else {

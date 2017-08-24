@@ -1,5 +1,6 @@
 package org.hcjf.layers;
 
+import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.plugins.DeploymentService;
 import org.hcjf.layers.plugins.Plugin;
 import org.hcjf.layers.plugins.PluginClassLoader;
@@ -8,6 +9,7 @@ import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.Version;
 
@@ -79,8 +81,9 @@ public final class Layers {
                 if(result == null) {
                     result = (L) clazz.newInstance();
                 }
+
                 result = (L) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
-                        new Class[]{layerClass}, result);
+                        getLayerInterfaceClass(clazz).toArray(new Class[]{}), result);
 
                 if (result.isStateful()) {
                     instance.instanceCache.put(clazz, result);
@@ -268,6 +271,11 @@ public final class Layers {
                 ((Resourceable)layerInstance).createResource(layerInterfaceClass).forEach(
                         R->instance.resources.add(R));
             }
+        }
+
+        //Register the implementation name into the named uuid singleton
+        if(layerInstance instanceof IdentifiableLayerInterface) {
+            NamedUuid.registerName(layerInstance.getImplName());
         }
 
         return implName;

@@ -181,7 +181,7 @@ public final class SystemProperties extends Properties {
             public static final String DEFAULT_MIME_TYPE = "hcjf.rest.default.mime.type";
             public static final String DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
             public static final String QUERY_PATH = "hcjf.rest.query.path";
-            public static final String QUERY_PARAMETER_PATH = "hcjf.rest.query.parameter.path";
+            public static final String QUERY_PARAMETER = "hcjf.rest.query.parameter.path";
         }
 
     }
@@ -439,7 +439,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Rest.DEFAULT_MIME_TYPE, "application/json");
         defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");
         defaults.put(Net.Rest.QUERY_PATH, "query");
-        defaults.put(Net.Rest.QUERY_PARAMETER_PATH, "q");
+        defaults.put(Net.Rest.QUERY_PARAMETER, "q");
 
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");

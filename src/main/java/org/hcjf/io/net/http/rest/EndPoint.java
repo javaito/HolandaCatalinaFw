@@ -9,9 +9,11 @@ import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.query.Query;
+import org.hcjf.properties.SystemProperties;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * This context publish some kind of layer that response with rest interface.
@@ -45,6 +47,8 @@ public class EndPoint extends LayeredContext<CrudLayerInterface, EndPointRequest
         } else if(request instanceof EndPointQueryRequest) {
             EndPointQueryRequest queryRequest = (EndPointQueryRequest) request;
             result = new EndPointResponse(Query.evaluate(queryRequest.getQuery()));
+        } else if(request instanceof EndPointUuidRequest) {
+            result = new EndPointResponse(Query.evaluate(((EndPointUuidRequest)request).getUuid()));
         } else {
             throw new IllegalArgumentException();
         }
@@ -86,8 +90,10 @@ public class EndPoint extends LayeredContext<CrudLayerInterface, EndPointRequest
     protected final EndPointRequest decode(HttpRequest request) {
         EndPointRequest result;
 
-        if(request.getParameters().containsKey("q")) {
-            result = new EndPointQueryRequest(request, Query.compile(request.getParameter("q")));
+        if(request.getParameters().containsKey(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER))) {
+            result = new EndPointQueryRequest(request, Query.compile(request.getParameter(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER))));
+        } else if(request.getPathParts().get(request.getPathParts().size()-1).matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
+            result = new EndPointUuidRequest(request, UUID.fromString(request.getPathParts().get(request.getPathParts().size()-1)));
         } else {
             List<String> resourcePath = getResourcePath(request);
             if (resourcePath.isEmpty()) {

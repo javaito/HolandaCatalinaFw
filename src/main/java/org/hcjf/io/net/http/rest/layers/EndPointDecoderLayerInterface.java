@@ -1,7 +1,6 @@
 package org.hcjf.io.net.http.rest.layers;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.rest.EndPointCrudRequest;
@@ -57,8 +56,8 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
                     break;
                 }
                 case GET: {
-                    if(request.getParameters().containsKey(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH))) {
-                        Query query = Query.compile(request.getParameter(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER_PATH)));
+                    if(request.getParameters().containsKey(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER))) {
+                        Query query = Query.compile(request.getParameter(SystemProperties.get(SystemProperties.Net.Rest.QUERY_PARAMETER)));
                         result = new EndPointCrudRequest(request, layer,
                                 (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(CrudLayerInterface.CrudMethodStatement.READ_QUERY.toString()),
                                 query);

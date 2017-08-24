@@ -1,6 +1,7 @@
 package org.hcjf.layers.query;
 
 import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.DateQueryFunctionLayer;
 import org.hcjf.layers.query.functions.MathQueryFunctionLayer;
@@ -10,6 +11,7 @@ import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.Introspection;
+import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 
 import java.text.ParseException;
@@ -1034,12 +1036,35 @@ public class Query extends EvaluatorCollection {
         return result;
     }
 
+    /**
+     * Evaluates the query using a readable data source.
+     * @param query Query to evaluate.
+     * @return Collections of joinable map instances.
+     */
     public static Collection<JoinableMap> evaluate(String query) {
-        return compile(query).evaluate(new CrudDataSource());
+        return evaluate(compile(query));
     }
 
+    /**
+     * Evaluates the query using a readable data source.
+     * @param query Query to evaluate.
+     * @return Collections of joinable map instances.
+     */
     public static Collection<JoinableMap> evaluate(Query query) {
-        return query.evaluate(new CrudDataSource());
+        return query.evaluate(new ReadableDataSource());
+    }
+
+    /**
+     * This method evaluate if the uuid instance is a uuid type 5 and contains
+     * some name of the registered resource and invoke the read method of the resource.
+     * @param uuid Resource id.
+     * @param <O> Expected data type.
+     * @return Resource instance.
+     */
+    public static <O extends Object> O evaluate(UUID uuid) {
+        String resourceName = NamedUuid.getName(uuid);
+        IdentifiableLayerInterface identifiableLayerInterface = Layers.get(IdentifiableLayerInterface.class, resourceName);
+        return (O) identifiableLayerInterface.read(uuid);
     }
 
     /**
@@ -1338,6 +1363,10 @@ public class Query extends EvaluatorCollection {
                 //If the string value start and end with "'" then the value can be a string or a date object.
                 trimmedStringValue = trimmedStringValue.substring(1, trimmedStringValue.length() - 1);
                 trimmedStringValue = richTexts.get(Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_RICH_TEXT, Strings.EMPTY_STRING)));
+
+                //Clean the value to remove all the skip characters into the string value.
+                trimmedStringValue.replace(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.RICH_TEXT_SEPARATOR, Strings.RICH_TEXT_SEPARATOR);
+
                 try {
                     result = SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).parse(trimmedStringValue);
                 } catch (Exception ex) {
@@ -1643,9 +1672,9 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     *
+     * This data source find all the resources that implements {@link ReadRowsLayerInterface} interface
      */
-    public static class CrudDataSource implements DataSource<JoinableMap> {
+    public static class ReadableDataSource implements DataSource<JoinableMap> {
 
         /**
          * Return the collection of data as query response.
