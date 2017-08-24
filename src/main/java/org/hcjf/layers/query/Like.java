@@ -1,5 +1,8 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Strings;
+
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -33,11 +36,22 @@ public class Like extends FieldEvaluator {
                 } else if(value instanceof String) {
                     String stringFieldValue = (String) fieldValue;
                     String stringValue = (String) value;
-                    result = stringFieldValue.toUpperCase().contains(stringValue.toUpperCase());
+                    String wildcard = SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE_WILDCARD);
+                    if(stringValue.startsWith(wildcard)) {
+                        if(stringValue.endsWith(wildcard)) {
+                            result = stringFieldValue.toUpperCase().contains(stringValue.toUpperCase().substring(1,stringValue.length()-1));
+                        } else {
+                            result = stringFieldValue.toUpperCase().endsWith(stringValue.toUpperCase().substring(1));
+                        }
+                    } else if(stringValue.endsWith(wildcard)) {
+                        result = stringFieldValue.toUpperCase().startsWith(stringValue.toUpperCase().substring(0,stringValue.length()-1));
+                    } else {
+                        result = stringFieldValue.toUpperCase().contains(stringValue.toUpperCase());
+                    }
                 }
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException("In evaluator fail", ex);
+            throw new IllegalArgumentException("Like evaluator fail", ex);
         }
 
         return result;

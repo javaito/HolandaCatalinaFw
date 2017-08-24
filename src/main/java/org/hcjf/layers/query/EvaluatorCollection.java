@@ -36,6 +36,28 @@ public abstract class EvaluatorCollection {
     }
 
     /**
+     * Returns false if the collection is empty or all the elements are TrueEvaluator. It is used on reduced queries
+     * to check if there are still some evaluators to eval.
+     * @return true if the collection is not empty and there is at least one evaluator not instance of TrueEvaluator.
+     */
+    public boolean hasEvaluators() {
+        boolean result = false;
+        for (Evaluator evaluator : getEvaluators()) {
+            if (evaluator instanceof EvaluatorCollection) {
+                result = ((EvaluatorCollection)evaluator).hasEvaluators();
+                if(result) {
+                    break;
+                }
+
+            } else if (!(evaluator instanceof TrueEvaluator)) {
+                result = true;
+                break;
+            }
+        }
+        return result;
+    }
+
+    /**
      * Return the parent of the evaluator collection, the parent is other
      * instance of evaluator collection.
      * @return Parent of the collection, could be null.
