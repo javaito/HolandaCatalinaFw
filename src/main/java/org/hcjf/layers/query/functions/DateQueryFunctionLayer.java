@@ -11,8 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
