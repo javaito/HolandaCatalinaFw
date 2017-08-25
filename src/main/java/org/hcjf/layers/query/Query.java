@@ -828,6 +828,11 @@ public class Query extends EvaluatorCollection {
         return copy;
     }
 
+
+    public final Query reduceFieldEvaluator(String fieldName, Class<? extends FieldEvaluator>... evaluatorType) {
+        return reduce(getFieldEvaluators(fieldName, evaluatorType));
+    }
+
     /**
      * Reduce recursively all the collection into the query.
      * @param collection Collection to reduce.
