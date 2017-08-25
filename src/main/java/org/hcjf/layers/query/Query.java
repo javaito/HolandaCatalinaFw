@@ -371,8 +371,13 @@ public class Query extends EvaluatorCollection {
                 Comparable<Object> comparable2;
                 for (QueryOrderParameter orderField : orderParameters) {
                     try {
-                        comparable1 = consumer.get(o1, (QueryParameter) orderField);
-                        comparable2 = consumer.get(o2, (QueryParameter) orderField);
+                        if(orderField instanceof QueryOrderFunction) {
+                            comparable1 = consumer.resolveFunction(((QueryOrderFunction)orderField), o1, parameters);
+                            comparable2 = consumer.resolveFunction(((QueryOrderFunction)orderField), o2, parameters);
+                        } else {
+                            comparable1 = consumer.get(o1, (QueryParameter) orderField);
+                            comparable2 = consumer.get(o2, (QueryParameter) orderField);
+                        }
                     } catch (ClassCastException ex) {
                         throw new IllegalArgumentException("Order field must be comparable");
                     }

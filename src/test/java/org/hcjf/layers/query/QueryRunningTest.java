@@ -173,6 +173,10 @@ public class QueryRunningTest {
             Set<JoinableMap> resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
+            query = Query.compile("SELECT * FROM character ORDER BY addressId, name DESC");
+            resultSet = query.evaluate(dataSource);
+            System.out.println();
+
             query = Query.compile("SELECT now(), getYear(birthday), periodInDays(birthday), getMonth(birthday) FROM character");
             resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
