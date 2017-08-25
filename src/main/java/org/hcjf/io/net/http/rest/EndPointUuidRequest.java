@@ -5,8 +5,7 @@ import org.hcjf.io.net.http.HttpRequest;
 import java.util.UUID;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class EndPointUuidRequest extends EndPointRequest {
 

@@ -22,6 +22,7 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
      * The implementation of this method must create a end point package
      * using the http request information.
      * @param request Http request.
+     * @param layer Crud layer instance.
      * @return End point package.
      */
     public EndPointRequest decode(HttpRequest request, CrudLayerInterface layer);

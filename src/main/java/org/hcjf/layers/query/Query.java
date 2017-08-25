@@ -1572,6 +1572,7 @@ public class Query extends EvaluatorCollection {
         /**
          * This method must resolve the functions that are used into the query object.
          * @param function Query function.
+         * @param instance Data object instance.
          * @param parameters Parameters to resolve the finction.
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
