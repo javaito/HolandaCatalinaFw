@@ -164,14 +164,14 @@ public final class Strings {
                     newValue.append(value.substring(endIndex, startIndex));
                     newValue.append(RICH_TEXT_SEPARATOR).append(REPLACEABLE_RICH_TEXT).append(counter++).append(RICH_TEXT_SEPARATOR);
                     result.add(richText);
-                    endIndex = index;
+                    endIndex = index + 1;
                     startIndex = -1;
                 }
             }
         }
 
-        if(endIndex + 1 < value.length()) {
-            newValue.append(value.substring(endIndex + 1));
+        if(endIndex < value.length()) {
+            newValue.append(value.substring(endIndex));
         }
 
         if(result.isEmpty()) {
