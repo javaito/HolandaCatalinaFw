@@ -1079,7 +1079,7 @@ public class Query extends EvaluatorCollection {
      */
     public static Query compile(String sql) {
         List<String> richTexts = Strings.groupRichText(sql);
-        List<String> groups = Strings.replaceableGroup(richTexts.get(richTexts.size() -1));
+        List<String> groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() -1)));
         return compile(groups, richTexts, groups.size() -1);
     }
 

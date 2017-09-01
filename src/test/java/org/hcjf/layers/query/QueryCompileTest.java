@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import junit.framework.AssertionFailedError;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -111,6 +112,33 @@ public class QueryCompileTest {
             query = Query.compile(query.toString());
             Assert.assertNotNull(query);
         } catch (Exception ex){
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
+            Query.compile("SELECT  cliente.clienteid as clienteid ,  cliente.nombre as nombre ,  cliente.rubroid as rubroid ,  cliente.documentotipoid as documentotipoid ,  cliente.documentonro as documentonro ,\n" +
+                    " cliente.direccionid as direccionid ,  cliente.clienteestadoid as clienteestadoid ,  cliente.clavepublica as clavepublica ,  cliente.clientetipoid as clientetipoid ,\n" +
+                    " cliente.norestacredito as norestacredito ,  cliente.contid as contid ,  cliente.notifholderresponsable as notifholderresponsable ,  cliente.parquevehicular as parquevehicular ,\n" +
+                    " cliente.listaprecioid as listaprecioid ,  cliente.descuento as descuento ,  cliente.mail as mail ,  cliente.grupo as grupo ,  pais.desc_es as pais ,  direccion.calle as calle ,\n" +
+                    " direccion.localidad as localidad ,  direccion.provincia as provincia ,  direccion.cp as cp ,  clienteestado.desc_es as estado ,  rubro.desc_es as rubro ,  clientetipo.desc_es as tipo ,\n" +
+                    " documentotipo.desc_es as documentotipo\n" +
+                    " FROM cliente\n" +
+                    " LEFT JOIN direccion  ON (direccion.direccionid=cliente.direccionid)\n" +
+                    " LEFT JOIN pais  ON (pais.paisid=direccion.paisid)\n" +
+                    " INNER JOIN clienteestado  ON (clienteestado.clienteestadoid=cliente.clienteestadoid)\n" +
+                    " INNER JOIN rubro  ON (rubro.rubroid=cliente.rubroid)\n" +
+                    " INNER JOIN clientetipo  ON (clientetipo.clientetipoid=cliente.clientetipoid)\n" +
+                    " INNER JOIN documentotipo  ON (documentotipo.documentotipoid=cliente.documentotipoid)\n" +
+                    " WHERE (  cliente.clienteid = 309 )");
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
+            Query.compile("SELECT  clientedeuda.fechavencimiento as fechavencimiento ,  clientedeuda.comprobantetipo as comprobantetipo ,  clientedeuda.comprobantenro as comprobantenro ,  clientedeuda.importe as importe ,  moneda.desc_es as desc_es\n" +
+                    " FROM clientedeuda INNER JOIN moneda  ON (moneda.monedaid=clientedeuda.monedaid)\n" +
+                    " INNER JOIN cliente  ON (cliente.clienteid=clientedeuda.clienteid)   WHERE ( clientedeuda.clienteid = 309 )");
+        } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }
     }

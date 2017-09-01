@@ -376,10 +376,11 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * @param channel
-     * @param data
-     * @param event
-     * @return
+     * Creates a internal package of data.
+     * @param channel Socket channel.
+     * @param data Payload.
+     * @param event Action event.
+     * @return Returns the instance of net package.
      */
     private NetPackage createPackage(SelectableChannel channel, byte[] data, NetPackage.ActionEvent event) {
         NetPackage netPackage;
@@ -388,13 +389,21 @@ public final class NetService extends Service<NetServiceConsumer> {
         int remotePort;
         int localPort;
         if (channel instanceof SocketChannel) {
-            remoteHost = "";//((SocketChannel) channel).socket().getInetAddress().getHostName();
-            remoteAddress = "";//((SocketChannel) channel).socket().getInetAddress().getHostAddress();
+            remoteHost = "";
+            remoteAddress = "";
+            if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_PACKAGE)) {
+                remoteHost = ((SocketChannel) channel).socket().getInetAddress().getHostAddress();
+                remoteAddress = ((SocketChannel) channel).socket().getInetAddress().getHostAddress();
+            }
             remotePort = ((SocketChannel) channel).socket().getPort();
             localPort = ((SocketChannel) channel).socket().getLocalPort();
         } else if (channel instanceof DatagramChannel) {
-            remoteHost = ((DatagramChannel) channel).socket().getInetAddress().getHostName();
-            remoteAddress = ((DatagramChannel) channel).socket().getInetAddress().getHostAddress();
+            remoteHost = "";
+            remoteAddress = "";
+            if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_PACKAGE)) {
+                remoteHost = ((DatagramChannel) channel).socket().getInetAddress().getHostAddress();
+                remoteAddress = ((DatagramChannel) channel).socket().getInetAddress().getHostAddress();
+            }
             remotePort = ((DatagramChannel) channel).socket().getPort();
             localPort = ((DatagramChannel) channel).socket().getLocalPort();
         } else {
@@ -533,7 +542,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @return Net session from the consumer.
      * @throws IllegalArgumentException If the consumer is not instance of org.hcjf.io.net.NetServer or org.hcjf.io.net.NetClient
      */
-    private NetSession getSession(NetServiceConsumer consumer, NetPackage netPackage) {
+    private NetSession getSession(NetServiceConsumer consumer, NetPackage netPackage, SocketChannel socketChannel) {
         NetSession result;
 
         if (consumer instanceof NetServer) {
@@ -542,6 +551,11 @@ public final class NetService extends Service<NetServiceConsumer> {
             result = ((NetClient) consumer).getSession();
         } else {
             throw new IllegalArgumentException("The service consumer must be instance of org.hcjf.io.net.NetServer or org.hcjf.io.net.NetClient.");
+        }
+
+        if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_SESSION)) {
+            result.setRemoteHost(socketChannel.socket().getInetAddress().getHostAddress());
+            result.setRemotePort(socketChannel.socket().getPort());
         }
 
         return result;
@@ -686,7 +700,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
                 }
 
-                NetSession session = getSession(client, null);
+                NetSession session = getSession(client, null, (SocketChannel) keyChannel);
                 sessions.add(session);
                 sessionsByChannel.put(channel, session);
                 channels.put(session, channel);
@@ -729,7 +743,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
                 }
 
-                NetSession session = getSession(server, null);
+                NetSession session = getSession(server, null, socketChannel);
                 if (channels.containsKey(session)) {
                     updateChannel((SocketChannel) channels.remove(session), socketChannel);
                 } else {
@@ -791,11 +805,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     if (totalSize == -1) {
                         destroyChannel(channel);
                     } else if (readData.size() > 0) {
-                        NetPackage netPackage = new DefaultNetPackage(
-                                "",
-                                "",
-                                channel.socket().getPort(), channel.socket().getLocalPort(),
-                                readData.toByteArray(), NetPackage.ActionEvent.READ);
+                        NetPackage netPackage = createPackage(channel, readData.toByteArray(), NetPackage.ActionEvent.READ);
 
                         NetSession session = sessionsByChannel.get(channel);
                         //Here the session is linked with the current thread
@@ -828,11 +838,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     readData.write(ioThread.getInputBuffer().array(), 0, ioThread.getInputBuffer().position());
 
                     if (address != null) {
-                        NetPackage netPackage = new DefaultNetPackage(
-                                channel.socket().getInetAddress().getHostName(),
-                                channel.socket().getInetAddress().getHostAddress(),
-                                channel.socket().getPort(), channel.socket().getLocalPort(),
-                                readData.toByteArray(), NetPackage.ActionEvent.READ);
+                        NetPackage netPackage = createPackage(channel, readData.toByteArray(), NetPackage.ActionEvent.READ);
 
                         NetSession session = sessionsByAddress.get(address);
 

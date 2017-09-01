@@ -118,6 +118,8 @@ public final class SystemProperties extends Properties {
         public static final String SSL_MAX_IO_THREAD_POOL_SIZE = "hcjf.net.ssl.max.io.thread.pool.size";
         public static final String PORT_PROVIDER_TIME_WINDOWS_SIZE = "hcjf.net.port.provider.time.windows.size";
         public static final String PORT_PROBE_CONNECTION_TIMEOUT = "hcjf.net.port.probe.connection.timeout";
+        public static final String REMOTE_ADDRESS_INTO_NET_PACKAGE = "hcjf.net.remote.address.into.net.package";
+        public static final String REMOTE_ADDRESS_INTO_NET_SESSION = "hcjf.net.remote.address.into.net.session";
 
         public static final class Broadcast {
             public static final String SERVICE_NAME = "hcjf.net.broadcast.service.name";
@@ -388,6 +390,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
         defaults.put(Net.PORT_PROVIDER_TIME_WINDOWS_SIZE, "15000");
         defaults.put(Net.PORT_PROBE_CONNECTION_TIMEOUT, "1000");
+        defaults.put(Net.REMOTE_ADDRESS_INTO_NET_PACKAGE, "false");
+        defaults.put(Net.REMOTE_ADDRESS_INTO_NET_SESSION, "false");
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
@@ -445,7 +449,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.~+-/*\\$& ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.~+-/* ?%\\$&<>!\\:\\-()\\[\\]]{1,})?[$;]?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )? join )| where | limit | start | order by | group by )))|(?=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )? join )| where | limit | start | order by | group by ))");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )?join )| where | limit | start | order by | group by )))|(?=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )?join )| where | limit | start | order by | group by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on )");

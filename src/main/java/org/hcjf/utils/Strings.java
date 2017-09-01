@@ -25,6 +25,19 @@ public final class Strings {
     public static final String REPLACEABLE_RICH_TEXT = "&";
     public static final String RICH_TEXT_SEPARATOR = "'";
     public static final String RICH_TEXT_SKIP_CHARACTER = "\\";
+    public static final String CARRIAGE_RETURN_AND_LINE_SEPARATOR = "\r\n";
+    public static final String CARRIAGE_RETURN = "\r";
+    public static final String LINE_SEPARATOR = "\n";
+
+    /**
+     * This method replace the combination of character \r\n and the character \n for
+     * white space character.
+     * @param value String to remove the lines.
+     * @return String value without lines.
+     */
+    public static String removeLines(String value) {
+        return value.replace(CARRIAGE_RETURN_AND_LINE_SEPARATOR, WHITE_SPACE).replace(LINE_SEPARATOR, WHITE_SPACE);
+    }
 
     /**
      * Return the string that result of join all the values separated by the
