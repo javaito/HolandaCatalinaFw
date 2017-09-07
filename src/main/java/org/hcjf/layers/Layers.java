@@ -396,7 +396,8 @@ public final class Layers {
         while(!introspectedClass.equals(Object.class)) {
             for (Class layerInterface : introspectedClass.getInterfaces()) {
                 for (Class superInterface : layerInterface.getInterfaces()) {
-                    if (LayerInterface.class.isAssignableFrom(superInterface)) {
+                    if (LayerInterface.class.isAssignableFrom(layerInterface) &&
+                            !layerInterface.equals(LayerInterface.class)) {
                         result.add(layerInterface);
                     }
                 }

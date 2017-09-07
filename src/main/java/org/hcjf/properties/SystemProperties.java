@@ -255,13 +255,15 @@ public final class SystemProperties extends Properties {
 
             public static final String NAME_PREFIX = "hcjf.query.function.name.prefix";
             public static final String MATH_EVAL_EXPRESSION_NAME = "hcjf.query.function.math.eval.expression.name";
-            public static final String MATH_LAYER_NAME = "hcjf.query.function.math.layer.name";
-            public static final String STRING_LAYER_NAME = "hcjf.query.function.string.layer.name";
-            public static final String DATE_LAYER_NAME = "hcjf.query.function.date.layer.name";
+            public static final String MATH_FUNCTION_NAME = "hcjf.query.function.math.name";
+            public static final String STRING_FUNCTION_NAME = "hcjf.query.function.string.name";
+            public static final String DATE_FUNCTION_NAME = "hcjf.query.function.date.name";
             public static final String MATH_ADDITION = "hcjf.query.function.math.addition";
             public static final String MATH_SUBTRACTION = "hcjf.query.function.math.subtraction";
             public static final String MATH_MULTIPLICATION = "hcjf.query.function.math.multiplication";
             public static final String MATH_DIVISION = "hcjf.query.function.math.division";
+            public static final String REFERENCE_FUNCTION_NAME = "hcjf.query.function.reference.name";
+            public static final String BSON_FUNCTION_NAME = "hcjf.query.function.bson.name";
 
         }
     }
@@ -504,14 +506,16 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.AS, "AS");
         defaults.put(Query.ReservedWord.GROUP_BY, "GROUP BY");
         defaults.put(Query.Function.NAME_PREFIX, "query.");
-        defaults.put(Query.Function.MATH_LAYER_NAME, "math");
-        defaults.put(Query.Function.STRING_LAYER_NAME, "string");
-        defaults.put(Query.Function.DATE_LAYER_NAME, "date");
+        defaults.put(Query.Function.MATH_FUNCTION_NAME, "math");
+        defaults.put(Query.Function.STRING_FUNCTION_NAME, "string");
+        defaults.put(Query.Function.DATE_FUNCTION_NAME, "date");
         defaults.put(Query.Function.MATH_EVAL_EXPRESSION_NAME, "evalExpression");
         defaults.put(Query.Function.MATH_ADDITION, "+");
         defaults.put(Query.Function.MATH_SUBTRACTION, "-");
         defaults.put(Query.Function.MATH_MULTIPLICATION, "*");
         defaults.put(Query.Function.MATH_DIVISION, "/");
+        defaults.put(Query.Function.REFERENCE_FUNCTION_NAME, "reference");
+        defaults.put(Query.Function.BSON_FUNCTION_NAME, "bson");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");

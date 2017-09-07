@@ -7,8 +7,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author javaito
@@ -45,47 +43,38 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String PERIOD_IN_HOURS = "periodInHours";
     private static final String PERIOD_IN_DAYS = "periodInDays";
 
-    private final Set<String> aliases;
-
     public DateQueryFunctionLayer() {
-        super(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) +
-                SystemProperties.get(SystemProperties.Query.Function.DATE_LAYER_NAME));
+        super(SystemProperties.get(SystemProperties.Query.Function.DATE_FUNCTION_NAME));
 
-        aliases = new HashSet<>();
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + NOW);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_YEAR);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_MONTH);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_DAY_OF_MONTH);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_DAY_OF_WEEK);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_DAY_OF_YEAR);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_HOUR);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_MINUTE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_SECOND);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_MILLISECOND_UNIX_EPOCH);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + GET_NANO);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PLUS_YEARS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PLUS_MONTHS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PLUS_DAYS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PLUS_HOURS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PLUS_MINUTES);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PLUS_SECONDS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + MINUS_YEARS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + MINUS_MONTHS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + MINUS_DAYS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + MINUS_HOURS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + MINUS_MINUTES);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + MINUS_SECONDS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PERIOD_IN_NANOS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PERIOD_IN_MILLISECONDS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PERIOD_IN_SECONDS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PERIOD_IN_MINUTES);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PERIOD_IN_HOURS);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PERIOD_IN_DAYS);
-    }
-
-    @Override
-    public Set<String> getAliases() {
-        return aliases;
+        addFunctionName(NOW);
+        addFunctionName(GET_YEAR);
+        addFunctionName(GET_MONTH);
+        addFunctionName(GET_DAY_OF_MONTH);
+        addFunctionName(GET_DAY_OF_WEEK);
+        addFunctionName(GET_DAY_OF_YEAR);
+        addFunctionName(GET_HOUR);
+        addFunctionName(GET_MINUTE);
+        addFunctionName(GET_SECOND);
+        addFunctionName(GET_MILLISECOND_UNIX_EPOCH);
+        addFunctionName(GET_NANO);
+        addFunctionName(PLUS_YEARS);
+        addFunctionName(PLUS_MONTHS);
+        addFunctionName(PLUS_DAYS);
+        addFunctionName(PLUS_HOURS);
+        addFunctionName(PLUS_MINUTES);
+        addFunctionName(PLUS_SECONDS);
+        addFunctionName(MINUS_YEARS);
+        addFunctionName(MINUS_MONTHS);
+        addFunctionName(MINUS_DAYS);
+        addFunctionName(MINUS_HOURS);
+        addFunctionName(MINUS_MINUTES);
+        addFunctionName(MINUS_SECONDS);
+        addFunctionName(PERIOD_IN_NANOS);
+        addFunctionName(PERIOD_IN_MILLISECONDS);
+        addFunctionName(PERIOD_IN_SECONDS);
+        addFunctionName(PERIOD_IN_MINUTES);
+        addFunctionName(PERIOD_IN_HOURS);
+        addFunctionName(PERIOD_IN_DAYS);
     }
 
     @Override

@@ -1,12 +1,9 @@
 package org.hcjf.layers.query.functions;
 
-import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.MathIntrospection;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * This layer implements all the math functions to invoke from the query scope.
@@ -24,35 +21,22 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String DOUBLE_VALUE = "doubleValue";
     private static final String EVAL_EXPRESSION = SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME);
 
-    private final Set<String> aliases;
-
     public MathQueryFunctionLayer() {
-        super(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) +
-                SystemProperties.get(SystemProperties.Query.Function.MATH_LAYER_NAME));
-        aliases = new HashSet<>();
+        super(SystemProperties.get(SystemProperties.Query.Function.MATH_FUNCTION_NAME));
+
         for(String functionName : MathIntrospection.getMethodsSet()){
-            aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + functionName);
+            addFunctionName(functionName);
         }
 
-        //Add static aliases
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + SUM);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + PRODUCT);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + BYTE_VALUE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + SHORT_VALUE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + INTEGER_VALUE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + LONG_VALUE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + FLOAT_VALUE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + DOUBLE_VALUE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + EVAL_EXPRESSION);
-    }
-
-    /**
-     * Returns all the aliases for this layer.
-     * @return Layers aliases.
-     */
-    @Override
-    public Set<String> getAliases() {
-        return aliases;
+        addFunctionName(SUM);
+        addFunctionName(PRODUCT);
+        addFunctionName(BYTE_VALUE);
+        addFunctionName(SHORT_VALUE);
+        addFunctionName(INTEGER_VALUE);
+        addFunctionName(LONG_VALUE);
+        addFunctionName(FLOAT_VALUE);
+        addFunctionName(DOUBLE_VALUE);
+        addFunctionName(EVAL_EXPRESSION);
     }
 
     /**

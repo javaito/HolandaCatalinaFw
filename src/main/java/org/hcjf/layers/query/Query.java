@@ -3,10 +3,7 @@ package org.hcjf.layers.query;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
-import org.hcjf.layers.query.functions.DateQueryFunctionLayer;
-import org.hcjf.layers.query.functions.MathQueryFunctionLayer;
-import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
-import org.hcjf.layers.query.functions.StringQueryFunctionLayer;
+import org.hcjf.layers.query.functions.*;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
@@ -45,6 +42,8 @@ public class Query extends EvaluatorCollection {
         Layers.publishLayer(MathQueryFunctionLayer.class);
         Layers.publishLayer(StringQueryFunctionLayer.class);
         Layers.publishLayer(DateQueryFunctionLayer.class);
+        Layers.publishLayer(ReferenceFunctionLayer.class);
+        Layers.publishLayer(BsonQueryFunctionLayer.class);
     }
 
     public Query(String resource, QueryId id) {

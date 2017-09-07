@@ -1,6 +1,9 @@
 package org.hcjf.io.net.http.rest.layers;
 
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.http.HttpHeader;
 import org.hcjf.io.net.http.HttpRequest;
@@ -34,13 +37,13 @@ public interface EndPointEncoderLayerInterface extends LayerInterface {
      */
     public HttpResponse encode(HttpRequest request, Throwable throwable);
 
-    public static class JsonEndPointEncoder extends Layer implements EndPointEncoderLayerInterface {
+    public static class JsonEndPointEncoder extends Layer implements EndPointEncoderLayerInterface, ExclusionStrategy {
 
         private final Gson gson;
 
         public JsonEndPointEncoder() {
             super(MimeType.APPLICATION_JSON.toString());
-            gson = new Gson();
+            gson = new GsonBuilder().addSerializationExclusionStrategy(this).create();
         }
 
         @Override
@@ -67,5 +70,25 @@ public interface EndPointEncoderLayerInterface extends LayerInterface {
             return httpResponse;
         }
 
+        /**
+         * This method verify if the attribute must by skipped for the
+         * json decoding process.
+         * @param fieldAttributes Field attribute.
+         * @return True if the field must be excluded and false in the otherwise.
+         */
+        @Override
+        public boolean shouldSkipField(FieldAttributes fieldAttributes) {
+            return false;
+        }
+
+        /**
+         * This method verify if the class must be excluded.
+         * @param aClass Evaluation class.
+         * @return Ture if the class must be excluded and false in the otherwise.
+         */
+        @Override
+        public boolean shouldSkipClass(Class<?> aClass) {
+            return false;
+        }
     }
 }

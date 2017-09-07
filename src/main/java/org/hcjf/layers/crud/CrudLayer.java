@@ -14,7 +14,9 @@ import java.util.Map;
  * This layer implements the {@link CrudLayerInterface}
  * @author javaito
  */
-public abstract class CrudLayer<O extends Object> extends Layer implements CrudLayerInterface<O> {
+public abstract class CrudLayer<O extends Object> extends Layer implements
+        CrudLayerInterface<O>, CreateLayerInterface<O>, ReadLayerInterface<O>,
+        ReadRowsLayerInterface, UpdateLayerInterface<O>, DeleteLayerInterface<O> {
 
     private Class<O> resourceType;
 

@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.bson.BsonDocument;
+import org.hcjf.bson.BsonEncoder;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
@@ -30,6 +32,7 @@ public class QueryRunningTest {
     private static final String HEIGHT = "height";
     private static final String GENDER = "gender";
     private static final String ADDRESS_ID = "addressId";
+    private static final String BODY = "body";
 
     private static final String STREET = "street";
     private static final String NUMBER = "number";
@@ -72,6 +75,11 @@ public class QueryRunningTest {
             map.put(ADDRESS_ID, addressId);
             simpsonCharacters.put((UUID) map.get(ID), map);
 
+            BsonDocument document = new BsonDocument();
+            document.put("field1", "string");
+            document.put("field2", new Date());
+            document.put("field3", 5);
+
             map = new JoinableMap(CHARACTER);
             map.put(ID, UUID.randomUUID());
             map.put(NAME, "Bartolomeo Jay");
@@ -82,6 +90,7 @@ public class QueryRunningTest {
             map.put(HEIGHT, 1.20);
             map.put(GENDER, Gender.MALE);
             map.put(ADDRESS_ID, addressId);
+            map.put(BODY, BsonEncoder.encode(document));
             simpsonCharacters.put((UUID) map.get(ID), map);
 
             map = new JoinableMap(CHARACTER);
@@ -209,20 +218,22 @@ public class QueryRunningTest {
             resultSet = query.evaluate(dataSource);
             Assert.assertEquals(resultSet.size(), simpsonAddresses.size());
 
+            query = Query.compile("SELECT bsonParse(body) AS body FROM character WHERE name LIKE 'Bartolomeo'");
+            resultSet = query.evaluate(dataSource);
+            Assert.assertEquals(((Map<String,Object>)resultSet.iterator().next().get(BODY)).get("field1"), "string");
 
-            Layers.publishLayer(CustomFunciton.class);
+            Layers.publishLayer(CustomFunction.class);
 
             query = Query.compile("SELECT name, customFunction(integerValue(weight)) FROM character");
             resultSet = query.evaluate(dataSource);
-            System.out.println();
 
         }, ServiceSession.getSystemSession(), true, 0);
     }
 
-    public static class CustomFunciton extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
+    public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
-        public CustomFunciton() {
-            super(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + "customFunction");
+        public CustomFunction() {
+            super("customFunction");
         }
 
         @Override

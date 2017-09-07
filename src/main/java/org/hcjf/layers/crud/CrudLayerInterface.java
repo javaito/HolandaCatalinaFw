@@ -14,8 +14,7 @@ import java.util.Map;
  * all the crud layer implementations.
  * @author javaito
  */
-public interface CrudLayerInterface<O extends Object> extends LayerInterface,
-        CreateLayerInterface<O>, ReadLayerInterface<O>, ReadRowsLayerInterface, UpdateLayerInterface<O>, DeleteLayerInterface<O> {
+public interface CrudLayerInterface<O extends Object> extends LayerInterface {
 
     /**
      * This method return the resource class of the layer.

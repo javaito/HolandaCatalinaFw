@@ -330,7 +330,7 @@ public final class Strings {
     }
 
     /**
-     * Return a hexadecimal representation of the byte array.
+     * Returns a hexadecimal representation of the byte array.
      * @param bytes Byte array to represents.
      * @return Hexadecimal representation.
      */
@@ -340,6 +340,20 @@ public final class Strings {
             result.append(String.format("%02x", b));
         }
         return result.toString();
+    }
+
+    /**
+     * Returns a byte array based on the hexadecimal representation.
+     * @param hex Hexadecimal representation.
+     * @return Byte array.
+     */
+    public static byte[] hexToBytes(String hex) {
+        String[] bytes = hex.split("(?<=\\G.{2})");
+        byte[] result = new byte[bytes.length];
+        for (int i = 0; i < bytes.length; i++) {
+            result[i] = Byte.parseByte(bytes[i]);
+        }
+        return result;
     }
 
     /**

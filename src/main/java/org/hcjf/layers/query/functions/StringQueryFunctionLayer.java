@@ -4,8 +4,6 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author javaito
@@ -20,27 +18,20 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
     private static final String TO_UPPER_CASE = "toUpperCase";
     private static final String TO_LOWER_CASE = "toLowerCase";
     private static final String TO_STRING = "toString";
-
-    private final Set<String> aliases;
+    private static final String HEX_TO_BYTES = "hexToBytes";
+    private static final String BYTES_TO_HEX = "bytesToHex";
 
     public StringQueryFunctionLayer() {
-        super(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) +
-                SystemProperties.get(SystemProperties.Query.Function.STRING_LAYER_NAME));
+        super(SystemProperties.get(SystemProperties.Query.Function.STRING_FUNCTION_NAME));
 
-        aliases = new HashSet<>();
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + TRIM);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + LENGTH);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + SPLIT);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + CONCAT);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + STRING_JOIN);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + TO_UPPER_CASE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + TO_LOWER_CASE);
-        aliases.add(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + TO_STRING);
-    }
-
-    @Override
-    public Set<String> getAliases() {
-        return aliases;
+        addFunctionName(TRIM);
+        addFunctionName(LENGTH);
+        addFunctionName(SPLIT);
+        addFunctionName(CONCAT);
+        addFunctionName(STRING_JOIN);
+        addFunctionName(TO_UPPER_CASE);
+        addFunctionName(TO_LOWER_CASE);
+        addFunctionName(TO_STRING);
     }
 
     @Override
@@ -52,7 +43,9 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
             case SPLIT: result = ((String)checkSize(2, parameters)[0]).split((String)parameters[1]);break;
             case TO_UPPER_CASE: result = ((String)checkSize(1, parameters)[0]).toUpperCase();break;
             case TO_LOWER_CASE: result = ((String)checkSize(1, parameters)[0]).toLowerCase();break;
-            case TO_STRING: checkSize(1, parameters)[0].toString();
+            case TO_STRING: result = checkSize(1, parameters)[0].toString(); break;
+            case HEX_TO_BYTES: result = Strings.hexToBytes((String) checkSize(1, parameters)[0]);break;
+            case BYTES_TO_HEX: result = Strings.bytesToHex((byte[]) checkSize(1, parameters)[0]);break;
             case CONCAT: {
                 StringBuilder builder = new StringBuilder();
                 for(Object parameter : parameters) {
