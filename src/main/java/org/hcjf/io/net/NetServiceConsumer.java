@@ -258,7 +258,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * @param session Net session.
      * @param payLoad Net package decoded
      * @param netPackage Net package.
-     * @param cause
+     * @param cause Error cause.
      */
     protected void onCheckSessionError(S session, D payLoad, NetPackage netPackage, Throwable cause) {}
 

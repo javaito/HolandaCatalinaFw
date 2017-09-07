@@ -122,7 +122,7 @@ public abstract class FieldEvaluator implements Evaluator {
 
     /**
      * Copy this field evaluator with other field and other value.
-     * @param newFieldName
+     * @param newFieldName Field name.
      * @param newValue New value.
      * @return New instance.
      */

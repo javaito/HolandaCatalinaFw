@@ -133,8 +133,8 @@ public abstract class EvaluatorCollection {
 
     /**
      * Return the value or set of values that corresponds to evaluators on provided fieldName and types
-     * @param fieldName
-     * @param evaluatorType
+     * @param fieldName Name of the field evaluator.
+     * @param evaluatorType Field evaluator type.
      * @return Object
      */
     public Object getFieldEvaluatorValue(String fieldName, Class<? extends FieldEvaluator>... evaluatorType) {

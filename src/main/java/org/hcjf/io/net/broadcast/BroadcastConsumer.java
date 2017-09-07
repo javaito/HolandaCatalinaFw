@@ -24,7 +24,7 @@ public interface BroadcastConsumer extends ServiceConsumer {
 
     /**
      * Returns the ip version to
-     * @return
+     * @return Return the ip version.
      */
     public String getIpVersion();
 
