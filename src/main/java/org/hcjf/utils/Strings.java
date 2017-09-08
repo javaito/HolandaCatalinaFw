@@ -29,6 +29,8 @@ public final class Strings {
     public static final String CARRIAGE_RETURN = "\r";
     public static final String LINE_SEPARATOR = "\n";
 
+    public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
+
     /**
      * This method replace the combination of character \r\n and the character \n for
      * white space character.
@@ -348,12 +350,24 @@ public final class Strings {
      * @return Byte array.
      */
     public static byte[] hexToBytes(String hex) {
-        String[] bytes = hex.split("(?<=\\G.{2})");
+        String[] bytes = splitByLength(hex, 2);
         byte[] result = new byte[bytes.length];
         for (int i = 0; i < bytes.length; i++) {
             result[i] = Byte.parseByte(bytes[i]);
         }
         return result;
+    }
+
+    /**
+     * This method splits the string value in n substring with the
+     * same length except for the last substring that could be smaller than the
+     * rest of the substrings.
+     * @param value String value to split.
+     * @param length Length of the substrings.
+     * @return Substrings array.
+     */
+    public static String[] splitByLength(String value, int length) {
+        return value.split(String.format(SPLIT_BY_LENGTH_REGEX, length));
     }
 
     /**

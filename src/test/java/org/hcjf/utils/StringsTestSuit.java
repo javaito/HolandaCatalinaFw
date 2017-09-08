@@ -3,11 +3,11 @@ package org.hcjf.utils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
  */
 public class StringsTestSuit {
 
@@ -66,6 +66,17 @@ public class StringsTestSuit {
         richTexts = Strings.groupRichText(value);
         Assert.assertEquals(richTexts.size(), 1);
         Assert.assertEquals(richTexts.get(0), value);
+
+        value = "There aren\\'t any rich text here";
+        String[] fragments = Strings.splitByLength(value, 2);
+        Assert.assertEquals(fragments[fragments.length-1], "re");
+        Assert.assertEquals(fragments[0], "Th");
+        fragments = Strings.splitByLength(value, 3);
+        Assert.assertEquals(fragments[fragments.length-1], "re");
+        Assert.assertEquals(fragments[0], "The");
+        fragments = Strings.splitByLength(value, 5);
+        Assert.assertEquals(fragments[fragments.length-1], "re");
+        Assert.assertEquals(fragments[0], "There");
     }
 
 }

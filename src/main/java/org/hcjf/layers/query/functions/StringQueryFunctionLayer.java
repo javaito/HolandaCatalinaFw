@@ -13,6 +13,7 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
     private static final String TRIM = "trim";
     private static final String LENGTH = "length";
     private static final String SPLIT = "split";
+    private static final String SPLIT_BY_LENGTH = "splitByLength";
     private static final String CONCAT = "concat";
     private static final String STRING_JOIN = "stringJoin";
     private static final String TO_UPPER_CASE = "toUpperCase";
@@ -27,6 +28,7 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
         addFunctionName(TRIM);
         addFunctionName(LENGTH);
         addFunctionName(SPLIT);
+        addFunctionName(SPLIT_BY_LENGTH);
         addFunctionName(CONCAT);
         addFunctionName(STRING_JOIN);
         addFunctionName(TO_UPPER_CASE);
@@ -41,6 +43,7 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
             case TRIM: result = ((String)checkSize(1, parameters)[0]).trim();break;
             case LENGTH: result = ((String)checkSize(1, parameters)[0]).length();break;
             case SPLIT: result = ((String)checkSize(2, parameters)[0]).split((String)parameters[1]);break;
+            case SPLIT_BY_LENGTH: result = Strings.splitByLength((String)checkSize(2, parameters)[0], (Integer)parameters[1]);break;
             case TO_UPPER_CASE: result = ((String)checkSize(1, parameters)[0]).toUpperCase();break;
             case TO_LOWER_CASE: result = ((String)checkSize(1, parameters)[0]).toLowerCase();break;
             case TO_STRING: result = checkSize(1, parameters)[0].toString(); break;
