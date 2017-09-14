@@ -195,48 +195,56 @@ public class HttpRequest extends HttpPackage {
 
     private void parseHttpMultipartBody() {
         HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
-        String boundary = contentType.getParameter(HttpHeader.MULTIPART_FORM_DATA, HttpHeader.BOUNDARY);
+        String boundary = AttachFile.BOUNDARY_START + contentType.getParameter(HttpHeader.MULTIPART_FORM_DATA, HttpHeader.BOUNDARY);
 
         String stringLine;
         byte[] line;
         byte[] file;
         HttpHeader lineContentDisposition;
-        HttpHeader linecontentType;
+        HttpHeader lineContentType;
         MimeType mimeType = null;
         String name = null;
         String fileName = null;
         AttachFile attachFile;
         for(byte[] part : Bytes.split(getBody(), boundary.getBytes())) {
-            if(Arrays.equals(part, "--".getBytes())) {
+            if(part.length == 0){
+                continue;
+            }
+
+            if(Arrays.equals(part, AttachFile.BOUNDARY_START.getBytes())) {
                 break;
             } else {
-                List<Integer> indexes = Bytes.allIndexOf(part, "\r\n".getBytes());
+                List<Integer> indexes = Bytes.allIndexOf(part, STRING_LINE_SEPARATOR.getBytes());
                 Integer startIndex = 0;
                 for(Integer index : indexes) {
                     line = new byte[index - startIndex];
-                    stringLine = new String(line);
                     System.arraycopy(part, startIndex, line, 0, line.length);
+                    stringLine = new String(line).trim();
+                    if(stringLine.isEmpty()) {
+                        startIndex = index + 2;
+                        continue;
+                    }
                     if(stringLine.startsWith(HttpHeader.CONTENT_DISPOSITION)) {
                         lineContentDisposition = new HttpHeader(stringLine);
-                        for(String headerPart : lineContentDisposition.getHeaderValue().split(";")){
-                            if(headerPart.startsWith("name")) {
-                                name = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION)).trim();
-                            } if(headerPart.startsWith("filename")) {
-                                fileName = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION)).trim();
+                        for(String headerPart : lineContentDisposition.getHeaderValue().split(AttachFile.FIELDS_SEPARATOR)){
+                            if(headerPart.trim().startsWith(AttachFile.NAME_FIELD)) {
+                                name = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim();
+                            } if(headerPart.trim().startsWith(AttachFile.FILE_NAME_FIELD)) {
+                                fileName = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim();
                             }
                         }
                         startIndex = index + 2;
                     } else if(stringLine.startsWith(HttpHeader.CONTENT_TYPE)) {
-                        linecontentType = new HttpHeader(stringLine);
-                        mimeType = MimeType.fromString(linecontentType.getHeaderValue());
+                        lineContentType = new HttpHeader(stringLine);
+                        mimeType = MimeType.fromString(lineContentType.getHeaderValue());
                         startIndex = index + 2;
                     } else if(stringLine.trim().isEmpty()) {
-                        startIndex = -1;
+                        break;
                     }
                 }
 
                 file = new byte[part.length - startIndex];
-                System.arraycopy(part, startIndex, file, 0, file.length);
+                System.arraycopy(part, startIndex, file, 0, file.length - 2);
 
                 if(fileName != null) {
                     attachFile = new AttachFile(name, fileName, mimeType == null ? MimeType.APPLICATION_X_BINARY : mimeType, file);
@@ -342,6 +350,11 @@ public class HttpRequest extends HttpPackage {
      * This class represents a file attached into the request.
      */
     public static class AttachFile {
+
+        private static final String NAME_FIELD = "name";
+        private static final String FILE_NAME_FIELD = "filename";
+        private static final String FIELDS_SEPARATOR = ";";
+        private static final String BOUNDARY_START = "--";
 
         private final String name;
         private final String fileName;
