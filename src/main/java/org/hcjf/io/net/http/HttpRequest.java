@@ -221,7 +221,7 @@ public class HttpRequest extends HttpPackage {
                     System.arraycopy(part, startIndex, line, 0, line.length);
                     stringLine = new String(line).trim();
                     if(stringLine.isEmpty()) {
-                        startIndex = index + 2;
+                        startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
                         continue;
                     }
                     if(stringLine.startsWith(HttpHeader.CONTENT_DISPOSITION)) {
@@ -233,24 +233,26 @@ public class HttpRequest extends HttpPackage {
                                 fileName = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim();
                             }
                         }
-                        startIndex = index + 2;
+                        startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
                     } else if(stringLine.startsWith(HttpHeader.CONTENT_TYPE)) {
                         lineContentType = new HttpHeader(stringLine);
                         mimeType = MimeType.fromString(lineContentType.getHeaderValue());
-                        startIndex = index + 2;
+                        startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
                     } else if(stringLine.trim().isEmpty()) {
                         break;
                     }
                 }
 
-                file = new byte[part.length - startIndex - 2];
-                System.arraycopy(part, startIndex, file, 0, file.length - 2);
+                if(part.length - startIndex >= STRING_LINE_SEPARATOR.getBytes().length) {
+                    file = new byte[part.length - startIndex - STRING_LINE_SEPARATOR.getBytes().length];
+                    System.arraycopy(part, startIndex, file, 0, file.length);
 
-                if(fileName != null) {
-                    attachFile = new AttachFile(name, fileName, mimeType == null ? MimeType.APPLICATION_X_BINARY : mimeType, file);
-                    attachFiles.put(name, attachFile);
-                } else {
-                    parameters.put(name, new String(file));
+                    if (fileName != null) {
+                        attachFile = new AttachFile(name, fileName, mimeType == null ? MimeType.APPLICATION_X_BINARY : mimeType, file);
+                        attachFiles.put(name, attachFile);
+                    } else {
+                        parameters.put(name, new String(file));
+                    }
                 }
             }
         }
