@@ -228,9 +228,9 @@ public class HttpRequest extends HttpPackage {
                         lineContentDisposition = new HttpHeader(stringLine);
                         for(String headerPart : lineContentDisposition.getHeaderValue().split(AttachFile.FIELDS_SEPARATOR)){
                             if(headerPart.trim().startsWith(AttachFile.NAME_FIELD)) {
-                                name = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim();
+                                name = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim().replace("\"", Strings.EMPTY_STRING);
                             } if(headerPart.trim().startsWith(AttachFile.FILE_NAME_FIELD)) {
-                                fileName = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim();
+                                fileName = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim().replace("\"", Strings.EMPTY_STRING);
                             }
                         }
                         startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
