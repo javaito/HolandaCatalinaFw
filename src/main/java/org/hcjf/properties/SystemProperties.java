@@ -436,7 +436,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.DEFAULT_GUEST_SESSION_NAME, "Http guest session");
         defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
-        defaults.put(Net.Http.MAX_PACKAGE_SIZE, "20 * 1024 * 1024");
+        defaults.put(Net.Http.MAX_PACKAGE_SIZE, Integer.toString(20 * 1024 * 1024));
 
         defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
