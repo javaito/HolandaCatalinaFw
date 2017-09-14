@@ -243,7 +243,7 @@ public class HttpRequest extends HttpPackage {
                     }
                 }
 
-                file = new byte[part.length - startIndex];
+                file = new byte[part.length - startIndex - 2];
                 System.arraycopy(part, startIndex, file, 0, file.length - 2);
 
                 if(fileName != null) {
