@@ -214,6 +214,9 @@ public class HttpRequest extends HttpPackage {
             if(Arrays.equals(part, AttachFile.BOUNDARY_START.getBytes())) {
                 break;
             } else {
+                mimeType = null;
+                name = null;
+                fileName = null;
                 List<Integer> indexes = Bytes.allIndexOf(part, STRING_LINE_SEPARATOR.getBytes());
                 Integer startIndex = 0;
                 for(Integer index : indexes) {
@@ -243,9 +246,13 @@ public class HttpRequest extends HttpPackage {
                     }
                 }
 
-                if(part.length - startIndex >= STRING_LINE_SEPARATOR.getBytes().length) {
-                    file = new byte[part.length - startIndex - STRING_LINE_SEPARATOR.getBytes().length];
-                    System.arraycopy(part, startIndex, file, 0, file.length);
+                if(name != null) {
+                    if (part.length - startIndex >= STRING_LINE_SEPARATOR.getBytes().length) {
+                        file = new byte[part.length - startIndex - STRING_LINE_SEPARATOR.getBytes().length];
+                        System.arraycopy(part, startIndex, file, 0, file.length);
+                    } else {
+                        file = new byte[0];
+                    }
 
                     if (fileName != null) {
                         attachFile = new AttachFile(name, fileName, mimeType == null ? MimeType.APPLICATION_X_BINARY : mimeType, file);
