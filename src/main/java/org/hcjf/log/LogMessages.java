@@ -1,5 +1,6 @@
 package org.hcjf.log;
 
+import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Messages;
 
 /**
@@ -24,7 +25,10 @@ public final class LogMessages extends Messages {
      * @return Message complete and translated.
      */
     public static String getMessage(String logCode, Object... params) {
-        return instance.getInternalMessage(logCode, params);
+        return instance.getInternalMessage(
+                logCode,
+                SystemProperties.get(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME),
+                params);
     }
 
     /**

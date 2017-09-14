@@ -20,23 +20,31 @@ public class Messages {
         defaultMessages = new HashMap<>();
 
         //Publishing default layers
-        Layers.publishLayer(SystemProperties.getClass(SystemProperties.HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION));
+        Layers.publishLayer(SystemProperties.getClass(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION));
     }
 
     /**
      * Returnt he message associated to the error code.
      * @param messageCode Message code.
+     * @param localeLayerName Implementation name of the locale layer.
      * @param params Parameters to complete the message.
      * @return Message complete and translated.
      */
-    protected String getInternalMessage(String messageCode, Object... params) {
-        String result = defaultMessages.get(messageCode);
+    protected String getInternalMessage(String messageCode, String localeLayerName, Object... params) {
+        String result = null;
+
+        if(localeLayerName != null) {
+            try {
+                result = Layers.get(LocaleLayerInterface.class, localeLayerName).translate(messageCode);
+            } catch (Exception ex) {
+            }
+        }
 
         if(result == null) {
-            result = messageCode;
-        } else {
-            result = Layers.get(LocaleLayerInterface.class,
-                    SystemProperties.get(SystemProperties.HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME)).translate(result);
+            result = defaultMessages.get(messageCode);
+            if(result == null) {
+                result = messageCode;
+            }
         }
 
         return String.format(result, params);

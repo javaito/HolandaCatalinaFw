@@ -189,6 +189,7 @@ public class HttpServerTestSuit {
 
         HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
         server.addContext(new EndPoint("example", "crud"));
+        server.addContext(new FolderContext("", Paths.get("/home/javaito/AtomProjects/CrudComponent"), "index.html"));
         server.start();
 
 //        HttpsServer server = new HttpsServer(8080);

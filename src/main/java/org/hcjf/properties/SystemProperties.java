@@ -25,9 +25,6 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_NUMBER_FORMAT = "hcjf.default.number.format";
     public static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
     public static final String HCJF_DEFAULT_GROUPING_SEPARATOR = "hcjf.default.grouping.separator";
-    public static final String HCJF_DEFAULT_LOCALE = "hcjf.default.locale";
-    public static final String HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION = "hcjf.default.locale.layer.implementation";
-    public static final String HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME = "hcjf.default.locale.layer.implementation.name";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_XML = "hcjf.default.properties.file.xml";
     public static final String HCJF_UUID_REGEX = "hcjf.uuid.regex";
@@ -37,6 +34,15 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_MATH_REGULAR_EXPRESSION = "hcjf.math.regular.expression";
     public static final String HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION = "hcjf.math.connector.regular.expression";
     public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
+
+    public static final class Locale {
+
+        public static final String LOG_TAG = "hcjf.locale.log.tag";
+        public static final String DEFAULT_LOCALE = "hcjf.default.locale";
+        public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION = "hcjf.default.locale.layer.implementation";
+        public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME = "hcjf.default.locale.layer.implementation.name";
+
+    }
 
     public static final class Layer {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
@@ -159,6 +165,7 @@ public final class SystemProperties extends Properties {
             public static final String DEFAULT_GUEST_SESSION_NAME = "hcjf.net.http.default.guest.session.name";
             public static final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.net.http.default.file.checksum.algorithm";
             public static final String ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH = "hcjf.net.http.enable.automatic.response.content.length";
+            public static final String MAX_PACKAGE_SIZE = "hcjf.net.http.max.package.size";
 
             public static final class Folder {
                 public static final String LOG_TAG = "hcjf.net.http.folder.log.tag";
@@ -317,9 +324,6 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_DEFAULT_NUMBER_FORMAT, "0.000");
         defaults.put(HCJF_DEFAULT_DECIMAL_SEPARATOR, ".");
         defaults.put(HCJF_DEFAULT_GROUPING_SEPARATOR, ",");
-        defaults.put(HCJF_DEFAULT_LOCALE, Locale.getDefault().toLanguageTag());
-        defaults.put(HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION, DefaultLocaleLayer.class.getName());
-        defaults.put(HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, "default.locale.layer");
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");
         defaults.put(HCJF_UUID_REGEX, "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
         defaults.put(HCJF_INTEGER_NUMBER_REGEX, "^[-]?[0-9]{1,}$");
@@ -328,6 +332,11 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([-+/*\\^]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
         defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/].*");
         defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/))|(?=(\\+|\\-|\\*|/))");
+
+        defaults.put(Locale.DEFAULT_LOCALE, java.util.Locale.getDefault().toLanguageTag());
+        defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION, DefaultLocaleLayer.class.getName());
+        defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, "default.locale.layer");
+        defaults.put(Locale.LOG_TAG, "LOCALE");
 
         defaults.put(Layer.LOG_TAG, "LAYER");
         defaults.put(Layer.Deployment.SERVICE_NAME, "DeploymentService");
@@ -427,6 +436,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.DEFAULT_GUEST_SESSION_NAME, "Http guest session");
         defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
+        defaults.put(Net.Http.MAX_PACKAGE_SIZE, "20 * 1024 * 1024");
 
         defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
@@ -825,14 +835,14 @@ public final class SystemProperties extends Properties {
      * @param propertyName Name of the property that contains locale representation.
      * @return Locale instance.
      */
-    public static Locale getLocale(String propertyName) {
-        Locale result;
+    public static java.util.Locale getLocale(String propertyName) {
+        java.util.Locale result;
         synchronized (instance.instancesCache) {
-            result = (Locale) instance.instancesCache.get(propertyName);
+            result = (java.util.Locale) instance.instancesCache.get(propertyName);
             if(result == null) {
                 String propertyValue = get(propertyName);
                 try {
-                    result = Locale.forLanguageTag(propertyValue);
+                    result = java.util.Locale.forLanguageTag(propertyValue);
                     instance.instancesCache.put(propertyName, result);
                 } catch (Exception ex) {
                     throw new IllegalArgumentException("The property value has not a locale tag valid format: '"
@@ -849,8 +859,8 @@ public final class SystemProperties extends Properties {
      * value of the property has been updated.
      * @return Locale instance.
      */
-    public static Locale getLocale() {
-        return getLocale(HCJF_DEFAULT_LOCALE);
+    public static java.util.Locale getLocale() {
+        return getLocale(Locale.DEFAULT_LOCALE);
     }
 
     /**

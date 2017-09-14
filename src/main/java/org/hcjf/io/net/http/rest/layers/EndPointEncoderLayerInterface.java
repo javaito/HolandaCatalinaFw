@@ -90,5 +90,13 @@ public interface EndPointEncoderLayerInterface extends LayerInterface {
         public boolean shouldSkipClass(Class<?> aClass) {
             return false;
         }
+
+        /**
+         * Returns the gson instance of the encoder.
+         * @return Gson instance.
+         */
+        protected Gson getGson() {
+            return gson;
+        }
     }
 }

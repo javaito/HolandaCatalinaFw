@@ -1,7 +1,10 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.encoding.MimeType;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Bytes;
+import org.hcjf.utils.Strings;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -21,12 +24,14 @@ public class HttpRequest extends HttpPackage {
     private String context;
     private HttpMethod method;
     private final Map<String, String> parameters;
+    private final Map<String, AttachFile> attachFiles;
     private final List<String> pathParts;
 
     public HttpRequest(String requestPath, HttpMethod method) {
         this.path = requestPath;
         this.method = method;
         this.parameters = new HashMap<>();
+        this.attachFiles = new HashMap<>();
         this.pathParts = new ArrayList<>();
     }
 
@@ -35,6 +40,7 @@ public class HttpRequest extends HttpPackage {
         this.path = httpRequest.path;
         this.method = httpRequest.method;
         this.parameters = httpRequest.parameters;
+        this.attachFiles = httpRequest.attachFiles;
         this.pathParts = httpRequest.pathParts;
     }
 
@@ -109,6 +115,23 @@ public class HttpRequest extends HttpPackage {
     }
 
     /**
+     * Returns the map with all the files attached to the request.
+     * @return Map with all the files attached.
+     */
+    public Map<String, AttachFile> getAttachFiles() {
+        return Collections.unmodifiableMap(attachFiles);
+    }
+
+    /**
+     * Returns the file attached for the specific name.
+     * @param attachName Name of the parameter to attach the file.
+     * @return Attached file.
+     */
+    public AttachFile getAtachFile(String attachName) {
+        return attachFiles.get(attachName);
+    }
+
+    /**
      * Add parameter.
      * @param parameterName Parameter name.
      * @param parameterValue Parameter value.
@@ -137,6 +160,9 @@ public class HttpRequest extends HttpPackage {
         if(contentType != null &&
                 contentType.getHeaderValue().startsWith(HttpHeader.APPLICATION_X_WWW_FORM_URLENCODED)) {
             parseHttpParameters(new String(body));
+        } else if(contentType != null &&
+                contentType.getHeaderValue().startsWith(HttpHeader.MULTIPART_FORM_DATA)) {
+            parseHttpMultipartBody();
         }
     }
 
@@ -167,9 +193,65 @@ public class HttpRequest extends HttpPackage {
         }
     }
 
+    private void parseHttpMultipartBody() {
+        HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
+        String boundary = contentType.getParameter(HttpHeader.MULTIPART_FORM_DATA, HttpHeader.BOUNDARY);
+
+        String stringLine;
+        byte[] line;
+        byte[] file;
+        HttpHeader lineContentDisposition;
+        HttpHeader linecontentType;
+        MimeType mimeType = null;
+        String name = null;
+        String fileName = null;
+        AttachFile attachFile;
+        for(byte[] part : Bytes.split(getBody(), boundary.getBytes())) {
+            if(Arrays.equals(part, "--".getBytes())) {
+                break;
+            } else {
+                List<Integer> indexes = Bytes.allIndexOf(part, "\r\n".getBytes());
+                Integer startIndex = 0;
+                for(Integer index : indexes) {
+                    line = new byte[index - startIndex];
+                    stringLine = new String(line);
+                    System.arraycopy(part, startIndex, line, 0, line.length);
+                    if(stringLine.startsWith(HttpHeader.CONTENT_DISPOSITION)) {
+                        lineContentDisposition = new HttpHeader(stringLine);
+                        for(String headerPart : lineContentDisposition.getHeaderValue().split(";")){
+                            if(headerPart.startsWith("name")) {
+                                name = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION)).trim();
+                            } if(headerPart.startsWith("filename")) {
+                                fileName = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION)).trim();
+                            }
+                        }
+                        startIndex = index + 2;
+                    } else if(stringLine.startsWith(HttpHeader.CONTENT_TYPE)) {
+                        linecontentType = new HttpHeader(stringLine);
+                        mimeType = MimeType.fromString(linecontentType.getHeaderValue());
+                        startIndex = index + 2;
+                    } else if(stringLine.trim().isEmpty()) {
+                        startIndex = -1;
+                    }
+                }
+
+                file = new byte[part.length - startIndex];
+                System.arraycopy(part, startIndex, file, 0, file.length);
+
+                if(fileName != null) {
+                    attachFile = new AttachFile(name, fileName, mimeType == null ? MimeType.APPLICATION_X_BINARY : mimeType, file);
+                    attachFiles.put(name, attachFile);
+                } else {
+                    parameters.put(name, new String(file));
+                }
+            }
+        }
+    }
+
     /**
-     *
-     * @param parametersBody
+     * This method split the parameters body string in each http parameter
+     * using the http standard syntax.
+     * @param parametersBody String that contains all the parameters.
      */
     private void parseHttpParameters(String parametersBody) {
         String[] params = parametersBody.split(HTTP_FIELD_SEPARATOR);
@@ -254,5 +336,51 @@ public class HttpRequest extends HttpPackage {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * This class represents a file attached into the request.
+     */
+    public static class AttachFile {
+
+        private final String name;
+        private final String fileName;
+        private final MimeType mimeType;
+        private final byte[] file;
+
+        public AttachFile(String name, String fileName, MimeType mimeType, byte[] file) {
+            this.name = name;
+            this.fileName = fileName;
+            this.mimeType = mimeType;
+            this.file = file;
+        }
+
+        /**
+         * Returns the name of the block of data.
+         * @return Name of the block of data.
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * Returns the name of the file.
+         * @return File name.
+         */
+        public String getFileName() {
+            return fileName;
+        }
+
+        public MimeType getMimeType() {
+            return mimeType;
+        }
+
+        /**
+         * Returns the content of the file.
+         * @return File content.
+         */
+        public byte[] getFile() {
+            return file;
+        }
     }
 }

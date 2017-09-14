@@ -2,6 +2,8 @@ package org.hcjf.layers.locale;
 
 import org.hcjf.layers.LayerInterface;
 
+import java.util.Locale;
+
 /**
  * This interface provides some methods access the locale information
  * based on the locale of the service session.
@@ -10,9 +12,9 @@ import org.hcjf.layers.LayerInterface;
 public interface LocaleLayerInterface extends LayerInterface {
 
     /**
-     * Translate some text.
+     * Translate some text to the specific language.
      * @param text Text to translate.
-     * @return Return the translated text.
+     * @return Returns translated text.
      */
     public String translate(String text);
 

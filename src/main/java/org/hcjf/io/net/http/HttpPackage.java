@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.errors.Errors;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
@@ -245,6 +246,9 @@ public abstract class HttpPackage {
     private void writeBody(byte[] data, int off, int len) {
         if(transferDecodingLayer == null) {
             currentBuffer.write(data, off, len);
+            if(currentBuffer.size() > SystemProperties.getInteger(SystemProperties.Net.Http.MAX_PACKAGE_SIZE)) {
+                throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_PACKAGE_OVERFLOW));
+            }
         } else {
             transferDecodingLayer.add(ByteBuffer.wrap(data, off, len));
         }

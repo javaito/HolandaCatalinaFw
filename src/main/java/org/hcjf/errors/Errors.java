@@ -1,5 +1,6 @@
 package org.hcjf.errors;
 
+import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Messages;
 
 /**
@@ -45,6 +46,7 @@ public final class Errors extends Messages {
     public static final String ORG_HCJF_IO_NET_HTTP_8 = "org.hcjf.io.net.http@8";
     public static final String ORG_HCJF_IO_NET_HTTP_9 = "org.hcjf.io.net.http@9";
     public static final String ORG_HCJF_IO_NET_HTTP_END_POINT_NOT_FOUND = "org.hcjf.io.net.http.resource.not.found";
+    public static final String ORG_HCJF_IO_NET_HTTP_PACKAGE_OVERFLOW = "org.hcjf.io.net.http.package.overflow";
 
     public static final String ORG_HCJF_IO_NET_HTTP_LAYERED_1 = "org.hcjf.io.net.http.layered@1";
 
@@ -96,6 +98,7 @@ public final class Errors extends Messages {
         addDefault(ORG_HCJF_IO_NET_HTTP_8, "Parameter 'parameterName' can't be null");
         addDefault(ORG_HCJF_IO_NET_HTTP_9, "File checksum algorithm not found");
         addDefault(ORG_HCJF_IO_NET_HTTP_END_POINT_NOT_FOUND, "End point not found: %s");
+        addDefault(ORG_HCJF_IO_NET_HTTP_PACKAGE_OVERFLOW, "Http package overflow");
 
         addDefault(ORG_HCJF_IO_NET_HTTP_LAYERED_1, "Resource name can't be null");
 
@@ -120,7 +123,9 @@ public final class Errors extends Messages {
      * @return Message complete and translated.
      */
     public static String getMessage(String errorCode, Object... params) {
-        return instance.getInternalMessage(errorCode, params);
+        return instance.getInternalMessage(errorCode,
+                SystemProperties.get(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME),
+                params);
     }
 
     /**

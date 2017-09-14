@@ -3,6 +3,8 @@ package org.hcjf.layers.locale;
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 
+import java.util.Locale;
+
 /**
  * This is the default implementation
  * @author javaito
@@ -10,7 +12,7 @@ import org.hcjf.properties.SystemProperties;
 public class DefaultLocaleLayer extends Layer implements LocaleLayerInterface {
 
     public DefaultLocaleLayer() {
-        super(SystemProperties.get(SystemProperties.HCJF_DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME));
+        super(SystemProperties.get(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME));
     }
 
     /**
