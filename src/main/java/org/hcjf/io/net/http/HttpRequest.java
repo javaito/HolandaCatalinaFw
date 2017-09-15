@@ -23,15 +23,13 @@ public class HttpRequest extends HttpPackage {
     private String path;
     private String context;
     private HttpMethod method;
-    private final Map<String, String> parameters;
-    private final Map<String, AttachFile> attachFiles;
+    private final Map<String, Object> parameters;
     private final List<String> pathParts;
 
     public HttpRequest(String requestPath, HttpMethod method) {
         this.path = requestPath;
         this.method = method;
         this.parameters = new HashMap<>();
-        this.attachFiles = new HashMap<>();
         this.pathParts = new ArrayList<>();
     }
 
@@ -40,7 +38,6 @@ public class HttpRequest extends HttpPackage {
         this.path = httpRequest.path;
         this.method = httpRequest.method;
         this.parameters = httpRequest.parameters;
-        this.attachFiles = httpRequest.attachFiles;
         this.pathParts = httpRequest.pathParts;
     }
 
@@ -98,10 +95,19 @@ public class HttpRequest extends HttpPackage {
     }
 
     /**
+     * Returns true if the request contains the parameter indicated.
+     * @param name Name of the parameter.
+     * @return True if the parameter is present and false in the otherwise.
+     */
+    public boolean hasParameter(String name) {
+        return parameters.containsKey(name);
+    }
+
+    /**
      * Return the request parameters.
      * @return Request parameters.
      */
-    public Map<String, String> getParameters() {
+    public Map<String, Object> getParameters() {
         return Collections.unmodifiableMap(parameters);
     }
 
@@ -110,25 +116,8 @@ public class HttpRequest extends HttpPackage {
      * @param parameterName Name of the founding parameter.
      * @return Return the parameter.
      */
-    public String getParameter(String parameterName) {
-        return parameters.get(parameterName);
-    }
-
-    /**
-     * Returns the map with all the files attached to the request.
-     * @return Map with all the files attached.
-     */
-    public Map<String, AttachFile> getAttachFiles() {
-        return Collections.unmodifiableMap(attachFiles);
-    }
-
-    /**
-     * Returns the file attached for the specific name.
-     * @param attachName Name of the parameter to attach the file.
-     * @return Attached file.
-     */
-    public AttachFile getAtachFile(String attachName) {
-        return attachFiles.get(attachName);
+    public <O extends Object> O getParameter(String parameterName) {
+        return (O) parameters.get(parameterName);
     }
 
     /**
@@ -206,6 +195,7 @@ public class HttpRequest extends HttpPackage {
         String name = null;
         String fileName = null;
         AttachFile attachFile;
+        ArrayList<AttachFile> attachFiles;
         for(byte[] part : Bytes.split(getBody(), boundary.getBytes())) {
             if(part.length == 0){
                 continue;
@@ -218,6 +208,7 @@ public class HttpRequest extends HttpPackage {
                 name = null;
                 fileName = null;
                 List<Integer> indexes = Bytes.allIndexOf(part, STRING_LINE_SEPARATOR.getBytes());
+                String charset = null;
                 Integer startIndex = 0;
                 for(Integer index : indexes) {
                     line = new byte[index - startIndex];
@@ -241,9 +232,15 @@ public class HttpRequest extends HttpPackage {
                         lineContentType = new HttpHeader(stringLine);
                         mimeType = MimeType.fromString(lineContentType.getHeaderValue());
                         startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
+                        charset = contentType.getParameter(
+                                contentType.getGroups().iterator().next(), HttpHeader.PARAM_CHARSET);
                     } else if(stringLine.trim().isEmpty()) {
                         break;
                     }
+                }
+
+                if(charset == null) {
+                    charset = SystemProperties.getDefaultCharset();
                 }
 
                 if(name != null) {
@@ -256,9 +253,25 @@ public class HttpRequest extends HttpPackage {
 
                     if (fileName != null) {
                         attachFile = new AttachFile(name, fileName, mimeType == null ? MimeType.APPLICATION_X_BINARY : mimeType, file);
-                        attachFiles.put(name, attachFile);
+                        if(parameters.containsKey(name) && parameters.get(name) instanceof ArrayList) {
+                            attachFiles = (ArrayList<AttachFile>) parameters.get(name);
+                            attachFiles.add(attachFile);
+                        } else if(parameters.containsKey(name) && parameters.get(name) instanceof AttachFile) {
+                            attachFiles = new ArrayList<>();
+                            attachFiles.add((AttachFile) parameters.get(name));
+                            attachFiles.add(attachFile);
+                            parameters.put(name, attachFiles);
+                        } else {
+                            parameters.put(name, attachFile);
+                        }
                     } else {
-                        parameters.put(name, new String(file));
+                        String value = new String(file);
+                        try {
+                            parameters.put(name, URLDecoder.decode(value, charset));
+                        } catch (UnsupportedEncodingException e) {
+                            Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Unable to decode http parameter, %s:%s", name, value);
+                            parameters.put(name, value);
+                        }
                     }
                 }
             }
@@ -287,6 +300,8 @@ public class HttpRequest extends HttpPackage {
 
         String key;
         String value;
+        int insertIndex;
+        ArrayList<String> listParameter;
         for(String param : params) {
             if(param.indexOf(HTTP_FIELD_ASSIGNATION) < 0) {
                 key = param;
@@ -297,11 +312,33 @@ public class HttpRequest extends HttpPackage {
                 value = keyValue.length==2 ? keyValue[1] : null;
             }
 
-            try {
-                parameters.put(URLDecoder.decode(key, charset), value == null ? null : URLDecoder.decode(value, charset));
-            } catch (UnsupportedEncodingException e) {
-                Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Unable to decode http parameter, %s:%s", key, value);
-                parameters.put(key, value);
+            if(key.contains(Strings.START_SUB_GROUP) && key.contains(Strings.END_SUB_GROUP)) {
+                insertIndex = -1;
+                if(key.indexOf(Strings.START_SUB_GROUP) + 1 == key.indexOf(Strings.END_SUB_GROUP)) {
+                } else {
+                    insertIndex = Integer.parseInt(key.substring(key.indexOf(Strings.START_SUB_GROUP) + 1, key.indexOf(Strings.END_SUB_GROUP)));
+                }
+
+                key = key.substring(0, key.indexOf(Strings.START_SUB_GROUP));
+                if(parameters.containsKey(key)) {
+                    listParameter = getParameter(key);
+                } else {
+                    listParameter = new ArrayList<>();
+                    parameters.put(key, listParameter);
+                }
+
+                if(insertIndex >= 0) {
+                    listParameter.add(insertIndex, value);
+                } else {
+                    listParameter.add(value);
+                }
+            } else {
+                try {
+                    parameters.put(URLDecoder.decode(key, charset), value == null ? null : URLDecoder.decode(value, charset));
+                } catch (UnsupportedEncodingException e) {
+                    Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Unable to decode http parameter, %s:%s", key, value);
+                    parameters.put(key, value);
+                }
             }
         }
     }
