@@ -154,7 +154,7 @@ public class HttpRequest extends HttpPackage {
         if(contentType != null) {
             try {
                 RequestBodyDecoderLayer bodyDecoderLayer = Layers.get(RequestBodyDecoderLayer.class,
-                        L -> L.getImplName().startsWith(contentType.getHeaderValue()));
+                        L -> contentType.getHeaderValue().startsWith(L.getImplName()));
                 Map<String,Object> parameters = bodyDecoderLayer.decode(this);
                 if(parameters != null) {
                     this.parameters.putAll(parameters);
