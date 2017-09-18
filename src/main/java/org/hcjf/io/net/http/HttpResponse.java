@@ -2,8 +2,6 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.properties.SystemProperties;
 
-import java.net.ResponseCache;
-
 /**
  * This class represents a http response package.
  * @author javaito
@@ -62,10 +60,9 @@ public class HttpResponse extends HttpPackage {
 
     /**
      * This kind of http package never process his body.
-     * @param body Package body.
      */
     @Override
-    protected void processBody(byte[] body) {}
+    protected void processBody() {}
 
     /**
      * Set the values of the first line of the package.

@@ -1,9 +1,9 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.encoding.MimeType;
+import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.utils.Bytes;
 import org.hcjf.utils.Strings;
 
 import java.io.UnsupportedEncodingException;
@@ -25,6 +25,11 @@ public class HttpRequest extends HttpPackage {
     private HttpMethod method;
     private final Map<String, Object> parameters;
     private final List<String> pathParts;
+
+    static {
+        Layers.publishLayer(FormUrlEncodedDecoder.class);
+        Layers.publishLayer(MultipartFormDataDecoder.class);
+    }
 
     public HttpRequest(String requestPath, HttpMethod method) {
         this.path = requestPath;
@@ -141,17 +146,20 @@ public class HttpRequest extends HttpPackage {
 
     /**
      * This method process the body of the complete request.
-     * @param body Body of the request.
      */
     @Override
-    protected void processBody(byte[] body) {
+    protected void processBody() {
         HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
-        if(contentType != null &&
-                contentType.getHeaderValue().startsWith(HttpHeader.APPLICATION_X_WWW_FORM_URLENCODED)) {
-            parseHttpParameters(new String(body));
-        } else if(contentType != null &&
-                contentType.getHeaderValue().startsWith(HttpHeader.MULTIPART_FORM_DATA)) {
-            parseHttpMultipartBody();
+
+        if(contentType != null) {
+            try {
+                RequestBodyDecoderLayer bodyDecoderLayer = Layers.get(RequestBodyDecoderLayer.class,
+                        L -> L.getImplName().startsWith(contentType.getHeaderValue()));
+                Map<String,Object> parameters = bodyDecoderLayer.decode(this);
+                if(parameters != null) {
+                    this.parameters.putAll(parameters);
+                }
+            } catch (Exception ex){}
         }
     }
 
@@ -178,102 +186,6 @@ public class HttpRequest extends HttpPackage {
         for(String pathPart : context.split(HTTP_CONTEXT_SEPARATOR)) {
             if(!pathPart.isEmpty()) {
                 pathParts.add(pathPart);
-            }
-        }
-    }
-
-    private void parseHttpMultipartBody() {
-        HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
-        String boundary = AttachFile.BOUNDARY_START + contentType.getParameter(HttpHeader.MULTIPART_FORM_DATA, HttpHeader.BOUNDARY);
-
-        String stringLine;
-        byte[] line;
-        byte[] file;
-        HttpHeader lineContentDisposition;
-        HttpHeader lineContentType;
-        MimeType mimeType = null;
-        String name = null;
-        String fileName = null;
-        AttachFile attachFile;
-        ArrayList<AttachFile> attachFiles;
-        for(byte[] part : Bytes.split(getBody(), boundary.getBytes())) {
-            if(part.length == 0){
-                continue;
-            }
-
-            if(Arrays.equals(part, AttachFile.BOUNDARY_START.getBytes())) {
-                break;
-            } else {
-                mimeType = null;
-                name = null;
-                fileName = null;
-                List<Integer> indexes = Bytes.allIndexOf(part, STRING_LINE_SEPARATOR.getBytes());
-                String charset = null;
-                Integer startIndex = 0;
-                for(Integer index : indexes) {
-                    line = new byte[index - startIndex];
-                    System.arraycopy(part, startIndex, line, 0, line.length);
-                    stringLine = new String(line).trim();
-                    if(stringLine.isEmpty()) {
-                        startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
-                        continue;
-                    }
-                    if(stringLine.startsWith(HttpHeader.CONTENT_DISPOSITION)) {
-                        lineContentDisposition = new HttpHeader(stringLine);
-                        for(String headerPart : lineContentDisposition.getHeaderValue().split(AttachFile.FIELDS_SEPARATOR)){
-                            if(headerPart.trim().startsWith(AttachFile.NAME_FIELD)) {
-                                name = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim().replace("\"", Strings.EMPTY_STRING);
-                            } if(headerPart.trim().startsWith(AttachFile.FILE_NAME_FIELD)) {
-                                fileName = headerPart.substring(headerPart.indexOf(Strings.ASSIGNATION) + 1).trim().replace("\"", Strings.EMPTY_STRING);
-                            }
-                        }
-                        startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
-                    } else if(stringLine.startsWith(HttpHeader.CONTENT_TYPE)) {
-                        lineContentType = new HttpHeader(stringLine);
-                        mimeType = MimeType.fromString(lineContentType.getHeaderValue());
-                        startIndex = index + STRING_LINE_SEPARATOR.getBytes().length;
-                        charset = contentType.getParameter(
-                                contentType.getGroups().iterator().next(), HttpHeader.PARAM_CHARSET);
-                    } else if(stringLine.trim().isEmpty()) {
-                        break;
-                    }
-                }
-
-                if(charset == null) {
-                    charset = SystemProperties.getDefaultCharset();
-                }
-
-                if(name != null) {
-                    if (part.length - startIndex >= STRING_LINE_SEPARATOR.getBytes().length) {
-                        file = new byte[part.length - startIndex - STRING_LINE_SEPARATOR.getBytes().length];
-                        System.arraycopy(part, startIndex, file, 0, file.length);
-                    } else {
-                        file = new byte[0];
-                    }
-
-                    if (fileName != null) {
-                        attachFile = new AttachFile(name, fileName, mimeType == null ? MimeType.APPLICATION_X_BINARY : mimeType, file);
-                        if(parameters.containsKey(name) && parameters.get(name) instanceof ArrayList) {
-                            attachFiles = (ArrayList<AttachFile>) parameters.get(name);
-                            attachFiles.add(attachFile);
-                        } else if(parameters.containsKey(name) && parameters.get(name) instanceof AttachFile) {
-                            attachFiles = new ArrayList<>();
-                            attachFiles.add((AttachFile) parameters.get(name));
-                            attachFiles.add(attachFile);
-                            parameters.put(name, attachFiles);
-                        } else {
-                            parameters.put(name, attachFile);
-                        }
-                    } else {
-                        String value = new String(file);
-                        try {
-                            parameters.put(name, URLDecoder.decode(value, charset));
-                        } catch (UnsupportedEncodingException e) {
-                            Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Unable to decode http parameter, %s:%s", name, value);
-                            parameters.put(name, value);
-                        }
-                    }
-                }
             }
         }
     }
@@ -396,11 +308,6 @@ public class HttpRequest extends HttpPackage {
      * This class represents a file attached into the request.
      */
     public static class AttachFile {
-
-        private static final String NAME_FIELD = "name";
-        private static final String FILE_NAME_FIELD = "filename";
-        private static final String FIELDS_SEPARATOR = ";";
-        private static final String BOUNDARY_START = "--";
 
         private final String name;
         private final String fileName;

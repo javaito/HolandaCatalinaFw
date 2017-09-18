@@ -217,7 +217,7 @@ public abstract class HttpPackage {
                 if (bodyDone()) {
                     setBody(getAccumulatedBody());
                     processFirstLine(lines.get(0));
-                    processBody(getBody());
+                    processBody();
                     currentBuffer = null;
                     complete = true;
                 }
@@ -298,9 +298,8 @@ public abstract class HttpPackage {
 
     /**
      * This method must be implemented to process the body information.
-     * @param body Body information.
      */
-    protected abstract void processBody(byte[] body);
+    protected abstract void processBody();
 
     /**
      * This method must be implemented to process the first line of the package.
