@@ -34,7 +34,8 @@ public abstract class MultipartHttpPipelineResponse extends HttpPipelineResponse
             if(streamingPackage.contains(HttpHeader.CONTENT_DISPOSITION)) {
                 result.put(streamingPackage.get(HttpHeader.CONTENT_DISPOSITION).toString().getBytes());
                 result.put(HEADER_SEPARATOR);
-            } else if(streamingPackage.contains(HttpHeader.CONTENT_TYPE)) {
+            }
+            if(streamingPackage.contains(HttpHeader.CONTENT_TYPE)) {
                 result.put(streamingPackage.get(HttpHeader.CONTENT_TYPE).toString().getBytes());
                 result.put(HEADER_SEPARATOR);
             }
