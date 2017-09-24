@@ -3,10 +3,7 @@ package org.hcjf.layers.query;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Collection of evaluator components.
@@ -139,32 +136,43 @@ public abstract class EvaluatorCollection {
      */
     public Object getFieldEvaluatorValue(String fieldName, Class<? extends FieldEvaluator>... evaluatorType) {
         Set<Object> results = new HashSet<>();
-        for (Evaluator evaluator : getEvaluators()) {
-            if (evaluator instanceof Or) {
-                Object internalResults = ((Or)evaluator).getFieldEvaluatorValue(fieldName, evaluatorType);
-                if(internalResults instanceof Set) {
-                    results.addAll((Set)internalResults);
-                } else {
-                    results.add(internalResults);
-                }
+        for (Evaluator evaluator : getFieldEvaluators(fieldName, evaluatorType)) {
+            if(evaluator instanceof FieldEvaluator) {
+                results.add(((FieldEvaluator)evaluator).getRawValue());
+            }
+        }
+        Object result = null;
+        if(!results.isEmpty()) {
+            if(results.size() == 1) {
+                result = results.iterator().next();
+            } else {
+                result = results;
+            }
+        }
+        return result;
+    }
 
-            } else if (evaluator instanceof And) {
-                Object internalResults = ((And)evaluator).getFieldEvaluatorValue(fieldName, evaluatorType);
-                if(internalResults instanceof Set) {
-                    results.addAll((Set)internalResults);
-                } else {
-                    results.add(internalResults);
-                }
+    /**
+     * Return the collection of evaluators that corresponds to provided fieldName and types
+     * @param fieldName
+     * @param evaluatorType
+     * @return collection of evaluators
+     */
+    public Collection<Evaluator> getFieldEvaluators(String fieldName, Class<? extends FieldEvaluator>... evaluatorType) {
+        Collection<Evaluator> results = new ArrayList<>();
+        for (Evaluator evaluator : getEvaluators()) {
+            if (evaluator instanceof EvaluatorCollection) {
+                results.addAll( ((EvaluatorCollection)evaluator).getFieldEvaluators(fieldName, evaluatorType));
 
             } else if (evaluator instanceof FieldEvaluator) {
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
                 if(fieldEvaluator.getFieldName().equals(fieldName)) {
                     if(evaluatorType.length == 0) {
-                        results.add(fieldEvaluator.getRawValue());
+                        results.add(fieldEvaluator);
                     } else {
                         for(int i = 0; i < evaluatorType.length; i++) {
                             if(fieldEvaluator.getClass().isAssignableFrom(evaluatorType[i])) {
-                                results.add(fieldEvaluator.getRawValue());
+                                results.add(fieldEvaluator);
                                 break;
                             }
                         }
@@ -172,11 +180,7 @@ public abstract class EvaluatorCollection {
                 }
             }
         }
-        Object result = null;
-        if(results.iterator().hasNext()) {
-            result = results.iterator().next();
-        }
-        return result;
+        return results;
     }
 
     /**
