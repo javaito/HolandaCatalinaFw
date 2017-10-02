@@ -5,8 +5,7 @@ import org.hcjf.io.net.http.HttpHeader;
 import java.nio.ByteBuffer;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public abstract class MultipartHttpPipelineResponse extends HttpPipelineResponse {
 

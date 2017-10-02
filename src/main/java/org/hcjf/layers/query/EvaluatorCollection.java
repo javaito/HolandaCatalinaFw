@@ -8,7 +8,6 @@ import java.util.*;
 /**
  * Collection of evaluator components.
  * @author javaito
- *
  */
 public abstract class EvaluatorCollection {
 
@@ -154,8 +153,8 @@ public abstract class EvaluatorCollection {
 
     /**
      * Return the collection of evaluators that corresponds to provided fieldName and types
-     * @param fieldName
-     * @param evaluatorType
+     * @param fieldName Field name.
+     * @param evaluatorType Evaluator types.
      * @return collection of evaluators
      */
     public Collection<Evaluator> getFieldEvaluators(String fieldName, Class<? extends FieldEvaluator>... evaluatorType) {
