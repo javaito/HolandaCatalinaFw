@@ -151,4 +151,12 @@ public final class NamedUuid {
         return out;
     }
 
+    /**
+     * Returns the string representation of internal id.
+     * @return String representation of the internal id.
+     */
+    @Override
+    public String toString() {
+        return id.toString();
+    }
 }

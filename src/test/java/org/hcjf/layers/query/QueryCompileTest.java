@@ -32,6 +32,14 @@ public class QueryCompileTest {
         }
 
         try {
+            Query query = Query.compile("SELECT * FROM dataaccumulator where perioddate >= '2017-08-01 00:00:00' and dataaccumulatorid = 'lastOdometerByDay' limit 100");
+            query = Query.compile(query.toString());
+            Assert.assertNotNull(query);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = 6");
             query = Query.compile(query.toString());
             Assert.assertNotNull(query);

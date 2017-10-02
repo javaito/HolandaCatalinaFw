@@ -108,7 +108,14 @@ public final class Introspection {
      * @throws InstantiationException Instantiation exception.
      */
     public static <O extends Object> O toInstance(Map<String, Object> map, Class<O> clazz) throws IllegalAccessException, InstantiationException {
-        O result = clazz.newInstance();
+        O result = null;
+        try {
+            result = clazz.getConstructor().newInstance();
+        } catch (InvocationTargetException e) {
+            throw new IllegalArgumentException("Unable to create instance", e);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("Default constructor not found", e);
+        }
         Map<String, Setter> setters = getSetters(clazz);
         for(String name : setters.keySet()) {
             if(map.containsKey(name)) {
@@ -287,12 +294,13 @@ public final class Introspection {
 
         private final Class implementationClass;
         private final Method method;
-        private final Map<Class<? extends Annotation>, Annotation> annotationsMap;
+        private final Map<Class<? extends Annotation>, List<Annotation>> annotationsMap;
 
         public Invoker(Class implementationClass, Method method) {
             this.implementationClass = implementationClass;
             this.method = method;
             this.annotationsMap = new HashMap<>();
+            List<Annotation> annotationList;
             for(Annotation annotation : method.getAnnotations()) {
                 Class annotationClass = null;
                 for(Class interfaceClass : annotation.getClass().getInterfaces()) {
@@ -300,7 +308,12 @@ public final class Introspection {
                         annotationClass = interfaceClass;
                     }
                 }
-                annotationsMap.put(annotationClass, annotation);
+                annotationList = annotationsMap.get(annotationClass);
+                if(annotationList == null) {
+                    annotationList = new ArrayList<>();
+                    annotationsMap.put(annotationClass, annotationList);
+                }
+                annotationList.add(annotation);
             }
         }
 
@@ -330,8 +343,9 @@ public final class Introspection {
         }
 
         /**
-         * Return the instance of the annotation class associated to the accessor method, or null if
+         * Returns the instance of the annotation class associated to the accessor method, or null if
          * the annotation doesn't exist.
+         * This method return the first instance of the list of annotations.
          * @param annotationClass Annotation class.
          * @param <A> Expected annotation type.
          * @return Annotation instance or null.
@@ -339,9 +353,24 @@ public final class Introspection {
         public final <A extends Annotation> A getAnnotation(Class<? extends A> annotationClass) {
             A result = null;
             if(annotationsMap.containsKey(annotationClass)) {
-                result = (A) annotationsMap.get(annotationClass);
+                result = (A) annotationsMap.get(annotationClass).get(0);
             }
             return result;
+        }
+
+        /**
+         * Returns the list of the annotation instances associated to the invoker, or null if
+         * the annotation class is not present into the invoker.
+         * @param annotationClass Annotation class.
+         * @param <A> Expected annotation type.
+         * @return Unmodifiable list of annotation instances.
+         */
+        public final <A extends Annotation> List<A> getAnnotations(Class<? extends A> annotationClass) {
+            List<Annotation> result = new ArrayList<>();
+            if(annotationsMap.containsKey(annotationClass)) {
+                result = Collections.unmodifiableList(annotationsMap.get(annotationClass));
+            }
+            return (List<A>) result;
         }
 
         /**
@@ -349,7 +378,7 @@ public final class Introspection {
          * by the class of the each annotation instance.
          * @return Unmodifiable map.
          */
-        public final Map<Class<? extends Annotation>, Annotation> getAnnotationsMap() {
+        public final Map<Class<? extends Annotation>, List<Annotation>> getAnnotationsMap() {
             return Collections.unmodifiableMap(annotationsMap);
         }
 

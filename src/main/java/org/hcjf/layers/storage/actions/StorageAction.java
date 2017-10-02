@@ -7,6 +7,7 @@ import org.hcjf.layers.storage.values.StorageValue;
 
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -144,9 +145,9 @@ public abstract class StorageAction<S extends StorageSession> {
      */
     protected class FieldStorageValue extends StorageValue {
 
-        private final Map<Class<? extends Annotation>, Annotation> accessorAnnotation;
+        private final Map<Class<? extends Annotation>, List<Annotation>> accessorAnnotation;
 
-        public FieldStorageValue(Object value, Map<Class<? extends Annotation>, Annotation> accessorAnnotation) {
+        public FieldStorageValue(Object value, Map<Class<? extends Annotation>, List<Annotation>> accessorAnnotation) {
             super(value);
             this.accessorAnnotation = accessorAnnotation;
         }
@@ -170,7 +171,7 @@ public abstract class StorageAction<S extends StorageSession> {
         public final <A extends Annotation> A getAnnotation(Class<? extends A> annotationClass) {
             A result = null;
             if(accessorAnnotation.containsKey(annotationClass)) {
-                result = (A) accessorAnnotation.get(annotationClass);
+                result = (A) accessorAnnotation.get(annotationClass).get(0);
             }
             return result;
         }

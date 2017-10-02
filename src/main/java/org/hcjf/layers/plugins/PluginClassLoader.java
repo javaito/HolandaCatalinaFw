@@ -19,9 +19,4 @@ public class PluginClassLoader extends URLClassLoader {
         this.plugin = plugin;
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
-                "Unloading plugin: %s", plugin.toString());
-    }
 }

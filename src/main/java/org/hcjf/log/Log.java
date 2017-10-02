@@ -69,7 +69,7 @@ public final class Log extends Service<LogPrinter> {
         List<String> logConsumers = SystemProperties.getList(SystemProperties.Log.CONSUMERS);
         logConsumers.forEach(S -> {
             try {
-                LogPrinter printer = (LogPrinter) Class.forName(S).newInstance();
+                LogPrinter printer = (LogPrinter) Class.forName(S).getConstructor().newInstance();
                 registerConsumer(printer);
             } catch (Exception ex){
                 ex.printStackTrace();

@@ -79,7 +79,7 @@ public final class Layers {
             try {
                 result = (L) instance.initialInstances.get(clazz);
                 if(result == null) {
-                    result = (L) clazz.newInstance();
+                    result = (L) clazz.getConstructor().newInstance();
                 }
 
                 result = (L) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
@@ -224,7 +224,7 @@ public final class Layers {
 
         Layer layerInstance;
         try {
-            layerInstance = layerClass.newInstance();
+            layerInstance = layerClass.getConstructor().newInstance();
         } catch(Exception ex){
             throw new IllegalArgumentException("Unable to publish " + layerClass +
                     " because fail to create a new instance", ex);
@@ -357,7 +357,7 @@ public final class Layers {
                     Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Loading layer %s", layerClassName);
                     layerClass = (Class<? extends Layer>) Class.forName(layerClassName, true, pluginClassLoader);
                     getLayerInterfaceClass(layerClass);
-                    layer = layerClass.newInstance();
+                    layer = layerClass.getConstructor().newInstance();
                     toDeployLayers.add(layer);
                     Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Layer %s loaded", layer.getImplName());
                 }

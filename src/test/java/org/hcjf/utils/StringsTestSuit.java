@@ -77,6 +77,10 @@ public class StringsTestSuit {
         fragments = Strings.splitByLength(value, 5);
         Assert.assertEquals(fragments[fragments.length-1], "re");
         Assert.assertEquals(fragments[0], "There");
+
+        value = "AndresMedina";
+        value = Strings.splitInWord(value, "-");
+        Assert.assertEquals(value, "Andres-Medina");
     }
 
 }

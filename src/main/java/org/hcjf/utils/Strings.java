@@ -85,6 +85,25 @@ public final class Strings {
     }
 
     /**
+     * This method search all the upper case characters into the
+     * value parameter and separates the value using this upper case
+     * characters like limit adding between words the separator value.
+     * @param value Value to split.
+     * @param separator Separator value.
+     * @return String with separated words.
+     */
+    public static String splitInWord(String value, String separator) {
+        StringBuilder result = new StringBuilder();
+        for(char character : value.toCharArray()) {
+            if(Character.isUpperCase(character) && result.length() > 0) {
+                result.append(separator);
+            }
+            result.append(character);
+        }
+        return result.toString();
+    }
+
+    /**
      * Complete the left side of the value with n instance of the default padding value (' ').
      * @param value Value to be completed.
      * @param paddingSize Number of instance to pad the value.

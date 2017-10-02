@@ -41,7 +41,7 @@ public final class Cloud extends Service<CloudConsumer> {
             Class<? extends CloudServiceImpl> implClass =
                     (Class<? extends CloudServiceImpl>)
                             Class.forName(implClassName);
-            impl = implClass.newInstance();
+            impl = implClass.getConstructor().newInstance();
         } catch (Exception ex) {
             throw new IllegalArgumentException("Unable to create cloud implementation", ex);
         }

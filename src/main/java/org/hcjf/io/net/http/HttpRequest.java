@@ -119,6 +119,7 @@ public class HttpRequest extends HttpPackage {
     /**
      * Return the parameter indexed by the argument name.
      * @param parameterName Name of the founding parameter.
+     * @param <O> Expected response type
      * @return Return the parameter.
      */
     public <O extends Object> O getParameter(String parameterName) {
@@ -150,7 +151,6 @@ public class HttpRequest extends HttpPackage {
     @Override
     protected void processBody() {
         HttpHeader contentType = getHeader(HttpHeader.CONTENT_TYPE);
-
         if(contentType != null) {
             try {
                 RequestBodyDecoderLayer bodyDecoderLayer = Layers.get(RequestBodyDecoderLayer.class,

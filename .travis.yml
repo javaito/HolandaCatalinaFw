@@ -14,4 +14,4 @@ deploy:
     on:
       repo: javaito/HolandaCatalinaFw
       tags: true
-      jdk: oraclejdk8
+      jdk: oraclejdk9

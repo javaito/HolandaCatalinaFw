@@ -213,7 +213,7 @@ public class BroadcastService extends Service<BroadcastConsumer> {
         try {
             BsonDocument document = BsonDecoder.decode(body);
             message = (BroadcastMessage)
-                    Class.forName(document.get(IMPLEMENTATION_FIELD_NAME).getAsString()).newInstance();
+                    Class.forName(document.get(IMPLEMENTATION_FIELD_NAME).getAsString()).getConstructor().newInstance();
             Map<String, Introspection.Setter> setters = Introspection.getSetters(message.getClass());
             setters.forEach((K, V) -> {
                 try {

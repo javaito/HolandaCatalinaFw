@@ -3,7 +3,6 @@ package org.hcjf.layers.crud;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -45,8 +44,8 @@ public abstract class CrudLayer<O extends Object> extends Layer implements
 
                 Type actualType = ((ParameterizedType) genericSuperClass).
                         getActualTypeArguments()[0];
-                if (actualType instanceof ParameterizedTypeImpl) {
-                    resourceType = (Class<O>) ((ParameterizedTypeImpl) actualType).getRawType();
+                if (actualType instanceof ParameterizedType) {
+                    resourceType = (Class<O>) ((ParameterizedType) actualType).getRawType();
                 } else {
                     resourceType = (Class<O>) actualType;
                 }

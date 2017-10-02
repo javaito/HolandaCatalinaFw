@@ -25,7 +25,6 @@ public class FormUrlEncodedDecoder extends Layer implements RequestBodyDecoderLa
 
     /**
      * Decodes the request body that must be encoding with url encoding method.
-     *  param=value&param=value&...
      * @param request Http request instance.
      * @return Returns the map with all the decoded parameters.
      */

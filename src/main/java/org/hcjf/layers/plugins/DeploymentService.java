@@ -52,7 +52,7 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
         if(SystemProperties.getBoolean(SystemProperties.Layer.Deployment.CLOUD_DEPLOYMENT_ENABLED)) {
             try {
                 filter = (DeploymentConsumer.DeploymentFilter)
-                        SystemProperties.getClass(SystemProperties.Layer.Deployment.CLOUD_DEPLOYMENT_FILTER).newInstance();
+                        SystemProperties.getClass(SystemProperties.Layer.Deployment.CLOUD_DEPLOYMENT_FILTER).getConstructor().newInstance();
             } catch (Exception e) {
                 throw new IllegalArgumentException("Unable to create instance of deployment filter");
             }

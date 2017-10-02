@@ -40,11 +40,11 @@ public class SmallerThan extends FieldEvaluator {
             if(fieldValue instanceof Number && value instanceof Number) {
                 if(fieldValue instanceof Double || fieldValue instanceof Float ||
                         value instanceof Double || value instanceof Float) {
-                    fieldValue = new Double(((Number)fieldValue).doubleValue());
-                    value = new Double(((Number)value).doubleValue());
+                    fieldValue = Double.valueOf(((Number)fieldValue).doubleValue());
+                    value = Double.valueOf(((Number)value).doubleValue());
                 } else {
-                    fieldValue = new Long(((Number)fieldValue).longValue());
-                    value = new Long(((Number)value).longValue());
+                    fieldValue = Long.valueOf(((Number)fieldValue).longValue());
+                    value = Long.valueOf(((Number)value).longValue());
                 }
             }
 
