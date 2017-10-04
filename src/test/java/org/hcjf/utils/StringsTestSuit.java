@@ -83,4 +83,13 @@ public class StringsTestSuit {
         Assert.assertEquals(value, "Andres-Medina");
     }
 
+    @Test
+    public void testJoin() {
+        List<String> values = List.of("one", "two", "three");
+        String joined = Strings.join(values, Strings.ARGUMENT_SEPARATOR);
+        Assert.assertEquals(joined, "one,two,three");
+
+        joined = Strings.join(values, Strings.RICH_TEXT_SEPARATOR, Strings.RICH_TEXT_SEPARATOR, Strings.ARGUMENT_SEPARATOR);
+        Assert.assertEquals(joined, "'one','two','three'");
+    }
 }

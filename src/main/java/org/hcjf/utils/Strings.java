@@ -55,6 +55,21 @@ public final class Strings {
     }
 
     /**
+     * Return the string that result of join all the values separated by the
+     * separated value specified and wrapped by the start and and value.
+     * @param values Values to join.
+     * @param separator Separator value.
+     * @param endValue Wrapped start value.
+     * @param separator Wrapped end value.
+     * @return Result of the join operation.
+     */
+    public static String join(Collection<String> values, String startValue, String endValue, String separator) {
+        Builder builder = new Builder();
+        values.stream().filter(S -> !S.isEmpty()).forEach(S -> builder.append(startValue).append(S).append(endValue, separator));
+        return builder.toString();
+    }
+
+    /**
      * Replace the first character for his upper case representation.
      * @param value Value to replace.
      * @return Replaced value.
