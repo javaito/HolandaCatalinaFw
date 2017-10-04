@@ -119,6 +119,21 @@ public final class Strings {
     }
 
     /**
+     * This method join the words into the value identifying each of word for the uppercase character.
+     * @param value Value to join.
+     * @param separator String to delimits the words.
+     * @return Joined value.
+     */
+    public static String joinWords(String value, String separator) {
+        StringBuilder result = new StringBuilder();
+        String[] words = value.split(separator);
+        for(String word : words) {
+            result.append(capitalize(word));
+        }
+        return result.toString();
+    }
+
+    /**
      * Complete the left side of the value with n instance of the default padding value (' ').
      * @param value Value to be completed.
      * @param paddingSize Number of instance to pad the value.

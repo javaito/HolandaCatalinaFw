@@ -92,4 +92,11 @@ public class StringsTestSuit {
         joined = Strings.join(values, Strings.RICH_TEXT_SEPARATOR, Strings.RICH_TEXT_SEPARATOR, Strings.ARGUMENT_SEPARATOR);
         Assert.assertEquals(joined, "'one','two','three'");
     }
+
+    @Test
+    public void testJoinWords() {
+        String value = "hello-world";
+        value = Strings.joinWords(value, "-");
+        Assert.assertEquals(value, "HelloWorld");
+    }
 }
