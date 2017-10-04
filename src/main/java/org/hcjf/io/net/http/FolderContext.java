@@ -211,7 +211,7 @@ public class FolderContext extends Context {
      * @return Return an object with all the response information.
      */
     @Override
-    public HttpResponse onContext(HttpRequest request) {
+    public final HttpResponse onContext(HttpRequest request) {
         List<String> elements = request.getPathParts();
         for(String forbidden : SystemProperties.getList(SystemProperties.Net.Http.Folder.FORBIDDEN_CHARACTERS)) {
             for(String element : elements) {
@@ -237,92 +237,114 @@ public class FolderContext extends Context {
         HttpResponse response = new HttpResponse();
 
         File file = path.toFile();
-        if(file.exists()) {
-            if (file.isDirectory()) {
-                StringBuilder list = new StringBuilder();
-                for(File subFile : file.listFiles()) {
-                    list.append(String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_ROW),
-                            path.relativize(baseFolder).resolve(request.getContext()).resolve(subFile.getName()).toString(),
-                            subFile.getName()));
-                }
-                String htmlBody = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_BODY), list.toString());
-                String document = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_DOCUMENT), file.getName(), htmlBody);
-                byte[] body = document.getBytes();
-                response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
-                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.HTML));
-                response.setResponseCode(HttpResponseCode.OK);
-                response.setBody(body);
-            } else {
-                byte[] body;
-                String checksum;
-                try {
-                    body = Files.readAllBytes(file.toPath());
-                    synchronized (this) {
-                        checksum = new String(Base64.getEncoder().encode(messageDigest.digest(body)));
-                        messageDigest.reset();
+
+        //If the path that is finding doesn't exists then some particular
+        //implementation could implements onNonexistentFile method to decide
+        //retry the operation after take come action.
+        boolean retry = true;
+        while(retry) {
+
+            //By default never retry.
+            retry = false;
+
+            if (file.exists()) {
+                if (file.isDirectory()) {
+                    StringBuilder list = new StringBuilder();
+                    for (File subFile : file.listFiles()) {
+                        list.append(String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_ROW),
+                                path.relativize(baseFolder).resolve(request.getContext()).resolve(subFile.getName()).toString(),
+                                subFile.getName()));
                     }
-                } catch (IOException ex) {
-                    throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
-                }
-
-                Integer responseCode = HttpResponseCode.OK;
-                HttpHeader ifNonMatch = request.getHeader(HttpHeader.IF_NONE_MATCH);
-                if(ifNonMatch != null) {
-                    if(checksum.equals(ifNonMatch.getHeaderValue())) {
-                        responseCode = HttpResponseCode.NOT_MODIFIED;
+                    String htmlBody = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_BODY), list.toString());
+                    String document = String.format(SystemProperties.get(SystemProperties.Net.Http.Folder.DEFAULT_HTML_DOCUMENT), file.getName(), htmlBody);
+                    byte[] body = document.getBytes();
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.HTML));
+                    response.setResponseCode(HttpResponseCode.OK);
+                    response.setBody(body);
+                } else {
+                    byte[] body;
+                    String checksum;
+                    try {
+                        body = Files.readAllBytes(file.toPath());
+                        synchronized (this) {
+                            checksum = new String(Base64.getEncoder().encode(messageDigest.digest(body)));
+                            messageDigest.reset();
+                        }
+                    } catch (IOException ex) {
+                        throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_4, Paths.get(request.getContext(), file.getName())), ex);
                     }
-                }
 
-                String[] nameExtension = file.getName().split(SystemProperties.get(SystemProperties.Net.Http.Folder.FILE_EXTENSION_REGEX));
-                String extension = nameExtension.length == 2 ? nameExtension[1] : MimeType.BIN;
-                response.setResponseCode(responseCode);
-                MimeType mimeType = MimeType.fromSuffix(extension);
-                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, mimeType == null ? MimeType.BIN : mimeType.toString()));
-                response.addHeader(new HttpHeader(HttpHeader.E_TAG, checksum));
-                response.addHeader(new HttpHeader(HttpHeader.LAST_MODIFIED,
-                        SystemProperties.getDateFormat(SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).
-                                format(new Date(file.lastModified()))));
+                    Integer responseCode = HttpResponseCode.OK;
+                    HttpHeader ifNonMatch = request.getHeader(HttpHeader.IF_NONE_MATCH);
+                    if (ifNonMatch != null) {
+                        if (checksum.equals(ifNonMatch.getHeaderValue())) {
+                            responseCode = HttpResponseCode.NOT_MODIFIED;
+                        }
+                    }
 
-                if(responseCode.equals(HttpResponseCode.OK)) {
-                    HttpHeader acceptEncodingHeader = request.getHeader(HttpHeader.ACCEPT_ENCODING);
-                    if(acceptEncodingHeader != null) {
-                        boolean notAcceptable = true;
-                        for(String group : acceptEncodingHeader.getGroups()) {
-                            if (group.equalsIgnoreCase(HttpHeader.GZIP) || group.equalsIgnoreCase(HttpHeader.DEFLATE)) {
-                                try (ByteArrayOutputStream out = new ByteArrayOutputStream(); GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out)) {
-                                    gzipOutputStream.write(body);
-                                    gzipOutputStream.flush();
-                                    gzipOutputStream.finish();
-                                    body = out.toByteArray();
-                                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.GZIP));
+                    String[] nameExtension = file.getName().split(SystemProperties.get(SystemProperties.Net.Http.Folder.FILE_EXTENSION_REGEX));
+                    String extension = nameExtension.length == 2 ? nameExtension[1] : MimeType.BIN;
+                    response.setResponseCode(responseCode);
+                    MimeType mimeType = MimeType.fromSuffix(extension);
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, mimeType == null ? MimeType.BIN : mimeType.toString()));
+                    response.addHeader(new HttpHeader(HttpHeader.E_TAG, checksum));
+                    response.addHeader(new HttpHeader(HttpHeader.LAST_MODIFIED,
+                            SystemProperties.getDateFormat(SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).
+                                    format(new Date(file.lastModified()))));
+
+                    if (responseCode.equals(HttpResponseCode.OK)) {
+                        HttpHeader acceptEncodingHeader = request.getHeader(HttpHeader.ACCEPT_ENCODING);
+                        if (acceptEncodingHeader != null) {
+                            boolean notAcceptable = true;
+                            for (String group : acceptEncodingHeader.getGroups()) {
+                                if (group.equalsIgnoreCase(HttpHeader.GZIP) || group.equalsIgnoreCase(HttpHeader.DEFLATE)) {
+                                    try (ByteArrayOutputStream out = new ByteArrayOutputStream(); GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out)) {
+                                        gzipOutputStream.write(body);
+                                        gzipOutputStream.flush();
+                                        gzipOutputStream.finish();
+                                        body = out.toByteArray();
+                                        response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.GZIP));
+                                        notAcceptable = false;
+                                        break;
+                                    } catch (Exception ex) {
+                                        Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Zip file process fail", ex);
+                                    }
+                                } else if (group.equalsIgnoreCase(HttpHeader.IDENTITY)) {
+                                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.IDENTITY));
                                     notAcceptable = false;
                                     break;
-                                } catch (Exception ex) {
-                                    Log.w(SystemProperties.get(SystemProperties.Net.Http.Folder.LOG_TAG), "Zip file process fail", ex);
                                 }
-                            } else if (group.equalsIgnoreCase(HttpHeader.IDENTITY)) {
-                                response.addHeader(new HttpHeader(HttpHeader.CONTENT_ENCODING, HttpHeader.IDENTITY));
-                                notAcceptable = false;
-                                break;
+                            }
+
+                            if (notAcceptable) {
+                                response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
                             }
                         }
 
-                        if (notAcceptable) {
-                            response.setResponseCode(HttpResponseCode.NOT_ACCEPTABLE);
+                        if (responseCode.equals(HttpResponseCode.OK)) {
+                            response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+                            response.setBody(body);
                         }
                     }
-
-                    if(responseCode.equals(HttpResponseCode.OK)) {
-                        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
-                        response.setBody(body);
-                    }
                 }
+            } else {
+                retry = onNonExistentFile(request, file);
             }
-        } else {
-            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_5, request.getContext()));
         }
 
         return response;
+    }
+
+    /**
+     * This method could be implemented in order to manage the non-existent file situation.
+     * By default this implementation throws an IllegalArgument exception if the file not exists.
+     * @param request Http request instance.
+     * @param file non-existent file pointer.
+     * @return Return true if the read file operation must by retried and false in the otherwise.
+     */
+    public boolean onNonExistentFile(HttpRequest request, File file) {
+        throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_5, request.getContext()));
     }
 
 }
