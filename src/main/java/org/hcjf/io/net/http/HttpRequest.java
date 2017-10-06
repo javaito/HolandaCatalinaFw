@@ -40,6 +40,7 @@ public class HttpRequest extends HttpPackage {
 
     protected HttpRequest(HttpRequest httpRequest) {
         super(httpRequest);
+        this.context = httpRequest.context;
         this.path = httpRequest.path;
         this.method = httpRequest.method;
         this.parameters = httpRequest.parameters;
