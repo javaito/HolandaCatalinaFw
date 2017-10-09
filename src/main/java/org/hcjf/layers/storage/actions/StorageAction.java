@@ -23,10 +23,30 @@ public abstract class StorageAction<S extends StorageSession> {
     private final Map<String, StorageValue> values;
     private Query query;
     private Class resultType;
+    private final Map<String, Object> actionParameters;
 
     public StorageAction(S session) {
         this.session = session;
         this.values = new HashMap<>();
+        this.actionParameters = new HashMap<>();
+    }
+
+    /**
+     * Puts a parameter into the action.
+     * @param parameterName Parameter's name.
+     * @param parameterValue Parameter value.
+     */
+    public final void putActionParameter(String parameterName, Object parameterValue) {
+        actionParameters.put(parameterName, parameterValue);
+    }
+
+    /**
+     * Returns the parameter value.
+     * @param parameterName Parameter name.
+     * @return Parameter value.
+     */
+    public final Object getActionParameter(String parameterName) {
+        return actionParameters.get(parameterName);
     }
 
     /**

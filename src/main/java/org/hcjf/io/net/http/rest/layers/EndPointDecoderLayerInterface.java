@@ -5,18 +5,17 @@ import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.rest.EndPointCrudRequest;
 import org.hcjf.io.net.http.rest.EndPointRequest;
-import org.hcjf.io.net.http.rest.References;
+import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.References;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
-import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.query.Query;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This layer interface provides the statement to decode a http request and
@@ -39,6 +38,9 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
      */
     public static class JsonEndPointDecoder extends Layer implements EndPointDecoderLayerInterface, ExclusionStrategy {
 
+        private static final String REFERENCES_PREFIX = "__references_";
+        private static final String RESOURCE_FIELD = "__resource__";
+
         private final Gson gson;
         private final JsonParser jsonParser;
 
@@ -57,23 +59,18 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
         @Override
         public EndPointRequest decode(HttpRequest request, CrudLayerInterface layer) {
             EndPointRequest result = null;
+            Object decodedBody;
+            RestReference references;
+            Map<String, Object> parameters;
             switch (request.getMethod()) {
                 case POST: {
-                    JsonObject jsonBody = (JsonObject) jsonParser.parse(new String(request.getBody()));
-                    if(jsonBody.has(References.REFERENCES_FIELD_NAME)) {
-                        Map<String, Object> parameters = new HashMap<>();
-                        References references = new JsonReferences((JsonObject) jsonBody.remove(References.REFERENCES_FIELD_NAME));
-                        parameters.put(References.REFERENCES_FIELD_NAME, references);
-                        Object bodyObject = gson.fromJson(jsonBody, layer.getResourceType());
-                        result = new EndPointCrudRequest(request, layer,
-                                (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(
-                                        CrudLayerInterface.CrudMethodStatement.CREATE_OBJECT_MAP.toString()), bodyObject, parameters);
-                    } else {
-                        Object bodyObject = gson.fromJson(jsonBody, layer.getResourceType());
-                        result = new EndPointCrudRequest(request, layer,
-                                (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(
-                                        CrudLayerInterface.CrudMethodStatement.CREATE_OBJECT.toString()), bodyObject);
-                    }
+                    parameters = new HashMap<>();
+                    references = new RestReference();
+                    parameters.put(References.class.getName(), references);
+                    decodedBody = createEnityAndReference(jsonParser.parse(new String(request.getBody())), references, layer.getResourceType());
+                    result = new EndPointCrudRequest(request, layer,
+                            (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(
+                                    CrudLayerInterface.CrudMethodStatement.CREATE_OBJECT_MAP.toString()), decodedBody, parameters);
                     break;
                 }
                 case GET: {
@@ -91,21 +88,13 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
                     break;
                 }
                 case PUT: {
-                    JsonObject jsonBody = (JsonObject) jsonParser.parse(new String(request.getBody()));
-                    if(jsonBody.has(References.REFERENCES_FIELD_NAME)) {
-                        Map<String, Object> parameters = new HashMap<>();
-                        References references = new JsonReferences((JsonObject) jsonBody.remove(References.REFERENCES_FIELD_NAME));
-                        parameters.put(References.REFERENCES_FIELD_NAME, references);
-                        Object bodyObject = gson.fromJson(jsonBody, layer.getResourceType());
-                        result = new EndPointCrudRequest(request, layer,
-                                (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(
-                                        CrudLayerInterface.CrudMethodStatement.UPDATE_OBJECT_MAP.toString()), bodyObject, parameters);
-                    } else {
-                        Object bodyObject = gson.fromJson(jsonBody, layer.getResourceType());
-                        result = new EndPointCrudRequest(request, layer,
-                                (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(
-                                        CrudLayerInterface.CrudMethodStatement.UPDATE_OBJECT.toString()), bodyObject);
-                    }
+                    parameters = new HashMap<>();
+                    references = new RestReference();
+                    parameters.put(References.class.getName(), references);
+                    decodedBody = createEnityAndReference(jsonParser.parse(new String(request.getBody())), references, layer.getResourceType());
+                    result = new EndPointCrudRequest(request, layer,
+                            (CrudLayerInterface.CrudInvoker) layer.getInvokers().get(
+                                    CrudLayerInterface.CrudMethodStatement.UPDATE_OBJECT_MAP.toString()), decodedBody, parameters);
                     break;
                 }
                 case DELETE: {
@@ -121,6 +110,145 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
                 throw new NullPointerException("Null end point result");
             }
 
+            return result;
+        }
+
+        private Object createEnityAndReference(JsonElement element, RestReference defaultReferences, Class resourceType) {
+            Object result = null;
+            if(element instanceof JsonObject) {
+                result = createEnityAndReference((JsonObject)element, defaultReferences, resourceType);
+            } else if(element instanceof JsonArray) {
+                List resultList = new ArrayList();
+                for(JsonElement subElement : (JsonArray)element) {
+                    resultList.add(createEnityAndReference(subElement, defaultReferences, resourceType));
+                }
+                result = resultList;
+            }
+            return result;
+        }
+
+        private Object createEnityAndReference(JsonObject jsonObject, RestReference defaultReferences, Class resourceType) {
+            Map<String, Introspection.Setter> setters = Introspection.getSetters(resourceType);
+            Object result;
+            try {
+                result = resourceType.getConstructor().newInstance();
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("Unable to create resource instance " + resourceType.toString(), ex);
+            }
+            Introspection.Setter setter;
+            Object value;
+            String referenceName;
+            JsonElement element;
+            for(Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+                if(entry.getKey().startsWith(REFERENCES_PREFIX)) {
+                    //This value is a reference object.
+                    referenceName = entry.getKey().substring(REFERENCES_PREFIX.length(), entry.getKey().length() - 2);
+                    element = entry.getValue();
+                    setter = setters.get(referenceName);
+                    if(setter == null) {
+                        continue;
+                    }
+                    Class referenceType;
+
+                    if(element instanceof JsonObject) {
+                        referenceType = inferResourceType(setter, (JsonObject) element);
+                        defaultReferences.putReference(referenceName, createEnityAndReference(
+                                (JsonObject) element, defaultReferences, referenceType));
+                    } else if(element instanceof JsonArray) {
+                        try {
+                            Collection collection;
+                            if(Set.class.isAssignableFrom(setter.getParameterType())) {
+                                collection = new HashSet();
+                            } else {
+                                collection = new ArrayList();
+                            }
+
+                            for(JsonElement collectionElemets : ((JsonArray)element)) {
+                                referenceType = inferResourceType(setter, (JsonObject) collectionElemets);
+                                collection.add(createEnityAndReference(collectionElemets, defaultReferences, referenceType));
+                            }
+                            defaultReferences.putReference(referenceName, collection);
+                        } catch (Exception ex) {
+                            Log.w(SystemProperties.Net.Http.LOG_TAG, "Unable to create reference %s", element.toString());
+                        }
+                    }
+                } else {
+                    setter = setters.get(entry.getKey());
+                    if(setter != null) {
+                        value = decodeElement(entry.getValue(), setter);
+                        if(value != null) {
+                            try {
+                                setter.set(result, value);
+                            } catch (Exception e) {
+                                Log.w(SystemProperties.Net.Http.LOG_TAG, "Unable to set value %s for resource type %s",
+                                        value.toString(), resourceType.toString());
+                            }
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        protected Class inferResourceType(Introspection.Setter setter, JsonObject jsonObject) {
+            Class result;
+            if(Collection.class.isAssignableFrom(setter.getParameterType())) {
+                result = setter.getParameterCollectionType();
+            } else {
+                result = setter.getParameterType();
+            }
+            return result;
+        }
+
+        private Object decodeElement(JsonElement jsonElement, Introspection.Setter setter) {
+            Object result = null;
+            Class parameterType = setter.getParameterType();
+            try {
+                if (Map.class.isAssignableFrom(parameterType)) {
+                    JsonObject jsonObject = jsonElement.getAsJsonObject();
+                    Map resultMap = new HashMap();
+                    for(Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+                        resultMap.put(entry.getKey(), decodeElement(entry.getValue(), setter.getParameterCollectionType()));
+                    }
+                } else if(Collection.class.isAssignableFrom(parameterType)) {
+                    JsonArray jsonArray = jsonElement.getAsJsonArray();
+                    Collection collectionResult;
+                    if(Set.class.isAssignableFrom(parameterType)) {
+                        collectionResult = new HashSet();
+                    } else {
+                        collectionResult = new ArrayList();
+                    }
+                    for(JsonElement arrayElement : jsonArray) {
+                        collectionResult.add(decodeElement(arrayElement, setter.getParameterCollectionType()));
+                    }
+                } else {
+                    result = decodeElement(jsonElement, parameterType);
+                }
+            } catch (Exception ex){
+                Log.w(SystemProperties.Net.Http.LOG_TAG, "Unable to encode %s:%s to %s data type",
+                        setter.getResourceName(), jsonElement.toString(), setter.getParameterType().toString());
+            }
+            return result;
+        }
+
+        protected Object decodeElement(JsonElement jsonElement, Class parameterType) {
+            Object result = null;
+            try {
+                if (parameterType.equals(String.class)) {
+                    result = jsonElement.getAsString();
+                } else if (parameterType.equals(Date.class)) {
+                    result = new Date(jsonElement.getAsLong());
+                } else if (parameterType.isEnum()) {
+                    result = Enum.valueOf(parameterType, jsonElement.getAsString());
+                } else if (parameterType.equals(Class.class)) {
+                    result = Class.forName(jsonElement.getAsString());
+                } else if (parameterType.equals(UUID.class)) {
+                    result = UUID.fromString(jsonElement.getAsString());
+                }
+            } catch (Exception ex){
+                Log.w(SystemProperties.Net.Http.LOG_TAG, "Unable to encode value %s to %s data type",
+                        jsonElement.toString(), parameterType.toString());
+            }
             return result;
         }
 
@@ -144,49 +272,32 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
         public boolean shouldSkipClass(Class<?> aClass) {
             return false;
         }
+
     }
 
-    public static class JsonReferences implements References {
+    class RestReference implements References {
 
-        private static final String RESOURCE_FIELD = "__resource__";
+        private final Map<String, Object> references;
 
-        private final JsonObject jsonObject;
-        private final Gson gson;
-
-        public JsonReferences(JsonObject jsonObject) {
-            this.jsonObject = jsonObject;
-            gson = new Gson();
-        }
-
-        private Object getReferenceInstance(JsonObject jsonObject) {
-            CrudLayerInterface crudLayerInterface = Layers.get(CrudLayerInterface.class,
-                    jsonObject.get(RESOURCE_FIELD).getAsString());
-            return gson.fromJson(jsonObject, crudLayerInterface.getResourceType());
+        public RestReference() {
+            this.references = new HashMap<>();
         }
 
         @Override
         public <O> O getReference(String referenceName) {
-            O result = null;
-            if(jsonObject.has(referenceName)) {
-                JsonElement jsonElement = jsonObject.get(referenceName);
-                if (jsonElement instanceof JsonObject) {
-                    result = (O) getReferenceInstance((JsonObject) jsonElement);
-                }
-            }
-            return result;
+            return (O) references.get(referenceName);
         }
 
         public <O> Collection<O> getReferenceCollection(String referenceName) {
-            Collection<O> result = new ArrayList<>();
-            if(jsonObject.has(referenceName)) {
-                JsonElement jsonElement = jsonObject.get(referenceName);
-                if (jsonElement instanceof JsonArray) {
-                    for (JsonElement arrayElement : ((JsonArray) jsonElement)) {
-                        result.add((O) getReferenceInstance((JsonObject) arrayElement));
-                    }
-                }
-            }
-            return result;
+            return (Collection<O>) references.get(referenceName);
+        }
+
+        public void putReference(String referenceName, Object reference) {
+            references.put(referenceName, reference);
+        }
+
+        public boolean isEmpty() {
+            return references.isEmpty();
         }
     }
 }

@@ -57,6 +57,10 @@ public abstract class CrudLayer<O extends Object> extends Layer implements
         return resourceType;
     }
 
+    protected final References getReferences(Map<String, Object> parameters) {
+        return (References) parameters.get(References.class.getName());
+    }
+
     /**
      * This method implements the creation of the resource.
      *

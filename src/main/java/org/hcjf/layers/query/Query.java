@@ -1737,9 +1737,17 @@ public class Query extends EvaluatorCollection {
      */
     public static class QueryResource implements Comparable<QueryResource>, QueryComponent {
 
-        private final String resourceName;
+        private String resourceName;
 
         public QueryResource(String resourceName) {
+            this.resourceName = resourceName;
+        }
+
+        /**
+         * Set the name of the resource.
+         * @param resourceName Name of the resource
+         */
+        public void setResourceName(String resourceName) {
             this.resourceName = resourceName;
         }
 

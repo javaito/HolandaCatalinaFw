@@ -30,19 +30,21 @@ public class ReferenceFunctionLayer extends BaseQueryFunctionLayer implements Qu
      */
     @Override
     public Object evaluate(String functionName, Object... parameters) {
-        Object result;
-        if(checkSize(1, parameters)[0] instanceof UUID) {
-            UUID uuid = (UUID) parameters[0];
-            result = new JoinableMap(Introspection.toMap(Query.evaluate(uuid)));
-        } else if(parameters[0] instanceof List) {
-            Collection<JoinableMap> collection = new ArrayList<>();
-            List<UUID> ids = (List<UUID>) parameters[0];
-            for(UUID uuid : ids) {
-                collection.add(new JoinableMap(Introspection.toMap(Query.evaluate(uuid))));
+        Object result = 0;
+        if(parameters.length > 0) {
+            if (checkSize(1, parameters)[0] instanceof UUID) {
+                UUID uuid = (UUID) parameters[0];
+                result = new JoinableMap(Introspection.toMap(Query.evaluate(uuid)));
+            } else if (parameters[0] instanceof List) {
+                Collection<JoinableMap> collection = new ArrayList<>();
+                List<UUID> ids = (List<UUID>) parameters[0];
+                for (UUID uuid : ids) {
+                    collection.add(new JoinableMap(Introspection.toMap(Query.evaluate(uuid))));
+                }
+                result = collection;
+            } else {
+                throw new IllegalArgumentException("Reference function supports only uuid or list of uuid as parameter");
             }
-            result = collection;
-        } else {
-            throw new IllegalArgumentException("Reference function supports only uuid or list of uuid as parameter");
         }
         return result;
     }

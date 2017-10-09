@@ -1,4 +1,4 @@
-package org.hcjf.io.net.http.rest;
+package org.hcjf.layers.crud;
 
 import java.util.Collection;
 
@@ -8,8 +8,6 @@ import java.util.Collection;
  * @author javaito
  */
 public interface References {
-
-    String REFERENCES_FIELD_NAME = "__references__";
 
     /**
      * Returns the instance of the reference indexed by specific name.
