@@ -291,6 +291,7 @@ public class MimeType {
     public static final MimeType IMAGE_PICT = new MimeType("image/pict");
     public static final MimeType IMAGE_PJPEG = new MimeType("image/pjpeg");
     public static final MimeType IMAGE_PNG = new MimeType("image/png");
+    public static final MimeType IMAGE_SVG = new MimeType("image/svg+xml");
     public static final MimeType IMAGE_TIFF = new MimeType("image/tiff");
     public static final MimeType IMAGE_VASA = new MimeType("image/vasa");
     public static final MimeType IMAGE_VND_DWG = new MimeType("image/vnd.dwg");
@@ -774,6 +775,7 @@ public class MimeType {
     public static final String SV4CPIO = "sv4cpio";
     public static final String SV4CRC = "sv4crc";
     public static final String SVF = "svf";
+    public static final String SVG = "svg";
     public static final String SVR = "svr";
     public static final String SWF = "swf";
     public static final String T = "t";
@@ -1165,6 +1167,7 @@ public class MimeType {
         types.put(IMAGE_PICT.toString(), IMAGE_PICT);
         types.put(IMAGE_PJPEG.toString(), IMAGE_PJPEG);
         types.put(IMAGE_PNG.toString(), IMAGE_PNG);
+        types.put(IMAGE_SVG.toString(), IMAGE_SVG);
         types.put(IMAGE_TIFF.toString(), IMAGE_TIFF);
         types.put(IMAGE_VASA.toString(), IMAGE_VASA);
         types.put(IMAGE_VND_DWG.toString(), IMAGE_VND_DWG);
@@ -1533,6 +1536,7 @@ public class MimeType {
         typesBySuffix.put(STL, APPLICATION_SLA);
         typesBySuffix.put(SV4CPIO, APPLICATION_X_SV4CPIO);
         typesBySuffix.put(SV4CRC, APPLICATION_X_SV4CRC);
+        typesBySuffix.put(SVG, IMAGE_SVG);
         typesBySuffix.put(SVR, APPLICATION_X_WORLD);
         typesBySuffix.put(SWF, APPLICATION_X_SHOCKWAVE_FLASH);
         typesBySuffix.put(TAR, APPLICATION_X_TAR);

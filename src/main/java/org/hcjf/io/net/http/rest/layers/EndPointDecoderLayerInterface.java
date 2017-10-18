@@ -15,6 +15,8 @@ import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -39,7 +41,6 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
     public static class JsonEndPointDecoder extends Layer implements EndPointDecoderLayerInterface, ExclusionStrategy {
 
         private static final String REFERENCES_PREFIX = "__references_";
-        private static final String RESOURCE_FIELD = "__resource__";
 
         private final Gson gson;
         private final JsonParser jsonParser;
@@ -142,7 +143,7 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
             for(Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
                 if(entry.getKey().startsWith(REFERENCES_PREFIX)) {
                     //This value is a reference object.
-                    referenceName = entry.getKey().substring(REFERENCES_PREFIX.length(), entry.getKey().length() - 2);
+                    referenceName = entry.getKey().substring(REFERENCES_PREFIX.length(), entry.getKey().length());
                     element = entry.getValue();
                     setter = setters.get(referenceName);
                     if(setter == null) {
@@ -244,6 +245,14 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
                     result = Class.forName(jsonElement.getAsString());
                 } else if (parameterType.equals(UUID.class)) {
                     result = UUID.fromString(jsonElement.getAsString());
+                } else if (parameterType.equals(Date.class)) {
+                    for(String dateFormat : SystemProperties.getList(SystemProperties.Net.Http.EndPoint.Json.DATE_FORMATS)) {
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat();
+                        try {
+                            simpleDateFormat.applyPattern(dateFormat);
+                            result = simpleDateFormat.format(jsonElement.getAsString());
+                        } catch (Exception ex){}
+                    }
                 }
             } catch (Exception ex){
                 Log.w(SystemProperties.Net.Http.LOG_TAG, "Unable to encode value %s to %s data type",

@@ -179,6 +179,14 @@ public final class SystemProperties extends Properties {
                 public static final String JAR_CONTAINER = "hcjf.net.http.folder.jar.container";
                 public static final String JAR_TEMP_PREFIX = "hcjf.net.http.folder.jar.temp.prefix";
             }
+
+            public static final class EndPoint {
+
+                public static final class Json {
+                    public static final String DATE_FORMATS = "hcjf.net.http.end.point.json.date.formats";
+                }
+
+            }
         }
 
         public static final class Https {
@@ -448,6 +456,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.Folder.ZIP_TEMP_PREFIX, "hcjf_zip_temp");
         defaults.put(Net.Http.Folder.JAR_CONTAINER, System.getProperty("user.home"));
         defaults.put(Net.Http.Folder.JAR_TEMP_PREFIX, "hcjf_jar_temp");
+
+        defaults.put(Net.Http.EndPoint.Json.DATE_FORMATS, " [dd/M/yyyy,dd/MM/yyyy]");
 
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");

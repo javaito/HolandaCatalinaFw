@@ -784,19 +784,17 @@ public final class NetService extends Service<NetServiceConsumer> {
                 //Ger the instance of the current IO thread.
                 NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
 
-                try (ByteArrayOutputStream readData = new ByteArrayOutputStream()) {
+                try  {
                     int readSize;
                     int totalSize = 0;
-
+                    ByteBuffer inputBuffer = ioThread.getInputBuffer();
+                    inputBuffer.clear();
+                    inputBuffer.rewind();
                     try {
                         //Put all the bytes into the buffer of the IO thread.
-                        ioThread.getInputBuffer().rewind();
-                        totalSize += readSize = channel.read(ioThread.getInputBuffer());
+                        totalSize += readSize = channel.read(inputBuffer);
                         while (readSize > 0) {
-                            readData.write(ioThread.getInputBuffer().array(), 0, readSize);
-                            readData.flush();
-                            ioThread.getInputBuffer().rewind();
-                            totalSize += readSize = channel.read(ioThread.getInputBuffer());
+                            totalSize += readSize = channel.read(inputBuffer);
                         }
                     } catch (IOException ex) {
                         destroyChannel(channel);
@@ -804,8 +802,11 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                     if (totalSize == -1) {
                         destroyChannel(channel);
-                    } else if (readData.size() > 0) {
-                        NetPackage netPackage = createPackage(channel, readData.toByteArray(), NetPackage.ActionEvent.READ);
+                    } else if (totalSize > 0) {
+                        byte[] data = new byte[inputBuffer.position()];
+                        inputBuffer.rewind();
+                        inputBuffer.get(data);
+                        NetPackage netPackage = createPackage(channel, data, NetPackage.ActionEvent.READ);
 
                         NetSession session = sessionsByChannel.get(channel);
                         //Here the session is linked with the current thread

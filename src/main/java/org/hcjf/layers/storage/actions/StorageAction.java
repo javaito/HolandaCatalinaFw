@@ -18,6 +18,13 @@ import java.util.Map;
  */
 public abstract class StorageAction<S extends StorageSession> {
 
+    public static class ParametersName {
+
+        public static final String TTL = "ttl";
+        public static final String CONSISTENCY_STRATEGY = "consistencyStrategy";
+
+    }
+
     private final S session;
     private String resourceName;
     private final Map<String, StorageValue> values;
