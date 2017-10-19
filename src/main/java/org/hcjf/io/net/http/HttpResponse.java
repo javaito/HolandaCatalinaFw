@@ -2,6 +2,10 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.properties.SystemProperties;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * This class represents a http response package.
  * @author javaito
@@ -95,6 +99,10 @@ public class HttpResponse extends HttpPackage {
         for(HttpHeader header : getHeaders()) {
             builder.append(header).append(STRING_LINE_SEPARATOR);
         }
+        for(Cookie cookie : getCookies()) {
+            builder.append(cookie instanceof Cookie2 ? HttpHeader.SET_COOKIE2.toString() : HttpHeader.SET_COOKIE.toString());
+            builder.append(": ").append(cookie).append(STRING_LINE_SEPARATOR);
+        }
         builder.append(STRING_LINE_SEPARATOR);
         return builder.toString();
     }
@@ -131,5 +139,4 @@ public class HttpResponse extends HttpPackage {
 
         return builder.toString();
     }
-
 }

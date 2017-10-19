@@ -261,7 +261,7 @@ public class HttpRequest extends HttpPackage {
      * @return Protocol description.
      */
     private String toStringProtocolHeader() {
-        StringBuilder builder = new StringBuilder();
+        Strings.Builder builder = new Strings.Builder();
 
         builder.append(getMethod().toString()).append(LINE_FIELD_SEPARATOR).
                 append(getPath()).append(LINE_FIELD_SEPARATOR).
@@ -269,6 +269,11 @@ public class HttpRequest extends HttpPackage {
         for(HttpHeader header : getHeaders()) {
             builder.append(header).append(STRING_LINE_SEPARATOR);
         }
+        builder.append(HttpHeader.COOKIE.toString()).append(": ");
+        for(Cookie cookie : getCookies()) {
+            builder.append(cookie, Strings.ARGUMENT_SEPARATOR_2 + Strings.WHITE_SPACE);
+        }
+        builder.cleanBuffer();
         builder.append(STRING_LINE_SEPARATOR);
         return builder.toString();
     }

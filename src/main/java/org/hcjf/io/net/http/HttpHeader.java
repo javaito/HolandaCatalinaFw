@@ -45,6 +45,7 @@ public class HttpHeader {
     public static final String E_TAG = "ETag";
     public static final String COOKIE = "Cookie";
     public static final String SET_COOKIE = "Set-Cookie";
+    public static final String SET_COOKIE2 = "Set-Cookie2";
     public static final String SOAP_ACTION = "SOAPAction";
     public static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
     public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";

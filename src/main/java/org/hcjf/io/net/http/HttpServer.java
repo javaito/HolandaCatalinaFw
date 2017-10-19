@@ -121,8 +121,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 out.flush();
             }
             result = out.toByteArray();
-
-            Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "%s", new String(result));
         } catch (Exception ex){}
         return result;
     }

@@ -6,6 +6,7 @@ import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -34,6 +35,7 @@ public abstract class HttpPackage {
     private HttpProtocol protocol;
     private String httpVersion;
     private final Map<String, HttpHeader> headers;
+    private final Map<String, Cookie> cookies;
     private byte[] body;
 
     //This fields are only for internal parsing.
@@ -46,6 +48,7 @@ public abstract class HttpPackage {
     public HttpPackage() {
         this.httpVersion = HttpVersion.VERSION_1_1;
         this.headers = new HashMap<>();
+        this.cookies = new HashMap<>();
         this.body = new byte[0];
         this.protocol = HttpProtocol.HTTP;
     }
@@ -53,6 +56,7 @@ public abstract class HttpPackage {
     protected HttpPackage(HttpPackage httpPackage) {
         this.httpVersion = httpPackage.httpVersion;
         this.headers = httpPackage.headers;
+        this.cookies = httpPackage.cookies;
         this.body = httpPackage.body;
         this.protocol = httpPackage.protocol;
     }
@@ -121,7 +125,76 @@ public abstract class HttpPackage {
         if(header == null) {
             throw new NullPointerException("Null header");
         }
-        headers.put(header.getHeaderName(), header);
+
+        if(header.getHeaderName().equals(HttpHeader.COOKIE)) {
+            processCookieHeader(header);
+        } else if(header.getHeaderName().equals(HttpHeader.SET_COOKIE) ||
+                header.getHeaderName().equals(HttpHeader.SET_COOKIE2)) {
+            processSetCookieHeader(header);
+        } else {
+            headers.put(header.getHeaderName(), header);
+        }
+    }
+
+    private void processCookieHeader(HttpHeader httpHeader) {
+        try {
+            String[] cookies = httpHeader.getHeaderValue().split(Strings.ARGUMENT_SEPARATOR_2);
+            String[] name_value;
+            for(String cookie : cookies) {
+                name_value = cookie.split(Strings.ASSIGNATION);
+                addCookie(new Cookie(name_value[0].trim(), name_value[1].trim()));
+            }
+        } catch (Exception ex) {
+            Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                    "Error parsing cookie header: %s", ex, httpHeader.toString());
+        }
+    }
+
+    /**
+     * This method parse the header value to create an instance of cookie object.
+     * @param httpHeader Header to parse.
+     */
+    private void processSetCookieHeader(HttpHeader httpHeader) {
+        try {
+            String[] params = httpHeader.getHeaderValue().split(Strings.ARGUMENT_SEPARATOR_2);
+            String[] name_value = params[0].split(Strings.ASSIGNATION);
+
+            Cookie cookie;
+            if(httpHeader.getHeaderName().equals(HttpHeader.SET_COOKIE2)) {
+                cookie = new Cookie2(name_value[0].trim(), name_value[1].trim());
+            } else {
+                cookie = new Cookie(name_value[0].trim(), name_value[1].trim());
+            }
+
+            String param;
+            for (int i = 1; i < params.length; i++) {
+                param = params[i].trim();
+                if(param.startsWith(Cookie.COMMENT)) {
+                    cookie.setComment(param.substring(param.indexOf(Strings.ASSIGNATION) + 1).trim());
+                } else if(param.startsWith(Cookie.DOMAIN)) {
+                    cookie.setDomain(param.substring(param.indexOf(Strings.ASSIGNATION) + 1).trim());
+                } else if(param.startsWith(Cookie.MAX_AGE)) {
+                    cookie.setMaxAge(Integer.parseInt(param.substring(param.indexOf(Strings.ASSIGNATION) + 1).trim()));
+                } else if(param.startsWith(Cookie.PATH)) {
+                    cookie.setPath(param.substring(param.indexOf(Strings.ASSIGNATION) + 1).trim());
+                } else if(param.startsWith(Cookie.SECURE)) {
+                    cookie.setSecure(true);
+                } else if(param.startsWith(Cookie.VERSION)) {
+                    cookie.setVersion(Integer.parseInt(param.substring(param.indexOf(Strings.ASSIGNATION) + 1).trim()));
+                } else if(cookie instanceof Cookie2 && param.startsWith(Cookie2.COMMENT_URL)) {
+                    ((Cookie2)cookie).setCommentUrl(param.substring(param.indexOf(Strings.ASSIGNATION) + 1).trim());
+                } else if(cookie instanceof Cookie2 && param.startsWith(Cookie2.DISCARD)) {
+                    ((Cookie2)cookie).setDiscard(true);
+                } else if(cookie instanceof Cookie2 && param.startsWith(Cookie2.PORT)) {
+                    ((Cookie2)cookie).setPort(Integer.parseInt(param.substring(param.indexOf(Strings.ASSIGNATION) + 1).trim()));
+                }
+            }
+
+            addCookie(cookie);
+        } catch (Exception ex) {
+            Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                    "Error parsing cookie header: %s", ex, httpHeader.toString());
+        }
     }
 
     /**
@@ -155,6 +228,44 @@ public abstract class HttpPackage {
      */
     public final boolean containsHeader(String headerName) {
         return getHeader(headerName) != null;
+    }
+
+    /**
+     * Add a cookie to the http package.
+     * @param cookie Cookie instance.
+     */
+    public final void addCookie(Cookie cookie) {
+        if(cookie == null) {
+            throw new NullPointerException("Null cookie");
+        }
+
+        cookies.put(cookie.getName(), cookie);
+    }
+
+    /**
+     * Returns a unmodifiable collection with all the cookies of the package.
+     * @return Collection with all the cookies.
+     */
+    public final Collection<Cookie> getCookies() {
+        return Collections.unmodifiableCollection(cookies.values());
+    }
+
+    /**
+     * Returns the cookie instance indexed by the parameter name.
+     * @param name Parameter name.
+     * @return Cookie instance.
+     */
+    public final Cookie getCookie(String name) {
+        return cookies.get(name);
+    }
+
+    /**
+     * Verify if the package contains the cookie indexed by the parameter name.
+     * @param name Parameter name.
+     * @return True if the cookie is contained and false in the otherwise.
+     */
+    public final boolean containsCookie(String name) {
+        return cookies.containsKey(name);
     }
 
     /**
@@ -433,4 +544,5 @@ public abstract class HttpPackage {
         }
 
     }
+
 }

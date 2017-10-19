@@ -21,6 +21,7 @@ public final class Strings {
     public static final String CLASS_SEPARATOR = ".";
     public static final String CASE_INSENSITIVE_REGEX_FLAG = "(?i)";
     public static final String ARGUMENT_SEPARATOR = ",";
+    public static final String ARGUMENT_SEPARATOR_2 = ";";
     public static final String ASSIGNATION = "=";
     public static final String REPLACEABLE_RICH_TEXT = "&";
     public static final String RICH_TEXT_SEPARATOR = "'";
