@@ -100,7 +100,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     /**
      * This method decode the implementation data.
-     *
      * @param payLoad Implementation data.
      * @return Implementation data encoded.
      */
@@ -127,7 +126,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     /**
      * This method decode the net package to obtain the implementation data
-     *
      * @param netPackage Net package.
      * @return Return the implementation data.
      */
@@ -312,7 +310,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * Manages an exception thrown while trying to check session (authenticate)
      * by calling to the specific context for get an error response depending on exception information.
      * Thus, the response is written to the consumer.
-     *
      * @param session Net session.
      * @param requestPayLoad Net package decoded as {@link HttpRequest}
      * @param netPackage Net package.
