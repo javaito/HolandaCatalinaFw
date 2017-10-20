@@ -99,32 +99,32 @@ public class Cookie {
         result.append(getName()).append(Strings.ASSIGNATION).append(getValue());
 
         if(getComment() != null) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(COMMENT).append(Strings.ASSIGNATION).append(getComment());
         }
 
         if(getDomain() != null) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(DOMAIN).append(Strings.ASSIGNATION).append(getDomain());
         }
 
         if(getMaxAge() != null) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(MAX_AGE).append(Strings.ASSIGNATION).append(getMaxAge());
         }
 
         if(getPath() != null) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(PATH).append(Strings.ASSIGNATION).append(getPath());
         }
 
         if(isSecure()) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(SECURE);
         }
 
         if(getVersion() != null) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(VERSION).append(Strings.ASSIGNATION).append(getVersion());
         }
 

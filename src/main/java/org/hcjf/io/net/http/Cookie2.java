@@ -49,17 +49,17 @@ public class Cookie2 extends Cookie {
         result.append(super.toString());
 
         if(getCommentUrl() != null) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(COMMENT_URL).append(Strings.ASSIGNATION).append(getCommentUrl());
         }
 
         if(getPort() != null) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(PORT).append(Strings.ASSIGNATION).append(getPort());
         }
 
         if(isDiscard()) {
-            result.append(Strings.ARGUMENT_SEPARATOR).append(Strings.WHITE_SPACE);
+            result.append(Strings.ARGUMENT_SEPARATOR_2).append(Strings.WHITE_SPACE);
             result.append(DISCARD);
         }
 
