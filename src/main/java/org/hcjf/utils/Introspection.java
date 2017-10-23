@@ -424,38 +424,40 @@ public final class Introspection {
     public static class Getter extends Accessor {
 
         private final Class returnType;
+        private ParameterizedType parameterParameterizedType;
         private final Class returnKeyType;
         private final Class returnCollectionType;
 
         public Getter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
             returnType = method.getReturnType();
+            parameterParameterizedType = null;
 
             if (method.getGenericReturnType() instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) method.getGenericReturnType();
+                parameterParameterizedType = (ParameterizedType) method.getGenericReturnType();
                 if(Collection.class.isAssignableFrom(returnType)) {
                     returnKeyType = null;
-                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
-                        returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
-                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
-                        returnCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
+                    if(parameterParameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        returnCollectionType = (Class) parameterParameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterParameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        returnCollectionType = (Class) ((TypeVariable)parameterParameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
-                        returnCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
+                        returnCollectionType = (Class) ((ParameterizedType)parameterParameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
                 } else if(Map.class.isAssignableFrom(returnType)) {
-                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
-                        returnKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
-                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
-                        returnKeyType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
+                    if(parameterParameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        returnKeyType = (Class) parameterParameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterParameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        returnKeyType = (Class) ((TypeVariable)parameterParameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
-                        returnKeyType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
+                        returnKeyType = (Class) ((ParameterizedType)parameterParameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
-                    if(parameterizedType.getActualTypeArguments()[1] instanceof Class) {
-                        returnCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
-                    } else if(parameterizedType.getActualTypeArguments()[1] instanceof TypeVariable) {
-                        returnCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[1]).getBounds()[0];
+                    if(parameterParameterizedType.getActualTypeArguments()[1] instanceof Class) {
+                        returnCollectionType = (Class) parameterParameterizedType.getActualTypeArguments()[1];
+                    } else if(parameterParameterizedType.getActualTypeArguments()[1] instanceof TypeVariable) {
+                        returnCollectionType = (Class) ((TypeVariable)parameterParameterizedType.getActualTypeArguments()[1]).getBounds()[0];
                     } else {
-                        returnCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[1]).getRawType();
+                        returnCollectionType = (Class) ((ParameterizedType)parameterParameterizedType.getActualTypeArguments()[1]).getRawType();
                     }
                 } else {
                     returnKeyType = null;
@@ -488,6 +490,14 @@ public final class Introspection {
         }
 
         /**
+         * Returns the parameterized type that corresponds with the parameter type.
+         * @return Parameterized parameter type.
+         */
+        public final ParameterizedType getParameterParameterizedType() {
+            return parameterParameterizedType;
+        }
+
+        /**
          * If the result type is assignable to map class then this method return
          * the key type of the result type.
          * @return Key type of the map.
@@ -512,39 +522,41 @@ public final class Introspection {
     public static class Setter extends Accessor {
 
         private final Class parameterType;
+        private ParameterizedType parameterParameterizedType;
         private final Class parameterKeyType;
         private final Class parameterCollectionType;
 
         public Setter(Class implementationClass, String resourceName, Method method) {
             super(implementationClass, resourceName, method);
             this.parameterType = method.getParameterTypes()[0];
+            this.parameterParameterizedType = null;
 
             if(method.getGenericParameterTypes()[0] instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) method.getGenericParameterTypes()[0];
+                parameterParameterizedType = (ParameterizedType) method.getGenericParameterTypes()[0];
                 if(Collection.class.isAssignableFrom(parameterType)) {
                     parameterKeyType = null;
-                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
-                        parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[0];
-                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
-                        parameterCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
+                    if(parameterParameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        parameterCollectionType = (Class) parameterParameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterParameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        parameterCollectionType = (Class) ((TypeVariable)parameterParameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
-                        parameterCollectionType = (Class) ((ParameterizedType) parameterizedType.getActualTypeArguments()[0]).getRawType();
+                        parameterCollectionType = (Class) ((ParameterizedType) parameterParameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
                 } else if(Map.class.isAssignableFrom(parameterType)) {
-                    if(parameterizedType.getActualTypeArguments()[0] instanceof Class) {
-                        parameterKeyType = (Class) parameterizedType.getActualTypeArguments()[0];
-                    } else if(parameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
-                        parameterKeyType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[0]).getBounds()[0];
+                    if(parameterParameterizedType.getActualTypeArguments()[0] instanceof Class) {
+                        parameterKeyType = (Class) parameterParameterizedType.getActualTypeArguments()[0];
+                    } else if(parameterParameterizedType.getActualTypeArguments()[0] instanceof TypeVariable) {
+                        parameterKeyType = (Class) ((TypeVariable)parameterParameterizedType.getActualTypeArguments()[0]).getBounds()[0];
                     } else {
-                        parameterKeyType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[0]).getRawType();
+                        parameterKeyType = (Class) ((ParameterizedType)parameterParameterizedType.getActualTypeArguments()[0]).getRawType();
                     }
 
-                    if(parameterizedType.getActualTypeArguments()[1] instanceof Class) {
-                        parameterCollectionType = (Class) parameterizedType.getActualTypeArguments()[1];
-                    } else if(parameterizedType.getActualTypeArguments()[1] instanceof TypeVariable) {
-                        parameterCollectionType = (Class) ((TypeVariable)parameterizedType.getActualTypeArguments()[1]).getBounds()[0];
+                    if(parameterParameterizedType.getActualTypeArguments()[1] instanceof Class) {
+                        parameterCollectionType = (Class) parameterParameterizedType.getActualTypeArguments()[1];
+                    } else if(parameterParameterizedType.getActualTypeArguments()[1] instanceof TypeVariable) {
+                        parameterCollectionType = (Class) ((TypeVariable)parameterParameterizedType.getActualTypeArguments()[1]).getBounds()[0];
                     } else {
-                        parameterCollectionType = (Class) ((ParameterizedType)parameterizedType.getActualTypeArguments()[1]).getRawType();
+                        parameterCollectionType = (Class) ((ParameterizedType)parameterParameterizedType.getActualTypeArguments()[1]).getRawType();
                     }
                 } else {
                     parameterKeyType = null;
@@ -573,6 +585,14 @@ public final class Introspection {
          */
         public final Class getParameterType() {
             return parameterType;
+        }
+
+        /**
+         * Returns the parameterized type that corresponds with the parameter type.
+         * @return Parameterized parameter type.
+         */
+        public final ParameterizedType getParameterParameterizedType() {
+            return parameterParameterizedType;
         }
 
         /**
