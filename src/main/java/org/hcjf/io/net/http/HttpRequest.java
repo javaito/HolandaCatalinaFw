@@ -269,9 +269,12 @@ public class HttpRequest extends HttpPackage {
         for(HttpHeader header : getHeaders()) {
             builder.append(header).append(STRING_LINE_SEPARATOR);
         }
-        builder.append(HttpHeader.COOKIE.toString()).append(": ");
-        for(Cookie cookie : getCookies()) {
-            builder.append(cookie, Strings.ARGUMENT_SEPARATOR_2 + Strings.WHITE_SPACE);
+        Collection<Cookie> cookies = getCookies();
+        if(cookies.size() > 0) {
+            builder.append(HttpHeader.COOKIE.toString()).append(": ");
+            for (Cookie cookie : cookies) {
+                builder.append(cookie, Strings.ARGUMENT_SEPARATOR_2 + Strings.WHITE_SPACE);
+            }
         }
         builder.cleanBuffer();
         builder.append(STRING_LINE_SEPARATOR);
