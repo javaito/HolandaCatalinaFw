@@ -39,7 +39,7 @@ public final class SystemProperties extends Properties {
 
         public static final String LOG_TAG = "hcjf.locale.log.tag";
         public static final String DEFAULT_LOCALE = "hcjf.default.locale";
-        public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION = "hcjf.default.locale.layer.implementation";
+        public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION_CLASS_NAME = "hcjf.default.locale.layer.implementation.class.name";
         public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME = "hcjf.default.locale.layer.implementation.name";
 
     }
@@ -342,8 +342,8 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/))|(?=(\\+|\\-|\\*|/))");
 
         defaults.put(Locale.DEFAULT_LOCALE, java.util.Locale.getDefault().toLanguageTag());
-        defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION, DefaultLocaleLayer.class.getName());
-        defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, "default.locale.layer");
+        defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, DefaultLocaleLayer.class.getName());
+        defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_CLASS_NAME, DefaultLocaleLayer.class.getName());
         defaults.put(Locale.LOG_TAG, "LOCALE");
 
         defaults.put(Layer.LOG_TAG, "LAYER");
