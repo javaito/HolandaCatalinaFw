@@ -20,7 +20,7 @@ public class Messages {
         defaultMessages = new HashMap<>();
 
         //Publishing default layers
-        Layers.publishLayer(SystemProperties.getClass(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION));
+        Layers.publishLayer(SystemProperties.getClass(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_CLASS_NAME));
     }
 
     /**

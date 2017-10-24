@@ -12,7 +12,11 @@ import java.util.Locale;
 public class DefaultLocaleLayer extends Layer implements LocaleLayerInterface {
 
     public DefaultLocaleLayer() {
-        super(SystemProperties.get(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME));
+    }
+
+    @Override
+    public String getImplName(){
+        return getClass().getName();
     }
 
     /**
