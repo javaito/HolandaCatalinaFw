@@ -911,6 +911,7 @@ public class Query extends EvaluatorCollection {
             for(QueryReturnParameter groupParameter : groupParameters) {
                 result.append(groupParameter, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
             }
+            result.append(Strings.WHITE_SPACE);
             result.cleanBuffer();
         }
 
