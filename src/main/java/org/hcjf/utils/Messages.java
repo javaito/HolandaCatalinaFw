@@ -2,7 +2,6 @@ package org.hcjf.utils;
 
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.locale.LocaleLayerInterface;
-import org.hcjf.properties.SystemProperties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,19 +11,27 @@ import java.util.Map;
  * @author javaito
  *
  */
-public class Messages {
+public abstract class Messages {
 
     private final Map<String, String> defaultMessages;
+
 
     protected Messages() {
         defaultMessages = new HashMap<>();
 
         //Publishing default layers
-        Layers.publishLayer(SystemProperties.getClass(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_CLASS_NAME));
+        Layers.publishLayer(getLocaleLayerImplementation());
     }
 
     /**
-     * Returnt he message associated to the error code.
+     * Implement this method to specify a LocaleLayer for a particular Messages implementation<br>
+     * You can use {@link org.hcjf.layers.locale.DefaultLocaleLayer} if don't want a specific LocaleLayer
+     * @return LocaleLayer implementation for the specific Messages implementation
+     */
+    protected abstract Class getLocaleLayerImplementation();
+
+    /**
+     * Return the message associated to the error code.
      * @param messageCode Message code.
      * @param localeLayerName Implementation name of the locale layer.
      * @param params Parameters to complete the message.
