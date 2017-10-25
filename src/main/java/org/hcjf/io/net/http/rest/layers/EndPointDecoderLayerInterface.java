@@ -201,7 +201,7 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
             return result;
         }
 
-        private Object decodeElement(JsonElement jsonElement, Introspection.Setter setter) {
+        protected Object decodeElement(JsonElement jsonElement, Introspection.Setter setter) {
             Object result = null;
             Class parameterType = setter.getParameterType();
             try {
