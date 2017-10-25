@@ -23,6 +23,11 @@ public abstract class Messages {
         Layers.publishLayer(getLocaleLayerImplementation());
     }
 
+    /**
+     * Implement this method to specify a LocaleLayer for a particular Messages implementation<br>
+     * You can use {@link org.hcjf.layers.locale.DefaultLocaleLayer} if don't want a specific LocaleLayer
+     * @return LocaleLayer implementation for the specific Messages implementation
+     */
     protected abstract Class getLocaleLayerImplementation();
 
     /**

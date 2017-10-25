@@ -122,7 +122,7 @@ public final class Errors extends Messages {
     }
 
     /**
-     * Returnt he message associated to the error code.
+     * Return the message associated to the error code.
      * @param errorCode Error code.
      * @param params Parameters to complete the message.
      * @return Message complete and translated.
