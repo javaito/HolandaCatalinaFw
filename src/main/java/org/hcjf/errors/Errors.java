@@ -116,6 +116,11 @@ public final class Errors extends Messages {
     private Errors() {
     }
 
+    @Override
+    protected Class getLocaleLayerImplementation(){
+        return SystemProperties.getClass(SystemProperties.Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_CLASS_NAME);
+    }
+
     /**
      * Returnt he message associated to the error code.
      * @param errorCode Error code.
