@@ -294,7 +294,16 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
 
         @Override
         public <O> O getReference(String referenceName) {
-            return (O) references.get(referenceName);
+            O result = null;
+            if(references.containsKey(referenceName)) {
+                Object referenceValue = references.get(referenceName);
+                if (referenceValue instanceof Collection) {
+                    result = (O) ((Collection) referenceValue).iterator().next();
+                } else {
+                    result = (O) referenceValue;
+                }
+            }
+            return result;
         }
 
         public <O> Collection<O> getReferenceCollection(String referenceName) {
