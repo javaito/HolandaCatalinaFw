@@ -222,10 +222,51 @@ public abstract class Service<C extends ServiceConsumer> {
                 } else {
                     future.get();
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            } catch (TimeoutException ex) {
+                future.cancel(true);
+                throw new RuntimeException(ex);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
             }
         }
+    }
+
+    /**
+     * This method execute a callable instance and wait for the response.
+     * @param callable Callable instance.
+     * @param serviceSession Service session.
+     * @param <O> Expected response.
+     * @return Result instance.
+     */
+    public static final <O extends Object> O call(Callable<O> callable, ServiceSession serviceSession) {
+        return call(callable, serviceSession, 0);
+    }
+
+    /**
+     * This method execute a callable instance and wait for the response.
+     * @param callable Callable instance.
+     * @param serviceSession Service session.
+     * @param timeout Max time for the execution.
+     * @param <O> Expected response.
+     * @return Result instance.
+     */
+    public static final <O extends Object> O call(Callable<O> callable, ServiceSession serviceSession, long timeout) {
+        O result;
+        CallableWrapper callableWrapper = new CallableWrapper(callable, serviceSession);
+        Future<O> future = SystemServices.instance.serviceExecutor.submit(callableWrapper);
+        try {
+            if (timeout > 0) {
+                result = future.get(timeout, TimeUnit.MILLISECONDS);
+            } else {
+                result = future.get();
+            }
+        } catch (TimeoutException ex) {
+            future.cancel(true);
+            throw new RuntimeException(ex);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+        return result;
     }
 
     /**
@@ -444,6 +485,10 @@ public abstract class Service<C extends ServiceConsumer> {
         private final Callable<O> callable;
         private final ServiceSession session;
         private final Map<String, Object> invokerProperties;
+
+        public CallableWrapper(Callable<O> callable, ServiceSession session) {
+            this(callable, session, new HashMap<>());
+        }
 
         public CallableWrapper(Callable<O> callable, ServiceSession session, Map<String, Object> invokerProperties) {
             this.callable = callable;
