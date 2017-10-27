@@ -108,6 +108,14 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     }
 
     /**
+     * Returns the net service instance of the consumer.
+     * @return Net service instance.
+     */
+    protected final NetService getService() {
+        return service;
+    }
+
+    /**
      * Return the port of the consumer.
      * @return Port.
      */

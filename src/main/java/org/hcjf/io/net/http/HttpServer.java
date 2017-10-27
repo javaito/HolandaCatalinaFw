@@ -8,11 +8,14 @@ import org.hcjf.io.net.NetSession;
 import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.Callable;
 
 /**
  * Implementation of the net service that provides the http protocol server.
@@ -231,7 +234,12 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                 //If there's a Cross-Origin-Resource-Sharing preflight request returns a empty response
                                 response = new HttpResponse();
                             } else{
-                                response = context.onContext(request);
+                                if(context.getTimeout() > 0) {
+                                    response = Service.call(() -> context.onContext(request),
+                                            ServiceSession.getCurrentIdentity(), context.getTimeout());
+                                } else {
+                                    response = context.onContext(request);
+                                }
                             }
                             if(request.containsHeader(HttpHeader.CONNECTION)) {
                                 if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {

@@ -19,6 +19,7 @@ public abstract class Context {
     protected static final String URI_FOLDER_SEPARATOR = "/";
 
     private final String contextRegex;
+    private long timeout;
 
     /**
      * Constructor
@@ -60,6 +61,22 @@ public abstract class Context {
      * @return Return an object with all the response information.
      */
     public abstract HttpResponse onContext(HttpRequest request);
+
+    /**
+     * Returns the timeout value of the context execution.
+     * @return Timeout value.
+     */
+    public long getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Set the timeout value of the context execution.
+     * @param timeout Timeout value.
+     */
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
+    }
 
     /**
      * This method is called when there are any error on the context execution.
