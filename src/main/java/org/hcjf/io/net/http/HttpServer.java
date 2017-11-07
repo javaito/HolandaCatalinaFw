@@ -289,6 +289,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 }
 
                 if(response instanceof HttpPipelineResponse) {
+                    connectionKeepAlive = true;
                     final HttpResponse finalResponse = response;
                     Service.run(() -> {
                         HttpPipelineResponse pipelineResponse = (HttpPipelineResponse) finalResponse;
