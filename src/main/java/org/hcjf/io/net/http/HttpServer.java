@@ -12,6 +12,7 @@ import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -282,20 +283,27 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
             try {
                 response.setProtocol(httpProtocol);
-                if(!response.containsHeader(HttpHeader.CONTENT_LENGTH) &&
-                        SystemProperties.getBoolean(SystemProperties.Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH) &&
-                        !(response instanceof HttpPipelineResponse)) {
+                if(isContentLengthRequired(response)) {
                     Integer length = response.getBody() == null ? 0 : response.getBody().length;
                     response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, length.toString()));
                 }
 
                 if(response instanceof HttpPipelineResponse) {
-                    HttpPipelineResponse pipelineResponse = (HttpPipelineResponse) response;
-                    pipelineResponse.onStart();
-                    while(pipelineResponse.read() >= 0) {
-                        write(session, response, false);
-                    }
-                    pipelineResponse.onEnd();
+                    final HttpResponse finalResponse = response;
+                    Service.run(() -> {
+                        HttpPipelineResponse pipelineResponse = (HttpPipelineResponse) finalResponse;
+                        pipelineResponse.onStart();
+                        while(pipelineResponse.read() >= 0) {
+                            try {
+                                write(session, finalResponse, false);
+                            } catch (IOException e) {
+                                Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", e);
+                                break;
+                            }
+                        }
+                        pipelineResponse.onEnd();
+                        disconnect(session, "Http request end.");
+                    }, ServiceSession.getCurrentIdentity());
                 } else {
                     write(session, response, false);
                 }
@@ -312,6 +320,32 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 }
             }
         }
+    }
+
+    /**
+     * Verify if the response needs add automatic content length header.
+     * @param response Http response instance to verify this condition.
+     * @return True if the is required generate the content length header and false in the otherwise.
+     */
+    private boolean isContentLengthRequired(HttpResponse response) {
+        boolean result = false;
+
+        if(!response.containsHeader(HttpHeader.CONTENT_LENGTH) &&
+                SystemProperties.getBoolean(SystemProperties.Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH) &&
+                !(response instanceof HttpPipelineResponse)) {
+            result = true;
+
+            //Verify if exist some response code to change the response value
+            try {
+                List<String> skipCodes = SystemProperties.getList(SystemProperties.Net.Http.AUTOMATIC_CONTENT_LENGTH_SKIP_CODES);
+                String responseCodeToString = response.getResponseCode().toString();
+                if(skipCodes.contains(responseCodeToString)) {
+                    result = false;
+                }
+            } catch (Exception ex) { }
+        }
+
+        return result;
     }
 
     /**

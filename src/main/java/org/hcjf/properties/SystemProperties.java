@@ -76,6 +76,15 @@ public final class SystemProperties extends Properties {
         public static final String SERVICE_PRIORITY = "hcjf.event.service.priority";
     }
 
+    public static final class Collector {
+        public static final String SERVICE_NAME = "hcjf.collector.service.name";
+        public static final String SERVICE_PRIORITY = "hcjf.collector.service.priority";
+        public static final String LOG_TAG = "hcjf.collector.log.tag";
+        public static final String FLUSH_PERIOD = "hcjf.collector.flush.period";
+        public static final String CLOUD_SAVE_MODE = "hcjf.collector.cloud.save.mode";
+        public static final String CLOUD_TIMER_TASK_NAME = "hcjf.collector.cloud.timer.task.name";
+    }
+
     public static final class Log {
         public static final String SERVICE_NAME = "hcjf.log.service.name";
         public static final String SERVICE_PRIORITY = "hcjf.log.service.priority";
@@ -165,6 +174,7 @@ public final class SystemProperties extends Properties {
             public static final String DEFAULT_GUEST_SESSION_NAME = "hcjf.net.http.default.guest.session.name";
             public static final String DEFAULT_FILE_CHECKSUM_ALGORITHM = "hcjf.net.http.default.file.checksum.algorithm";
             public static final String ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH = "hcjf.net.http.enable.automatic.response.content.length";
+            public static final String AUTOMATIC_CONTENT_LENGTH_SKIP_CODES = "hcjf.net.http.automatic.content.length.skip.codes";
             public static final String MAX_PACKAGE_SIZE = "hcjf.net.http.max.package.size";
 
             public static final class Folder {
@@ -368,6 +378,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Event.SERVICE_NAME, "Events");
         defaults.put(Event.SERVICE_PRIORITY, "0");
 
+        defaults.put(Collector.SERVICE_NAME, "Collectors");
+        defaults.put(Collector.SERVICE_PRIORITY, "0");
+        defaults.put(Collector.LOG_TAG, "COLLECTOR_SERVICE");
+        defaults.put(Collector.FLUSH_PERIOD, Long.toString(5 * 60 * 1000));
+        defaults.put(Collector.CLOUD_SAVE_MODE, "false");
+        defaults.put(Collector.CLOUD_TIMER_TASK_NAME, "CollectorsFlushCycle");
+
         defaults.put(Encoding.SERVICE_NAME, "EncodingService");
         defaults.put(Encoding.SERVICE_PRIORITY, "1");
 
@@ -444,6 +461,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.DEFAULT_GUEST_SESSION_NAME, "Http guest session");
         defaults.put(Net.Http.DEFAULT_FILE_CHECKSUM_ALGORITHM, "MD5");
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
+        defaults.put(Net.Http.AUTOMATIC_CONTENT_LENGTH_SKIP_CODES, "[304]");
         defaults.put(Net.Http.MAX_PACKAGE_SIZE, Integer.toString(20 * 1024 * 1024));
 
         defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
