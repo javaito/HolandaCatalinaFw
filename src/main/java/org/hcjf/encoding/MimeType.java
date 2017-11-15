@@ -83,6 +83,8 @@ public class MimeType {
     public static final MimeType APPLICATION_TOOLBOOK = new MimeType("application/toolbook");
     public static final MimeType APPLICATION_VDA = new MimeType("application/vda");
     public static final MimeType APPLICATION_VND_FDF = new MimeType("application/vnd.fdf");
+    public static final MimeType APPLICATION_VND_GOOGLE_EARTH_KML_XML = new MimeType("application/vnd.google-earth.kml+xml");
+    public static final MimeType APPLICATION_VND_GOOGLE_EARTH_KMZ = new MimeType("application/vnd.google-earth.kmz");
     public static final MimeType APPLICATION_VND_HP_HPGL = new MimeType("application/vnd.hp-hpgl");
     public static final MimeType APPLICATION_VND_HP_PCL = new MimeType("application/vnd.hp-pcl");
     public static final MimeType APPLICATION_VND_MS_EXCEL = new MimeType("application/vnd.ms-excel");
@@ -96,6 +98,12 @@ public class MimeType {
     public static final MimeType APPLICATION_VND_NOKIA_RINGING_TONE = new MimeType("application/vnd.nokia.ringing-tone");
     public static final MimeType APPLICATION_VND_RN_REALMEDIA = new MimeType("application/vnd.rn-realmedia");
     public static final MimeType APPLICATION_VND_RN_REALPLAYER = new MimeType("application/vnd.rn-realplayer");
+    public static final MimeType APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION = new MimeType("application/vnd.oasis.opendocument.presentation");
+    public static final MimeType APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET = new MimeType("application/vnd.oasis.opendocument.spreadsheet");
+    public static final MimeType APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT = new MimeType("application/vnd.oasis.opendocument.text");
+    public static final MimeType APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML = new MimeType("application/vnd.openxmlformats-officedocument.presentationml.presentation");
+    public static final MimeType APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML = new MimeType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    public static final MimeType APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML = new MimeType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     public static final MimeType APPLICATION_VND_WAP_WMLC = new MimeType("application/vnd.wap.wmlc");
     public static final MimeType APPLICATION_VND_WAP_WMLSCRIPTC = new MimeType("application/vnd.wap.wmlscriptc");
     public static final MimeType APPLICATION_VND_XARA = new MimeType("application/vnd.xara");
@@ -106,6 +114,7 @@ public class MimeType {
     public static final MimeType APPLICATION_WORDPERFECT6_1 = new MimeType("application/wordperfect6.1");
     public static final MimeType APPLICATION_XML = new MimeType("application/xml");
     public static final MimeType APPLICATION_X_123 = new MimeType("application/x-123");
+    public static final MimeType APPLICATION_X_7Z_COMPRESSED = new MimeType("application/x-7z-compressed");
     public static final MimeType APPLICATION_X_AIM = new MimeType("application/x-aim");
     public static final MimeType APPLICATION_X_AUTHORWARE_BIN = new MimeType("application/x-authorware-bin");
     public static final MimeType APPLICATION_X_AUTHORWARE_MAP = new MimeType("application/x-authorware-map");
@@ -197,6 +206,7 @@ public class MimeType {
     public static final MimeType APPLICATION_X_PORTABLE_ANYMAP = new MimeType("application/x-portable-anymap");
     public static final MimeType APPLICATION_X_PROJECT = new MimeType("application/x-project");
     public static final MimeType APPLICATION_X_QPRO = new MimeType("application/x-qpro");
+    public static final MimeType APPLICATION_X_RAR_COMPRESSED = new MimeType("application/x-rar-compressed");
     public static final MimeType APPLICATION_X_RTF = new MimeType("application/x-rtf");
     public static final MimeType APPLICATION_X_SDP = new MimeType("application/x-sdp");
     public static final MimeType APPLICATION_X_SEA = new MimeType("application/x-sea");
@@ -339,6 +349,7 @@ public class MimeType {
     public static final MimeType PALEOVU_X_PV = new MimeType("paleovu/x-pv");
     public static final MimeType TEXT_ASP = new MimeType("text/asp");
     public static final MimeType TEXT_CSS = new MimeType("text/css");
+    public static final MimeType TEXT_CSV = new MimeType("text/csv");
     public static final MimeType TEXT_ECMASCRIPT = new MimeType("text/ecmascript");
     public static final MimeType TEXT_HTML = new MimeType("text/html");
     public static final MimeType TEXT_JAVASCRIPT = new MimeType("text/javascript");
@@ -433,6 +444,7 @@ public class MimeType {
 
     public static final String _3DM = "3dm";
     public static final String _3DMF = "3dmf";
+    public static final String _7Z = "7z";
     public static final String A = "a";
     public static final String AAB = "aab";
     public static final String AAM = "aam";
@@ -490,6 +502,7 @@ public class MimeType {
     public static final String CRT = "crt";
     public static final String CSH = "csh";
     public static final String CSS = "css";
+    public static final String CSV = "csv";
     public static final String CXX = "cxx";
     public static final String DCR = "dcr";
     public static final String DEEPV = "deepv";
@@ -499,6 +512,7 @@ public class MimeType {
     public static final String DIR = "dir";
     public static final String DL = "dl";
     public static final String DOC = "doc";
+    public static final String DOCX = "docx";
     public static final String DOT = "dot";
     public static final String DP = "dp";
     public static final String DRW = "drw";
@@ -589,6 +603,8 @@ public class MimeType {
     public static final String JSON = "json";
     public static final String JUT = "jut";
     public static final String KAR = "kar";
+    public static final String KML = "kml";
+    public static final String KMZ = "kmz";
     public static final String KSH = "ksh";
     public static final String LA = "la";
     public static final String LAM = "lam";
@@ -660,6 +676,9 @@ public class MimeType {
     public static final String NVD = "nvd";
     public static final String O = "o";
     public static final String ODA = "oda";
+    public static final String ODP = "odp";
+    public static final String ODS = "ods";
+    public static final String ODT = "odt";
     public static final String OMC = "omc";
     public static final String OMCD = "omcd";
     public static final String OMCR = "omcr";
@@ -698,6 +717,7 @@ public class MimeType {
     public static final String PPM = "ppm";
     public static final String PPS = "pps";
     public static final String PPT = "ppt";
+    public static final String PPTX = "pptx";
     public static final String PPZ = "ppz";
     public static final String PRE = "pre";
     public static final String PRT = "prt";
@@ -717,6 +737,7 @@ public class MimeType {
     public static final String QTIF = "qtif";
     public static final String RA = "ra";
     public static final String RAM = "ram";
+    public static final String RAR = "rar";
     public static final String RAS = "ras";
     public static final String RAST = "rast";
     public static final String REXX = "rexx";
@@ -866,6 +887,7 @@ public class MimeType {
     public static final String XLL = "xll";
     public static final String XLM = "xlm";
     public static final String XLS = "xls";
+    public static final String XLSX = "xlsx";
     public static final String XLT = "xlt";
     public static final String XLV = "xlv";
     public static final String XLW = "xlw";
@@ -960,6 +982,8 @@ public class MimeType {
         types.put(APPLICATION_TOOLBOOK.toString(), APPLICATION_TOOLBOOK);
         types.put(APPLICATION_VDA.toString(), APPLICATION_VDA);
         types.put(APPLICATION_VND_FDF.toString(), APPLICATION_VND_FDF);
+        types.put(APPLICATION_VND_GOOGLE_EARTH_KML_XML.toString(), APPLICATION_VND_GOOGLE_EARTH_KML_XML);
+        types.put(APPLICATION_VND_GOOGLE_EARTH_KMZ.toString(), APPLICATION_VND_GOOGLE_EARTH_KMZ);
         types.put(APPLICATION_VND_HP_HPGL.toString(), APPLICATION_VND_HP_HPGL);
         types.put(APPLICATION_VND_HP_PCL.toString(), APPLICATION_VND_HP_PCL);
         types.put(APPLICATION_VND_MS_EXCEL.toString(), APPLICATION_VND_MS_EXCEL);
@@ -973,6 +997,12 @@ public class MimeType {
         types.put(APPLICATION_VND_NOKIA_RINGING_TONE.toString(), APPLICATION_VND_NOKIA_RINGING_TONE);
         types.put(APPLICATION_VND_RN_REALMEDIA.toString(), APPLICATION_VND_RN_REALMEDIA);
         types.put(APPLICATION_VND_RN_REALPLAYER.toString(), APPLICATION_VND_RN_REALPLAYER);
+        types.put(APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION.toString(), APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION);
+        types.put(APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET.toString(), APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET);
+        types.put(APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT.toString(), APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT);
+        types.put(APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML.toString(), APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML);
+        types.put(APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML.toString(), APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML);
+        types.put(APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML.toString(), APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML);
         types.put(APPLICATION_VND_WAP_WMLC.toString(), APPLICATION_VND_WAP_WMLC);
         types.put(APPLICATION_VND_WAP_WMLSCRIPTC.toString(), APPLICATION_VND_WAP_WMLSCRIPTC);
         types.put(APPLICATION_VND_XARA.toString(), APPLICATION_VND_XARA);
@@ -983,6 +1013,7 @@ public class MimeType {
         types.put(APPLICATION_WORDPERFECT6_1.toString(), APPLICATION_WORDPERFECT6_1);
         types.put(APPLICATION_XML.toString(), APPLICATION_XML);
         types.put(APPLICATION_X_123.toString(), APPLICATION_X_123);
+        types.put(APPLICATION_X_7Z_COMPRESSED.toString(), APPLICATION_X_7Z_COMPRESSED);
         types.put(APPLICATION_X_AIM.toString(), APPLICATION_X_AIM);
         types.put(APPLICATION_X_AUTHORWARE_BIN.toString(), APPLICATION_X_AUTHORWARE_BIN);
         types.put(APPLICATION_X_AUTHORWARE_MAP.toString(), APPLICATION_X_AUTHORWARE_MAP);
@@ -1074,6 +1105,7 @@ public class MimeType {
         types.put(APPLICATION_X_PORTABLE_ANYMAP.toString(), APPLICATION_X_PORTABLE_ANYMAP);
         types.put(APPLICATION_X_PROJECT.toString(), APPLICATION_X_PROJECT);
         types.put(APPLICATION_X_QPRO.toString(), APPLICATION_X_QPRO);
+        types.put(APPLICATION_X_RAR_COMPRESSED.toString(), APPLICATION_X_RAR_COMPRESSED);
         types.put(APPLICATION_X_RTF.toString(), APPLICATION_X_RTF);
         types.put(APPLICATION_X_SDP.toString(), APPLICATION_X_SDP);
         types.put(APPLICATION_X_SEA.toString(), APPLICATION_X_SEA);
@@ -1215,6 +1247,7 @@ public class MimeType {
         types.put(PALEOVU_X_PV.toString(), PALEOVU_X_PV);
         types.put(TEXT_ASP.toString(), TEXT_ASP);
         types.put(TEXT_CSS.toString(), TEXT_CSS);
+        types.put(TEXT_CSV.toString(), TEXT_CSV);
         types.put(TEXT_ECMASCRIPT.toString(), TEXT_ECMASCRIPT);
         types.put(TEXT_HTML.toString(), TEXT_HTML);
         types.put(TEXT_JAVASCRIPT.toString(), TEXT_JAVASCRIPT);
@@ -1309,6 +1342,7 @@ public class MimeType {
 
 
         typesBySuffix.put(_3DM, X_WORLD_X_3DMF);
+        typesBySuffix.put(_7Z, APPLICATION_X_7Z_COMPRESSED);
         typesBySuffix.put(A, APPLICATION_OCTET_STREAM);
         typesBySuffix.put(AAB, APPLICATION_X_AUTHORWARE_BIN);
         typesBySuffix.put(AAM, APPLICATION_X_AUTHORWARE_MAP);
@@ -1335,6 +1369,7 @@ public class MimeType {
         typesBySuffix.put(BCPIO, APPLICATION_X_BCPIO);
         typesBySuffix.put(BIN, APPLICATION_MAC_BINARY);
         typesBySuffix.put(BM, IMAGE_BMP);
+        typesBySuffix.put(BMP, IMAGE_BMP);
         typesBySuffix.put(BOO, APPLICATION_BOOK);
         typesBySuffix.put(BSON, APPLICATION_BSON);
         typesBySuffix.put(BOZ, APPLICATION_X_BZIP2);
@@ -1353,11 +1388,13 @@ public class MimeType {
         typesBySuffix.put(CRL, APPLICATION_PKCS_CRL);
         typesBySuffix.put(CSH, APPLICATION_X_CSH);
         typesBySuffix.put(CSS, TEXT_CSS);
+        typesBySuffix.put(CSV, TEXT_CSV);
         typesBySuffix.put(DCR, APPLICATION_X_DIRECTOR);
         typesBySuffix.put(DEEPV, APPLICATION_X_DEEPV);
         typesBySuffix.put(DIF, VIDEO_X_DV);
         typesBySuffix.put(DL, VIDEO_DL);
         typesBySuffix.put(DOC, APPLICATION_MSWORD);
+        typesBySuffix.put(DOCX, APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_WORDPROCESSINGML);
         typesBySuffix.put(DP, APPLICATION_COMMONGROUND);
         typesBySuffix.put(DRW, APPLICATION_DRAFTING);
         typesBySuffix.put(DVI, APPLICATION_X_DVI);
@@ -1415,11 +1452,15 @@ public class MimeType {
         typesBySuffix.put(JCM, APPLICATION_X_JAVA_COMMERCE);
         typesBySuffix.put(JFIF, IMAGE_JPEG);
         typesBySuffix.put(JPS, IMAGE_X_JPS);
+        typesBySuffix.put(JPE, IMAGE_JPEG);
         typesBySuffix.put(JPEG, IMAGE_JPEG);
+        typesBySuffix.put(JPG, IMAGE_JPEG);
         typesBySuffix.put(JS, APPLICATION_X_JAVASCRIPT);
         typesBySuffix.put(JUT, IMAGE_JUTVISION);
         typesBySuffix.put(JSON, APPLICATION_JSON);
         typesBySuffix.put(KAR, AUDIO_MIDI);
+        typesBySuffix.put(KML, APPLICATION_VND_GOOGLE_EARTH_KML_XML);
+        typesBySuffix.put(KMZ, APPLICATION_VND_GOOGLE_EARTH_KMZ);
         typesBySuffix.put(KSH, APPLICATION_X_KSH);
         typesBySuffix.put(LA, AUDIO_NSPAUDIO);
         typesBySuffix.put(LAM, AUDIO_X_LIVEAUDIO);
@@ -1461,6 +1502,9 @@ public class MimeType {
         typesBySuffix.put(NSC, APPLICATION_X_CONFERENCE);
         typesBySuffix.put(NVD, APPLICATION_X_NAVIDOC);
         typesBySuffix.put(ODA, APPLICATION_ODA);
+        typesBySuffix.put(ODP, APPLICATION_VND_OASIS_OPENDOCUMENT_PRESENTATION);
+        typesBySuffix.put(ODS, APPLICATION_VND_OASIS_OPENDOCUMENT_SPREADSHEET);
+        typesBySuffix.put(ODT, APPLICATION_VND_OASIS_OPENDOCUMENT_TEXT);
         typesBySuffix.put(OMC, APPLICATION_X_OMC);
         typesBySuffix.put(OMCD, APPLICATION_X_OMCDATAMAKER);
         typesBySuffix.put(OMCR, APPLICATION_X_OMCREGERATOR);
@@ -1491,6 +1535,8 @@ public class MimeType {
         typesBySuffix.put(POT, APPLICATION_MSPOWERPOINT);
         typesBySuffix.put(POV, MODEL_X_POV);
         typesBySuffix.put(PPM, IMAGE_X_PORTABLE_PIXMAP);
+        typesBySuffix.put(PPT, APPLICATION_MSPOWERPOINT);
+        typesBySuffix.put(PPTX, APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_PRESENTATIONML);
         typesBySuffix.put(PRE, APPLICATION_X_FREELANCE);
         typesBySuffix.put(PVU, PALEOVU_X_PV);
         typesBySuffix.put(PY, TEXT_X_SCRIPT_PHYTON);
@@ -1499,6 +1545,7 @@ public class MimeType {
         typesBySuffix.put(QIF, IMAGE_X_QUICKTIME);
         typesBySuffix.put(QTC, VIDEO_X_QTC);
         typesBySuffix.put(RA, AUDIO_X_PN_REALAUDIO);
+        typesBySuffix.put(RAR, APPLICATION_X_RAR_COMPRESSED);
         typesBySuffix.put(RAS, APPLICATION_X_CMU_RASTER);
         typesBySuffix.put(REXX, TEXT_X_SCRIPT_REXX);
         typesBySuffix.put(RF, IMAGE_VND_RN_REALFLASH);
@@ -1551,6 +1598,7 @@ public class MimeType {
         typesBySuffix.put(TSI, AUDIO_TSP_AUDIO);
         typesBySuffix.put(TSP, APPLICATION_DSPTYPE);
         typesBySuffix.put(TSV, TEXT_TAB_SEPARATED_VALUES);
+        typesBySuffix.put(TXT, TEXT_PLAIN);
         typesBySuffix.put(UIL, TEXT_X_UIL);
         typesBySuffix.put(UNI, TEXT_URI_LIST);
         typesBySuffix.put(UNV, APPLICATION_I_DEAS);
@@ -1593,6 +1641,8 @@ public class MimeType {
         typesBySuffix.put(XGZ, XGL_DRAWING);
         typesBySuffix.put(XIF, IMAGE_VND_XIFF);
         typesBySuffix.put(XL, APPLICATION_EXCEL);
+        typesBySuffix.put(XLS, APPLICATION_VND_MS_EXCEL);
+        typesBySuffix.put(XLSX, APPLICATION_VND_OPENXMLFORMATS_OFFICEDOCUMENT_SPREADSHEETML);
         typesBySuffix.put(XM, AUDIO_XM);
         typesBySuffix.put(XML, APPLICATION_XML);
         typesBySuffix.put(XMZ, XGL_MOVIE);
@@ -1600,6 +1650,7 @@ public class MimeType {
         typesBySuffix.put(XSR, VIDEO_X_AMT_SHOWRUN);
         typesBySuffix.put(XWD, IMAGE_X_XWD);
         typesBySuffix.put(Z, APPLICATION_X_COMPRESS);
+        typesBySuffix.put(ZIP, APPLICATION_ZIP);
         typesBySuffix.put(ZSH, TEXT_X_SCRIPT_ZSH);
     }
 
