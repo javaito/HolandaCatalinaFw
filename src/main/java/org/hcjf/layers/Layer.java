@@ -150,7 +150,9 @@ public abstract class Layer implements LayerInterface {
      */
     @Override
     public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        analyzeThread();
+        if(Thread.currentThread() instanceof ServiceThread) {
+            analyzeThread();
+        }
 
         Access access = checkAccess();
 
