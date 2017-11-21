@@ -2,13 +2,9 @@ package org.hcjf.layers;
 
 import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.storage.StorageLayerInterface;
-import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.Set;
 
@@ -18,9 +14,6 @@ import java.util.Set;
  * @author javaito
  */
 public abstract class Layer implements LayerInterface {
-
-    private static final String GET_THREAD_ALLOCATED_BYTES = "getThreadAllocatedBytes";
-    private static final String[] SIGNATURE = new String[]{long.class.getName()};
 
     private final String implName;
     private final boolean stateful;
@@ -136,18 +129,14 @@ public abstract class Layer implements LayerInterface {
         };
     }
 
+    /**
+     * Verify if the current thread is working between the normal parameters.
+     * @throws Throwable Any throwable throws for some check method.
+     */
     private void analyzeThread() throws Throwable {
-        if(Thread.currentThread().isInterrupted()) {
-            throw new InterruptedException("Service thread interrupted");
-        }
-
-        MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-        ObjectName objectName = new ObjectName(ManagementFactory.THREAD_MXBEAN_NAME);
-        long bytes = (long) mBeanServer.invoke(objectName, GET_THREAD_ALLOCATED_BYTES,new Object[]{Thread.currentThread().getId()}, SIGNATURE);
-
-        if(bytes > SystemProperties.getLong(SystemProperties.Service.MAX_ALLOCATED_MEMOTY_FOR_THREAD)) {
-            throw new RuntimeException("Max memory allocated for thread");
-        }
+        ServiceThread.checkInterruptedThread();
+        ServiceThread.checkAllocatedMemory();
+        ServiceThread.checkExecutionTime();
     }
 
     /**

@@ -5,17 +5,15 @@ import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.rest.EndPointCrudRequest;
 import org.hcjf.io.net.http.rest.EndPointRequest;
-import org.hcjf.layers.Layers;
-import org.hcjf.layers.crud.References;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.crud.References;
 import org.hcjf.layers.query.Query;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 

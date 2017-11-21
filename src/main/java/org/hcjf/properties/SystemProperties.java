@@ -69,7 +69,9 @@ public final class SystemProperties extends Properties {
         public static final String GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
         public static final String SYSTEM_SESSION_NAME = "hcjf.service.system.session.name";
         public static final String SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
+        public static final String MAX_ALLOCATED_MEMORY_EXPRESSED_IN_PERCENTAGE = "hcjf.service.max.allocated.memory.expressed.in.percentage";
         public static final String MAX_ALLOCATED_MEMOTY_FOR_THREAD = "max.allocated.memory.for.thread";
+        public static final String MAX_EXECUTION_TIME_FOR_THREAD = "max.execution.time.for.thread";
     }
 
     public static final class Event {
@@ -375,7 +377,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.GUEST_SESSION_NAME, "Guest");
         defaults.put(Service.SYSTEM_SESSION_NAME, "System");
         defaults.put(Service.SHUTDOWN_TIME_OUT, "200");
-        defaults.put(Service.MAX_ALLOCATED_MEMOTY_FOR_THREAD, Long.toString(1000*1024*1024));
+        defaults.put(Service.MAX_ALLOCATED_MEMORY_EXPRESSED_IN_PERCENTAGE, "true");
+        defaults.put(Service.MAX_ALLOCATED_MEMOTY_FOR_THREAD, "15");
+        defaults.put(Service.MAX_EXECUTION_TIME_FOR_THREAD, Long.toString(10*1000*1000*1000));
 
         defaults.put(Event.SERVICE_NAME, "Events");
         defaults.put(Event.SERVICE_PRIORITY, "0");

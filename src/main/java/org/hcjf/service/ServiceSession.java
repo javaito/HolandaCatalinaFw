@@ -136,7 +136,7 @@ public class ServiceSession implements Comparable {
         properties.remove(Thread.currentThread().getId());
         onEndThread();
         addThreadTime(threadMXBean.getCurrentThreadCpuTime() -
-                systemTimeByThread.get(Thread.currentThread().getId()));
+                systemTimeByThread.remove(Thread.currentThread().getId()));
     }
 
     /**

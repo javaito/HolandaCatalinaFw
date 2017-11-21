@@ -5,7 +5,6 @@ import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 /**
