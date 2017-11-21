@@ -213,21 +213,16 @@ public final class Layers {
     /**
      * This method publish the layers in order to be used by anyone
      * that has the credentials to use the layer.
-     * @param layerClass Layer class.
+     * @param layerInstance Layer instance.
      * @return Implementation name.
      * @throws IllegalArgumentException If the layer class is null.
      */
-    public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
-        if(layerClass == null) {
-            throw new IllegalArgumentException("Unable to publish a null class");
-        }
+    public static synchronized <L extends Layer> String publishLayer(L layerInstance) {
+        Class<? extends Layer> layerClass = layerInstance.getClass();
 
-        Layer layerInstance;
-        try {
-            layerInstance = layerClass.getConstructor().newInstance();
-        } catch(Exception ex){
-            throw new IllegalArgumentException("Unable to publish " + layerClass +
-                    " because fail to create a new instance", ex);
+        if(layerClass.isAnonymousClass() && !layerInstance.isStateful()) {
+            throw new IllegalArgumentException("Unable to publish anonymous and stateless class," +
+                    " to publish anonymous class its must by stateful");
         }
 
         String implName = layerInstance.getImplName();
@@ -279,6 +274,29 @@ public final class Layers {
         }
 
         return implName;
+    }
+
+    /**
+     * This method publish the layers in order to be used by anyone
+     * that has the credentials to use the layer.
+     * @param layerClass Layer class.
+     * @return Implementation name.
+     * @throws IllegalArgumentException If the layer class is null.
+     */
+    public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
+        if(layerClass == null) {
+            throw new IllegalArgumentException("Unable to publish a null class");
+        }
+
+        Layer layerInstance;
+        try {
+            layerInstance = layerClass.getConstructor().newInstance();
+        } catch(Exception ex){
+            throw new IllegalArgumentException("Unable to publish " + layerClass +
+                    " because fail to create a new instance", ex);
+        }
+
+        return publishLayer(layerInstance);
     }
 
     /**

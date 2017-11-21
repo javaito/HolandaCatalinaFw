@@ -40,7 +40,7 @@ public class Equals extends FieldEvaluator {
             if(fieldValue instanceof Number) {
                 result = numberEquals((Number) fieldValue, consumerValue);
             } else {
-                result = fieldValue.equals(consumerValue);
+                result = fieldValue.equals(consumerValue) || consumerValue.equals(fieldValue);
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Equals evaluator fail", ex);
