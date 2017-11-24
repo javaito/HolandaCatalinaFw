@@ -47,6 +47,7 @@ public final class Layers {
     private final Map<Class<? extends Layer>, Object> initialInstances;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> implAlias;
     private final Map<Class<? extends LayerInterface>, Map<String, Class<? extends Layer>>> layerImplementations;
+    private final Map<Class<? extends LayerInterface>, String> defaultLayers;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> pluginLayerImplementations;
     private final Map<Class<? extends Layer>, LayerInterface> instanceCache;
     private final Map<String, LayerInterface> pluginWrapperCache;
@@ -58,6 +59,7 @@ public final class Layers {
         implAlias = new HashMap<>();
         layerImplementations = new HashMap<>();
         pluginLayerImplementations = new HashMap<>();
+        defaultLayers = new HashMap<>();
         instanceCache = new HashMap<>();
         pluginWrapperCache = new HashMap<>();
         pluginCache = new HashMap<>();
@@ -135,11 +137,19 @@ public final class Layers {
         if(instance.layerImplementations.containsKey(layerClass)) {
 
             Class<? extends Layer> clazz = instance.layerImplementations.get(layerClass).get(implName);
-            //If the implementation class is not founded with the specific alias then we check
-            //if the implementation name is an alias.
+
+            //If the implementation class is not founded with the specific name then we check
+            //if the implementation name is contained into the aliases.
             if(clazz == null && instance.implAlias.get(layerClass).containsKey(implName)) {
                 clazz = instance.layerImplementations.get(layerClass).get(
                         instance.implAlias.get(layerClass).get(implName));
+            }
+
+            //If the implementation name not mach with any implementation for the specific layer
+            //then we check if the specific layer contains a default implementation.
+            if(clazz == null && instance.defaultLayers.containsKey(layerClass)) {
+                clazz = instance.layerImplementations.get(layerClass).get(
+                        instance.defaultLayers.get(layerClass));
             }
 
             if(clazz != null) {
@@ -265,6 +275,20 @@ public final class Layers {
             if(layerInstance instanceof Resourceable) {
                 ((Resourceable)layerInstance).createResource(layerInterfaceClass).forEach(
                         R->instance.resources.add(R));
+            }
+        }
+
+        if(layerClass.isAnnotationPresent(DefaultLayer.class)) {
+            List<Class> classInterfaces = Arrays.asList(layerClass.getInterfaces());
+            for(Class<? extends LayerInterface> defaultInterface : layerClass.getAnnotation(DefaultLayer.class).value()) {
+                if(classInterfaces.contains(defaultInterface)){
+                    instance.defaultLayers.put(defaultInterface, implName);
+                } else {
+                    Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
+                            "The class '%s' could not be a default layer for interface '%s' because " +
+                                    "the class don't implements this interface",
+                            layerClass, defaultInterface);
+                }
             }
         }
 
@@ -413,11 +437,9 @@ public final class Layers {
         Class introspectedClass = layerClass;
         while(!introspectedClass.equals(Object.class)) {
             for (Class layerInterface : introspectedClass.getInterfaces()) {
-                for (Class superInterface : layerInterface.getInterfaces()) {
-                    if (LayerInterface.class.isAssignableFrom(layerInterface) &&
-                            !layerInterface.equals(LayerInterface.class)) {
-                        result.add(layerInterface);
-                    }
+                if (LayerInterface.class.isAssignableFrom(layerInterface) &&
+                        !layerInterface.equals(LayerInterface.class)) {
+                    result.add(layerInterface);
                 }
             }
             introspectedClass = introspectedClass.getSuperclass();
