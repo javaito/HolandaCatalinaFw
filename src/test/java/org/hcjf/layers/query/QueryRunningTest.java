@@ -176,6 +176,9 @@ public class QueryRunningTest {
 
     @Test
     public void select() {
+
+        SystemProperties.get(SystemProperties.Service.SYSTEM_SESSION_NAME);
+
         Service.run(() -> {
 
             Query query = Query.compile("SELECT * FROM character");

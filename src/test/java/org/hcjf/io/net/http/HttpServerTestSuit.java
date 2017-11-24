@@ -3,6 +3,7 @@ package org.hcjf.io.net.http;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.InetPortProvider;
 import org.hcjf.io.net.http.pipeline.ChunkedHttpPipelineResponse;
+import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
 import org.hcjf.io.net.http.rest.EndPoint;
 import org.hcjf.io.net.http.rest.layers.EndPointDecoderLayerInterface;
 import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
@@ -187,10 +188,30 @@ public class HttpServerTestSuit {
 //            e.printStackTrace();am
 //        }
 
-        HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
-        server.addContext(new EndPoint("example", "crud"));
-        server.addContext(new FolderContext("", Paths.get("/home/javaito/AtomProjects/CrudComponent"), "index.html"));
-        server.start();
+        System.setProperty(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "true");
+
+//        HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
+//        server.addContext(new Context("/test.*") {
+//            @Override
+//            public HttpResponse onContext(HttpRequest request) {
+//
+//                System.out.println("COOKIES!!!!:" + request.getCookies());
+//
+//                byte[] body = "Hello world!".getBytes();
+//                HttpResponse response = new HttpResponse();
+//                response.setResponseCode(HttpResponseCode.OK);
+//                response.setReasonPhrase("OK");
+//                response.setBody(body);
+//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+//                response.addCookie(new Cookie("bla", "blavalue"));
+//                response.addCookie(new Cookie("bla2", "bla2value"));
+//                return response;
+//            }
+//        });
+//        server.addContext(new EndPoint("example", "crud"));
+//        server.addContext(new FolderContext("", Paths.get("/home/javaito/AtomProjects/CrudComponent"), "index.html"));
+//        server.start();
 
 //        HttpsServer server = new HttpsServer(8080);
 //        server.addContext(new EndPoint("example", "crud"));
@@ -201,12 +222,45 @@ public class HttpServerTestSuit {
 //        try {
 //            HttpServer server = new HttpServer(8080);
 //            FolderContext folderContext = new FolderContext("",
-//                    Paths.get("/home/javaito/git/HolandaCatalinaFw/out/artifacts/hcjf_jar/hcjf.jar"));
+//                    Paths.get("/home/javaito/"));
 //            server.addContext(folderContext);
 //            server.start();
 //        } catch (Exception ex){
 //            ex.printStackTrace();
 //        }
+
+        try {
+            HttpServer server = new HttpServer(8080);
+            server.addContext(new Context(".*") {
+                @Override
+                public HttpResponse onContext(HttpRequest request) {
+                    HttpPipelineResponse response = new HttpPipelineResponse(1024, 1024) {
+                        @Override
+                        protected int readPipeline(StreamingPackage streamingPackage) {
+                            int result = 0;
+                            try {
+                                result = System.in.read(streamingPackage.getBuffer());
+
+                                String s = new String(streamingPackage.getBuffer(), 0, result).trim();
+                                if(s.length() == 0) {
+                                    result = -1;
+                                }
+                            } catch (Exception ex){}
+
+                            return result;
+                        }
+                    };
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "text/plain"));
+                    response.setResponseCode(200);
+                    response.setReasonPhrase("OK");
+
+                    return response;
+                }
+            });
+            server.start();
+        } catch (Exception ex){
+            ex.printStackTrace();
+        }
     }
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {

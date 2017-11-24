@@ -292,6 +292,7 @@ public final class SystemProperties extends Properties {
             public static final String MATH_DIVISION = "hcjf.query.function.math.division";
             public static final String REFERENCE_FUNCTION_NAME = "hcjf.query.function.reference.name";
             public static final String BSON_FUNCTION_NAME = "hcjf.query.function.bson.name";
+            public static final String COLLECTION_FUNCTION_NAME = "hcjf.query.function.collection.name";
 
         }
     }
@@ -560,6 +561,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.Function.MATH_DIVISION, "/");
         defaults.put(Query.Function.REFERENCE_FUNCTION_NAME, "reference");
         defaults.put(Query.Function.BSON_FUNCTION_NAME, "bson");
+        defaults.put(Query.Function.COLLECTION_FUNCTION_NAME, "collection");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");

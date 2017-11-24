@@ -44,6 +44,7 @@ public class Query extends EvaluatorCollection {
         Layers.publishLayer(DateQueryFunctionLayer.class);
         Layers.publishLayer(ReferenceFunctionLayer.class);
         Layers.publishLayer(BsonQueryFunctionLayer.class);
+        Layers.publishLayer(CollectionQueryFunction.class);
     }
 
     public Query(String resource, QueryId id) {
