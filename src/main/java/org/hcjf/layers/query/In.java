@@ -36,48 +36,48 @@ public class In extends FieldEvaluator {
             } else {
                 if (Map.class.isAssignableFrom(fieldValue.getClass())) {
                     for(Object key : ((Map) fieldValue).keySet()) {
-                        result = result || Objects.equals(key, value);
+                        result = Objects.equals(key, value) || Objects.equals(value, key);
                         if(result) {
                             break;
                         }
                     }
                 } else if (Collection.class.isAssignableFrom(fieldValue.getClass())) {
                     for(Object collectionValue : ((Collection) fieldValue)) {
-                        result = result || Objects.equals(collectionValue, value);
+                        result = Objects.equals(collectionValue, value) || Objects.equals(value, collectionValue);
                         if(result) {
                             break;
                         }
                     }
                 } else if (fieldValue.getClass().isArray()) {
                     for(Object arrayValue : (Object[])fieldValue) {
-                        result = Objects.equals(arrayValue, value);
+                        result = Objects.equals(arrayValue, value) || Objects.equals(value, arrayValue);
                         if(result) {
                             break;
                         }
                     }
                 } else if (Map.class.isAssignableFrom(value.getClass())) {
                     for(Object key : ((Map) value).keySet()) {
-                        result = result || Objects.equals(key, fieldValue);
+                        result = Objects.equals(key, fieldValue) || Objects.equals(fieldValue, key);
                         if(result) {
                             break;
                         }
                     }
                 } else if (Collection.class.isAssignableFrom(value.getClass())) {
                     for(Object collectionValue : ((Collection) value)) {
-                        result = result || Objects.equals(collectionValue, fieldValue);
+                        result = Objects.equals(collectionValue, fieldValue) || Objects.equals(fieldValue, collectionValue);
                         if(result) {
                             break;
                         }
                     }
                 } else if (value.getClass().isArray()) {
                     for(Object arrayValue : (Object[])value) {
-                        result = Objects.equals(arrayValue, fieldValue);
+                        result = Objects.equals(arrayValue, fieldValue) || Objects.equals(fieldValue, arrayValue);
                         if(result) {
                             break;
                         }
                     }
                 } else {
-                    result = fieldValue.equals(value);
+                    result = Objects.equals(fieldValue, value) || Objects.equals(value, fieldValue);
                 }
             }
         } catch (Exception ex) {
