@@ -3,6 +3,7 @@ package org.hcjf.layers.query;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author javaito
@@ -34,23 +35,43 @@ public class In extends FieldEvaluator {
                 result = containsNumber((Number) value, fieldValue);
             } else {
                 if (Map.class.isAssignableFrom(fieldValue.getClass())) {
-                    result = ((Map) fieldValue).containsKey(value);
+                    for(Object key : ((Map) fieldValue).keySet()) {
+                        result = result || Objects.equals(key, value);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (Collection.class.isAssignableFrom(fieldValue.getClass())) {
-                    result = ((Collection) fieldValue).contains(value);
+                    for(Object collectionValue : ((Collection) fieldValue)) {
+                        result = result || Objects.equals(collectionValue, value);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (fieldValue.getClass().isArray()) {
                     for(Object arrayValue : (Object[])fieldValue) {
-                        result = arrayValue.equals(value);
+                        result = Objects.equals(arrayValue, value);
                         if(result) {
                             break;
                         }
                     }
                 } else if (Map.class.isAssignableFrom(value.getClass())) {
-                    result = ((Map) value).containsKey(fieldValue);
+                    for(Object key : ((Map) value).keySet()) {
+                        result = result || Objects.equals(key, fieldValue);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (Collection.class.isAssignableFrom(value.getClass())) {
-                    result = ((Collection) value).contains(fieldValue);
+                    for(Object collectionValue : ((Collection) value)) {
+                        result = result || Objects.equals(collectionValue, fieldValue);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (value.getClass().isArray()) {
                     for(Object arrayValue : (Object[])value) {
-                        result = arrayValue.equals(fieldValue);
+                        result = Objects.equals(arrayValue, fieldValue);
                         if(result) {
                             break;
                         }

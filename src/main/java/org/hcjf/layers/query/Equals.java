@@ -39,6 +39,10 @@ public class Equals extends FieldEvaluator {
             Object consumerValue = consumer.get(object, getQueryParameter());
             if(fieldValue instanceof Number) {
                 result = numberEquals((Number) fieldValue, consumerValue);
+            } else if(fieldValue.getClass().isEnum() && consumerValue.getClass().equals(String.class)) {
+                result = fieldValue.toString().equals(consumerValue);
+            } else if(consumerValue.getClass().isEnum() && fieldValue.getClass().equals(String.class)) {
+                result = consumerValue.toString().equals(fieldValue);
             } else {
                 result = fieldValue.equals(consumerValue) || consumerValue.equals(fieldValue);
             }
