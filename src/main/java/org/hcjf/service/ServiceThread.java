@@ -220,6 +220,11 @@ public class ServiceThread extends Thread {
     public static void checkAllocatedMemory() throws Throwable {
         ServiceThread serviceThread = (ServiceThread) Thread.currentThread();
         if(serviceThread.getAccumulatedAllocatedMemory() > serviceThread.getMaxAllocatedMemory()) {
+            //Reset the initial value for the current thread in order to
+            //continue with the throwable manage
+            serviceThread.setInitialAllocatedMemory(((ThreadMXBean)ManagementFactory.getThreadMXBean()).
+                    getThreadAllocatedBytes(Thread.currentThread().getId()));
+
             throw new RuntimeException("Max memory allocated for thread exceeded");
         }
     }
@@ -231,6 +236,10 @@ public class ServiceThread extends Thread {
     public static void checkExecutionTime() throws Throwable {
         ServiceThread serviceThread = (ServiceThread) Thread.currentThread();
         if(serviceThread.getAccumulatedTime() > serviceThread.getMaxExecutionTime()) {
+            //Reset the initial value for the current thread in order to
+            //continue with the throwable manage
+            serviceThread.setInitialTime(ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime());
+
             throw new RuntimeException("Max execution time for thread exceeded");
         }
     }
