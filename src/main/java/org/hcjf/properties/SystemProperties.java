@@ -373,7 +373,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.STATIC_THREAD_POOL_MAX_SIZE, "5");
         defaults.put(Service.STATIC_THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
-        defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
+        defaults.put(Service.THREAD_POOL_MAX_SIZE, "2000");
         defaults.put(Service.THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.GUEST_SESSION_NAME, "Guest");
         defaults.put(Service.SYSTEM_SESSION_NAME, "System");
@@ -425,7 +425,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
         defaults.put(Net.WRITE_TIMEOUT, "100");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
-        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "10000");
+        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "200");
         defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "100");
         defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");

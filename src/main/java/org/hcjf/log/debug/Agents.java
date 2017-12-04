@@ -1,0 +1,25 @@
+package org.hcjf.log.debug;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
+
+/**
+ * @author javaito
+ */
+public class Agents {
+
+    public static final String OBJECT_NAME_TEMPLATE = "%s:type=%s";
+
+    public static void register(Agent agent) {
+        try {
+            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+            ObjectName name = new ObjectName(String.format(OBJECT_NAME_TEMPLATE,
+                    agent.getPackageName(), agent.getName()));
+            mbs.registerMBean(agent, name);
+        } catch (Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+}

@@ -1,6 +1,8 @@
 package org.hcjf.service;
 
 import org.hcjf.log.Log;
+import org.hcjf.log.debug.Agent;
+import org.hcjf.log.debug.Agents;
 import org.hcjf.properties.SystemProperties;
 
 import java.util.*;
@@ -14,11 +16,12 @@ import java.util.concurrent.*;
 public abstract class Service<C extends ServiceConsumer> {
 
     protected static final String SERVICE_LOG_TAG = "SERVICE";
+    private static final String MAIN_EXECUTOR_NAME = "Main Thread Pool %s";
 
     private final String serviceName;
     private final ThreadFactory serviceThreadFactory;
     private final ThreadPoolExecutor serviceExecutor;
-    private final Set<ThreadPoolExecutor> registeredExecutors;
+    private final Map<String, ThreadPoolExecutor> registeredExecutors;
     private final Integer priority;
 
     /**
@@ -42,13 +45,15 @@ public abstract class Service<C extends ServiceConsumer> {
         this.serviceExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.Service.THREAD_POOL_CORE_SIZE));
         this.serviceExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.Service.THREAD_POOL_MAX_SIZE));
         this.serviceExecutor.setKeepAliveTime(SystemProperties.getLong(SystemProperties.Service.THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
-        this.registeredExecutors = new HashSet<>();
+        this.registeredExecutors = new HashMap<>();
         init();
         if(!getClass().equals(Log.class)) {
             SystemServices.instance.register(this);
         } else {
             SystemServices.instance.setLog((Log)this);
         }
+
+        Agents.register(new ThreadPoolAgent(String.format(MAIN_EXECUTOR_NAME, serviceName), serviceExecutor));
     }
 
     /**
@@ -60,8 +65,8 @@ public abstract class Service<C extends ServiceConsumer> {
     }
 
     /**
-     * Return the internal thread pool executor of the service.
-     * @return Thread pool executor.
+     * Return the internal thread pool threadPoolExecutor of the service.
+     * @return Thread pool threadPoolExecutor.
      */
     private ThreadPoolExecutor getServiceExecutor() {
         return serviceExecutor;
@@ -74,22 +79,27 @@ public abstract class Service<C extends ServiceConsumer> {
      * @return Callable's future.
      */
     protected final <R extends Object> Future<R> fork(Callable<R> callable) {
-        return fork(callable, getServiceExecutor());
+        return fork(callable, null, getServiceExecutor());
     }
 
     /**
      * This method execute any callable over service thread with a service session using an
-     * custom thread pool executor. This thread pool executor must create only Service thread implementations.
+     * custom thread pool threadPoolExecutor. This thread pool threadPoolExecutor must create only Service thread implementations.
      * @param callable Callable to execute.
-     * @param executor Custom thread pool executor.
+     * @param executor Custom thread pool threadPoolExecutor.
      * @param <R> Expected return type.
      * @return Callable's future.
      */
-    protected final <R extends Object> Future<R> fork(Callable<R> callable, ThreadPoolExecutor executor) {
+    protected final <R extends Object> Future<R> fork(Callable<R> callable, String executorName, ThreadPoolExecutor executor) {
         if(!executor.equals(serviceExecutor)) {
+            if(executorName == null) {
+                throw new NullPointerException("Executor name is null");
+            }
             synchronized (this) {
-                if (!registeredExecutors.contains(executor)) {
-                    registeredExecutors.add(executor);
+                if (!registeredExecutors.containsKey(executorName)) {
+                    registeredExecutors.put(executorName, executor);
+
+                    Agents.register(new ThreadPoolAgent(executorName, executor));
                 }
             }
         }
@@ -109,21 +119,26 @@ public abstract class Service<C extends ServiceConsumer> {
      * @return Runnable's future.
      */
     protected final Future fork(Runnable runnable) {
-        return fork(runnable, getServiceExecutor());
+        return fork(runnable, null, getServiceExecutor());
     }
 
     /**
      * This method execute any runnnable over service thread with a service session using an
-     * custom thread pool executor. This thread pool executor must create only Service thread implementations.
+     * custom thread pool threadPoolExecutor. This thread pool threadPoolExecutor must create only Service thread implementations.
      * @param runnable Runnable to execute.
-     * @param executor Custom thread pool executor.
+     * @param executor Custom thread pool threadPoolExecutor.
      * @return Runnable's future.
      */
-    protected final Future fork(Runnable runnable, ThreadPoolExecutor executor) {
+    protected final Future fork(Runnable runnable, String executorName, ThreadPoolExecutor executor) {
         if(!executor.equals(serviceExecutor)) {
+            if(executorName == null) {
+                throw new NullPointerException("Executor name is null");
+            }
             synchronized (this) {
-                if (!registeredExecutors.contains(executor)) {
-                    registeredExecutors.add(executor);
+                if (!registeredExecutors.containsKey(executorName)) {
+                    registeredExecutors.put(executorName, executor);
+
+                    Agents.register(new ThreadPoolAgent(executorName, executor));
                 }
             }
         }
@@ -157,7 +172,7 @@ public abstract class Service<C extends ServiceConsumer> {
      * This method will be called immediately after
      * of the execution of the service's constructor method
      */
-    protected void init(){};
+    protected void init(){}
 
     /**
      * This method will be called for the global shutdown process
@@ -169,7 +184,7 @@ public abstract class Service<C extends ServiceConsumer> {
     /**
      * This method will be called for the global shutdown process
      * when the process try to finalize the registered thread pool executors.
-     * @param executor Thread pool executor to finalize.
+     * @param executor Thread pool threadPoolExecutor to finalize.
      */
     protected void shutdownRegisteredExecutor(ThreadPoolExecutor executor) {}
 
@@ -361,7 +376,7 @@ public abstract class Service<C extends ServiceConsumer> {
                 }
 
                 Log.i(Service.SERVICE_LOG_TAG, "Ending custom executors");
-                service.registeredExecutors.forEach(service::shutdownRegisteredExecutor);
+                service.registeredExecutors.values().forEach(service::shutdownRegisteredExecutor);
                 Log.i(Service.SERVICE_LOG_TAG, "Custom executors finalized");
 
                 try {
@@ -372,7 +387,7 @@ public abstract class Service<C extends ServiceConsumer> {
                     errors++;
                 }
 
-                Log.i(Service.SERVICE_LOG_TAG, "Ending main service executor");
+                Log.i(Service.SERVICE_LOG_TAG, "Ending main service threadPoolExecutor");
                 service.serviceExecutor.shutdown();
                 while(!service.serviceExecutor.isTerminated()) {
                     try {
@@ -380,7 +395,7 @@ public abstract class Service<C extends ServiceConsumer> {
                                 SystemProperties.Service.SHUTDOWN_TIME_OUT));
                     } catch (InterruptedException e) {}
                 }
-                Log.i(Service.SERVICE_LOG_TAG, "Main service executor finalized");
+                Log.i(Service.SERVICE_LOG_TAG, "Main service threadPoolExecutor finalized");
             }
 
             Log.i(Service.SERVICE_LOG_TAG, "Shutdown");
@@ -515,6 +530,66 @@ public abstract class Service<C extends ServiceConsumer> {
             } finally {
                 ((ServiceThread) Thread.currentThread()).setSession(null);
             }
+        }
+
+    }
+
+    public interface ThreadPoolAgentMBean {
+
+        long getActiveCount();
+        long getCompletedTaskCount();
+        long getTaskCount();
+        int getCorePoolSize();
+        int getMaximumPoolSize();
+        int getLargestPoolSize();
+        int getPoolSize();
+
+    }
+
+    public static class ThreadPoolAgent extends Agent implements ThreadPoolAgentMBean {
+
+        private static final String PACKAGE_NAME = Service.class.getPackageName();
+
+        private final ThreadPoolExecutor threadPoolExecutor;
+
+        public ThreadPoolAgent(String name, ThreadPoolExecutor threadPoolExecutor) {
+            super(name, PACKAGE_NAME);
+            this.threadPoolExecutor = threadPoolExecutor;
+        }
+
+        @Override
+        public long getActiveCount() {
+            return threadPoolExecutor.getActiveCount();
+        }
+
+        @Override
+        public long getCompletedTaskCount() {
+            return threadPoolExecutor.getCompletedTaskCount();
+        }
+
+        @Override
+        public long getTaskCount() {
+            return threadPoolExecutor.getTaskCount();
+        }
+
+        @Override
+        public int getCorePoolSize() {
+            return threadPoolExecutor.getCorePoolSize();
+        }
+
+        @Override
+        public int getMaximumPoolSize() {
+            return threadPoolExecutor.getMaximumPoolSize();
+        }
+
+        @Override
+        public int getLargestPoolSize() {
+            return threadPoolExecutor.getLargestPoolSize();
+        }
+
+        @Override
+        public int getPoolSize() {
+            return threadPoolExecutor.getPoolSize();
         }
 
     }

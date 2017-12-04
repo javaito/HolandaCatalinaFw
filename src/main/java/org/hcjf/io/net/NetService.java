@@ -634,7 +634,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                         ((ServiceThread) Thread.currentThread()).setSession(null);
                                                     }
                                                 }
-                                            }, consumer.getIoExecutor());
+                                            }, consumer.getName(), consumer.getIoExecutor());
                                         } catch (RejectedExecutionException ex) {
                                             //Update the flag in order to process the key again
                                             if (key.isValid() && sessionsByChannel.containsKey(keyChannel)) {
@@ -1058,6 +1058,11 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     private static class SSLHelper implements Runnable {
 
+        private static final String IO_NAME_TEMPLATE = "SSL IO (%s)";
+        private static final String ENGINE_NAME_TEMPLATE = "SSL ENGINE (%s)";
+
+        private final String ioName;
+        private final String engineName;
         private SSLEngine sslEngine;
         private final SelectableChannel selectableChannel;
         private final NetServiceConsumer consumer;
@@ -1107,8 +1112,11 @@ public final class NetService extends Service<NetServiceConsumer> {
             readSemaphore = new Object();
             writeSemaphore = new Object();
 
+            ioName = String.format(IO_NAME_TEMPLATE, consumer.getName());
+            engineName = String.format(ENGINE_NAME_TEMPLATE, consumer.getName());
+
             //Start handshaking
-            instance.fork(this, ioExecutor);
+            instance.fork(this, ioName, ioExecutor);
         }
 
         /**
@@ -1203,7 +1211,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             instance.fork(() -> {
                 srcWrap.put(netPackage.getPayload());
                 SSLHelper.this.run();
-            }, ioExecutor);
+            }, ioName, ioExecutor);
 
             DefaultNetPackage defaultNetPackage = null;
             if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
@@ -1235,7 +1243,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             instance.fork(() -> {
                 srcUnwrap.put(netPackage.getPayload());
                 SSLHelper.this.run();
-            }, ioExecutor);
+            }, ioName, ioExecutor);
 
             DefaultNetPackage defaultNetPackage = null;
             if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
@@ -1299,8 +1307,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                     final Runnable sslTask = sslEngine.getDelegatedTask();
                     instance.fork(() -> {
                         sslTask.run();
-                        instance.fork(SSLHelper.this, ioExecutor);
-                    }, engineTaskExecutor);
+                        instance.fork(SSLHelper.this, ioName, ioExecutor);
+                    }, engineName, engineTaskExecutor);
                     return false;
 
                 case FINISHED:

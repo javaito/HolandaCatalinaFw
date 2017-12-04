@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class NetServiceConsumer<S extends NetSession, D extends Object> implements ServiceConsumer {
 
+    private static final String NAME_TEMPLATE = "%s %s %d";
+
+    private final String name;
     private final Integer port;
     private final NetService.TransportLayerProtocol protocol;
     private NetService service;
@@ -46,6 +49,15 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         outputBufferSize = SystemProperties.getInteger(SystemProperties.Net.DEFAULT_OUTPUT_BUFFER_SIZE);
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.Net.WRITE_TIMEOUT);
         waitForMap = new HashMap<>();
+        name = String.format(NAME_TEMPLATE, getClass().getName(), protocol.toString(), port);
+    }
+
+    /**
+     * This method return a name to identify the consumer.
+     * @return Consumer name.
+     */
+    public String getName() {
+        return name;
     }
 
     /**
