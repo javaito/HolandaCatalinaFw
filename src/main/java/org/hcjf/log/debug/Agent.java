@@ -1,8 +1,8 @@
 package org.hcjf.log.debug;
 
-import org.hcjf.utils.Strings;
-
 /**
+ * This class represents an agent that collect and store data from different
+ * points of the platform in order to monitoring and debug the instance status
  * @author javaito
  */
 public class Agent {
@@ -15,10 +15,18 @@ public class Agent {
         this.name = name;
     }
 
+    /**
+     * Returns the package name of the agent.
+     * @return Package name of the agent.
+     */
     public final String getPackageName() {
         return packageName;
     }
 
+    /**
+     * Returns the name if the agent.
+     * @return Name of the agent.
+     */
     public final String getName() {
         return name;
     }

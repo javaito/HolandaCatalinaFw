@@ -8,6 +8,9 @@ package org.hcjf.utils;
  */
 public final class SynchronizedCountOperation {
 
+    private static final Operation meanOperation = new Mean();
+    private static final Operation harmonicMeanOperation = new HarmonicMean();
+
     private final int maxCount;
     private final long maxTime;
     private final Operation operation;
@@ -32,8 +35,8 @@ public final class SynchronizedCountOperation {
 
     public synchronized void add(double value) {
         counter++;
-        accumulator += value;
-        if(maxCount >= counter || System.currentTimeMillis() - lastExecution > maxTime) {
+        accumulator = operation.accumulate(accumulator, value);
+        if(counter >= maxCount || System.currentTimeMillis() - lastExecution > maxTime) {
             currentValue = operation.execute(currentValue, accumulator, counter, lastExecution);
             counter = 0;
             accumulator = 0;
@@ -45,7 +48,44 @@ public final class SynchronizedCountOperation {
         return currentValue;
     }
 
+    public static Operation getMeanOperation() {
+        return meanOperation;
+    }
+
+    public static Operation getHarmonicMeanOperation() {
+        return harmonicMeanOperation;
+    }
+
     public interface Operation {
+
+        double accumulate(double accumulator, double value);
+
         double execute(double currentValue, double accumulator, int counter, long lastExecution);
+    }
+
+    private static class Mean implements Operation {
+
+        @Override
+        public double accumulate(double accumulator, double value) {
+            return accumulator + value;
+        }
+
+        @Override
+        public double execute(double currentValue, double accumulator, int counter, long lastExecution) {
+            return currentValue == 0 ? accumulator / counter : ((currentValue + accumulator) / (counter + 1));
+        }
+    }
+
+    private static class HarmonicMean implements Operation {
+
+        @Override
+        public double accumulate(double accumulator, double value) {
+            return accumulator + (value == 0 ? 0 : 1 / value);
+        }
+
+        @Override
+        public double execute(double currentValue, double accumulator, int counter, long lastExecution) {
+            return currentValue == 0 ? counter / accumulator : (currentValue + (counter / accumulator)) / 2;
+        }
     }
 }

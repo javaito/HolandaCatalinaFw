@@ -39,6 +39,8 @@ public class HttpServerTestSuit {
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
+        System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
+        System.setProperty(SystemProperties.Service.THREAD_POOL_MAX_SIZE, "2000");
 //        System.setProperty(SystemProperties.Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, Integer.toString(Integer.MAX_VALUE));
 //        System.setProperty(SystemProperties.Net.IO_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
 
@@ -230,29 +232,34 @@ public class HttpServerTestSuit {
 //        }
 
         try {
-            HttpServer server = new HttpServer(8080);
+            HttpServer server = new HttpServer(8081);
             server.addContext(new Context(".*") {
                 @Override
                 public HttpResponse onContext(HttpRequest request) {
-                    HttpPipelineResponse response = new HttpPipelineResponse(1024, 1024) {
-                        @Override
-                        protected int readPipeline(StreamingPackage streamingPackage) {
-                            int result = 0;
-                            try {
-                                result = System.in.read(streamingPackage.getBuffer());
+//                    HttpPipelineResponse response = new HttpPipelineResponse(1024, 1024) {
+//                        @Override
+//                        protected int readPipeline(StreamingPackage streamingPackage) {
+//                            int result = 0;
+//                            try {
+//                                result = System.in.read(streamingPackage.getBuffer());
+//
+//                                String s = new String(streamingPackage.getBuffer(), 0, result).trim();
+//                                if(s.length() == 0) {
+//                                    result = -1;
+//                                }
+//                            } catch (Exception ex){}
+//
+//                            return result;
+//                        }
+//                    };
+                    byte[] body = "Hello world!".getBytes();
 
-                                String s = new String(streamingPackage.getBuffer(), 0, result).trim();
-                                if(s.length() == 0) {
-                                    result = -1;
-                                }
-                            } catch (Exception ex){}
-
-                            return result;
-                        }
-                    };
-                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "text/plain"));
+                    HttpResponse response = new HttpResponse();
                     response.setResponseCode(200);
                     response.setReasonPhrase("OK");
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "text/plain"));
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+                    response.setBody(body);
 
                     return response;
                 }

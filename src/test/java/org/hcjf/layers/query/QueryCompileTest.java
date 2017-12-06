@@ -1,9 +1,18 @@
 package org.hcjf.layers.query;
 
 import junit.framework.AssertionFailedError;
+import org.hcjf.io.net.http.HttpHeader;
+import org.hcjf.io.net.http.HttpRequest;
+import org.hcjf.io.net.http.RequestBodyDecoderLayer;
+import org.hcjf.layers.Layers;
+import org.hcjf.properties.SystemProperties;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.UUID;
 
 /**
@@ -124,7 +133,7 @@ public class QueryCompileTest {
         }
 
         try {
-            Query.compile("SELECT  cliente.clienteid as clienteid ,  cliente.nombre as nombre ,  cliente.rubroid as rubroid ,  cliente.documentotipoid as documentotipoid ,  cliente.documentonro as documentonro ,\n" +
+            Query query = Query.compile("SELECT  cliente.clienteid as clienteid ,  cliente.nombre as nombre ,  cliente.rubroid as rubroid ,  cliente.documentotipoid as documentotipoid ,  cliente.documentonro as documentonro ,\n" +
                     " cliente.direccionid as direccionid ,  cliente.clienteestadoid as clienteestadoid ,  cliente.clavepublica as clavepublica ,  cliente.clientetipoid as clientetipoid ,\n" +
                     " cliente.norestacredito as norestacredito ,  cliente.contid as contid ,  cliente.notifholderresponsable as notifholderresponsable ,  cliente.parquevehicular as parquevehicular ,\n" +
                     " cliente.listaprecioid as listaprecioid ,  cliente.descuento as descuento ,  cliente.mail as mail ,  cliente.grupo as grupo ,  pais.desc_es as pais ,  direccion.calle as calle ,\n" +
@@ -138,6 +147,7 @@ public class QueryCompileTest {
                     " INNER JOIN clientetipo  ON (clientetipo.clientetipoid=cliente.clientetipoid)\n" +
                     " INNER JOIN documentotipo  ON (documentotipo.documentotipoid=cliente.documentotipoid)\n" +
                     " WHERE (  cliente.clienteid = 309 )");
+            System.out.println();
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }
@@ -160,42 +170,42 @@ public class QueryCompileTest {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 5");
             Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
         } catch (Exception ex) {
-            Assert.fail("Unable to parse integer number");
+            Assert.fail("Unable to decode integer number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 5.3");
             Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
         } catch (Exception ex) {
-            Assert.fail("Unable to parse decimal number");
+            Assert.fail("Unable to decode decimal number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = -0.00023");
             Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
         } catch (Exception ex) {
-            Assert.fail("Unable to parse negative decimal number");
+            Assert.fail("Unable to decode negative decimal number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = -2.3E-4");
             Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
         } catch (Exception ex) {
-            Assert.fail("Unable to parse negative scientific number with negative exponent");
+            Assert.fail("Unable to decode negative scientific number with negative exponent");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = -2.3E4");
             Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
         } catch (Exception ex) {
-            Assert.fail("Unable to parse negative scientific number");
+            Assert.fail("Unable to decode negative scientific number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2.3E4");
             Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
         } catch (Exception ex) {
-            Assert.fail("Unable to parse scientific number");
+            Assert.fail("Unable to decode scientific number");
         }
     }
 
@@ -208,7 +218,7 @@ public class QueryCompileTest {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84");
             Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof UUID);
         } catch (Exception ex) {
-            Assert.fail("Unable to parse UUID data type");
+            Assert.fail("Unable to decode UUID data type");
         }
     }
 
