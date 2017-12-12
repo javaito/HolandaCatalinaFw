@@ -6,6 +6,8 @@ import org.hcjf.log.debug.Agent;
 import org.hcjf.log.debug.Agents;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
+import org.hcjf.service.security.Permission;
+import org.hcjf.service.security.SecurityPermission;
 import org.hcjf.utils.SynchronizedCountOperation;
 
 import java.lang.reflect.Method;
@@ -33,11 +35,11 @@ public abstract class Layer implements LayerInterface {
         this.implName = implName;
         this.stateful = stateful;
         this.invocationMean = new SynchronizedCountOperation(
-                SynchronizedCountOperation.getMeanOperation(), 100L);
+                SynchronizedCountOperation.getMeanOperation(), 1000L);
         this.executionTimeMean = new SynchronizedCountOperation(
-                SynchronizedCountOperation.getMeanOperation(), 100L);
+                SynchronizedCountOperation.getMeanOperation(), 1000L);
         this.errorMean = new SynchronizedCountOperation(
-                SynchronizedCountOperation.getMeanOperation(), 100L);
+                SynchronizedCountOperation.getMeanOperation(), 1000L);
         Agents.register(new LayerAgent(this));
     }
 
@@ -94,7 +96,7 @@ public abstract class Layer implements LayerInterface {
      * @return Access object.
      */
     protected Access checkAccess(){
-        return new Access(true);
+        return Access.GRANTED;
     }
 
     /**
@@ -195,6 +197,13 @@ public abstract class Layer implements LayerInterface {
                 serviceThread.putLayer(getClass());
             }
 
+            if(!method.getDeclaringClass().equals(LayerInterface.class)) {
+                Method implementationMethod = getTarget().getClass().getDeclaredMethod(method.getName(), method.getParameterTypes());
+                for (Permission permission : implementationMethod.getDeclaredAnnotationsByType(Permission.class)) {
+                    checkPermission(permission.value());
+                }
+            }
+
             Object result;
             try {
                 LayerProxy.ProxyInterceptor interceptor = getProxy().onBeforeInvoke(method, args);
@@ -222,6 +231,17 @@ public abstract class Layer implements LayerInterface {
     }
 
     /**
+     * Verify if the current identity contains the grant to validate the
+     * permission indicated.
+     * @param permission Permission to validate.
+     */
+    protected final void checkPermission(String permission) {
+        System.getSecurityManager().checkPermission(
+                SecurityPermission.getPermission(
+                        getTarget().getClass().getName(), permission));
+    }
+
+    /**
      * This method return the invocation target.
      * @return Invocation target.
      */
@@ -241,6 +261,8 @@ public abstract class Layer implements LayerInterface {
      * This class represents the access resume of the layer.
      */
     public final static class Access {
+
+        private static final Access GRANTED = new Access(true);
 
         private final boolean granted;
         private final String message;

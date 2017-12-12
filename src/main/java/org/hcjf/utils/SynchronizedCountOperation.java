@@ -72,7 +72,7 @@ public final class SynchronizedCountOperation {
 
         @Override
         public double execute(double currentValue, double accumulator, int counter, long lastExecution) {
-            return currentValue == 0 ? accumulator / counter : ((currentValue + accumulator) / (counter + 1));
+            return currentValue == 0 ? accumulator / counter : ((accumulator / counter) + currentValue) / 2;
         }
     }
 
@@ -85,7 +85,7 @@ public final class SynchronizedCountOperation {
 
         @Override
         public double execute(double currentValue, double accumulator, int counter, long lastExecution) {
-            return currentValue == 0 ? counter / accumulator : (currentValue + (counter / accumulator)) / 2;
+            return currentValue == 0 ? counter / accumulator : ((counter / accumulator) + currentValue) / 2;
         }
     }
 }

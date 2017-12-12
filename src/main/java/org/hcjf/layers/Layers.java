@@ -9,12 +9,16 @@ import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.security.Grants;
+import org.hcjf.service.security.LazyPermission;
+import org.hcjf.service.security.Permission;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.Version;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -295,6 +299,15 @@ public final class Layers {
         //Register the implementation name into the named uuid singleton
         if(layerInstance instanceof IdentifiableLayerInterface) {
             NamedUuid.registerName(layerInstance.getImplName());
+        }
+
+        for(Method method : layerInstance.getClass().getDeclaredMethods()) {
+            for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
+                Grants.publishGrant(layerInstance.getClass(), permission.value());
+            }
+            for(LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
+                Grants.publishGrant(layerInstance.getClass(), permission.value());
+            }
         }
 
         return implName;

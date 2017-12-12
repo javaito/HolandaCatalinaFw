@@ -1,10 +1,5 @@
 package org.hcjf.io.net.http;
 
-import org.hcjf.encoding.MimeType;
-import org.hcjf.io.net.InetPortProvider;
-import org.hcjf.io.net.http.pipeline.ChunkedHttpPipelineResponse;
-import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
-import org.hcjf.io.net.http.rest.EndPoint;
 import org.hcjf.io.net.http.rest.layers.EndPointDecoderLayerInterface;
 import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
 import org.hcjf.layers.Layers;
@@ -13,17 +8,11 @@ import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
-import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.grants.Grant;
+import org.hcjf.service.security.Grant;
 import org.hcjf.utils.Introspection;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -272,12 +261,7 @@ public class HttpServerTestSuit {
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {
 
-        private final Grant createGrant;
-        private final Grant customGrant;
-
         public TestMapCrud() {
-            createGrant = Grant.publishGrant("CREATE");
-            customGrant = Grant.publishGrant("CACA");
         }
 
         @Override
@@ -288,9 +272,6 @@ public class HttpServerTestSuit {
 
         @Override
         public Collection<Map<String, Object>> read(Query query) {
-
-            Grant.validateGrant(createGrant);
-
             Collection<Map<String, Object>> result = new ArrayList<>();
             Collection<Test> tests = Layers.get(CrudLayerInterface.class, "Test").read(query);
             for(Test test : tests) {

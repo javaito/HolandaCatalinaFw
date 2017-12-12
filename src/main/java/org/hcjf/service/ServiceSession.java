@@ -2,7 +2,7 @@ package org.hcjf.service;
 
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.grants.Grant;
+import org.hcjf.service.security.Grant;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -249,6 +249,17 @@ public class ServiceSession implements Comparable {
      */
     public final Set<Grant> getGrants() {
         return Collections.unmodifiableSet(grants);
+    }
+
+    public final boolean containsGrant(String grantId) {
+        boolean result = false;
+        for(Grant grant : grants) {
+            result = grant.getGrantId().equals(grantId);
+            if(result){
+                break;
+            }
+        }
+        return result;
     }
 
     /**

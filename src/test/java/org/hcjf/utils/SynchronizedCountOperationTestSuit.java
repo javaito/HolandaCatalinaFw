@@ -4,9 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author javaito.
@@ -26,6 +24,13 @@ public class SynchronizedCountOperationTestSuit {
             value = random.nextDouble() * 100;
             values.add(value);
         }
+
+        List<Double> sortedValues = new ArrayList<>();
+        sortedValues.addAll(values);
+        Collections.sort(sortedValues);
+        System.out.println("Values: " + sortedValues.toString());
+        System.out.println("Max value: " + sortedValues.get(values.size()-1));
+        System.out.println("Min value: " + sortedValues.get(0));
     }
 
     @Test
@@ -76,6 +81,8 @@ public class SynchronizedCountOperationTestSuit {
             for (TestThread thread : threads) {
                 count += thread.getWarningCount();
             }
+
+            System.out.println("Result: " + operation.getCurrentValue());
         } catch (Throwable throwable) {
             Assert.fail(throwable.getMessage());
             throw throwable;
