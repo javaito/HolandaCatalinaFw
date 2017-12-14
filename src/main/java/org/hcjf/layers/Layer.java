@@ -1,6 +1,7 @@
 package org.hcjf.layers;
 
 import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.plugins.PluginLayer;
 import org.hcjf.layers.storage.StorageLayerInterface;
 import org.hcjf.log.debug.Agent;
 import org.hcjf.log.debug.Agents;
@@ -71,6 +72,15 @@ public abstract class Layer implements LayerInterface {
     @Override
     public final boolean isStateful() {
         return stateful;
+    }
+
+    /**
+     * Returns true if the layer implementations is a instanceof plugin or false in the otherwise.
+     * @return Plugin status.
+     */
+    @Override
+    public  final boolean isPlugin() {
+        return PluginLayer.class.isAssignableFrom(getClass());
     }
 
     /**
@@ -194,7 +204,8 @@ public abstract class Layer implements LayerInterface {
             ServiceThread serviceThread = null;
             if (Thread.currentThread() instanceof ServiceThread) {
                 serviceThread = (ServiceThread) Thread.currentThread();
-                serviceThread.putLayer(getClass());
+                serviceThread.putLayer(new ServiceSession.LayerStackElement(
+                        getClass(), getImplName(), isPlugin(), isStateful()));
             }
 
             if(!method.getDeclaringClass().equals(LayerInterface.class)) {

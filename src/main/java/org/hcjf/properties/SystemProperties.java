@@ -46,6 +46,8 @@ public final class SystemProperties extends Properties {
 
     public static final class Layer {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
+        public static final String PLUGIN_THREADING_GRANT = "hcjf.layers.plugin.threading.grant";
+        public static final String PLUGIN_FILE_ACCESS_GRANT = "hcjf.layers.plugin.file.access.grant";
 
         public static final class Deployment {
             public static final String SERVICE_NAME = "hcjf.layers.deployment.service.name";
@@ -70,7 +72,7 @@ public final class SystemProperties extends Properties {
         public static final String SYSTEM_SESSION_NAME = "hcjf.service.system.session.name";
         public static final String SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
         public static final String MAX_ALLOCATED_MEMORY_EXPRESSED_IN_PERCENTAGE = "hcjf.service.max.allocated.memory.expressed.in.percentage";
-        public static final String MAX_ALLOCATED_MEMOTY_FOR_THREAD = "max.allocated.memory.for.thread";
+        public static final String MAX_ALLOCATED_MEMORY_FOR_THREAD = "max.allocated.memory.for.thread";
         public static final String MAX_EXECUTION_TIME_FOR_THREAD = "max.execution.time.for.thread";
     }
 
@@ -319,12 +321,6 @@ public final class SystemProperties extends Properties {
         }
     }
 
-    public static class Grant {
-        public static final String LOG_TAG = "hcjf.grant.log.tag";
-        public static final String CLOUD_DEPLOYMENT = "hcjf.grant.cloud.deployment";
-        public static final String CLOUD_MAP_NAME = "hcjf.grant.cloud.map.name";
-    }
-
     //Java property names
     public static final String FILE_ENCODING = "file.encoding";
 
@@ -379,7 +375,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.SYSTEM_SESSION_NAME, "System");
         defaults.put(Service.SHUTDOWN_TIME_OUT, "200");
         defaults.put(Service.MAX_ALLOCATED_MEMORY_EXPRESSED_IN_PERCENTAGE, "true");
-        defaults.put(Service.MAX_ALLOCATED_MEMOTY_FOR_THREAD, "15");
+        defaults.put(Service.MAX_ALLOCATED_MEMORY_FOR_THREAD, "15");
         defaults.put(Service.MAX_EXECUTION_TIME_FOR_THREAD, Long.toString(10*1000*1000*1000));
 
         defaults.put(Event.SERVICE_NAME, "Events");
@@ -576,10 +572,6 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Cache.LOCK_SUFFIX_NAME, "hcjf.cloud.cache.lock.");
         defaults.put(Cloud.Cache.CONDITION_SUFFIX_NAME, "hcjf.cloud.cache.condition.");
         defaults.put(Cloud.Cache.SIZE_STRATEGY_MAP_SUFFIX_NAME, "hcjf.cloud.cache.size.strategy.map.");
-
-        defaults.put(Grant.LOG_TAG, "GRANT");
-        defaults.put(Grant.CLOUD_DEPLOYMENT, "false");
-        defaults.put(Grant.CLOUD_MAP_NAME, "hcjf.grant.cloud.map.name");
 
         Properties system = System.getProperties();
         putAll(system);

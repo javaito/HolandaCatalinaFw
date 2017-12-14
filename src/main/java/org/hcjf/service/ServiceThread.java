@@ -5,6 +5,7 @@ import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 
 import java.lang.management.ManagementFactory;
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -33,10 +34,10 @@ public class ServiceThread extends Thread {
 
     /**
      * Add an element into the layer stack.
-     * @param layerClass Layer class.
+     * @param element Layer stack element.
      */
-    public final void putLayer(Class<? extends Layer> layerClass) {
-        getSession().putLayer(layerClass);
+    public final void putLayer(ServiceSession.LayerStackElement element) {
+        getSession().putLayer(element);
     }
 
     /**
@@ -50,7 +51,7 @@ public class ServiceThread extends Thread {
      * This method return the stack of layer of the session.
      * @return Layer stack.
      */
-    public Class[] getLayerStack() {
+    public Collection<ServiceSession.LayerStackElement> getLayerStack() {
         return getSession().getLayerStack();
     }
 
@@ -159,7 +160,7 @@ public class ServiceThread extends Thread {
             setInitialTime(ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime());
 
             //Init the max allocated memory value for thread
-            configureMaxAllocatedMemory(SystemProperties.getLong(SystemProperties.Service.MAX_ALLOCATED_MEMOTY_FOR_THREAD));
+            configureMaxAllocatedMemory(SystemProperties.getLong(SystemProperties.Service.MAX_ALLOCATED_MEMORY_FOR_THREAD));
 
             //Init the max execution time value for thread
             configureMaxExecutionTime(SystemProperties.getLong(SystemProperties.Service.MAX_EXECUTION_TIME_FOR_THREAD));

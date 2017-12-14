@@ -1,6 +1,8 @@
 package org.hcjf.service.security;
 
+import org.hcjf.layers.Layer;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.service.ServiceThread;
 
 import java.io.FileDescriptor;
 import java.net.InetAddress;
@@ -9,7 +11,7 @@ import java.security.Permission;
 /**
  * @author javaito
  */
-public class ServiceSecurityManager extends java.lang.SecurityManager {
+public class ServiceSecurityManager extends SecurityManager {
 
     private static final String GRANT_NOT_FOUND_TEMPLATE = "Grant not found %s into service session %s";
     private static final String SECURITY_EXCEPTION_MESSAGE = "Security exception";
@@ -41,6 +43,15 @@ public class ServiceSecurityManager extends java.lang.SecurityManager {
 
     @Override
     public void checkAccess(Thread t) {
+        if(Thread.currentThread() instanceof ServiceThread) {
+            ServiceSession session = ServiceSession.getCurrentIdentity();
+            ServiceSession.LayerStackElement element = session.getCurrentLayer();
+            if(element != null) {
+                if(element.isPlugin()) {
+                    throw new SecurityException("Unable to manipulate a thread into a plugin layer");
+                }
+            }
+        }
     }
 
     @Override
