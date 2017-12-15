@@ -12,12 +12,14 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.security.Grants;
 import org.hcjf.service.security.LazyPermission;
 import org.hcjf.service.security.Permission;
+import org.hcjf.service.security.SecurityPermissions;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.Version;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
@@ -303,10 +305,10 @@ public final class Layers {
 
         for(Method method : layerInstance.getClass().getDeclaredMethods()) {
             for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
-                Grants.publishGrant(layerInstance.getClass(), permission.value());
+                SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
             }
-            for(LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
-                Grants.publishGrant(layerInstance.getClass(), permission.value());
+            for (LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
+                SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
             }
         }
 

@@ -8,7 +8,7 @@ import org.hcjf.log.debug.Agents;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 import org.hcjf.service.security.Permission;
-import org.hcjf.service.security.SecurityPermission;
+import org.hcjf.service.security.SecurityPermissions;
 import org.hcjf.utils.SynchronizedCountOperation;
 
 import java.lang.reflect.Method;
@@ -211,7 +211,7 @@ public abstract class Layer implements LayerInterface {
             if(!method.getDeclaringClass().equals(LayerInterface.class)) {
                 Method implementationMethod = getTarget().getClass().getDeclaredMethod(method.getName(), method.getParameterTypes());
                 for (Permission permission : implementationMethod.getDeclaredAnnotationsByType(Permission.class)) {
-                    checkPermission(permission.value());
+                    SecurityPermissions.checkPermission(getTarget().getClass(), permission.value());
                 }
             }
 
@@ -239,17 +239,6 @@ public abstract class Layer implements LayerInterface {
             //Add the invocation time int the layer counter.
             executionTimeMean.add(System.currentTimeMillis() - startTime);
         }
-    }
-
-    /**
-     * Verify if the current identity contains the grant to validate the
-     * permission indicated.
-     * @param permission Permission to validate.
-     */
-    protected final void checkPermission(String permission) {
-        System.getSecurityManager().checkPermission(
-                SecurityPermission.getPermission(
-                        getTarget().getClass().getName(), permission));
     }
 
     /**

@@ -1,6 +1,5 @@
 package org.hcjf.service.security;
 
-import org.hcjf.layers.Layer;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
@@ -18,7 +17,7 @@ public class ServiceSecurityManager extends SecurityManager {
 
     @Override
     public void checkPermission(Permission perm) {
-        if(perm instanceof SecurityPermission) {
+        if(perm instanceof SecurityPermissions.SecurityPermission) {
             ServiceSession serviceSession;
             try {
                 serviceSession = ServiceSession.getCurrentIdentity();
@@ -35,6 +34,7 @@ public class ServiceSecurityManager extends SecurityManager {
 
     @Override
     public void checkPermission(Permission perm, Object context) {
+        System.out.println();
     }
 
     @Override
@@ -45,10 +45,12 @@ public class ServiceSecurityManager extends SecurityManager {
     public void checkAccess(Thread t) {
         if(Thread.currentThread() instanceof ServiceThread) {
             ServiceSession session = ServiceSession.getCurrentIdentity();
-            ServiceSession.LayerStackElement element = session.getCurrentLayer();
-            if(element != null) {
-                if(element.isPlugin()) {
-                    throw new SecurityException("Unable to manipulate a thread into a plugin layer");
+            if(session != null) {
+                ServiceSession.LayerStackElement element = session.getCurrentLayer();
+                if (element != null) {
+                    if (element.isPlugin()) {
+                        throw new SecurityException("Unable to manipulate a thread into a plugin layer");
+                    }
                 }
             }
         }
@@ -68,6 +70,7 @@ public class ServiceSecurityManager extends SecurityManager {
 
     @Override
     public void checkLink(String lib) {
+
     }
 
     @Override

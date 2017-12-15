@@ -1,6 +1,9 @@
 package org.hcjf.utils;
 
 import org.hcjf.names.Naming;
+import org.hcjf.service.security.LazyPermission;
+import org.hcjf.service.security.Permission;
+import org.hcjf.service.security.SecurityPermissions;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -321,6 +324,7 @@ public final class Introspection {
         private final Class implementationClass;
         private final Method method;
         private final Map<Class<? extends Annotation>, List<Annotation>> annotationsMap;
+        private boolean containsPermission;
 
         public Invoker(Class implementationClass, Method method) {
             this.implementationClass = implementationClass;
@@ -340,6 +344,13 @@ public final class Introspection {
                     annotationsMap.put(annotationClass, annotationList);
                 }
                 annotationList.add(annotation);
+
+                if(annotationClass.equals(Permission.class)) {
+                    SecurityPermissions.publishPermission(implementationClass, ((Permission)annotation).value());
+                    containsPermission = true;
+                } else if(annotationClass.equals(LazyPermission.class)) {
+                    SecurityPermissions.publishPermission(implementationClass, ((LazyPermission)annotation).value());
+                }
             }
         }
 
@@ -410,13 +421,18 @@ public final class Introspection {
 
         /**
          * Wrapper method to get the storage method.
-         * @param instance Instance to get the mehtod.
+         * @param instance Instance to get the method.
          * @param params Method parameters.
          * @return Invocation result.
          * @throws InvocationTargetException Invocation Target Exception
          * @throws IllegalAccessException Illegal Access Exception
          */
         public Object invoke(Object instance, Object... params) throws InvocationTargetException, IllegalAccessException {
+            if(containsPermission) {
+                for (Permission permission : getAnnotations(Permission.class)) {
+                    SecurityPermissions.checkPermission(instance.getClass(), permission.value());
+                }
+            }
             return getMethod().invoke(instance, params);
         }
     }

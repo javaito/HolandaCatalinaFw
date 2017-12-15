@@ -9,7 +9,6 @@ import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.security.Grant;
 import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Method;

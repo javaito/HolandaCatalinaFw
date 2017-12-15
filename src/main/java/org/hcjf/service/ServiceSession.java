@@ -2,7 +2,7 @@ package org.hcjf.service;
 
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.security.Grant;
+import org.hcjf.service.security.Grants;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -32,7 +32,7 @@ public class ServiceSession implements Comparable {
     private final Map<Long, Long> systemTimeByThread;
     private final ThreadMXBean threadMXBean;
     private final List<ServiceSession> identities;
-    private final Set<Grant> grants;
+    private final Set<Grants.Grant> grants;
     private Locale locale;
 
     public ServiceSession(UUID id) {
@@ -255,7 +255,7 @@ public class ServiceSession implements Comparable {
      * Add a grant into the session.
      * @param grant Grant instance.
      */
-    public final void addGrant(Grant grant) {
+    public final void addGrant(Grants.Grant grant) {
         grants.add(grant);
     }
 
@@ -263,7 +263,7 @@ public class ServiceSession implements Comparable {
      * Removes the grant of the session.
      * @param grant Grant instance.
      */
-    public final void removeGrant(Grant grant) {
+    public final void removeGrant(Grants.Grant grant) {
         grants.remove(grant);
     }
 
@@ -271,14 +271,14 @@ public class ServiceSession implements Comparable {
      * Returns the grants set of the session.
      * @return Grants set.
      */
-    public final Set<Grant> getGrants() {
+    public final Set<Grants.Grant> getGrants() {
         return Collections.unmodifiableSet(grants);
     }
 
     public final boolean containsGrant(String grantId) {
         boolean result = false;
-        for(Grant grant : grants) {
-            result = grant.getGrantId().equals(grantId);
+        for(Grants.Grant grant : grants) {
+            result = grant.getPermissionId().equals(grantId);
             if(result){
                 break;
             }
@@ -373,7 +373,8 @@ public class ServiceSession implements Comparable {
     public static final <S extends ServiceSession> S getCurrentIdentity() {
         Thread currentThread = Thread.currentThread();
         if(ServiceThread.class.isAssignableFrom(currentThread.getClass())) {
-            return (S) ((ServiceThread)currentThread).getSession().currentIdentity();
+            return ((ServiceThread)currentThread).getSession() == null ? null :
+                    (S) ((ServiceThread)currentThread).getSession().currentIdentity();
         } else {
             throw new IllegalStateException("The current thread is not a service thread.");
         }
