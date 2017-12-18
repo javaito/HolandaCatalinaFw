@@ -15,14 +15,33 @@ public class SecurityPermissions {
         permissions = new HashMap<>();
     }
 
+    /**
+     * Creates a identifier using the name of the class that publish the permission
+     * and the name of permission.
+     * @param className Class that publish the permission.
+     * @param permissionName Name of the permission.
+     * @return Returns the identifier created.
+     */
     private static String createPermissionId(String className, String permissionName) {
         return className + ID_CONCAT + permissionName;
     }
 
+    /**
+     * Publish a new permission.
+     * @param targetClass Class that publish the permission.
+     * @param permissionName Name of the permission.
+     * @return Returns the instance of the new permission created.
+     */
     public static SecurityPermission publishPermission(Class targetClass, String permissionName) {
         return createPermission(targetClass.getName(), permissionName);
     }
 
+    /**
+     * Creates the permission instance.
+     * @param className Name of the class that publish the permission.
+     * @param permissionName Name of the permission.
+     * @return Returns the instance of the permission created.
+     */
     private static SecurityPermission createPermission(String className, String permissionName) {
         String permissionId = createPermissionId(className, permissionName);
         SecurityPermission permission = new SecurityPermission(permissionId, className, permissionName);
@@ -32,6 +51,11 @@ public class SecurityPermissions {
         return permission;
     }
 
+    /**
+     * Checks if the current identity contains the grants for the specific permission.
+     * @param targetClass Class that publish the permission.
+     * @param permissionName Name of the permission.
+     */
     public static void checkPermission(Class targetClass, String permissionName) {
         System.getSecurityManager().checkPermission(
                 SecurityPermissions.getPermission(
@@ -39,6 +63,13 @@ public class SecurityPermissions {
                 ));
     }
 
+    /**
+     * Checks if the current identity contains the grants for the specific permission, if the
+     * permission is granted then is executed the attached action.
+     * @param targetClass Class that publish the permission.
+     * @param permissionName Name of the permission.
+     * @param action Action to execute if the permission is granted.
+     */
     public static void checkPermission(Class targetClass, String permissionName, GrantedAction action) {
         try {
             System.getSecurityManager().checkPermission(
@@ -48,10 +79,19 @@ public class SecurityPermissions {
         } catch (SecurityException ex) {}
     }
 
+    /**
+     * Returns the instance of a permission indexed by the id created for the class name and the permission name.
+     * @param className Name of the class that publish the permission.
+     * @param permissionName Name of the permission.
+     * @return Returns the permission instance.
+     */
     private static SecurityPermission getPermission(String className, String permissionName) {
         return permissions.get(createPermissionId(className, permissionName));
     }
 
+    /**
+     * Class that represents a permission.
+     */
     public static final class SecurityPermission extends java.security.Permission {
 
         private final String targetClassName;
@@ -63,10 +103,18 @@ public class SecurityPermissions {
             this.permissionName = permissionName;
         }
 
+        /**
+         * Returns the name of the target class.
+         * @return Name of the target class.
+         */
         public String getTargetClassName() {
             return targetClassName;
         }
 
+        /**
+         * Returns the permission's name.
+         * @return Permission's name.
+         */
         public String getPermissionName() {
             return permissionName;
         }
