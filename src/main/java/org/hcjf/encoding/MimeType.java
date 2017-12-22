@@ -406,6 +406,7 @@ public class MimeType {
     public static final MimeType VIDEO_DL = new MimeType("video/dl");
     public static final MimeType VIDEO_FLI = new MimeType("video/fli");
     public static final MimeType VIDEO_GL = new MimeType("video/gl");
+    public static final MimeType VIDEO_MP4 = new MimeType("video/mp4");
     public static final MimeType VIDEO_MPEG = new MimeType("video/mpeg");
     public static final MimeType VIDEO_MSVIDEO = new MimeType("video/msvideo");
     public static final MimeType VIDEO_QUICKTIME = new MimeType("video/quicktime");
@@ -650,6 +651,7 @@ public class MimeType {
     public static final String MOVIE = "movie";
     public static final String MP2 = "mp2";
     public static final String MP3 = "mp3";
+    public static final String MP4 = "mp4";
     public static final String MPA = "mpa";
     public static final String MPC = "mpc";
     public static final String MPE = "mpe";
@@ -1304,6 +1306,7 @@ public class MimeType {
         types.put(VIDEO_DL.toString(), VIDEO_DL);
         types.put(VIDEO_FLI.toString(), VIDEO_FLI);
         types.put(VIDEO_GL.toString(), VIDEO_GL);
+        types.put(VIDEO_MP4.toString(), VIDEO_MP4);
         types.put(VIDEO_MPEG.toString(), VIDEO_MPEG);
         types.put(VIDEO_MSVIDEO.toString(), VIDEO_MSVIDEO);
         types.put(VIDEO_QUICKTIME.toString(), VIDEO_QUICKTIME);
@@ -1490,6 +1493,7 @@ public class MimeType {
         typesBySuffix.put(MOOV, VIDEO_QUICKTIME);
         typesBySuffix.put(MOVIE, VIDEO_X_SGI_MOVIE);
         typesBySuffix.put(MP3, AUDIO_MPEG3);
+        typesBySuffix.put(MP4, VIDEO_MP4);
         typesBySuffix.put(MPC, APPLICATION_X_PROJECT);
         typesBySuffix.put(MPP, APPLICATION_VND_MS_PROJECT);
         typesBySuffix.put(MRC, APPLICATION_MARC);
