@@ -5,17 +5,15 @@ import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.http.HttpRequest;
 import org.hcjf.io.net.http.rest.EndPointCrudRequest;
 import org.hcjf.io.net.http.rest.EndPointRequest;
-import org.hcjf.layers.Layers;
-import org.hcjf.layers.crud.References;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.crud.References;
 import org.hcjf.layers.query.Query;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -172,6 +170,8 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
                         } catch (Exception ex) {
                             Log.w(SystemProperties.Net.Http.LOG_TAG, "Unable to create reference %s", element.toString());
                         }
+                    } else if(element instanceof JsonPrimitive) {
+                        defaultReferences.putReference(referenceName, element.getAsString());
                     }
                 } else {
                     setter = setters.get(entry.getKey());
@@ -253,6 +253,20 @@ public interface EndPointDecoderLayerInterface extends LayerInterface {
                             result = simpleDateFormat.format(jsonElement.getAsString());
                         } catch (Exception ex){}
                     }
+                } else if (parameterType.equals(Byte.class) || parameterType.equals(byte.class)) {
+                    result = jsonElement.getAsNumber().byteValue();
+                } else if (parameterType.equals(Short.class) || parameterType.equals(short.class)) {
+                    result = jsonElement.getAsNumber().shortValue();
+                } else if (parameterType.equals(Integer.class) || parameterType.equals(int.class)) {
+                    result = jsonElement.getAsNumber().intValue();
+                } else if (parameterType.equals(Long.class) || parameterType.equals(long.class)) {
+                    result = jsonElement.getAsNumber().longValue();
+                } else if (parameterType.equals(Float.class) || parameterType.equals(float.class)) {
+                    result = jsonElement.getAsNumber().floatValue();
+                } else if (parameterType.equals(Double.class) || parameterType.equals(double.class)) {
+                    result = jsonElement.getAsNumber().doubleValue();
+                } else if (parameterType.equals(Boolean.class) || parameterType.equals(boolean.class)) {
+                    result = jsonElement.getAsBoolean();
                 }
             } catch (Exception ex){
                 Log.w(SystemProperties.Net.Http.LOG_TAG, "Unable to encode value %s to %s data type",

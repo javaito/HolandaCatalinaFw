@@ -2,8 +2,6 @@ package org.hcjf.layers.locale;
 
 import org.hcjf.layers.LayerInterface;
 
-import java.util.Locale;
-
 /**
  * This interface provides some methods access the locale information
  * based on the locale of the service session.

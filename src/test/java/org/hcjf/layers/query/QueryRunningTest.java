@@ -9,6 +9,7 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.text.SimpleDateFormat;
@@ -41,7 +42,8 @@ public class QueryRunningTest {
     private static final Map<UUID, JoinableMap> simpsonAddresses = new HashMap<>();
     private static final TestDataSource dataSource = new TestDataSource();
 
-    static {
+    @BeforeClass
+    public static void config() {
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -176,6 +178,9 @@ public class QueryRunningTest {
 
     @Test
     public void select() {
+
+        SystemProperties.get(SystemProperties.Service.SYSTEM_SESSION_NAME);
+
         Service.run(() -> {
 
             Query query = Query.compile("SELECT * FROM character");

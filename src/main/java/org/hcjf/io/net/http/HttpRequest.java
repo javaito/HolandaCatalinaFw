@@ -220,9 +220,11 @@ public class HttpRequest extends HttpPackage {
                 key = param;
                 value = null;
             } else {
-                String[] keyValue = param.split(HTTP_FIELD_ASSIGNATION);
-                key = keyValue[0];
-                value = keyValue.length==2 ? keyValue[1] : null;
+                key = param.substring(0, param.indexOf(HTTP_FIELD_ASSIGNATION));
+                value = param.substring(param.indexOf(HTTP_FIELD_ASSIGNATION) + 1);
+                if(value.length() == 0) {
+                    value = null;
+                }
             }
 
             if(key.contains(Strings.START_SUB_GROUP) && key.contains(Strings.END_SUB_GROUP)) {

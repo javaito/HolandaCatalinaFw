@@ -2,10 +2,6 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.properties.SystemProperties;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * This class represents a http response package.
  * @author javaito

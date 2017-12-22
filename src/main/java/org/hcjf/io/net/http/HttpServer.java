@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 /**
  * Implementation of the net service that provides the http protocol server.

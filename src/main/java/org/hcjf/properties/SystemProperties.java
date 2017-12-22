@@ -46,6 +46,8 @@ public final class SystemProperties extends Properties {
 
     public static final class Layer {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
+        public static final String PLUGIN_THREADING_GRANT = "hcjf.layers.plugin.threading.grant";
+        public static final String PLUGIN_FILE_ACCESS_GRANT = "hcjf.layers.plugin.file.access.grant";
 
         public static final class Deployment {
             public static final String SERVICE_NAME = "hcjf.layers.deployment.service.name";
@@ -69,6 +71,9 @@ public final class SystemProperties extends Properties {
         public static final String GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
         public static final String SYSTEM_SESSION_NAME = "hcjf.service.system.session.name";
         public static final String SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
+        public static final String MAX_ALLOCATED_MEMORY_EXPRESSED_IN_PERCENTAGE = "hcjf.service.max.allocated.memory.expressed.in.percentage";
+        public static final String MAX_ALLOCATED_MEMORY_FOR_THREAD = "max.allocated.memory.for.thread";
+        public static final String MAX_EXECUTION_TIME_FOR_THREAD = "max.execution.time.for.thread";
     }
 
     public static final class Event {
@@ -289,6 +294,7 @@ public final class SystemProperties extends Properties {
             public static final String MATH_DIVISION = "hcjf.query.function.math.division";
             public static final String REFERENCE_FUNCTION_NAME = "hcjf.query.function.reference.name";
             public static final String BSON_FUNCTION_NAME = "hcjf.query.function.bson.name";
+            public static final String COLLECTION_FUNCTION_NAME = "hcjf.query.function.collection.name";
 
         }
     }
@@ -313,12 +319,6 @@ public final class SystemProperties extends Properties {
             public static final String CONDITION_SUFFIX_NAME = "hcjf.cloud.cache.condition.suffix.name";
             public static final String SIZE_STRATEGY_MAP_SUFFIX_NAME = "hcjf.cloud.cache.size.strategy.map.suffix.name";
         }
-    }
-
-    public static class Grant {
-        public static final String LOG_TAG = "hcjf.grant.log.tag";
-        public static final String CLOUD_DEPLOYMENT = "hcjf.grant.cloud.deployment";
-        public static final String CLOUD_MAP_NAME = "hcjf.grant.cloud.map.name";
     }
 
     //Java property names
@@ -369,11 +369,14 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.STATIC_THREAD_POOL_MAX_SIZE, "5");
         defaults.put(Service.STATIC_THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
-        defaults.put(Service.THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
+        defaults.put(Service.THREAD_POOL_MAX_SIZE, "2000");
         defaults.put(Service.THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.GUEST_SESSION_NAME, "Guest");
         defaults.put(Service.SYSTEM_SESSION_NAME, "System");
         defaults.put(Service.SHUTDOWN_TIME_OUT, "200");
+        defaults.put(Service.MAX_ALLOCATED_MEMORY_EXPRESSED_IN_PERCENTAGE, "true");
+        defaults.put(Service.MAX_ALLOCATED_MEMORY_FOR_THREAD, "15");
+        defaults.put(Service.MAX_EXECUTION_TIME_FOR_THREAD, Long.toString(10*1000*1000*1000));
 
         defaults.put(Event.SERVICE_NAME, "Events");
         defaults.put(Event.SERVICE_PRIORITY, "0");
@@ -418,7 +421,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
         defaults.put(Net.WRITE_TIMEOUT, "100");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
-        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "10000");
+        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "200");
         defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "100");
         defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
@@ -554,6 +557,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.Function.MATH_DIVISION, "/");
         defaults.put(Query.Function.REFERENCE_FUNCTION_NAME, "reference");
         defaults.put(Query.Function.BSON_FUNCTION_NAME, "bson");
+        defaults.put(Query.Function.COLLECTION_FUNCTION_NAME, "collection");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");
@@ -568,10 +572,6 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Cache.LOCK_SUFFIX_NAME, "hcjf.cloud.cache.lock.");
         defaults.put(Cloud.Cache.CONDITION_SUFFIX_NAME, "hcjf.cloud.cache.condition.");
         defaults.put(Cloud.Cache.SIZE_STRATEGY_MAP_SUFFIX_NAME, "hcjf.cloud.cache.size.strategy.map.");
-
-        defaults.put(Grant.LOG_TAG, "GRANT");
-        defaults.put(Grant.CLOUD_DEPLOYMENT, "false");
-        defaults.put(Grant.CLOUD_MAP_NAME, "hcjf.grant.cloud.map.name");
 
         Properties system = System.getProperties();
         putAll(system);

@@ -1,7 +1,6 @@
 package org.hcjf.layers.query;
 
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.utils.Strings;
 
 import java.util.Map;
 import java.util.regex.Pattern;

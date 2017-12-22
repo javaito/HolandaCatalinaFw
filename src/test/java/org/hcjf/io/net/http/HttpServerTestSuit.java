@@ -1,9 +1,5 @@
 package org.hcjf.io.net.http;
 
-import org.hcjf.encoding.MimeType;
-import org.hcjf.io.net.InetPortProvider;
-import org.hcjf.io.net.http.pipeline.ChunkedHttpPipelineResponse;
-import org.hcjf.io.net.http.rest.EndPoint;
 import org.hcjf.io.net.http.rest.layers.EndPointDecoderLayerInterface;
 import org.hcjf.io.net.http.rest.layers.EndPointEncoderLayerInterface;
 import org.hcjf.layers.Layers;
@@ -12,17 +8,10 @@ import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
-import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.grants.Grant;
 import org.hcjf.utils.Introspection;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -38,6 +27,8 @@ public class HttpServerTestSuit {
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
+        System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
+        System.setProperty(SystemProperties.Service.THREAD_POOL_MAX_SIZE, "2000");
 //        System.setProperty(SystemProperties.Net.Http.OUTPUT_LOG_BODY_MAX_LENGTH, Integer.toString(Integer.MAX_VALUE));
 //        System.setProperty(SystemProperties.Net.IO_THREAD_POOL_MAX_SIZE, Integer.toString(Integer.MAX_VALUE));
 
@@ -187,10 +178,30 @@ public class HttpServerTestSuit {
 //            e.printStackTrace();am
 //        }
 
-        HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
-        server.addContext(new EndPoint("example", "crud"));
-        server.addContext(new FolderContext("", Paths.get("/home/javaito/AtomProjects/CrudComponent"), "index.html"));
-        server.start();
+        System.setProperty(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "true");
+
+//        HttpServer server = new HttpServer(InetPortProvider.getTcpPort(8080));
+//        server.addContext(new Context("/test.*") {
+//            @Override
+//            public HttpResponse onContext(HttpRequest request) {
+//
+//                System.out.println("COOKIES!!!!:" + request.getCookies());
+//
+//                byte[] body = "Hello world!".getBytes();
+//                HttpResponse response = new HttpResponse();
+//                response.setResponseCode(HttpResponseCode.OK);
+//                response.setReasonPhrase("OK");
+//                response.setBody(body);
+//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+//                response.addCookie(new Cookie("bla", "blavalue"));
+//                response.addCookie(new Cookie("bla2", "bla2value"));
+//                return response;
+//            }
+//        });
+//        server.addContext(new EndPoint("example", "crud"));
+//        server.addContext(new FolderContext("", Paths.get("/home/javaito/AtomProjects/CrudComponent"), "index.html"));
+//        server.start();
 
 //        HttpsServer server = new HttpsServer(8080);
 //        server.addContext(new EndPoint("example", "crud"));
@@ -201,22 +212,55 @@ public class HttpServerTestSuit {
 //        try {
 //            HttpServer server = new HttpServer(8080);
 //            FolderContext folderContext = new FolderContext("",
-//                    Paths.get("/home/javaito/git/HolandaCatalinaFw/out/artifacts/hcjf_jar/hcjf.jar"));
+//                    Paths.get("/home/javaito/"));
 //            server.addContext(folderContext);
 //            server.start();
 //        } catch (Exception ex){
 //            ex.printStackTrace();
 //        }
+
+        try {
+            HttpServer server = new HttpServer(8081);
+            server.addContext(new Context(".*") {
+                @Override
+                public HttpResponse onContext(HttpRequest request) {
+//                    HttpPipelineResponse response = new HttpPipelineResponse(1024, 1024) {
+//                        @Override
+//                        protected int readPipeline(StreamingPackage streamingPackage) {
+//                            int result = 0;
+//                            try {
+//                                result = System.in.read(streamingPackage.getBuffer());
+//
+//                                String s = new String(streamingPackage.getBuffer(), 0, result).trim();
+//                                if(s.length() == 0) {
+//                                    result = -1;
+//                                }
+//                            } catch (Exception ex){}
+//
+//                            return result;
+//                        }
+//                    };
+                    byte[] body = "Hello world!".getBytes();
+
+                    HttpResponse response = new HttpResponse();
+                    response.setResponseCode(200);
+                    response.setReasonPhrase("OK");
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, "text/plain"));
+                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+                    response.setBody(body);
+
+                    return response;
+                }
+            });
+            server.start();
+        } catch (Exception ex){
+            ex.printStackTrace();
+        }
     }
 
     public static class TestMapCrud extends CrudLayer<Map<String, Object>> {
 
-        private final Grant createGrant;
-        private final Grant customGrant;
-
         public TestMapCrud() {
-            createGrant = Grant.publishGrant("CREATE");
-            customGrant = Grant.publishGrant("CACA");
         }
 
         @Override
@@ -227,9 +271,6 @@ public class HttpServerTestSuit {
 
         @Override
         public Collection<Map<String, Object>> read(Query query) {
-
-            Grant.validateGrant(createGrant);
-
             Collection<Map<String, Object>> result = new ArrayList<>();
             Collection<Test> tests = Layers.get(CrudLayerInterface.class, "Test").read(query);
             for(Test test : tests) {

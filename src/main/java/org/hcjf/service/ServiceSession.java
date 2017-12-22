@@ -2,7 +2,7 @@ package org.hcjf.service;
 
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.grants.Grant;
+import org.hcjf.service.security.Grants;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -27,12 +27,12 @@ public class ServiceSession implements Comparable {
 
     private final UUID id;
     private String sessionName;
-    private final Map<Long, List<Class<? extends Layer>>> layerStack;
+    private final Map<Long, List<LayerStackElement>> layerStack;
     private final Map<Long, Map<String, Object>> properties;
     private final Map<Long, Long> systemTimeByThread;
     private final ThreadMXBean threadMXBean;
     private final List<ServiceSession> identities;
-    private final Set<Grant> grants;
+    private final Set<Grants.Grant> grants;
     private Locale locale;
 
     public ServiceSession(UUID id) {
@@ -80,7 +80,7 @@ public class ServiceSession implements Comparable {
      * Return the session id.
      * @return Session id.
      */
-    public UUID getId() {
+    public final UUID getId() {
         return id;
     }
 
@@ -88,7 +88,7 @@ public class ServiceSession implements Comparable {
      * Set the session name.
      * @param sessionName Session name.
      */
-    public void setSessionName(String sessionName) {
+    public final void setSessionName(String sessionName) {
         this.sessionName = sessionName;
     }
 
@@ -96,7 +96,7 @@ public class ServiceSession implements Comparable {
      * Return the session name.
      * @return Session Session name.
      */
-    public String getSessionName() {
+    public final String getSessionName() {
         return sessionName;
     }
 
@@ -104,7 +104,7 @@ public class ServiceSession implements Comparable {
      * Return the properties name of the session.
      * @return Unmodifiable properties map.
      */
-    public Map<String, Object> getProperties() {
+    public final Map<String, Object> getProperties() {
         Map<String, Object> result = null;
         if(properties.containsKey(Thread.currentThread().getId())) {
             result = Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
@@ -115,7 +115,7 @@ public class ServiceSession implements Comparable {
     /**
      * Start some thread over this session.
      */
-    public synchronized void startThread() {
+    public final synchronized void startThread() {
         systemTimeByThread.put(Thread.currentThread().getId(),
                 threadMXBean.getCurrentThreadCpuTime());
         layerStack.put(Thread.currentThread().getId(), new ArrayList<>());
@@ -131,12 +131,12 @@ public class ServiceSession implements Comparable {
     /**
      * End some thread over this session.
      */
-    public synchronized void endThread() {
+    public final synchronized void endThread() {
         layerStack.remove(Thread.currentThread().getId());
         properties.remove(Thread.currentThread().getId());
         onEndThread();
         addThreadTime(threadMXBean.getCurrentThreadCpuTime() -
-                systemTimeByThread.get(Thread.currentThread().getId()));
+                systemTimeByThread.remove(Thread.currentThread().getId()));
     }
 
     /**
@@ -148,7 +148,7 @@ public class ServiceSession implements Comparable {
      * Put all the properties over the session.
      * @param properties Properties.
      */
-    public void putAll(Map<String, Object> properties) {
+    public final void putAll(Map<String, Object> properties) {
         this.properties.get(Thread.currentThread().getId()).putAll(properties);
     }
 
@@ -157,58 +157,82 @@ public class ServiceSession implements Comparable {
      * @param propertyName Property name.
      * @param propertyValue Property value.
      */
-    public void put(String propertyName, Object propertyValue) {
+    public final void put(String propertyName, Object propertyValue) {
         properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
     }
 
     /**
-     * Return a session property.
+     * Returns a session property.
      * @param propertyName Property name.
      * @param <O> Expected return type.
      * @return Session value.
      */
-    public <O extends Object> O get(String propertyName) {
+    public final <O extends Object> O get(String propertyName) {
         return (O) properties.get(Thread.currentThread().getId()).get(propertyName);
     }
 
     /**
-     * Remove a session property.
+     * Removes a session property.
      * @param propertyName Session property name.
      * @param <O> Expected return type.
      * @return Session value removed.
      */
-    public <O extends Object> O remove(String propertyName) {
+    public final <O extends Object> O remove(String propertyName) {
         return (O) properties.get(Thread.currentThread().getId()).remove(propertyName);
     }
 
     /**
      * Add an element into the layer stack.
-     * @param layerClass Layer class.
+     * @param element Layer stack element.
      */
-    public final void putLayer(Class<? extends Layer> layerClass) {
-        layerStack.get(Thread.currentThread().getId()).add(0, layerClass);
+    public final void putLayer(LayerStackElement element) {
+        layerStack.get(Thread.currentThread().getId()).add(0, element);
     }
 
     /**
-     * Remove the head of the layer stack.
+     * Removes the head of the layer stack.
      */
     public final void removeLayer() {
         layerStack.get(Thread.currentThread().getId()).remove(0);
     }
 
     /**
-     * Return the layer stack of the session.
+     * Returns the layer stack of the session.
      * @return Layer stack.
      */
-    public Class[] getLayerStack() {
-        return layerStack.get(Thread.currentThread().getId()).toArray(new Class[]{});
+    public final Collection<LayerStackElement> getLayerStack() {
+        return Collections.unmodifiableCollection(layerStack.get(Thread.currentThread().getId()));
     }
 
     /**
-     * Return locale of the session.
+     * Returns the first layer of the session layer stack.
+     * @return Current layer.
+     */
+    public final LayerStackElement getCurrentLayer() {
+        LayerStackElement result = null;
+        if(layerStack.get(Thread.currentThread().getId()).size() > 0) {
+            result = layerStack.get(Thread.currentThread().getId()).get(0);
+        }
+        return result;
+    }
+
+    /**
+     * Returns the second layer of the session layer stack.
+     * @return Invoker layer.
+     */
+    public final LayerStackElement getInvokerLayer() {
+        LayerStackElement result = null;
+        if(layerStack.get(Thread.currentThread().getId()).size() > 1) {
+            result = layerStack.get(Thread.currentThread().getId()).get(1);
+        }
+        return result;
+    }
+
+    /**
+     * Returns locale of the session.
      * @return Session locale.
      */
-    public Locale getLocale() {
+    public final Locale getLocale() {
         return locale;
     }
 
@@ -216,7 +240,7 @@ public class ServiceSession implements Comparable {
      * Set locale of the session.
      * @param locale Session locale.
      */
-    public void setLocale(Locale locale) {
+    public final void setLocale(Locale locale) {
         this.locale = locale;
     }
 
@@ -231,24 +255,35 @@ public class ServiceSession implements Comparable {
      * Add a grant into the session.
      * @param grant Grant instance.
      */
-    public final void addGrant(Grant grant) {
+    public final void addGrant(Grants.Grant grant) {
         grants.add(grant);
     }
 
     /**
-     * Remove the grant of the session.
+     * Removes the grant of the session.
      * @param grant Grant instance.
      */
-    public final void removeGrant(Grant grant) {
+    public final void removeGrant(Grants.Grant grant) {
         grants.remove(grant);
     }
 
     /**
-     * Return the grants set of the session.
+     * Returns the grants set of the session.
      * @return Grants set.
      */
-    public final Set<Grant> getGrants() {
+    public final Set<Grants.Grant> getGrants() {
         return Collections.unmodifiableSet(grants);
+    }
+
+    public final boolean containsGrant(String grantId) {
+        boolean result = false;
+        for(Grants.Grant grant : grants) {
+            result = grant.getPermissionId().equals(grantId);
+            if(result){
+                break;
+            }
+        }
+        return result;
     }
 
     /**
@@ -274,7 +309,7 @@ public class ServiceSession implements Comparable {
      * an the object.
      */
     @Override
-    public int compareTo(Object object) {
+    public final int compareTo(Object object) {
         int result = hashCode() - object.hashCode();
         if(getClass().equals(object.getClass())) {
             ServiceSession otherSession = (ServiceSession) object;
@@ -338,7 +373,8 @@ public class ServiceSession implements Comparable {
     public static final <S extends ServiceSession> S getCurrentIdentity() {
         Thread currentThread = Thread.currentThread();
         if(ServiceThread.class.isAssignableFrom(currentThread.getClass())) {
-            return (S) ((ServiceThread)currentThread).getSession().currentIdentity();
+            return ((ServiceThread)currentThread).getSession() == null ? null :
+                    (S) ((ServiceThread)currentThread).getSession().currentIdentity();
         } else {
             throw new IllegalStateException("The current thread is not a service thread.");
         }
@@ -366,6 +402,53 @@ public class ServiceSession implements Comparable {
             super(new UUID(0,1));
             setSessionName(SystemProperties.get(SystemProperties.Service.GUEST_SESSION_NAME));
         }
+
     }
 
+    public static final class LayerStackElement {
+
+        private final Class<? extends Layer> layerClass;
+        private final String implName;
+        private final boolean plugin;
+        private final boolean stateful;
+
+        public LayerStackElement(Class<? extends Layer> layerClass, String implName, boolean plugin, boolean stateful) {
+            this.layerClass = layerClass;
+            this.implName = implName;
+            this.plugin = plugin;
+            this.stateful = stateful;
+        }
+
+        /**
+         * Returns the layer class.
+         * @return Layer class.
+         */
+        public Class<? extends Layer> getLayerClass() {
+            return layerClass;
+        }
+
+        /**
+         * Returns the implementation name.
+         * @return Implementation name.
+         */
+        public String getImplName() {
+            return implName;
+        }
+
+        /**
+         * Returns true if the layer is a plugin or false in the otherwise.
+         * @return Plugin value.
+         */
+        public boolean isPlugin() {
+            return plugin;
+        }
+
+        /**
+         * Returns true if the layer is a stateful instance or false in the otherwise.
+         * @return Stateful value.
+         */
+        public boolean isStateful() {
+            return stateful;
+        }
+    }
 }

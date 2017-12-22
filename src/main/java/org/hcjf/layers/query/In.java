@@ -3,6 +3,7 @@ package org.hcjf.layers.query;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author javaito
@@ -34,29 +35,49 @@ public class In extends FieldEvaluator {
                 result = containsNumber((Number) value, fieldValue);
             } else {
                 if (Map.class.isAssignableFrom(fieldValue.getClass())) {
-                    result = ((Map) fieldValue).containsKey(value);
+                    for(Object key : ((Map) fieldValue).keySet()) {
+                        result = Objects.equals(key, value) || Objects.equals(value, key);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (Collection.class.isAssignableFrom(fieldValue.getClass())) {
-                    result = ((Collection) fieldValue).contains(value);
+                    for(Object collectionValue : ((Collection) fieldValue)) {
+                        result = Objects.equals(collectionValue, value) || Objects.equals(value, collectionValue);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (fieldValue.getClass().isArray()) {
                     for(Object arrayValue : (Object[])fieldValue) {
-                        result = arrayValue.equals(value);
+                        result = Objects.equals(arrayValue, value) || Objects.equals(value, arrayValue);
                         if(result) {
                             break;
                         }
                     }
                 } else if (Map.class.isAssignableFrom(value.getClass())) {
-                    result = ((Map) value).containsKey(fieldValue);
+                    for(Object key : ((Map) value).keySet()) {
+                        result = Objects.equals(key, fieldValue) || Objects.equals(fieldValue, key);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (Collection.class.isAssignableFrom(value.getClass())) {
-                    result = ((Collection) value).contains(fieldValue);
+                    for(Object collectionValue : ((Collection) value)) {
+                        result = Objects.equals(collectionValue, fieldValue) || Objects.equals(fieldValue, collectionValue);
+                        if(result) {
+                            break;
+                        }
+                    }
                 } else if (value.getClass().isArray()) {
                     for(Object arrayValue : (Object[])value) {
-                        result = arrayValue.equals(fieldValue);
+                        result = Objects.equals(arrayValue, fieldValue) || Objects.equals(fieldValue, arrayValue);
                         if(result) {
                             break;
                         }
                     }
                 } else {
-                    result = fieldValue.equals(value);
+                    result = Objects.equals(fieldValue, value) || Objects.equals(value, fieldValue);
                 }
             }
         } catch (Exception ex) {

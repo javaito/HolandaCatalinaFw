@@ -1,9 +1,15 @@
 package org.hcjf.layers;
 
 import org.hcjf.layers.crud.CrudLayerInterface;
+import org.hcjf.layers.plugins.PluginLayer;
 import org.hcjf.layers.storage.StorageLayerInterface;
+import org.hcjf.log.debug.Agent;
+import org.hcjf.log.debug.Agents;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
+import org.hcjf.service.security.Permission;
+import org.hcjf.service.security.SecurityPermissions;
+import org.hcjf.utils.SynchronizedCountOperation;
 
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -17,6 +23,9 @@ public abstract class Layer implements LayerInterface {
 
     private final String implName;
     private final boolean stateful;
+    private final SynchronizedCountOperation invocationMean;
+    private final SynchronizedCountOperation executionTimeMean;
+    private final SynchronizedCountOperation errorMean;
 
     /**
      * This is the end point for all the layers constructor.
@@ -26,6 +35,13 @@ public abstract class Layer implements LayerInterface {
     public Layer(String implName, boolean stateful) {
         this.implName = implName;
         this.stateful = stateful;
+        this.invocationMean = new SynchronizedCountOperation(
+                SynchronizedCountOperation.getMeanOperation(), 1000L);
+        this.executionTimeMean = new SynchronizedCountOperation(
+                SynchronizedCountOperation.getMeanOperation(), 1000L);
+        this.errorMean = new SynchronizedCountOperation(
+                SynchronizedCountOperation.getMeanOperation(), 1000L);
+        Agents.register(new LayerAgent(this));
     }
 
     public Layer(String implName) {
@@ -59,6 +75,15 @@ public abstract class Layer implements LayerInterface {
     }
 
     /**
+     * Returns true if the layer implementations is a instanceof plugin or false in the otherwise.
+     * @return Plugin status.
+     */
+    @Override
+    public  final boolean isPlugin() {
+        return PluginLayer.class.isAssignableFrom(getClass());
+    }
+
+    /**
      * Return the string set with all the aliases for this implementation.
      * @return Aliases for this implementation.
      */
@@ -81,7 +106,7 @@ public abstract class Layer implements LayerInterface {
      * @return Access object.
      */
     protected Access checkAccess(){
-        return new Access(true);
+        return Access.GRANTED;
     }
 
     /**
@@ -130,6 +155,16 @@ public abstract class Layer implements LayerInterface {
     }
 
     /**
+     * Verify if the current thread is working between the normal parameters.
+     * @throws Throwable Any throwable throws for some check method.
+     */
+    private void analyzeThread() throws Throwable {
+        ServiceThread.checkInterruptedThread();
+        ServiceThread.checkAllocatedMemory();
+        ServiceThread.checkExecutionTime();
+    }
+
+    /**
      * This method intercepts the call to layer implementation and
      * save some information about the thread behavior.
      * @param proxy Object to be called.
@@ -140,47 +175,75 @@ public abstract class Layer implements LayerInterface {
      */
     @Override
     public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        Access access = checkAccess();
+        //Add one into the executions counter.
+        invocationMean.add(1);
 
-        if(access == null) {
-            throw new SecurityException("Access null");
-        }
-        if(!access.granted) {
-            if(access.message != null && access.getThrowable() != null) {
-                throw new SecurityException(access.getMessage(), access.getThrowable());
-            } else if(access.getMessage() != null) {
-                throw new SecurityException(access.getMessage());
-            } else if(access.getThrowable() != null) {
-                throw new SecurityException(access.getThrowable());
-            }
-        }
+        //Store the start time of the execution.
+        Long startTime = System.currentTimeMillis();
 
-        ServiceThread serviceThread = null;
-        if(Thread.currentThread() instanceof ServiceThread) {
-            serviceThread = (ServiceThread) Thread.currentThread();
-            serviceThread.putLayer(getClass());
-        }
-
-        Object result;
         try {
-            LayerProxy.ProxyInterceptor interceptor =getProxy().onBeforeInvoke(method, args);
-            if(interceptor == null || !interceptor.isCached()) {
-                result = method.invoke(getTarget(), args);
-            } else {
-                result = interceptor.getResult();
+            if (Thread.currentThread() instanceof ServiceThread) {
+                analyzeThread();
             }
-            getProxy().onAfterInvoke(method, result, args);
+
+            Access access = checkAccess();
+
+            if (access == null) {
+                throw new SecurityException("Access null");
+            }
+            if (!access.granted) {
+                if (access.message != null && access.getThrowable() != null) {
+                    throw new SecurityException(access.getMessage(), access.getThrowable());
+                } else if (access.getMessage() != null) {
+                    throw new SecurityException(access.getMessage());
+                } else if (access.getThrowable() != null) {
+                    throw new SecurityException(access.getThrowable());
+                }
+            }
+
+            ServiceThread serviceThread = null;
+            if (Thread.currentThread() instanceof ServiceThread) {
+                serviceThread = (ServiceThread) Thread.currentThread();
+                serviceThread.putLayer(new ServiceSession.LayerStackElement(
+                        getClass(), getImplName(), isPlugin(), isStateful()));
+            }
+
+            if(!method.getDeclaringClass().equals(LayerInterface.class)) {
+                Method implementationMethod = getTarget().getClass().getDeclaredMethod(method.getName(), method.getParameterTypes());
+                for (Permission permission : implementationMethod.getDeclaredAnnotationsByType(Permission.class)) {
+                    SecurityPermissions.checkPermission(getTarget().getClass(), permission.value());
+                }
+            }
+
+            Object result;
+            try {
+                LayerProxy.ProxyInterceptor interceptor = getProxy().onBeforeInvoke(method, args);
+                if (interceptor == null || !interceptor.isCached()) {
+                    result = method.invoke(getTarget(), args);
+                } else {
+                    result = interceptor.getResult();
+                }
+                getProxy().onAfterInvoke(method, result, args);
+            } catch (Throwable throwable) {
+                //Add one to the error mean counter.
+                errorMean.add(1);
+                throw throwable;
+            } finally {
+                if (serviceThread != null) {
+                    serviceThread.removeLayer();
+                }
+            }
+
+            return result;
         } finally {
-            if(serviceThread != null) {
-                serviceThread.removeLayer();
-            }
+            //Add the invocation time int the layer counter.
+            executionTimeMean.add(System.currentTimeMillis() - startTime);
         }
-        return result;
     }
 
     /**
      * This method return the invocation target.
-     * @return Invation target.
+     * @return Invocation target.
      */
     protected Object getTarget() {
         return this;
@@ -198,6 +261,8 @@ public abstract class Layer implements LayerInterface {
      * This class represents the access resume of the layer.
      */
     public final static class Access {
+
+        private static final Access GRANTED = new Access(true);
 
         private final boolean granted;
         private final String message;
@@ -242,4 +307,45 @@ public abstract class Layer implements LayerInterface {
         }
     }
 
+    public interface LayerAgentMBean {
+
+        String getLayerName();
+        Double getInvocationMean();
+        Double getErrorMean();
+        Double getExecutionTimeMean();
+
+    }
+
+    public static final class LayerAgent extends Agent implements LayerAgentMBean {
+
+        private static final String PACKAGE_NAME = Layer.class.getPackageName();
+        private static final String NAME_TEMPLATE = "%s$%s";
+
+        private final Layer layer;
+
+        public LayerAgent(Layer layer) {
+            super(String.format(NAME_TEMPLATE, layer.getClass().getSimpleName(), layer.getImplName()), PACKAGE_NAME);
+            this.layer = layer;
+        }
+
+        @Override
+        public String getLayerName() {
+            return layer.getImplName();
+        }
+
+        @Override
+        public Double getInvocationMean() {
+            return layer.invocationMean.getCurrentValue();
+        }
+
+        @Override
+        public Double getErrorMean() {
+            return layer.errorMean.getCurrentValue();
+        }
+
+        @Override
+        public Double getExecutionTimeMean() {
+            return layer.executionTimeMean.getCurrentValue();
+        }
+    }
 }

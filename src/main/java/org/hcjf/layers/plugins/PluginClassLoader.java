@@ -1,8 +1,5 @@
 package org.hcjf.layers.plugins;
 
-import org.hcjf.log.Log;
-import org.hcjf.properties.SystemProperties;
-
 import java.net.URL;
 import java.net.URLClassLoader;
 

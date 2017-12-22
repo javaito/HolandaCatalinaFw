@@ -1,6 +1,9 @@
 package org.hcjf.utils;
 
 import org.hcjf.names.Naming;
+import org.hcjf.service.security.LazyPermission;
+import org.hcjf.service.security.Permission;
+import org.hcjf.service.security.SecurityPermissions;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -22,6 +25,7 @@ public final class Introspection {
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
 
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
+    private static final Map<Class, Map<String, Accessors>> accessorsCache = new HashMap<>();
 
     /**
      * Return the value that is the result of invoke the specific getter method.
@@ -177,6 +181,31 @@ public final class Introspection {
     }
 
     /**
+     * Returns a map with the accessors instance for a specific resource.
+     * @param clazz Resource class.
+     * @return Accessors map.
+     */
+    public static synchronized Map<String, Accessors> getAccessors(Class clazz) {
+        Map<String, Accessors> result = accessorsCache.get(clazz);
+
+        if(result == null) {
+            result = new HashMap<>();
+            Map<String, Setter> setterMap = getSetters(clazz);
+            Map<String, Getter> getterMap = getGetters(clazz);
+            Set<String> keySet = new HashSet<>();
+            keySet.addAll(setterMap.keySet());
+            keySet.addAll(getterMap.keySet());
+
+            for (String key : keySet) {
+                result.put(key, new Accessors(key, getterMap.get(key), setterMap.get(key)));
+            }
+            accessorsCache.put(clazz, result);
+        }
+
+        return Collections.unmodifiableMap(result);
+    }
+
+    /**
      * Return a map with all the getters accessor instances indexed by the expected name of the
      * field that represents each accessor. The fields represented by the name can exists or no.
      * The accessor instances contains all the information about accessor method and the annotation
@@ -295,6 +324,7 @@ public final class Introspection {
         private final Class implementationClass;
         private final Method method;
         private final Map<Class<? extends Annotation>, List<Annotation>> annotationsMap;
+        private boolean containsPermission;
 
         public Invoker(Class implementationClass, Method method) {
             this.implementationClass = implementationClass;
@@ -314,6 +344,13 @@ public final class Introspection {
                     annotationsMap.put(annotationClass, annotationList);
                 }
                 annotationList.add(annotation);
+
+                if(annotationClass.equals(Permission.class)) {
+                    SecurityPermissions.publishPermission(implementationClass, ((Permission)annotation).value());
+                    containsPermission = true;
+                } else if(annotationClass.equals(LazyPermission.class)) {
+                    SecurityPermissions.publishPermission(implementationClass, ((LazyPermission)annotation).value());
+                }
             }
         }
 
@@ -336,7 +373,7 @@ public final class Introspection {
         /**
          * Verify if exists an instance of the annotation class associated to the accessor method.
          * @param annotationClass Annotation class.
-         * @return True if the instance exists and false in the other ways.
+         * @return True if the instance exists and false in the otherwise.
          */
         public final boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
             return annotationsMap.containsKey(annotationClass);
@@ -384,14 +421,133 @@ public final class Introspection {
 
         /**
          * Wrapper method to get the storage method.
-         * @param instance Instance to get the mehtod.
+         * @param instance Instance to get the method.
          * @param params Method parameters.
          * @return Invocation result.
          * @throws InvocationTargetException Invocation Target Exception
          * @throws IllegalAccessException Illegal Access Exception
          */
         public Object invoke(Object instance, Object... params) throws InvocationTargetException, IllegalAccessException {
+            if(containsPermission) {
+                for (Permission permission : getAnnotations(Permission.class)) {
+                    SecurityPermissions.checkPermission(instance.getClass(), permission.value());
+                }
+            }
             return getMethod().invoke(instance, params);
+        }
+    }
+
+    /**
+     * This class contains the instances of getter and setter for a specific
+     * resource
+     */
+    public static final class Accessors {
+
+        private final String resourceName;
+        private final Getter getter;
+        private final Setter setter;
+
+        public Accessors(String resourceName, Getter getter, Setter setter) {
+            this.resourceName = resourceName;
+            this.getter = getter;
+            this.setter = setter;
+        }
+
+        /**
+         * Returns the getter instance.
+         * @return Getter instance.
+         */
+        public Getter getGetter() {
+            return getter;
+        }
+
+        /**
+         * Returns the setter instance.
+         * @return Setter instance.
+         */
+        public Setter getSetter() {
+            return setter;
+        }
+
+        /**
+         * Verify if exists an instance of the annotation class associated to the accessor method.
+         * @param annotationClass Annotation class.
+         * @return True if the instance exists and false in the otherwise
+         */
+        public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
+            boolean result = false;
+
+            if(getter != null) {
+                result |= getter.isAnnotationPresent(annotationClass);
+            }
+
+            if(setter != null) {
+                result |= setter.isAnnotationPresent(annotationClass);
+            }
+
+            return result;
+        }
+
+        /**
+         * Returns the instance of the annotation class associated to the accessor method, or null if
+         * the annotation doesn't exist.
+         * This method return the first instance of the list of annotations.
+         * @param annotationClass Annotation class.
+         * @param <A> Expected annotation type.
+         * @return Annotation instance or null.
+         */
+        public final <A extends Annotation> A getAnnotation(Class<? extends A> annotationClass) {
+            A result = null;
+
+            if(getter != null) {
+                result = getter.getAnnotation(annotationClass);
+            }
+
+            if(result == null && setter != null) {
+                result = setter.getAnnotation(annotationClass);
+            }
+
+            return result;
+        }
+
+        /**
+         * Returns the list of the annotation instances associated to the invoker, or null if
+         * the annotation class is not present into the invoker.
+         * @param annotationClass Annotation class.
+         * @param <A> Expected annotation type.
+         * @return Unmodifiable list of annotation instances.
+         */
+        public final <A extends Annotation> List<A> getAnnotations(Class<? extends A> annotationClass) {
+            List<Annotation> result = new ArrayList<>();
+
+            if(getter != null) {
+                result.addAll(getter.getAnnotations(annotationClass));
+            }
+
+            if(setter != null) {
+                result.addAll(setter.getAnnotations(annotationClass));
+            }
+
+            return (List<A>) result;
+        }
+
+        /**
+         * Return an unmodifiable map with all the annotation instances associated to the method indexed
+         * by the class of the each annotation instance.
+         * @return Unmodifiable map.
+         */
+        public final Map<Class<? extends Annotation>, List<Annotation>> getAnnotationsMap() {
+            Map<Class<? extends Annotation>, List<Annotation>> result = new HashMap<>();
+
+            if(getter != null) {
+                result.putAll(getter.getAnnotationsMap());
+            }
+
+            if(setter != null) {
+                result.putAll(setter.getAnnotationsMap());
+            }
+
+            return result;
         }
     }
 

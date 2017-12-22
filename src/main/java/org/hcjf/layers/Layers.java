@@ -9,12 +9,18 @@ import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.security.Grants;
+import org.hcjf.service.security.LazyPermission;
+import org.hcjf.service.security.Permission;
+import org.hcjf.service.security.SecurityPermissions;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.Version;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -47,6 +53,7 @@ public final class Layers {
     private final Map<Class<? extends Layer>, Object> initialInstances;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> implAlias;
     private final Map<Class<? extends LayerInterface>, Map<String, Class<? extends Layer>>> layerImplementations;
+    private final Map<Class<? extends LayerInterface>, String> defaultLayers;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> pluginLayerImplementations;
     private final Map<Class<? extends Layer>, LayerInterface> instanceCache;
     private final Map<String, LayerInterface> pluginWrapperCache;
@@ -58,6 +65,7 @@ public final class Layers {
         implAlias = new HashMap<>();
         layerImplementations = new HashMap<>();
         pluginLayerImplementations = new HashMap<>();
+        defaultLayers = new HashMap<>();
         instanceCache = new HashMap<>();
         pluginWrapperCache = new HashMap<>();
         pluginCache = new HashMap<>();
@@ -135,11 +143,19 @@ public final class Layers {
         if(instance.layerImplementations.containsKey(layerClass)) {
 
             Class<? extends Layer> clazz = instance.layerImplementations.get(layerClass).get(implName);
-            //If the implementation class is not founded with the specific alias then we check
-            //if the implementation name is an alias.
+
+            //If the implementation class is not founded with the specific name then we check
+            //if the implementation name is contained into the aliases.
             if(clazz == null && instance.implAlias.get(layerClass).containsKey(implName)) {
                 clazz = instance.layerImplementations.get(layerClass).get(
                         instance.implAlias.get(layerClass).get(implName));
+            }
+
+            //If the implementation name not mach with any implementation for the specific layer
+            //then we check if the specific layer contains a default implementation.
+            if(clazz == null && instance.defaultLayers.containsKey(layerClass)) {
+                clazz = instance.layerImplementations.get(layerClass).get(
+                        instance.defaultLayers.get(layerClass));
             }
 
             if(clazz != null) {
@@ -213,21 +229,16 @@ public final class Layers {
     /**
      * This method publish the layers in order to be used by anyone
      * that has the credentials to use the layer.
-     * @param layerClass Layer class.
+     * @param layerInstance Layer instance.
      * @return Implementation name.
      * @throws IllegalArgumentException If the layer class is null.
      */
-    public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
-        if(layerClass == null) {
-            throw new IllegalArgumentException("Unable to publish a null class");
-        }
+    public static synchronized <L extends Layer> String publishLayer(L layerInstance) {
+        Class<? extends Layer> layerClass = layerInstance.getClass();
 
-        Layer layerInstance;
-        try {
-            layerInstance = layerClass.getConstructor().newInstance();
-        } catch(Exception ex){
-            throw new IllegalArgumentException("Unable to publish " + layerClass +
-                    " because fail to create a new instance", ex);
+        if(layerClass.isAnonymousClass() && !layerInstance.isStateful()) {
+            throw new IllegalArgumentException("Unable to publish anonymous and stateless class," +
+                    " to publish anonymous class its must by stateful");
         }
 
         String implName = layerInstance.getImplName();
@@ -273,12 +284,58 @@ public final class Layers {
             }
         }
 
+        if(layerClass.isAnnotationPresent(DefaultLayer.class)) {
+            List<Class> classInterfaces = Arrays.asList(layerClass.getInterfaces());
+            for(Class<? extends LayerInterface> defaultInterface : layerClass.getAnnotation(DefaultLayer.class).value()) {
+                if(classInterfaces.contains(defaultInterface)){
+                    instance.defaultLayers.put(defaultInterface, implName);
+                } else {
+                    Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG),
+                            "The class '%s' could not be a default layer for interface '%s' because " +
+                                    "the class don't implements this interface",
+                            layerClass, defaultInterface);
+                }
+            }
+        }
+
         //Register the implementation name into the named uuid singleton
         if(layerInstance instanceof IdentifiableLayerInterface) {
             NamedUuid.registerName(layerInstance.getImplName());
         }
 
+        for(Method method : layerInstance.getClass().getDeclaredMethods()) {
+            for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
+                SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
+            }
+            for (LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
+                SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
+            }
+        }
+
         return implName;
+    }
+
+    /**
+     * This method publish the layers in order to be used by anyone
+     * that has the credentials to use the layer.
+     * @param layerClass Layer class.
+     * @return Implementation name.
+     * @throws IllegalArgumentException If the layer class is null.
+     */
+    public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
+        if(layerClass == null) {
+            throw new IllegalArgumentException("Unable to publish a null class");
+        }
+
+        Layer layerInstance;
+        try {
+            layerInstance = layerClass.getConstructor().newInstance();
+        } catch(Exception ex){
+            throw new IllegalArgumentException("Unable to publish " + layerClass +
+                    " because fail to create a new instance", ex);
+        }
+
+        return publishLayer(layerInstance);
     }
 
     /**
@@ -395,11 +452,9 @@ public final class Layers {
         Class introspectedClass = layerClass;
         while(!introspectedClass.equals(Object.class)) {
             for (Class layerInterface : introspectedClass.getInterfaces()) {
-                for (Class superInterface : layerInterface.getInterfaces()) {
-                    if (LayerInterface.class.isAssignableFrom(layerInterface) &&
-                            !layerInterface.equals(LayerInterface.class)) {
-                        result.add(layerInterface);
-                    }
+                if (LayerInterface.class.isAssignableFrom(layerInterface) &&
+                        !layerInterface.equals(LayerInterface.class)) {
+                    result.add(layerInterface);
                 }
             }
             introspectedClass = introspectedClass.getSuperclass();

@@ -1,9 +1,6 @@
 package org.hcjf.layers.locale;
 
 import org.hcjf.layers.Layer;
-import org.hcjf.properties.SystemProperties;
-
-import java.util.Locale;
 
 /**
  * This is the default implementation

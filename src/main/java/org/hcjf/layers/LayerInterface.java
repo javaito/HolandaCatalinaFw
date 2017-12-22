@@ -12,12 +12,18 @@ public interface LayerInterface extends InvocationHandler {
      * Return the layer implementation name.
      * @return Layer implementation name.
      */
-    public String getImplName();
+    String getImplName();
 
     /**
-     * Return if the layer is stateful or not.
+     * Returns true if the layer is stateful or false in the otherwise.
      * @return Stateful
      */
-    public boolean isStateful();
+    boolean isStateful();
+
+    /**
+     * Returns true if the layer is a plugin or false in the otherwise.
+     * @return Plugin status.
+     */
+    boolean isPlugin();
 
 }
