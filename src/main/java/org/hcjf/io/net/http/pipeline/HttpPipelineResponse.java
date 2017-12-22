@@ -50,10 +50,8 @@ public abstract class HttpPipelineResponse extends HttpResponse {
         mainBuffer.rewind();
         streamingPackage.clear();
         int size = readPipeline(streamingPackage);
-        if(size > 0) {
-            readCounter++;
-            size = wrap(mainBuffer, streamingPackage, size);
-        }
+        readCounter++;
+        size = wrap(mainBuffer, streamingPackage, size);
         return size;
     }
 
