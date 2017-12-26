@@ -51,7 +51,9 @@ public class ServiceSession implements Comparable {
      * @param serviceSession New identity.
      */
     public final void addIdentity(ServiceSession serviceSession) {
-        identities.add(0, serviceSession);
+        if(serviceSession != null) {
+            identities.add(0, serviceSession);
+        }
     }
 
     /**

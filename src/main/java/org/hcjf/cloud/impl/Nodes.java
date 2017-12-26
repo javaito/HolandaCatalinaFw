@@ -1,5 +1,6 @@
 package org.hcjf.cloud.impl;
 
+import org.hcjf.cloud.impl.messages.NodeIdentificationMessage;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.NetSession;
 
@@ -65,6 +66,17 @@ public class Nodes {
         Objects.requireNonNull(node, "Null node");
 
         return changeStatus(node, Node.Status.DISCONNECTED);
+    }
+
+    /**
+     *
+     * @param node
+     * @param message
+     */
+    public static void updateNode(Node node, NodeIdentificationMessage message) {
+        node.setName(message.getName());
+        node.setVersion(message.getVersion());
+        node.setStartupDate(message.getStartupDate());
     }
 
     /**

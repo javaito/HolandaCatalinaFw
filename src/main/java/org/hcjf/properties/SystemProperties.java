@@ -182,6 +182,15 @@ public final class SystemProperties extends Properties {
             public static final String AUTOMATIC_CONTENT_LENGTH_SKIP_CODES = "hcjf.net.http.automatic.content.length.skip.codes";
             public static final String MAX_PACKAGE_SIZE = "hcjf.net.http.max.package.size";
 
+            public static final class Http2Settings {
+                public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.settings.header.table.size";
+                public static final String ENABLE_PUSH = "hcjf.net.http.http2.settings.enable.push";
+                public static final String MAX_CONCURRENT_STREAMS = "hcjf.net.http.http2.settings.max.concurrent.streams";
+                public static final String INITIAL_WINDOWS_SIZE = "hcjf.net.http.http2.settings.initial.windows.size";
+                public static final String MAX_FRAME_SIZE = "hcjf.net.http.http2.settings.max.frame.size";
+                public static final String MAX_HEADER_LIST_SIZE = "hcjf.net.http.http2.settings.max.header.list.size";
+            }
+
             public static final class Folder {
                 public static final String LOG_TAG = "hcjf.net.http.folder.log.tag";
                 public static final String FORBIDDEN_CHARACTERS = "hcjf.net.http.folder.forbidden.characters";
@@ -466,6 +475,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
         defaults.put(Net.Http.AUTOMATIC_CONTENT_LENGTH_SKIP_CODES, "[304]");
         defaults.put(Net.Http.MAX_PACKAGE_SIZE, Integer.toString(20 * 1024 * 1024));
+
+        defaults.put(Net.Http.Http2Settings.HEADER_TABLE_SIZE, "4096");
+        defaults.put(Net.Http.Http2Settings.ENABLE_PUSH, "true");
+        defaults.put(Net.Http.Http2Settings.MAX_CONCURRENT_STREAMS, "-1");
+        defaults.put(Net.Http.Http2Settings.INITIAL_WINDOWS_SIZE, "65535");
+        defaults.put(Net.Http.Http2Settings.MAX_FRAME_SIZE, "16384");
+        defaults.put(Net.Http.Http2Settings.MAX_HEADER_LIST_SIZE, "-1");
 
         defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");

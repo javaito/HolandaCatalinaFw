@@ -5,6 +5,8 @@ import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.io.net.http.http2.Stream;
+import org.hcjf.io.net.http.http2.StreamSettings;
 import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
@@ -94,11 +96,11 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             sessionManager = HttpSessionManager.DEFAULT;
         }
 
-        HttpSession session1 = sessionManager.checkSession(session, (HttpRequest) payLoad);
+        HttpSession checkedSession = sessionManager.checkSession(session, (HttpRequest) payLoad);
 
         Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "[CHECK_SESSION] Http session %s", session);
 
-        return session1;
+        return checkedSession;
     }
 
     /**
@@ -225,54 +227,69 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
             try {
                 if(netPackage.getSession().isChecked()) {
-                    Context context = findContext(request.getContext());
-                    if (context != null) {
-                        boolean originHeaderPresent = request.containsHeader(HttpHeader.ORIGIN);
-                        try {
-                            Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
-                            if(originHeaderPresent && request.getMethod().equals(HttpMethod.OPTIONS)){
-                                //If there's a Cross-Origin-Resource-Sharing preflight request returns a empty response
-                                response = new HttpResponse();
-                            } else{
-                                if(context.getTimeout() > 0) {
-                                    response = Service.call(() -> context.onContext(request),
-                                            ServiceSession.getCurrentIdentity(), context.getTimeout());
-                                } else {
-                                    response = context.onContext(request);
-                                }
-                            }
-                            if(request.containsHeader(HttpHeader.CONNECTION)) {
-                                if(request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
-                                    Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
-                                    connectionKeepAlive = true;
-                                }
-                            }
-                        } catch (Throwable throwable) {
-                            Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
-                            response = context.onError(request, throwable);
-                            if (response == null) {
-                                response = createDefaultErrorResponse(throwable);
-                            }
-                        } finally{
-                            if(originHeaderPresent){
-                                for(HttpHeader header : context.getCrossOriginHeaders(request)){
-                                    response.addHeader(header);
-                                }
-                            }
+                    HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
+                    if(upgrade != null) {
+                        HttpHeader connection = request.getHeader(HttpHeader.CONNECTION);
+                        HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
+
+                        if(upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
+                            session.setStream(new Stream(new StreamSettings()));
+                            response = new HttpResponse();
+                            response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
+                            response.addHeader(upgrade);
+                        } else {
+                            throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
                         }
                     } else {
-                        response = onContextNotFound(request);
-                    }
+                        Context context = findContext(request.getContext());
+                        if (context != null) {
+                            boolean originHeaderPresent = request.containsHeader(HttpHeader.ORIGIN);
+                            try {
+                                Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
+                                if (originHeaderPresent && request.getMethod().equals(HttpMethod.OPTIONS)) {
+                                    //If there's a Cross-Origin-Resource-Sharing preflight request returns a empty response
+                                    response = new HttpResponse();
+                                } else {
+                                    if (context.getTimeout() > 0) {
+                                        response = Service.call(() -> context.onContext(request),
+                                                ServiceSession.getCurrentIdentity(), context.getTimeout());
+                                    } else {
+                                        response = context.onContext(request);
+                                    }
+                                }
+                                if (request.containsHeader(HttpHeader.CONNECTION)) {
+                                    if (request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
+                                        Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
+                                        connectionKeepAlive = true;
+                                    }
+                                }
+                            } catch (Throwable throwable) {
+                                Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
+                                response = context.onError(request, throwable);
+                                if (response == null) {
+                                    response = createDefaultErrorResponse(throwable);
+                                }
+                            } finally {
+                                if (originHeaderPresent) {
+                                    for (HttpHeader header : context.getCrossOriginHeaders(request)) {
+                                        response.addHeader(header);
+                                    }
+                                }
+                            }
+                        } else {
+                            response = onContextNotFound(request);
+                        }
 
-                    if (response == null) {
-                        response = onUnresponsiveContext(request);
-                    }
+                        if (response == null) {
+                            response = onUnresponsiveContext(request);
+                        }
 
-                    response.addHeader(new HttpHeader(HttpHeader.DATE,
-                            SystemProperties.getDateFormat(
-                                    SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
-                    response.addHeader(new HttpHeader(HttpHeader.SERVER,
-                            SystemProperties.get(SystemProperties.Net.Http.SERVER_NAME)));
+                        response.addHeader(new HttpHeader(HttpHeader.DATE,
+                                SystemProperties.getDateFormat(
+                                        SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
+                        response.addHeader(new HttpHeader(HttpHeader.SERVER,
+                                SystemProperties.get(SystemProperties.Net.Http.SERVER_NAME)));
+                    }
                 } else {
                     response = onNotCheckedSession(request);
                 }

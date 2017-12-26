@@ -454,6 +454,14 @@ public final class Introspection {
         }
 
         /**
+         * Returns the name of the resource.
+         * @return Resource name.
+         */
+        public String getResourceName() {
+            return resourceName;
+        }
+
+        /**
          * Returns the getter instance.
          * @return Getter instance.
          */

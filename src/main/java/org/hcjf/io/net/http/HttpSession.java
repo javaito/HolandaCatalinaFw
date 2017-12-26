@@ -2,6 +2,7 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.io.net.http.http2.Stream;
 
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import java.util.UUID;
 public class HttpSession extends NetSession {
 
     private HttpRequest request;
+    private Stream stream;
 
     /**
      * Constructor with id and consumer.
@@ -26,7 +28,7 @@ public class HttpSession extends NetSession {
      * Set the request for the session.
      * @param request Http request.
      */
-    public void setRequest(HttpRequest request) {
+    public final void setRequest(HttpRequest request) {
         this.request = request;
     }
 
@@ -34,7 +36,23 @@ public class HttpSession extends NetSession {
      * Return the session's request.
      * @return Http request.
      */
-    public HttpRequest getRequest() {
+    public final HttpRequest getRequest() {
         return request;
+    }
+
+    /**
+     * Returns the http2 stream object associated to the session.
+     * @return Http2 stream object.
+     */
+    public final Stream getStream() {
+        return stream;
+    }
+
+    /**
+     * Set the http2 stream object associated to the session.
+     * @param stream Http2 stream object.
+     */
+    public final void setStream(Stream stream) {
+        this.stream = stream;
     }
 }

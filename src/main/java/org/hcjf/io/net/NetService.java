@@ -703,18 +703,23 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
 
                 NetSession session = getSession(client, null, (SocketChannel) keyChannel);
-                sessions.add(session);
-                sessionsByChannel.put(channel, session);
-                channels.put(session, channel);
-                outputQueue.put(channel, new LinkedBlockingQueue<>());
-                lastWrite.put(channel, System.currentTimeMillis());
+                if(session != null) {
+                    sessions.add(session);
+                    sessionsByChannel.put(channel, session);
+                    channels.put(session, channel);
+                    outputQueue.put(channel, new LinkedBlockingQueue<>());
+                    lastWrite.put(channel, System.currentTimeMillis());
 
-                if (client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                    SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, session);
-                    sslHelpers.put(session, sslHelper);
+                    if (client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                        SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, session);
+                        sslHelpers.put(session, sslHelper);
+                    } else {
+                        NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT);
+                        onAction(connectionPackage, client);
+                    }
                 } else {
-                    NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT);
-                    onAction(connectionPackage, client);
+                    Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Rejected connection, session null");
+                    channel.close();
                 }
             } catch (Exception ex) {
                 Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error creating new client connection.", ex);
@@ -746,25 +751,30 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
 
                 NetSession session = getSession(server, null, socketChannel);
-                if (channels.containsKey(session)) {
-                    updateChannel((SocketChannel) channels.remove(session), socketChannel);
+                if(session != null) {
+                    if (channels.containsKey(session)) {
+                        updateChannel((SocketChannel) channels.remove(session), socketChannel);
+                    } else {
+                        sessionsByChannel.put(socketChannel, session);
+                        outputQueue.put(socketChannel, new LinkedBlockingQueue<>());
+                        lastWrite.put(socketChannel, System.currentTimeMillis());
+                        channels.put(session, socketChannel);
+                    }
+
+                    if (server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                        SSLHelper sslHelper = new SSLHelper(server.getSSLEngine(), socketChannel, server, session);
+                        sslHelpers.put(session, sslHelper);
+                    }
+
+                    //A new readable key is created associated to the channel.
+                    socketChannel.register(getSelector(), SelectionKey.OP_READ, server);
+
+                    if (isCreationTimeoutAvailable()) {
+                        getTimer().schedule(new ConnectionTimeout(socketChannel), getCreationTimeout());
+                    }
                 } else {
-                    sessionsByChannel.put(socketChannel, session);
-                    outputQueue.put(socketChannel, new LinkedBlockingQueue<>());
-                    lastWrite.put(socketChannel, System.currentTimeMillis());
-                    channels.put(session, socketChannel);
-                }
-
-                if (server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                    SSLHelper sslHelper = new SSLHelper(server.getSSLEngine(), socketChannel, server, session);
-                    sslHelpers.put(session, sslHelper);
-                }
-
-                //A new readable key is created associated to the channel.
-                socketChannel.register(getSelector(), SelectionKey.OP_READ, server);
-
-                if (isCreationTimeoutAvailable()) {
-                    getTimer().schedule(new ConnectionTimeout(socketChannel), getCreationTimeout());
+                    Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Rejected connection, session null");
+                    socketChannel.close();
                 }
             } catch (Exception ex) {
                 Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error accepting a new connection.", ex);

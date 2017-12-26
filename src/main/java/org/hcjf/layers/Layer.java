@@ -209,7 +209,7 @@ public abstract class Layer implements LayerInterface {
             }
 
             if(!method.getDeclaringClass().equals(LayerInterface.class)) {
-                Method implementationMethod = getTarget().getClass().getDeclaredMethod(method.getName(), method.getParameterTypes());
+                Method implementationMethod = getTarget().getClass().getMethod(method.getName(), method.getParameterTypes());
                 for (Permission permission : implementationMethod.getDeclaredAnnotationsByType(Permission.class)) {
                     SecurityPermissions.checkPermission(getTarget().getClass(), permission.value());
                 }

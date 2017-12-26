@@ -42,6 +42,8 @@ public class HttpHeader {
     public static final String DATE = "Date";
     public static final String LAST_MODIFIED = "Last-Modified";
     public static final String CONNECTION = "Connection";
+    public static final String UPGRADE = "Upgrade";
+    public static final String HTTP2_SETTINGS = "HTTP2-Settings";
     public static final String E_TAG = "ETag";
     public static final String COOKIE = "Cookie";
     public static final String SET_COOKIE = "Set-Cookie";
@@ -79,6 +81,8 @@ public class HttpHeader {
     public static final String MULTIPART_FORM_DATA = "multipart/form-data";
     public static final String BOUNDARY = "boundary";
     public static final String CLOSED = "Closed";
+    public static final String HTTP2_REQUEST = "h2c";
+    public static final String HTTPS2_REQUEST = "h2";
     public static final String KEEP_ALIVE = "Keep-Alive";
     public static final String DEFAULT_USER_AGENT = "HCJF";
     public static final String DEFLATE = "deflate";

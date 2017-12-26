@@ -37,28 +37,28 @@ public class SynchronizedCountOperationTestSuit {
     public void meanFilterBySize() {
         SynchronizedCountOperation operation = new SynchronizedCountOperation(
                 SynchronizedCountOperation.getMeanOperation(), 100);
-        testOperation(operation, 100, 10);
+        testOperation(operation, 10, 10);
     }
 
     @Test
     public void meanFilterByTime() {
         SynchronizedCountOperation operation = new SynchronizedCountOperation(
                 SynchronizedCountOperation.getMeanOperation(), 10L);
-        testOperation(operation, 100, 10);
+        testOperation(operation, 10, 10);
     }
 
     @Test
     public void harmonicMeanFilterBySize() {
         SynchronizedCountOperation operation = new SynchronizedCountOperation(
                 SynchronizedCountOperation.getHarmonicMeanOperation(), 100);
-        testOperation(operation, 100, 10);
+        testOperation(operation, 10, 10);
     }
 
     @Test
     public void harmonicMeanFilterByTime() {
         SynchronizedCountOperation operation = new SynchronizedCountOperation(
                 SynchronizedCountOperation.getHarmonicMeanOperation(), 10L);
-        testOperation(operation, 100, 10);
+        testOperation(operation, 10, 10);
     }
 
     private void testOperation(SynchronizedCountOperation operation, int threadAmount, int maxWarning) {
