@@ -186,7 +186,36 @@ public abstract class Service<C extends ServiceConsumer> {
      * when the process try to finalize the registered thread pool executors.
      * @param executor Thread pool threadPoolExecutor to finalize.
      */
-    protected void shutdownRegisteredExecutor(ThreadPoolExecutor executor) {}
+    protected void shutdownExecutor(ThreadPoolExecutor executor) {
+        long shutdownTimeout = SystemProperties.getLong(SystemProperties.Service.SHUTDOWN_TIME_OUT);
+
+        //In the first attempt the shutdown procedure wait for all the thread
+        //ends naturally.
+        executor.shutdown();
+        long startTime = System.currentTimeMillis();
+        while (!executor.isTerminated() && (System.currentTimeMillis() - startTime) < shutdownTimeout) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+
+        if(!executor.isTerminated()) {
+            //If some threads does not ends naturally then the shutdown procedure
+            //send the interrupt signal for all the pool.
+            executor.shutdownNow();
+            startTime = System.currentTimeMillis();
+            while (!executor.isTerminated() &&
+                    (System.currentTimeMillis() - startTime) < shutdownTimeout) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        }
+    }
 
     /**
      * This method register the consumer in the service.
@@ -376,7 +405,7 @@ public abstract class Service<C extends ServiceConsumer> {
                 }
 
                 Log.i(Service.SERVICE_LOG_TAG, "Ending custom executors");
-                service.registeredExecutors.values().forEach(service::shutdownRegisteredExecutor);
+                service.registeredExecutors.values().forEach(service::shutdownExecutor);
                 Log.i(Service.SERVICE_LOG_TAG, "Custom executors finalized");
 
                 try {
@@ -388,31 +417,22 @@ public abstract class Service<C extends ServiceConsumer> {
                 }
 
                 Log.i(Service.SERVICE_LOG_TAG, "Ending main service threadPoolExecutor");
-                service.serviceExecutor.shutdown();
-                while(!service.serviceExecutor.isTerminated()) {
-                    try {
-                        Thread.sleep(SystemProperties.getLong(
-                                SystemProperties.Service.SHUTDOWN_TIME_OUT));
-                    } catch (InterruptedException e) {}
-                }
+                service.shutdownExecutor(serviceExecutor);
                 Log.i(Service.SERVICE_LOG_TAG, "Main service threadPoolExecutor finalized");
             }
 
-            Log.i(Service.SERVICE_LOG_TAG, "Shutdown");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {}
             try {
                 ((Service)log).shutdown(ShutdownStage.START);
-                ((Service)log).serviceExecutor.shutdown();
-                while(!((Service)log).serviceExecutor.isTerminated()) {
-                    try {
-                        Thread.sleep(SystemProperties.getLong(
-                                SystemProperties.Service.SHUTDOWN_TIME_OUT));
-                    } catch (InterruptedException e) {}
-                }
+                log.shutdownExecutor(serviceExecutor);
                 ((Service)log).shutdown(ShutdownStage.END);
             } catch (Exception ex) {
                 errors++;
             }
 
+            System.out.println("Shutdown completed! See you");
             Runtime.getRuntime().halt(errors);
         }
 

@@ -17,10 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 /**
  * This class implements a service that provide an
@@ -58,8 +55,8 @@ public final class NetService extends Service<NetServiceConsumer> {
     private boolean creationTimeoutAvailable;
     private long creationTimeout;
 
+    private Future mainTaskFuture;
     private boolean shuttingDown;
-    private boolean running;
 
     private NetService(String serviceName) {
         super(serviceName, 2);
@@ -101,9 +98,8 @@ public final class NetService extends Service<NetServiceConsumer> {
     protected void init() {
         try {
             setSelector(SelectorProvider.provider().openSelector());
-            running = true;
 
-            fork(() -> runNetService());
+            mainTaskFuture = fork(() -> runNetService());
         } catch (IOException ex) {
             Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to init net service $1", ex, this);
         }
@@ -120,6 +116,13 @@ public final class NetService extends Service<NetServiceConsumer> {
         switch (stage) {
             case START: {
                 shuttingDown = true;
+                for (NetSession session : getSessions()) {
+                    try {
+                        writeData(session, session.getConsumer().getShutdownFrame(session));
+                    } catch (IOException e) {
+                        //This exception is totally ignored because the shutdown procedure must be go on
+                    }
+                }
                 getSelector().wakeup();
                 break;
             }
@@ -128,40 +131,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                     disconnect(session, "");
                 }
 
-                running = false;
+                mainTaskFuture.cancel(true);
                 getSelector().wakeup();
                 break;
-            }
-        }
-    }
-
-    /**
-     * Shutdown all the service consumer executors.
-     *
-     * @param executor Service consumer executor.
-     */
-    @Override
-    protected void shutdownRegisteredExecutor(ThreadPoolExecutor executor) {
-        int activityCount = 0;
-        while (activityCount < 3) {
-            if (executor.getActiveCount() == 0) {
-                activityCount++;
-            } else {
-                activityCount = 0;
-            }
-            try {
-                Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.Service.SHUTDOWN_TIME_OUT));
-            } catch (InterruptedException e) {
-            }
-        }
-
-        executor.shutdown();
-        while (!executor.isTerminated()) {
-            try {
-                Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.Service.SHUTDOWN_TIME_OUT));
-            } catch (InterruptedException e) {
             }
         }
     }
@@ -584,7 +556,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             }
 
             boolean removeKey;
-            while (running) {
+            while (!Thread.currentThread().isInterrupted()) {
                 //Select the next schedule key or sleep if the aren't any key
                 //to select.
                 getSelector().select();

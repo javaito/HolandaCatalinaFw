@@ -1,11 +1,14 @@
 package org.hcjf.cloud.impl;
 
+import org.hcjf.cloud.impl.messages.AckMessage;
 import org.hcjf.cloud.impl.messages.Message;
 import org.hcjf.cloud.impl.messages.NodeIdentificationMessage;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.log.Log;
+import org.hcjf.properties.SystemProperties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +37,6 @@ public class CloudServer extends NetServer<Nodes.Node, MessageBuffer> {
 
     @Override
     public Nodes.Node checkSession(Nodes.Node session, MessageBuffer payLoad, NetPackage netPackage) {
-        //TODO: Do something to check if the connection is invalid
         return session;
     }
 
@@ -73,6 +75,17 @@ public class CloudServer extends NetServer<Nodes.Node, MessageBuffer> {
                     Nodes.updateNode(session, (NodeIdentificationMessage) message);
                 } else {
                     disconnect(session, "Unidentifiable session: " + session.getHostPort());
+                }
+
+                if(!(message instanceof AckMessage)) {
+                    try {
+                        MessageBuffer messageBuffer = new MessageBuffer();
+                        messageBuffer.append(new AckMessage(message));
+                        write(session, messageBuffer);
+                    } catch (Exception ex) {
+                        Log.w(SystemProperties.Cloud.LOG_TAG, "Unable to write ack message", ex);
+                        disconnect(session, "Ack message error");
+                    }
                 }
             } else if(session.getStatus().equals(Nodes.Node.Status.CONNECTED)) {
 

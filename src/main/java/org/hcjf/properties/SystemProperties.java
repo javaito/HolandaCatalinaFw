@@ -382,7 +382,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.GUEST_SESSION_NAME, "Guest");
         defaults.put(Service.SYSTEM_SESSION_NAME, "System");
-        defaults.put(Service.SHUTDOWN_TIME_OUT, "200");
+        defaults.put(Service.SHUTDOWN_TIME_OUT, "20000");
         defaults.put(Service.MAX_ALLOCATED_MEMORY_EXPRESSED_IN_PERCENTAGE, "true");
         defaults.put(Service.MAX_ALLOCATED_MEMORY_FOR_THREAD, "15");
         defaults.put(Service.MAX_EXECUTION_TIME_FOR_THREAD, Long.toString(10*1000*1000*1000));

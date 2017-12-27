@@ -161,6 +161,33 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     }
 
     /**
+     * Returns the shutdown frame to send before the net service shutdown.
+     * @param session Session to create the shutdown frame.
+     * @return
+     */
+    public final byte[] getShutdownFrame(S session) {
+        byte[] result = null;
+        try {
+            D shutdownPackage = getShutdownPackage(session);
+            if (shutdownPackage != null) {
+                result = encode(shutdownPackage);
+            }
+        } catch (Exception ex){
+            //This exception is totally ignored because the shutdown procedure must be go on
+        }
+        return result;
+    }
+
+    /**
+     * Returns the shutdown package to send before the net service shutdown.
+     * @param session Session to create the package.
+     * @return Shutdown package.
+     */
+    protected D getShutdownPackage(S session) {
+        return null;
+    }
+
+    /**
      * This method writes some data over the session indicated,
      * this operation generate a blocking until the net service confirm
      * that the data was written over the communication channel
