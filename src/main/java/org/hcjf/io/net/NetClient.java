@@ -35,4 +35,6 @@ public abstract class NetClient<S extends NetSession, D extends Object> extends 
      * @return Client's session.
      */
     public abstract S getSession();
+
+    protected void onConnectFail() {}
 }

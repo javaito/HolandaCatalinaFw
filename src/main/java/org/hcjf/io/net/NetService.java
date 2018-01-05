@@ -364,20 +364,18 @@ public final class NetService extends Service<NetServiceConsumer> {
         int localPort;
         if (channel instanceof SocketChannel) {
             remoteHost = "";
-            remoteAddress = "";
             if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_PACKAGE)) {
-                remoteHost = ((SocketChannel) channel).socket().getInetAddress().getHostAddress();
-                remoteAddress = ((SocketChannel) channel).socket().getInetAddress().getHostAddress();
+                remoteHost = ((SocketChannel) channel).socket().getInetAddress().getHostName();
             }
+            remoteAddress = ((SocketChannel) channel).socket().getInetAddress().getHostAddress();
             remotePort = ((SocketChannel) channel).socket().getPort();
             localPort = ((SocketChannel) channel).socket().getLocalPort();
         } else if (channel instanceof DatagramChannel) {
             remoteHost = "";
-            remoteAddress = "";
             if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_PACKAGE)) {
-                remoteHost = ((DatagramChannel) channel).socket().getInetAddress().getHostAddress();
-                remoteAddress = ((DatagramChannel) channel).socket().getInetAddress().getHostAddress();
+                remoteHost = ((DatagramChannel) channel).socket().getInetAddress().getHostName();
             }
+            remoteAddress = ((DatagramChannel) channel).socket().getInetAddress().getHostAddress();
             remotePort = ((DatagramChannel) channel).socket().getPort();
             localPort = ((DatagramChannel) channel).socket().getLocalPort();
         } else {
@@ -528,6 +526,9 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_SESSION)) {
+            result.setRemoteHost(socketChannel.socket().getInetAddress().getHostName());
+            result.setRemotePort(socketChannel.socket().getPort());
+        } else {
             result.setRemoteHost(socketChannel.socket().getInetAddress().getHostAddress());
             result.setRemotePort(socketChannel.socket().getPort());
         }
@@ -674,7 +675,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
                 }
 
-                NetSession session = getSession(client, null, (SocketChannel) keyChannel);
+                NetSession session = getSession(client,
+                        createPackage(channel, null, NetPackage.ActionEvent.CONNECT),
+                        (SocketChannel) keyChannel);
                 if(session != null) {
                     sessions.add(session);
                     sessionsByChannel.put(channel, session);
@@ -692,9 +695,11 @@ public final class NetService extends Service<NetServiceConsumer> {
                 } else {
                     Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Rejected connection, session null");
                     channel.close();
+                    client.onConnectFail();
                 }
             } catch (Exception ex) {
                 Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error creating new client connection.", ex);
+                client.onConnectFail();
             }
         }
     }
@@ -722,7 +727,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
                 }
 
-                NetSession session = getSession(server, null, socketChannel);
+                NetSession session = getSession(server,
+                        createPackage(socketChannel, null, NetPackage.ActionEvent.CONNECT),
+                        socketChannel);
                 if(session != null) {
                     if (channels.containsKey(session)) {
                         updateChannel((SocketChannel) channels.remove(session), socketChannel);

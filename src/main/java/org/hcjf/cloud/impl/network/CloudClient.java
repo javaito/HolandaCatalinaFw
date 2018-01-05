@@ -1,5 +1,6 @@
-package org.hcjf.cloud.impl;
+package org.hcjf.cloud.impl.network;
 
+import org.hcjf.cloud.impl.messages.ShutdownMessage;
 import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetService;
@@ -8,23 +9,23 @@ import org.hcjf.io.net.NetSession;
 /**
  * @author javaito
  */
-public class CloudClient extends NetClient<Nodes.Node, MessageBuffer> {
+public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
 
-    private final Nodes.Node node;
+    private final CloudSession session;
     private MessageBuffer messageBuffer;
 
-    public CloudClient(Nodes.Node node) {
-        super(node.getRemoteHost(), node.getRemotePort(), NetService.TransportLayerProtocol.TCP);
-        this.node = node;
+    public CloudClient(String host, Integer port) {
+        super(host, port, NetService.TransportLayerProtocol.TCP);
+        this.session = new CloudSession(this);
     }
 
     @Override
-    public Nodes.Node getSession() {
-        return node;
+    public CloudSession getSession() {
+        return session;
     }
 
     @Override
-    public Nodes.Node checkSession(Nodes.Node session, MessageBuffer payLoad, NetPackage netPackage) {
+    public CloudSession checkSession(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
         return session;
     }
 
@@ -48,9 +49,13 @@ public class CloudClient extends NetClient<Nodes.Node, MessageBuffer> {
 
     @Override
     public void destroySession(NetSession session) {
-        if(session instanceof Nodes.Node) {
-            Nodes.disconnected((Nodes.Node)session);
-        }
+    }
+
+    @Override
+    protected MessageBuffer getShutdownPackage(CloudSession session) {
+        MessageBuffer messageBuffer = new MessageBuffer();
+        messageBuffer.append(new ShutdownMessage(session));
+        return messageBuffer;
     }
 
 }

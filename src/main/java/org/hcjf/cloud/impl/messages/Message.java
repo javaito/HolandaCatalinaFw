@@ -9,19 +9,30 @@ import java.util.UUID;
  */
 public abstract class Message implements BsonParcelable {
 
-    private final UUID id;
-    private final Long timestamp;
+    private UUID id;
+    private Long timestamp;
+
+    public Message() {
+    }
 
     public Message(UUID id) {
         this.id = id;
         this.timestamp = System.currentTimeMillis();
     }
 
-    public final Long getTimestamp() {
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public Long getTimestamp() {
         return timestamp;
     }
 
-    public UUID getId() {
-        return id;
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
     }
 }

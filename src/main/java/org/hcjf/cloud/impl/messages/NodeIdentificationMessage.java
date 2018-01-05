@@ -1,6 +1,7 @@
 package org.hcjf.cloud.impl.messages;
 
-import java.util.Date;
+import org.hcjf.cloud.impl.Node;
+
 import java.util.UUID;
 
 /**
@@ -8,35 +9,21 @@ import java.util.UUID;
  */
 public class NodeIdentificationMessage extends Message {
 
-    private String name;
-    private String version;
-    private Date startupDate;
+    private Node node;
 
     public NodeIdentificationMessage() {
+    }
+
+    public NodeIdentificationMessage(Node node) {
         super(UUID.randomUUID());
+        this.node = node;
     }
 
-    public String getName() {
-        return name;
+    public Node getNode() {
+        return node;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public Date getStartupDate() {
-        return startupDate;
-    }
-
-    public void setStartupDate(Date startupDate) {
-        this.startupDate = startupDate;
+    public void setNode(Node node) {
+        this.node = node;
     }
 }

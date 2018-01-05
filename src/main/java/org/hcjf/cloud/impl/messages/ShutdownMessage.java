@@ -1,6 +1,6 @@
 package org.hcjf.cloud.impl.messages;
 
-import java.util.UUID;
+import org.hcjf.cloud.impl.network.CloudSession;
 
 /**
  * @author javaito
@@ -8,7 +8,10 @@ import java.util.UUID;
 public class ShutdownMessage extends Message {
 
     public ShutdownMessage() {
-        super(UUID.randomUUID());
+    }
+
+    public ShutdownMessage(CloudSession node) {
+        super(node.getId());
     }
 
 }

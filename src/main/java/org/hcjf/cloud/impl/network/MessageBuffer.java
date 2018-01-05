@@ -1,4 +1,4 @@
-package org.hcjf.cloud.impl;
+package org.hcjf.cloud.impl.network;
 
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonEncoder;
@@ -24,6 +24,7 @@ public final class MessageBuffer {
         if(message == null) {
             if (buffer == null) {
                 buffer = ByteBuffer.wrap(data);
+                buffer.rewind();
             } else {
                 ByteBuffer newBuffer = ByteBuffer.allocate(buffer.capacity() + data.length);
                 buffer.rewind();
@@ -33,9 +34,11 @@ public final class MessageBuffer {
                 buffer.rewind();
             }
 
-            if (buffer.getInt() == buffer.capacity()) {
-                buffer.rewind();
-                message = BsonParcelable.Builder.create(BsonDecoder.decode(buffer.array()));
+            if(buffer.capacity() > 4) {
+                if (buffer.getInt() == buffer.capacity()) {
+                    buffer.rewind();
+                    message = BsonParcelable.Builder.create(BsonDecoder.decode(buffer.array()));
+                }
             }
         }
     }

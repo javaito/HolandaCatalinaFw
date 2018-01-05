@@ -63,11 +63,11 @@ public final class SystemProperties extends Properties {
     public static final class Service {
         public static final String STATIC_THREAD_NAME = "hcjf.service.static.thread.name";
         public static final String STATIC_THREAD_POOL_CORE_SIZE = "hcjf.service.static.thread.pool.core.size";
-        public static final String STATIC_THREAD_POOL_MAX_SIZE = "hcfj.service.static.thread.pool.max.size";
-        public static final String STATIC_THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.static.thread.pool.keep.alive.time";
+        public static final String STATIC_THREAD_POOL_MAX_SIZE = "hcjf.service.static.thread.pool.max.size";
+        public static final String STATIC_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.service.static.thread.pool.keep.alive.time";
         public static final String THREAD_POOL_CORE_SIZE = "hcjf.service.thread.pool.core.size";
-        public static final String THREAD_POOL_MAX_SIZE = "hcfj.service.thread.pool.max.size";
-        public static final String THREAD_POOL_KEEP_ALIVE_TIME = "hcfj.service.thread.pool.keep.alive.time";
+        public static final String THREAD_POOL_MAX_SIZE = "hcjf.service.thread.pool.max.size";
+        public static final String THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.service.thread.pool.keep.alive.time";
         public static final String GUEST_SESSION_NAME = "hcjf.service.guest.session.name";
         public static final String SYSTEM_SESSION_NAME = "hcjf.service.system.session.name";
         public static final String SHUTDOWN_TIME_OUT = "hcjf.service.shutdown.time.out";
@@ -93,13 +93,13 @@ public final class SystemProperties extends Properties {
     public static final class Log {
         public static final String SERVICE_NAME = "hcjf.log.service.name";
         public static final String SERVICE_PRIORITY = "hcjf.log.service.priority";
-        public static final String FILE_PREFIX = "hcfj.log.file.prefix";
-        public static final String ERROR_FILE = "hcfj.log.error.file";
-        public static final String WARNING_FILE = "hcfj.log.warning.file";
-        public static final String INFO_FILE = "hcfj.log.info.file";
-        public static final String DEBUG_FILE = "hcfj.log.debug.file";
-        public static final String LEVEL = "hcfj.log.level";
-        public static final String DATE_FORMAT = "hcfj.log.date.format";
+        public static final String FILE_PREFIX = "hcjf.log.file.prefix";
+        public static final String ERROR_FILE = "hcjf.log.error.file";
+        public static final String WARNING_FILE = "hcjf.log.warning.file";
+        public static final String INFO_FILE = "hcjf.log.info.file";
+        public static final String DEBUG_FILE = "hcjf.log.debug.file";
+        public static final String LEVEL = "hcjf.log.level";
+        public static final String DATE_FORMAT = "hcjf.log.date.format";
         public static final String CONSUMERS = "hcjf.log.consumers";
         public static final String SYSTEM_OUT_ENABLED = "hcjf.log.system.out.enabled";
         public static final String JAVA_STANDARD_LOGGER_ENABLED = "hcjf.log.java.standard.logger.enabled";
@@ -123,11 +123,11 @@ public final class SystemProperties extends Properties {
     public static final class Net {
         public static final String SERVICE_NAME = "hcjf.net.service.name";
         public static final String LOG_TAG = "hcjf.net.log.tag";
-        public static final String INPUT_BUFFER_SIZE = "hcfj.net.input.buffer.size";
-        public static final String OUTPUT_BUFFER_SIZE = "hcfj.net.output.buffer.size";
-        public static final String DISCONNECT_AND_REMOVE = "hcfj.net.disconnect.and.remove";
-        public static final String CONNECTION_TIMEOUT_AVAILABLE = "hcfj.net.connection.timeout.available";
-        public static final String CONNECTION_TIMEOUT = "hcfj.net.connection.timeout";
+        public static final String INPUT_BUFFER_SIZE = "hcjf.net.input.buffer.size";
+        public static final String OUTPUT_BUFFER_SIZE = "hcjf.net.output.buffer.size";
+        public static final String DISCONNECT_AND_REMOVE = "hcjf.net.disconnect.and.remove";
+        public static final String CONNECTION_TIMEOUT_AVAILABLE = "hcjf.net.connection.timeout.available";
+        public static final String CONNECTION_TIMEOUT = "hcjf.net.connection.timeout";
         public static final String WRITE_TIMEOUT = "hcjf.net.write.timeout";
         public static final String IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
         public static final String IO_THREAD_POOL_MAX_SIZE = "hcjf.net.io.thread.pool.max.size";
@@ -314,6 +314,23 @@ public final class SystemProperties extends Properties {
         public static final String IMPL = "hcjf.cloud.impl";
         public static final String LOG_TAG = "hcjf.cloud.log.tag";
 
+        public static class DefaultImpl {
+            public static final String SERVICE_NAME = "hcjf.cloud.default.impl.name";
+            public static final String SERVICE_PRIORITY = "hcjf.cloud.default.impl.service.priority";
+            public static final String AVAILABLE = "hcjf.cloud.default.impl.available";
+            public static final String SERVER_LISTENER_PORT = "hcjf.cloud.default.impl.server.listener.port";
+            public static final String CONNECTION_LOOP_WAIT_TIME = "hcjf.cloud.default.impl.connection.loop.wait.time";
+
+            public static final class ThisNode {
+                public static final String NAME = "hcjf.cloud.default.impl.this.node.name";
+                public static final String VERSION = "hcjf.cloud.default.impl.this.node.version";
+                public static final String LAN_ADDRESS = "hcjf.cloud.default.impl.this.node.lan.address";
+                public static final String LAN_PORT = "hcjf.cloud.default.impl.this.node.lan.port";
+                public static final String WAN_ADDRESS = "hcjf.cloud.default.impl.this.node.wan.address";
+                public static final String WAN_PORT = "hcjf.cloud.default.impl.this.node.wan.port";
+            }
+        }
+
         public static class TimerTask {
             public static final String MIN_VALUE_OF_DELAY = "hcjf.cloud.timer.task.min.value.of.delay";
             public static final String MAP_NAME = "hcjf.cloud.timer.task.map.name";
@@ -406,7 +423,7 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Log.SERVICE_NAME, "LogService");
         defaults.put(Log.SERVICE_PRIORITY, "0");
-        defaults.put(Log.FILE_PREFIX, "hcfj");
+        defaults.put(Log.FILE_PREFIX, "hcjf");
         defaults.put(Log.ERROR_FILE, "false");
         defaults.put(Log.WARNING_FILE, "false");
         defaults.put(Log.INFO_FILE, "false");
@@ -496,9 +513,6 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Net.Http.EndPoint.Json.DATE_FORMATS, " [dd/M/yyyy,dd/MM/yyyy]");
 
-        defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
-        defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
-
         defaults.put(Net.Rest.DEFAULT_MIME_TYPE, "application/json");
         defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");
         defaults.put(Net.Rest.QUERY_PATH, "query");
@@ -579,6 +593,15 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.SERVICE_PRIORITY, "0");
         defaults.put(Cloud.IMPL, "");
         defaults.put(Cloud.LOG_TAG, "CLOUD");
+        defaults.put(Cloud.DefaultImpl.SERVICE_NAME, "CloudDefaultImplService");
+        defaults.put(Cloud.DefaultImpl.AVAILABLE, "false");
+        defaults.put(Cloud.DefaultImpl.SERVICE_PRIORITY, "0");
+        defaults.put(Cloud.DefaultImpl.SERVER_LISTENER_PORT, "18080");
+        defaults.put(Cloud.DefaultImpl.CONNECTION_LOOP_WAIT_TIME, "10000");
+        defaults.put(Cloud.DefaultImpl.ThisNode.NAME, "hcjf-node");
+        defaults.put(Cloud.DefaultImpl.ThisNode.VERSION, "0");
+        defaults.put(Cloud.DefaultImpl.ThisNode.LAN_ADDRESS, "127.0.0.1");
+        defaults.put(Cloud.DefaultImpl.ThisNode.LAN_PORT, "9090");
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "30000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");
