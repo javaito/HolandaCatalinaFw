@@ -60,11 +60,15 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
         }
     }
 
-
     @Override
     protected MessageBuffer getShutdownPackage(CloudSession session) {
         MessageBuffer messageBuffer = new MessageBuffer();
         messageBuffer.append(new ShutdownMessage(session));
         return messageBuffer;
+    }
+
+    @Override
+    protected void onDisconnect(CloudSession session, NetPackage netPackage) {
+        CloudImpl.getInstance().connectionLost(session);
     }
 }

@@ -28,6 +28,7 @@ public final class CloudImpl extends Service<Node> {
     private Set<Node> nodes;
     private Map<String, Node> nodesByLanId;
     private Map<String, Node> nodesByWanId;
+    private Map<Node, CloudSession> sessionByNode;
     private CloudServer server;
     private Random random;
 
@@ -36,23 +37,8 @@ public final class CloudImpl extends Service<Node> {
                 SystemProperties.getInteger(SystemProperties.Cloud.DefaultImpl.SERVICE_PRIORITY));
     }
 
-    @Override
-    public void registerConsumer(Node node) {
-        nodes.add(node);
-        String lanId = node.getLanId();
-        if(lanId != null) {
-            nodesByLanId.put(lanId, node);
-        }
-
-        String wanId = node.getWanId();
-        if(wanId != null) {
-            nodesByWanId.put(wanId, node);
-        }
-    }
-
-    @Override
-    public void unregisterConsumer(Node node) {
-
+    public static CloudImpl getInstance() {
+        return instance;
     }
 
     @Override
@@ -60,6 +46,7 @@ public final class CloudImpl extends Service<Node> {
         nodes = new HashSet<>();
         nodesByLanId = new HashMap<>();
         nodesByWanId = new HashMap<>();
+        sessionByNode = new HashMap<>();
 
         thisNode = new Node();
         thisNode.setId(UUID.randomUUID());
@@ -81,12 +68,41 @@ public final class CloudImpl extends Service<Node> {
         server.start();
     }
 
+    @Override
+    public void registerConsumer(Node node) {
+        nodes.add(node);
+        String lanId = node.getLanId();
+        if(lanId != null) {
+            nodesByLanId.put(lanId, node);
+        }
+
+        String wanId = node.getWanId();
+        if(wanId != null) {
+            nodesByWanId.put(wanId, node);
+        }
+    }
+
+    @Override
+    public void unregisterConsumer(Node node) {
+
+    }
+
     private void maintainConnections() {
         while(!Thread.currentThread().isInterrupted()) {
             for(Node node : nodes) {
-                if(connecting(node)) {
-                    CloudClient client = new CloudClient(node);
-                    NetService.getInstance().registerConsumer(client);
+                synchronized (sessionByNode) {
+                    if (!sessionByNode.containsKey(node)) {
+                        CloudClient client = new CloudClient(node.getLanAddress(), node.getLanPort());
+                        NetService.getInstance().registerConsumer(client);
+                        if (client.waitForConnect()) {
+                            Log.i(SystemProperties.Cloud.LOG_TAG, "Connected with %s:%d",
+                                    node.getLanAddress(), node.getLanPort());
+                            sessionByNode.put(node, client.getSession());
+                        } else {
+                        }
+                    } else if(node.getStatus().equals(Node.Status.CONNECTED)) {
+                        //TODO: Send keep alive message
+                    }
                 }
             }
             try {
@@ -99,10 +115,17 @@ public final class CloudImpl extends Service<Node> {
         }
     }
 
-    public static CloudImpl getInstance() {
-        return instance;
+    public void connectionLost(CloudSession session) {
+        Log.i(SystemProperties.Cloud.LOG_TAG, "connection lost with %s:%d",
+                session.getRemoteHost(), session.getRemotePort());
+        synchronized (sessionByNode) {
+            for(Node node : sessionByNode.keySet()) {
+                if(sessionByNode.get(node).equals(session)) {
+                    sessionByNode.remove(node);
+                }
+            }
+        }
     }
-
 
     public void onConnect(Node node, CloudInterface cloudInterface) {
         if(connected(node)) {

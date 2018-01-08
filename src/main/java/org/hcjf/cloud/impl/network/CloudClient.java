@@ -13,10 +13,12 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
 
     private final CloudSession session;
     private MessageBuffer messageBuffer;
+    private Boolean connected;
 
     public CloudClient(String host, Integer port) {
         super(host, port, NetService.TransportLayerProtocol.TCP);
         this.session = new CloudSession(this);
+        this.connected = null;
     }
 
     @Override
@@ -58,4 +60,30 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
         return messageBuffer;
     }
 
+    public synchronized boolean waitForConnect() {
+        if(connected == null) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+            }
+        }
+        return connected;
+    }
+
+    @Override
+    protected synchronized void onConnect(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
+        connected = true;
+        notifyAll();
+    }
+
+    @Override
+    protected synchronized void onConnectFail() {
+        connected = false;
+        notifyAll();
+    }
+
+    @Override
+    protected void onDisconnect(CloudSession session, NetPackage netPackage) {
+        CloudImpl.getInstance().connectionLost(session);
+    }
 }

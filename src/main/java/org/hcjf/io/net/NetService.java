@@ -460,6 +460,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                         }
                     }
                     removedSessions.add(session);
+
+                    if(session.getConsumer() != null) {
+                        session.getConsumer().onDisconnect(session, null);
+                    }
                 }
 
                 if (channel.isConnected()) {
@@ -698,7 +702,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                     client.onConnectFail();
                 }
             } catch (Exception ex) {
-                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Error creating new client connection.", ex);
+                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                        "Error creating new client connection, %s:%d", ex, client.getHost(), client.getPort());
                 client.onConnectFail();
             }
         }
