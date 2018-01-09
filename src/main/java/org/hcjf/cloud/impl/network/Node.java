@@ -1,5 +1,6 @@
-package org.hcjf.cloud.impl;
+package org.hcjf.cloud.impl.network;
 
+import com.google.gson.JsonObject;
 import org.hcjf.service.ServiceConsumer;
 import org.hcjf.utils.bson.BsonParcelable;
 
@@ -11,6 +12,17 @@ import java.util.UUID;
  */
 public class Node implements ServiceConsumer, BsonParcelable {
 
+    public static final class Fields {
+        public static final String ID = "id";
+        public static final String NAME = "name";
+        public static final String VERSION = "version";
+        public static final String STARTUP_DATE = "startupDate";
+        public static final String LAN_ADDRESS = "lanAddress";
+        public static final String LAN_PORT = "lanPort";
+        public static final String WAN_ADDRESS = "wanAddress";
+        public static final String WAN_PORT = "wanPort";
+    }
+
     private UUID id;
     private String name;
     private String version;
@@ -20,6 +32,7 @@ public class Node implements ServiceConsumer, BsonParcelable {
     private String wanAddress;
     private Integer wanPort;
     private Status status;
+    private UUID waitForId;
 
     public Node() {
         status = Status.DISCONNECTED;
@@ -115,6 +128,28 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public static String createNodeHash(String remoteHost, Integer port) {
         return remoteHost + ":" + port;
+    }
+
+    public JsonObject toJson() {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty(Fields.ID, getId().toString());
+        jsonObject.addProperty(Fields.NAME, getName());
+        jsonObject.addProperty(Fields.VERSION, getVersion());
+        jsonObject.addProperty(Fields.STARTUP_DATE, getStartupDate().toString());
+        if(getLanAddress() != null) {
+            jsonObject.addProperty(Fields.LAN_ADDRESS, getLanAddress());
+            jsonObject.addProperty(Fields.LAN_PORT, getLanPort());
+        }
+        if(getWanAddress() != null) {
+            jsonObject.addProperty(Fields.WAN_ADDRESS, getWanAddress());
+            jsonObject.addProperty(Fields.WAN_PORT, getWanPort());
+        }
+        return jsonObject;
+    }
+
+    @Override
+    public String toString() {
+        return toJson().toString();
     }
 
     public enum Status {

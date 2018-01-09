@@ -320,6 +320,8 @@ public final class SystemProperties extends Properties {
             public static final String AVAILABLE = "hcjf.cloud.default.impl.available";
             public static final String SERVER_LISTENER_PORT = "hcjf.cloud.default.impl.server.listener.port";
             public static final String CONNECTION_LOOP_WAIT_TIME = "hcjf.cloud.default.impl.connection.loop.wait.time";
+            public static final String ACK_TIMEOUT = "hcjf.cloud.default.impl.ack.timeout";
+            public static final String CLUSTER_NAME = "hcjf.cloud.default.impl.cluster.name";
 
             public static final class ThisNode {
                 public static final String NAME = "hcjf.cloud.default.impl.this.node.name";
@@ -328,6 +330,13 @@ public final class SystemProperties extends Properties {
                 public static final String LAN_PORT = "hcjf.cloud.default.impl.this.node.lan.port";
                 public static final String WAN_ADDRESS = "hcjf.cloud.default.impl.this.node.wan.address";
                 public static final String WAN_PORT = "hcjf.cloud.default.impl.this.node.wan.port";
+            }
+
+            public static final class Broadcast {
+                public static final String TASK_NAME = "hcjf.cloud.default.impl.broadcast.task.name";
+                public static final String IP_VERSION = "hcjf.cloud.default.impl.broadcast.ip.version";
+                public static final String INTERFACE_NAME = "hcjf.cloud.default.impl.broadcast.interface.name";
+                public static final String PORT = "hcjf.cloud.default.impl.broadcast.port";
             }
         }
 
@@ -598,10 +607,15 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.DefaultImpl.SERVICE_PRIORITY, "0");
         defaults.put(Cloud.DefaultImpl.SERVER_LISTENER_PORT, "18080");
         defaults.put(Cloud.DefaultImpl.CONNECTION_LOOP_WAIT_TIME, "10000");
+        defaults.put(Cloud.DefaultImpl.ACK_TIMEOUT, "2000");
         defaults.put(Cloud.DefaultImpl.ThisNode.NAME, "hcjf-node");
         defaults.put(Cloud.DefaultImpl.ThisNode.VERSION, "0");
         defaults.put(Cloud.DefaultImpl.ThisNode.LAN_ADDRESS, "127.0.0.1");
         defaults.put(Cloud.DefaultImpl.ThisNode.LAN_PORT, "9090");
+        defaults.put(Cloud.DefaultImpl.Broadcast.TASK_NAME, "Cloud discovery");
+        defaults.put(Cloud.DefaultImpl.Broadcast.IP_VERSION, "4");
+        defaults.put(Cloud.DefaultImpl.Broadcast.INTERFACE_NAME, "eth0");
+        defaults.put(Cloud.DefaultImpl.Broadcast.PORT, "16000");
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "30000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");

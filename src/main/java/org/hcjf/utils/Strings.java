@@ -29,6 +29,7 @@ public final class Strings {
     public static final String CARRIAGE_RETURN_AND_LINE_SEPARATOR = "\r\n";
     public static final String CARRIAGE_RETURN = "\r";
     public static final String LINE_SEPARATOR = "\n";
+    public static final String TAB = "\t";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
 

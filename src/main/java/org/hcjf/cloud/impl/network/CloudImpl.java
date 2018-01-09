@@ -1,12 +1,11 @@
 package org.hcjf.cloud.impl.network;
 
-import org.hcjf.cloud.impl.CloudInterface;
-import org.hcjf.cloud.impl.Node;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.io.net.NetService;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.utils.Strings;
 
 import java.io.IOException;
 import java.util.*;
@@ -27,6 +26,7 @@ public final class CloudImpl extends Service<Node> {
     private Map<String, Node> nodesByLanId;
     private Map<String, Node> nodesByWanId;
     private Map<Node, CloudSession> sessionByNode;
+    private Map<UUID, Node> waitingAck;
     private CloudServer server;
     private Random random;
 
@@ -45,6 +45,7 @@ public final class CloudImpl extends Service<Node> {
         nodesByLanId = new HashMap<>();
         nodesByWanId = new HashMap<>();
         sessionByNode = new HashMap<>();
+        waitingAck = new HashMap<>();
 
         thisNode = new Node();
         thisNode.setId(UUID.randomUUID());
@@ -85,34 +86,60 @@ public final class CloudImpl extends Service<Node> {
 
     }
 
+    private void addNode(Node node, CloudSession session) {
+        synchronized (sessionByNode) {
+            sessionByNode.put(node, session);
+            printNodes();
+        }
+    }
+
+    private void removeNode(Node node) {
+        synchronized (sessionByNode) {
+            sessionByNode.remove(node);
+            disconnected(node);
+            printNodes();
+        }
+    }
+
+    private void printNodes() {
+        synchronized (sessionByNode) {
+            Strings.Builder builder = new Strings.Builder();
+            builder.append(Strings.START_SUB_GROUP).append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+            builder.append(Strings.TAB).append(thisNode.toJson());
+            for (Node connectedNode : sessionByNode.keySet()) {
+                builder.append(Strings.ARGUMENT_SEPARATOR).append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                builder.append(Strings.TAB).append(connectedNode.toJson());
+            }
+            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR).append(Strings.END_SUB_GROUP);
+            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "\r\n\r\nNodes: %s\r\n", builder.toString());
+        }
+    }
+
     private void maintainConnections() {
         while(!Thread.currentThread().isInterrupted()) {
             for(Node node : nodes) {
                 synchronized (sessionByNode) {
-                    if (!sessionByNode.containsKey(node)) {
+                    if (!sessionByNode.containsKey(node) && !node.getStatus().equals(Node.Status.CONNECTED)) {
                         CloudClient client = new CloudClient(node.getLanAddress(), node.getLanPort());
                         NetService.getInstance().registerConsumer(client);
                         if (client.waitForConnect()) {
-                            Log.i(SystemProperties.Cloud.LOG_TAG, "Connected with %s:%d",
+                            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Connected with %s:%d",
                                     node.getLanAddress(), node.getLanPort());
-                            sessionByNode.put(node, client.getSession());
 
                             if(connecting(node)) {
                                 try {
+                                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending credentials to %s:%d",
+                                            node.getLanAddress(), node.getLanPort());
                                     client.send(new NodeIdentificationMessage(thisNode));
                                 } catch (IOException e) {
                                     client.disconnect();
                                     disconnected(node);
                                 }
-                            } else {
-                                client.disconnect();
                             }
                         } else {
-                            Log.i(SystemProperties.Cloud.LOG_TAG, "Unable to connected with %s:%d",
+                            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to connected with %s:%d",
                                     node.getLanAddress(), node.getLanPort());
                         }
-                    } else if(node.getStatus().equals(Node.Status.CONNECTED)) {
-                        //TODO: Send keep alive message
                     }
                 }
             }
@@ -127,12 +154,13 @@ public final class CloudImpl extends Service<Node> {
     }
 
     public void connectionLost(CloudSession session) {
-        Log.i(SystemProperties.Cloud.LOG_TAG, "connection lost with %s:%d",
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "connection lost with %s:%d",
                 session.getRemoteHost(), session.getRemotePort());
         synchronized (sessionByNode) {
             for(Node node : sessionByNode.keySet()) {
                 if(sessionByNode.get(node).equals(session)) {
-                    sessionByNode.remove(node);
+                    removeNode(node);
+                    break;
                 }
             }
         }
@@ -145,18 +173,32 @@ public final class CloudImpl extends Service<Node> {
             if(node == null) {
                 node = nodesByWanId.get(nodeIdentificationMessage.getNode().getWanId());
             }
+            updateNode(node, nodeIdentificationMessage);
             if(session.getConsumer() instanceof CloudClient) {
+                Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials response from %s:%d",
+                        node.getLanAddress(), node.getLanPort());
                 if(!connected(node)){
                     ((CloudClient)session.getConsumer()).disconnect();
+                } else {
+                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
+                    addNode(node, session);
+                    try {
+                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
+                                node.getLanAddress(), node.getLanPort());
+                        ((CloudClient)session.getConsumer()).send(new AckMessage(message));
+                    } catch (IOException e) {
+                    }
                 }
             } else if(session.getConsumer() instanceof CloudServer) {
                 if(connecting(node)) {
+                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials from %s:%d",
+                            node.getLanAddress(), node.getLanPort());
                     try {
-                        if(connected(node)){
-                            ((CloudServer)session.getConsumer()).send(session, new NodeIdentificationMessage(thisNode));
-                        } else {
-                            ((CloudServer)session.getConsumer()).send(session, new BusyNodeMessage(thisNode));
-                        }
+                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Response credentials to %s:%d",
+                                node.getLanAddress(), node.getLanPort());
+                        NodeIdentificationMessage returnNodeIdentificationMessage = new NodeIdentificationMessage(thisNode);
+                        waitingAck.put(returnNodeIdentificationMessage.getId(), node);
+                        ((CloudServer) session.getConsumer()).send(session, returnNodeIdentificationMessage);
                     } catch (IOException e) {
                         disconnected(node);
                     }
@@ -169,7 +211,27 @@ public final class CloudImpl extends Service<Node> {
                 }
             }
         } else if(message instanceof BusyNodeMessage) {
-
+            BusyNodeMessage busyNodeMessage = (BusyNodeMessage) message;
+            Node node = nodesByLanId.get(busyNodeMessage.getNode().getLanId());
+            if(node == null) {
+                node = nodesByWanId.get(busyNodeMessage.getNode().getWanId());
+            }
+            if(session.getConsumer() instanceof CloudClient) {
+                disconnected(node);
+                ((CloudClient)session.getConsumer()).disconnect();
+            }
+        } else if(message instanceof AckMessage) {
+            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
+                    session.getRemoteHost(), session.getRemotePort());
+            if(session.getConsumer() instanceof CloudServer) {
+                Node node = waitingAck.remove(message.getId());
+                if(node != null) {
+                    if(connected(node)) {
+                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as server %s", node);
+                        addNode(node, session);
+                    }
+                }
+            }
         }
     }
 
@@ -214,6 +276,7 @@ public final class CloudImpl extends Service<Node> {
     private void updateNode(Node node, NodeIdentificationMessage message) {
         node.setId(message.getNode().getId());
         node.setName(message.getNode().getName());
+        node.setVersion(message.getNode().getVersion());
         node.setStartupDate(message.getNode().getStartupDate());
         node.setLanAddress(message.getNode().getLanAddress());
         node.setLanPort(message.getNode().getLanPort());

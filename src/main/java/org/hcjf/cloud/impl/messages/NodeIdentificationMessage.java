@@ -1,6 +1,6 @@
 package org.hcjf.cloud.impl.messages;
 
-import org.hcjf.cloud.impl.Node;
+import org.hcjf.cloud.impl.network.Node;
 
 import java.util.UUID;
 

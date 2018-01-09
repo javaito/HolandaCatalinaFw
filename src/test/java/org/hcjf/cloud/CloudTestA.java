@@ -1,7 +1,7 @@
 package org.hcjf.cloud;
 
 import org.hcjf.cloud.impl.network.CloudImpl;
-import org.hcjf.cloud.impl.Node;
+import org.hcjf.cloud.impl.network.Node;
 import org.hcjf.properties.SystemProperties;
 
 /**
@@ -25,6 +25,11 @@ public class CloudTestA {
         Node node = new Node();
         node.setLanAddress("172.16.102.45");
         node.setLanPort(6163);
+        CloudImpl.getInstance().registerConsumer(node);
+
+        node = new Node();
+        node.setLanAddress("172.16.102.45");
+        node.setLanPort(6164);
         CloudImpl.getInstance().registerConsumer(node);
     }
 
