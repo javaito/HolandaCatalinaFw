@@ -1,5 +1,6 @@
 package org.hcjf.cloud.impl.network;
 
+import org.hcjf.cloud.impl.messages.Message;
 import org.hcjf.cloud.impl.messages.ShutdownMessage;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
@@ -7,6 +8,7 @@ import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
 import org.hcjf.properties.SystemProperties;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,6 +55,12 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
         return messageBuffer;
     }
 
+    public void send(CloudSession session, Message message) throws IOException {
+        MessageBuffer buffer = new MessageBuffer();
+        buffer.append(message);
+        write(session, buffer, true);
+    }
+
     @Override
     public void destroySession(NetSession session) {
         if(session instanceof CloudSession) {
@@ -70,5 +78,10 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
     @Override
     protected void onDisconnect(CloudSession session, NetPackage netPackage) {
         CloudImpl.getInstance().connectionLost(session);
+    }
+
+    @Override
+    protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
+        CloudImpl.getInstance().incomingMessage(session, payLoad.getMessage());
     }
 }

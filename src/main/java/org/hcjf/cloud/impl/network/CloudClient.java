@@ -1,10 +1,13 @@
 package org.hcjf.cloud.impl.network;
 
+import org.hcjf.cloud.impl.messages.Message;
 import org.hcjf.cloud.impl.messages.ShutdownMessage;
 import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+
+import java.io.IOException;
 
 /**
  * @author javaito
@@ -29,6 +32,16 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
     @Override
     public CloudSession checkSession(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
         return session;
+    }
+
+    public void disconnect() {
+        disconnect(session, "");
+    }
+
+    public void send(Message message) throws IOException {
+        MessageBuffer buffer = new MessageBuffer();
+        buffer.append(message);
+        write(session, buffer, true);
     }
 
     @Override
@@ -80,6 +93,11 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
     protected synchronized void onConnectFail() {
         connected = false;
         notifyAll();
+    }
+
+    @Override
+    protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
+        CloudImpl.getInstance().incomingMessage(session, payLoad.getMessage());
     }
 
     @Override

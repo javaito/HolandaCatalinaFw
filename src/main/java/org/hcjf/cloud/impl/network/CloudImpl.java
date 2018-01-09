@@ -2,15 +2,13 @@ package org.hcjf.cloud.impl.network;
 
 import org.hcjf.cloud.impl.CloudInterface;
 import org.hcjf.cloud.impl.Node;
-import org.hcjf.cloud.impl.messages.AckMessage;
-import org.hcjf.cloud.impl.messages.KeepAliveMessage;
-import org.hcjf.cloud.impl.messages.Message;
-import org.hcjf.cloud.impl.messages.NodeIdentificationMessage;
+import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.io.net.NetService;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -98,7 +96,20 @@ public final class CloudImpl extends Service<Node> {
                             Log.i(SystemProperties.Cloud.LOG_TAG, "Connected with %s:%d",
                                     node.getLanAddress(), node.getLanPort());
                             sessionByNode.put(node, client.getSession());
+
+                            if(connecting(node)) {
+                                try {
+                                    client.send(new NodeIdentificationMessage(thisNode));
+                                } catch (IOException e) {
+                                    client.disconnect();
+                                    disconnected(node);
+                                }
+                            } else {
+                                client.disconnect();
+                            }
                         } else {
+                            Log.i(SystemProperties.Cloud.LOG_TAG, "Unable to connected with %s:%d",
+                                    node.getLanAddress(), node.getLanPort());
                         }
                     } else if(node.getStatus().equals(Node.Status.CONNECTED)) {
                         //TODO: Send keep alive message
@@ -127,69 +138,39 @@ public final class CloudImpl extends Service<Node> {
         }
     }
 
-    public void onConnect(Node node, CloudInterface cloudInterface) {
-        if(connected(node)) {
-            cloudInterface.write(new NodeIdentificationMessage(thisNode));
-        } else {
-            cloudInterface.disconnect();
-        }
-    }
-
-    public void onDisconnect(Node node) {
-        disconnected(node);
-    }
-
-    public void onRead(Node node, Message message, CloudInterface cloudInterface) {
-        System.out.println("Incoming message: " + message);
-
-        if (message instanceof NodeIdentificationMessage) {
-            updateNode(node, (NodeIdentificationMessage) message);
-        } else if(!(message instanceof KeepAliveMessage) && !(message instanceof AckMessage)) {
-
-        }
-
-        if(!(message instanceof AckMessage)) {
-            try {
-                cloudInterface.write(new AckMessage(message));
-            } catch (Exception ex) {
-                Log.w(SystemProperties.Cloud.LOG_TAG, "Unable to write ack message", ex);
-                cloudInterface.disconnect();
+    public void incomingMessage(CloudSession session, Message message) {
+        if(message instanceof NodeIdentificationMessage) {
+            NodeIdentificationMessage nodeIdentificationMessage = (NodeIdentificationMessage) message;
+            Node node = nodesByLanId.get(nodeIdentificationMessage.getNode().getLanId());
+            if(node == null) {
+                node = nodesByWanId.get(nodeIdentificationMessage.getNode().getWanId());
             }
+            if(session.getConsumer() instanceof CloudClient) {
+                if(!connected(node)){
+                    ((CloudClient)session.getConsumer()).disconnect();
+                }
+            } else if(session.getConsumer() instanceof CloudServer) {
+                if(connecting(node)) {
+                    try {
+                        if(connected(node)){
+                            ((CloudServer)session.getConsumer()).send(session, new NodeIdentificationMessage(thisNode));
+                        } else {
+                            ((CloudServer)session.getConsumer()).send(session, new BusyNodeMessage(thisNode));
+                        }
+                    } catch (IOException e) {
+                        disconnected(node);
+                    }
+                } else {
+                    try {
+                        ((CloudServer)session.getConsumer()).send(session, new BusyNodeMessage(thisNode));
+                    } catch (IOException e) {
+                        //TODO: Close the session
+                    }
+                }
+            }
+        } else if(message instanceof BusyNodeMessage) {
+
         }
-    }
-
-    public void write(Node node, Message message) {
-//        interfacesByNode.get(node).write(message);
-    }
-
-    /**
-     *
-     * @param remoteHost
-     * @param port
-     * @return
-     */
-    public static synchronized Node createNode(String remoteHost, Integer port) {
-        Objects.requireNonNull(remoteHost, "Remote host null");
-
-        String nodeHash = Node.createNodeHash(remoteHost, port);
-        Node node = instance.nodesByLanId.get(nodeHash);
-
-        if(node == null) {
-            node = instance.nodesByWanId.get(nodeHash);
-        }
-
-        if(node == null) {
-            node = new Node();
-            node.setLanAddress(remoteHost);
-            node.setLanPort(port);
-            node.setWanAddress(remoteHost);
-            node.setWanPort(port);
-            instance.nodes.add(node);
-            instance.nodesByWanId.put(nodeHash, node);
-            instance.nodesByLanId.put(nodeHash, node);
-        }
-
-        return node;
     }
 
     /**
