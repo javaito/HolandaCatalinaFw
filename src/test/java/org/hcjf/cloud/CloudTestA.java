@@ -18,17 +18,17 @@ public class CloudTestA {
 
         System.setProperty(SystemProperties.Cloud.DefaultImpl.SERVER_LISTENER_PORT, "6162");
         System.setProperty(SystemProperties.Cloud.DefaultImpl.ThisNode.NAME, "test-A");
-        System.setProperty(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS, "172.16.102.45");
+        System.setProperty(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS, "192.168.1.123");
         System.setProperty(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT, "6162");
 
 
         Node node = new Node();
-        node.setLanAddress("172.16.102.45");
+        node.setLanAddress("192.168.1.123");
         node.setLanPort(6163);
         CloudImpl.getInstance().registerConsumer(node);
 
         node = new Node();
-        node.setLanAddress("172.16.102.45");
+        node.setLanAddress("192.168.1.123");
         node.setLanPort(6164);
         CloudImpl.getInstance().registerConsumer(node);
     }

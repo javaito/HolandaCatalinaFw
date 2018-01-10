@@ -15,7 +15,7 @@ import java.util.Random;
  */
 public class HttpEchoTest {
 
-    @BeforeClass
+    //@BeforeClass
     public static void startEchoServer() {
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
@@ -46,7 +46,7 @@ public class HttpEchoTest {
         }
     }
 
-    @Test
+    //@Test
     public void echoTest() {
         List<TestThread> threadList = new ArrayList<>();
         for (int i = 0; i < 1; i++) {

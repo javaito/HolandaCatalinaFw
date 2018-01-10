@@ -69,15 +69,25 @@ public final class CloudImpl extends Service<Node> {
 
     @Override
     public void registerConsumer(Node node) {
-        nodes.add(node);
         String lanId = node.getLanId();
-        if(lanId != null) {
-            nodesByLanId.put(lanId, node);
-        }
-
         String wanId = node.getWanId();
-        if(wanId != null) {
-            nodesByWanId.put(wanId, node);
+        boolean add = true;
+        if(lanId != null && nodesByLanId.containsKey(lanId)) {
+            add = false;
+        }
+        if(wanId != null && nodesByWanId.containsKey(wanId)) {
+            add = false;
+        }
+        if(add) {
+            if (lanId != null) {
+                nodesByLanId.put(lanId, node);
+            }
+
+            if (wanId != null) {
+                nodesByWanId.put(wanId, node);
+            }
+
+            nodes.add(node);
         }
     }
 

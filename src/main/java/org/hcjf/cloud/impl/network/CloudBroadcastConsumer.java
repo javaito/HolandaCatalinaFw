@@ -54,12 +54,22 @@ public class CloudBroadcastConsumer implements BroadcastConsumer {
 
     @Override
     public void onPing(BroadcastService.PingMessage pingMessage) {
-
+        String remoteHost = (String) pingMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS);
+        Integer remotePort = (Integer) pingMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT);
+        Node node = new Node();
+        node.setLanAddress(remoteHost);
+        node.setLanPort(remotePort);
+        CloudImpl.getInstance().registerConsumer(node);
     }
 
     @Override
     public void onPong(BroadcastService.PongMessage pongMessage) {
-
+        String remoteHost = (String) pongMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS);
+        Integer remotePort = (Integer) pongMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT);
+        Node node = new Node();
+        node.setLanAddress(remoteHost);
+        node.setLanPort(remotePort);
+        CloudImpl.getInstance().registerConsumer(node);
     }
 
     @Override
