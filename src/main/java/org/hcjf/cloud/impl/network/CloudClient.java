@@ -97,11 +97,11 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
 
     @Override
     protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
-        CloudImpl.getInstance().incomingMessage(session, payLoad.getMessage());
+        CloudOrchestrator.getInstance().incomingMessage(session, payLoad.getMessage());
     }
 
     @Override
     protected void onDisconnect(CloudSession session, NetPackage netPackage) {
-        CloudImpl.getInstance().connectionLost(session);
+        CloudOrchestrator.getInstance().connectionLost(session);
     }
 }

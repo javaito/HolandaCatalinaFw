@@ -1,7 +1,10 @@
 package org.hcjf.cloud.impl.network;
 
 import org.hcjf.cloud.impl.messages.*;
+import org.hcjf.cloud.impl.objects.DistributedMap;
+import org.hcjf.cloud.impl.objects.DistributedObject;
 import org.hcjf.io.net.NetService;
+import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -13,12 +16,12 @@ import java.util.*;
 /**
  * @author javaito.
  */
-public final class CloudImpl extends Service<Node> {
+public final class CloudOrchestrator extends Service<Node> {
 
-    public static final CloudImpl instance;
+    public static final CloudOrchestrator instance;
 
     static {
-        instance = new CloudImpl();
+        instance = new CloudOrchestrator();
     }
 
     private Node thisNode;
@@ -26,16 +29,24 @@ public final class CloudImpl extends Service<Node> {
     private Map<String, Node> nodesByLanId;
     private Map<String, Node> nodesByWanId;
     private Map<Node, CloudSession> sessionByNode;
+    private Set<Node> sortedNodes;
     private Map<UUID, Node> waitingAck;
+
+    private CloudWagonMessage wagonMessage;
+    private Object wagonMonitor;
+    private Long lastVisit;
+
+    private Map<String, DistributedMap> mapsStore;
+
     private CloudServer server;
     private Random random;
 
-    private CloudImpl() {
-        super(SystemProperties.get(SystemProperties.Cloud.DefaultImpl.SERVICE_NAME),
-                SystemProperties.getInteger(SystemProperties.Cloud.DefaultImpl.SERVICE_PRIORITY));
+    private CloudOrchestrator() {
+        super(SystemProperties.get(SystemProperties.Cloud.Orchestrator.SERVICE_NAME),
+                SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.SERVICE_PRIORITY));
     }
 
-    public static CloudImpl getInstance() {
+    public static CloudOrchestrator getInstance() {
         return instance;
     }
 
@@ -45,24 +56,33 @@ public final class CloudImpl extends Service<Node> {
         nodesByLanId = new HashMap<>();
         nodesByWanId = new HashMap<>();
         sessionByNode = new HashMap<>();
+        sortedNodes = new TreeSet<>(Comparator.comparing(Node::getId));
         waitingAck = new HashMap<>();
 
         thisNode = new Node();
         thisNode.setId(UUID.randomUUID());
-        thisNode.setName(SystemProperties.get(SystemProperties.Cloud.DefaultImpl.ThisNode.NAME));
-        thisNode.setVersion(SystemProperties.get(SystemProperties.Cloud.DefaultImpl.ThisNode.VERSION));
-        thisNode.setLanAddress(SystemProperties.get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS));
-        thisNode.setLanPort(SystemProperties.getInteger(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT));
-        if(SystemProperties.get(SystemProperties.Cloud.DefaultImpl.ThisNode.WAN_ADDRESS) != null) {
-            thisNode.setWanAddress(SystemProperties.get(SystemProperties.Cloud.DefaultImpl.ThisNode.WAN_ADDRESS));
-            thisNode.setWanPort(SystemProperties.getInteger(SystemProperties.Cloud.DefaultImpl.ThisNode.WAN_PORT));
+        thisNode.setName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.NAME));
+        thisNode.setVersion(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.VERSION));
+        thisNode.setLanAddress(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS));
+        thisNode.setLanPort(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT));
+        if(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.WAN_ADDRESS) != null) {
+            thisNode.setWanAddress(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.WAN_ADDRESS));
+            thisNode.setWanPort(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.ThisNode.WAN_PORT));
         }
         thisNode.setStartupDate(new Date());
         thisNode.setStatus(Node.Status.CONNECTED);
+        thisNode.setLocalNode(true);
+        sortedNodes.add(thisNode);
+
+        wagonMonitor = new Object();
+        lastVisit = System.currentTimeMillis();
 
         random = new Random();
 
+        mapsStore = new HashMap<>();
+
         fork(this::maintainConnections);
+        fork(this::initWagon);
         server = new CloudServer();
         server.start();
     }
@@ -99,6 +119,7 @@ public final class CloudImpl extends Service<Node> {
     private void addNode(Node node, CloudSession session) {
         synchronized (sessionByNode) {
             sessionByNode.put(node, session);
+            sortedNodes.add(node);
             printNodes();
         }
     }
@@ -106,6 +127,7 @@ public final class CloudImpl extends Service<Node> {
     private void removeNode(Node node) {
         synchronized (sessionByNode) {
             sessionByNode.remove(node);
+            sortedNodes.remove(node);
             disconnected(node);
             printNodes();
         }
@@ -115,11 +137,11 @@ public final class CloudImpl extends Service<Node> {
         synchronized (sessionByNode) {
             Strings.Builder builder = new Strings.Builder();
             builder.append(Strings.START_SUB_GROUP).append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-            builder.append(Strings.TAB).append(thisNode.toJson());
-            for (Node connectedNode : sessionByNode.keySet()) {
-                builder.append(Strings.ARGUMENT_SEPARATOR).append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                builder.append(Strings.TAB).append(connectedNode.toJson());
+            for (Node node : sortedNodes) {
+                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                builder.append(Strings.TAB).append(node.toJson(), Strings.ARGUMENT_SEPARATOR);
             }
+            builder.cleanBuffer();
             builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR).append(Strings.END_SUB_GROUP);
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "\r\n\r\nNodes: %s\r\n", builder.toString());
         }
@@ -155,8 +177,47 @@ public final class CloudImpl extends Service<Node> {
             }
             try {
                 Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.Cloud.DefaultImpl.CONNECTION_LOOP_WAIT_TIME)
+                        SystemProperties.Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME)
                         + (long)(random.nextDouble() * 1000));
+            } catch (InterruptedException e) {
+                break;
+            }
+        }
+    }
+
+    private void initWagon() {
+        while(!Thread.currentThread().isInterrupted()) {
+            try {
+                Thread.sleep(SystemProperties.getLong(
+                        SystemProperties.Cloud.Orchestrator.WAGON_TIMEOUT)
+                        + (long)(random.nextDouble() * 1000));
+
+                synchronized (wagonMonitor) {
+                    if(wagonMessage != null) {
+                        Node nextDestination = null;
+                        Iterator<Node> nodesIterator = sortedNodes.iterator();
+                        while(nodesIterator.hasNext()) {
+                            if(nodesIterator.next().equals(thisNode)) {
+                                if(nodesIterator.hasNext()) {
+                                    nextDestination = nodesIterator.next();
+                                } else if(sortedNodes.size() > 1) {
+                                    nextDestination = sortedNodes.iterator().next();
+                                }
+                            }
+                        }
+                        if(nextDestination != null) {
+                            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending wagon");
+                            sendMessage(sessionByNode.get(nextDestination), wagonMessage);
+                        }
+                    } else {
+                        if(System.currentTimeMillis() - lastVisit > SystemProperties.getLong(
+                                SystemProperties.Cloud.Orchestrator.WAGON_TIMEOUT) * sortedNodes.size()) {
+                            if(thisNode.equals(sortedNodes.iterator().next())) {
+                                wagonMessage = new CloudWagonMessage(UUID.randomUUID());
+                            }
+                        }
+                    }
+                }
             } catch (InterruptedException e) {
                 break;
             }
@@ -192,26 +253,19 @@ public final class CloudImpl extends Service<Node> {
                 } else {
                     Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
                     addNode(node, session);
-                    try {
-                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
-                                node.getLanAddress(), node.getLanPort());
-                        ((CloudClient)session.getConsumer()).send(new AckMessage(message));
-                    } catch (IOException e) {
-                    }
+                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
+                            node.getLanAddress(), node.getLanPort());
+                    sendMessage(session, new AckMessage(message));
                 }
             } else if(session.getConsumer() instanceof CloudServer) {
                 if(connecting(node)) {
                     Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials from %s:%d",
                             node.getLanAddress(), node.getLanPort());
-                    try {
-                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Response credentials to %s:%d",
-                                node.getLanAddress(), node.getLanPort());
-                        NodeIdentificationMessage returnNodeIdentificationMessage = new NodeIdentificationMessage(thisNode);
-                        waitingAck.put(returnNodeIdentificationMessage.getId(), node);
-                        ((CloudServer) session.getConsumer()).send(session, returnNodeIdentificationMessage);
-                    } catch (IOException e) {
-                        disconnected(node);
-                    }
+                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Response credentials to %s:%d",
+                            node.getLanAddress(), node.getLanPort());
+                    NodeIdentificationMessage returnNodeIdentificationMessage = new NodeIdentificationMessage(thisNode);
+                    waitingAck.put(returnNodeIdentificationMessage.getId(), node);
+                    sendMessage(session, returnNodeIdentificationMessage);
                 } else {
                     try {
                         ((CloudServer)session.getConsumer()).send(session, new BusyNodeMessage(thisNode));
@@ -230,6 +284,20 @@ public final class CloudImpl extends Service<Node> {
                 disconnected(node);
                 ((CloudClient)session.getConsumer()).disconnect();
             }
+        } else if(message instanceof CloudWagonMessage) {
+            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming wagon");
+            synchronized (wagonMonitor) {
+                lastVisit = System.currentTimeMillis();
+                if(wagonMessage != null) {
+                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon crash");
+                }
+                wagonMessage = (CloudWagonMessage) message;
+                sendMessage(session, new AckMessage(message));
+                //TODO: put something into wagon
+            }
+        } else if(message instanceof PublishObjectMessage) {
+            PublishObjectMessage publishObjectMessage = (PublishObjectMessage) message;
+            addDistributedObject(publishObjectMessage.getName(), publishObjectMessage.getObjectClass());
         } else if(message instanceof AckMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
                     session.getRemoteHost(), session.getRemotePort());
@@ -242,6 +310,28 @@ public final class CloudImpl extends Service<Node> {
                     }
                 }
             }
+
+            synchronized (wagonMonitor) {
+                if (wagonMessage != null) {
+                    if (message.getId().equals(wagonMessage.getId())) {
+                        wagonMessage = null;
+                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon gone");
+                    }
+                }
+            }
+        }
+    }
+
+    private void sendMessage(CloudSession session, Message message) {
+        try {
+            NetServiceConsumer consumer = session.getConsumer();
+            if(consumer instanceof CloudClient) {
+                ((CloudClient)consumer).send(message);
+            } else {
+                ((CloudServer)consumer).send(session, message);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -331,4 +421,29 @@ public final class CloudImpl extends Service<Node> {
         return result;
     }
 
+    public <D extends DistributedObject> D createObject(String objectName, Class objectClass) {
+        D result = addDistributedObject(objectName, objectClass);
+
+        if(result != null) {
+            PublishObjectMessage publishObjectMessage = new PublishObjectMessage();
+            for (CloudSession session : sessionByNode.values()) {
+                publishObjectMessage.setName(objectName);
+                publishObjectMessage.setObjectClass(objectClass);
+                sendMessage(session, publishObjectMessage);
+            }
+        }
+
+        return result;
+    }
+
+    private <D extends DistributedObject> D addDistributedObject(String name, Class objectClass) {
+        D result = null;
+        if(Map.class.isAssignableFrom(objectClass)) {
+            DistributedMap distributedMap = new DistributedMap(name);
+            mapsStore.put(name, distributedMap);
+            result = (D) distributedMap;
+            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Distributed map added: %s", name);
+        }
+        return result;
+    }
 }

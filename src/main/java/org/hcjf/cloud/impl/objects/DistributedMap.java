@@ -1,9 +1,6 @@
 package org.hcjf.cloud.impl.objects;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -11,15 +8,21 @@ import java.util.function.Function;
 /**
  * @author javaito
  */
-public class DistributedMap<K extends Object, V extends Object> implements Map<K, V> {
+public class DistributedMap<K extends Object, V extends Object> implements Map<K, V>, DistributedObject {
 
+    private final String name;
     private final Set<K> keys;
     private final Map<K,V> localStore;
 
-    public DistributedMap(Map<K, V> localStore) {
-        this.localStore = localStore;
+    public DistributedMap(String name) {
+        this.localStore = new HashMap<>();
         this.keys = new HashSet<>();
-        this.keys.addAll(localStore.keySet());
+        this.name = name;
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 
     @Override

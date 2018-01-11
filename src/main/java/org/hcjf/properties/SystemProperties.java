@@ -314,29 +314,30 @@ public final class SystemProperties extends Properties {
         public static final String IMPL = "hcjf.cloud.impl";
         public static final String LOG_TAG = "hcjf.cloud.log.tag";
 
-        public static class DefaultImpl {
-            public static final String SERVICE_NAME = "hcjf.cloud.default.impl.name";
-            public static final String SERVICE_PRIORITY = "hcjf.cloud.default.impl.service.priority";
-            public static final String AVAILABLE = "hcjf.cloud.default.impl.available";
-            public static final String SERVER_LISTENER_PORT = "hcjf.cloud.default.impl.server.listener.port";
-            public static final String CONNECTION_LOOP_WAIT_TIME = "hcjf.cloud.default.impl.connection.loop.wait.time";
-            public static final String ACK_TIMEOUT = "hcjf.cloud.default.impl.ack.timeout";
-            public static final String CLUSTER_NAME = "hcjf.cloud.default.impl.cluster.name";
+        public static class Orchestrator {
+            public static final String SERVICE_NAME = "hcjf.cloud.orchestrator.name";
+            public static final String SERVICE_PRIORITY = "hcjf.cloud.orchestrator.service.priority";
+            public static final String AVAILABLE = "hcjf.cloud.orchestrator.available";
+            public static final String SERVER_LISTENER_PORT = "hcjf.cloud.orchestrator.server.listener.port";
+            public static final String CONNECTION_LOOP_WAIT_TIME = "hcjf.cloud.orchestrator.connection.loop.wait.time";
+            public static final String ACK_TIMEOUT = "hcjf.cloud.orchestrator.ack.timeout";
+            public static final String CLUSTER_NAME = "hcjf.cloud.orchestrator.cluster.name";
+            public static final String WAGON_TIMEOUT = "hcjf.cloud.orchestrator.wagon.timeout";
 
             public static final class ThisNode {
-                public static final String NAME = "hcjf.cloud.default.impl.this.node.name";
-                public static final String VERSION = "hcjf.cloud.default.impl.this.node.version";
-                public static final String LAN_ADDRESS = "hcjf.cloud.default.impl.this.node.lan.address";
-                public static final String LAN_PORT = "hcjf.cloud.default.impl.this.node.lan.port";
-                public static final String WAN_ADDRESS = "hcjf.cloud.default.impl.this.node.wan.address";
-                public static final String WAN_PORT = "hcjf.cloud.default.impl.this.node.wan.port";
+                public static final String NAME = "hcjf.cloud.orchestrator.this.node.name";
+                public static final String VERSION = "hcjf.cloud.orchestrator.this.node.version";
+                public static final String LAN_ADDRESS = "hcjf.cloud.orchestrator.this.node.lan.address";
+                public static final String LAN_PORT = "hcjf.cloud.orchestrator.this.node.lan.port";
+                public static final String WAN_ADDRESS = "hcjf.cloud.orchestrator.this.node.wan.address";
+                public static final String WAN_PORT = "hcjf.cloud.orchestrator.this.node.wan.port";
             }
 
             public static final class Broadcast {
-                public static final String TASK_NAME = "hcjf.cloud.default.impl.broadcast.task.name";
-                public static final String IP_VERSION = "hcjf.cloud.default.impl.broadcast.ip.version";
-                public static final String INTERFACE_NAME = "hcjf.cloud.default.impl.broadcast.interface.name";
-                public static final String PORT = "hcjf.cloud.default.impl.broadcast.port";
+                public static final String TASK_NAME = "hcjf.cloud.orchestrator.broadcast.task.name";
+                public static final String IP_VERSION = "hcjf.cloud.orchestrator.broadcast.ip.version";
+                public static final String INTERFACE_NAME = "hcjf.cloud.orchestrator.broadcast.interface.name";
+                public static final String PORT = "hcjf.cloud.orchestrator.broadcast.port";
             }
         }
 
@@ -602,20 +603,21 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.SERVICE_PRIORITY, "0");
         defaults.put(Cloud.IMPL, "");
         defaults.put(Cloud.LOG_TAG, "CLOUD");
-        defaults.put(Cloud.DefaultImpl.SERVICE_NAME, "CloudDefaultImplService");
-        defaults.put(Cloud.DefaultImpl.AVAILABLE, "false");
-        defaults.put(Cloud.DefaultImpl.SERVICE_PRIORITY, "0");
-        defaults.put(Cloud.DefaultImpl.SERVER_LISTENER_PORT, "18080");
-        defaults.put(Cloud.DefaultImpl.CONNECTION_LOOP_WAIT_TIME, "10000");
-        defaults.put(Cloud.DefaultImpl.ACK_TIMEOUT, "2000");
-        defaults.put(Cloud.DefaultImpl.ThisNode.NAME, "hcjf-node");
-        defaults.put(Cloud.DefaultImpl.ThisNode.VERSION, "0");
-        defaults.put(Cloud.DefaultImpl.ThisNode.LAN_ADDRESS, "127.0.0.1");
-        defaults.put(Cloud.DefaultImpl.ThisNode.LAN_PORT, "9090");
-        defaults.put(Cloud.DefaultImpl.Broadcast.TASK_NAME, "Cloud discovery");
-        defaults.put(Cloud.DefaultImpl.Broadcast.IP_VERSION, "4");
-        defaults.put(Cloud.DefaultImpl.Broadcast.INTERFACE_NAME, "eth0");
-        defaults.put(Cloud.DefaultImpl.Broadcast.PORT, "16000");
+        defaults.put(Cloud.Orchestrator.SERVICE_NAME, "CloudDefaultImplService");
+        defaults.put(Cloud.Orchestrator.AVAILABLE, "false");
+        defaults.put(Cloud.Orchestrator.SERVICE_PRIORITY, "0");
+        defaults.put(Cloud.Orchestrator.SERVER_LISTENER_PORT, "18080");
+        defaults.put(Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME, "10000");
+        defaults.put(Cloud.Orchestrator.ACK_TIMEOUT, "2000");
+        defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
+        defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
+        defaults.put(Cloud.Orchestrator.ThisNode.VERSION, "0");
+        defaults.put(Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "127.0.0.1");
+        defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "9090");
+        defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");
+        defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");
+        defaults.put(Cloud.Orchestrator.Broadcast.INTERFACE_NAME, "eth0");
+        defaults.put(Cloud.Orchestrator.Broadcast.PORT, "16000");
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "30000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");

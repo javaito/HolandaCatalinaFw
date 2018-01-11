@@ -20,7 +20,7 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
     private final Map<CloudSession,MessageBuffer> buffersBySession;
 
     public CloudServer() {
-        super(SystemProperties.getInteger(SystemProperties.Cloud.DefaultImpl.SERVER_LISTENER_PORT),
+        super(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.SERVER_LISTENER_PORT),
                 NetService.TransportLayerProtocol.TCP,
                 false, true);
         buffersBySession = new HashMap<>();
@@ -77,11 +77,11 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
 
     @Override
     protected void onDisconnect(CloudSession session, NetPackage netPackage) {
-        CloudImpl.getInstance().connectionLost(session);
+        CloudOrchestrator.getInstance().connectionLost(session);
     }
 
     @Override
     protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
-        CloudImpl.getInstance().incomingMessage(session, payLoad.getMessage());
+        CloudOrchestrator.getInstance().incomingMessage(session, payLoad.getMessage());
     }
 }

@@ -4,7 +4,9 @@ import com.google.gson.JsonObject;
 import org.hcjf.service.ServiceConsumer;
 import org.hcjf.utils.bson.BsonParcelable;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -14,6 +16,7 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public static final class Fields {
         public static final String ID = "id";
+        public static final String LOCAL = "local";
         public static final String NAME = "name";
         public static final String VERSION = "version";
         public static final String STARTUP_DATE = "startupDate";
@@ -32,6 +35,7 @@ public class Node implements ServiceConsumer, BsonParcelable {
     private String wanAddress;
     private Integer wanPort;
     private Status status;
+    private boolean localNode;
     private UUID waitForId;
 
     public Node() {
@@ -126,6 +130,14 @@ public class Node implements ServiceConsumer, BsonParcelable {
         this.status = status;
     }
 
+    public boolean isLocalNode() {
+        return localNode;
+    }
+
+    public void setLocalNode(boolean localNode) {
+        this.localNode = localNode;
+    }
+
     public static String createNodeHash(String remoteHost, Integer port) {
         return remoteHost + ":" + port;
     }
@@ -133,6 +145,7 @@ public class Node implements ServiceConsumer, BsonParcelable {
     public JsonObject toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty(Fields.ID, getId().toString());
+        jsonObject.addProperty(Fields.LOCAL, isLocalNode());
         jsonObject.addProperty(Fields.NAME, getName());
         jsonObject.addProperty(Fields.VERSION, getVersion());
         jsonObject.addProperty(Fields.STARTUP_DATE, getStartupDate().toString());

@@ -16,35 +16,35 @@ public class CloudBroadcastConsumer implements BroadcastConsumer {
 
     public CloudBroadcastConsumer() {
         parameters = new HashMap<>();
-        parameters.put(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS,
-                SystemProperties.get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS));
-        parameters.put(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT,
-                SystemProperties.get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT));
+        parameters.put(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS,
+                SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS));
+        parameters.put(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT,
+                SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT));
     }
 
     @Override
     public String getTaskName() {
-        return SystemProperties.get(SystemProperties.Cloud.DefaultImpl.Broadcast.TASK_NAME);
+        return SystemProperties.get(SystemProperties.Cloud.Orchestrator.Broadcast.TASK_NAME);
     }
 
     @Override
     public String getPrivateKey() {
-        return SystemProperties.get(SystemProperties.Cloud.DefaultImpl.CLUSTER_NAME);
+        return SystemProperties.get(SystemProperties.Cloud.Orchestrator.CLUSTER_NAME);
     }
 
     @Override
     public String getIpVersion() {
-        return SystemProperties.get(SystemProperties.Cloud.DefaultImpl.Broadcast.IP_VERSION);
+        return SystemProperties.get(SystemProperties.Cloud.Orchestrator.Broadcast.IP_VERSION);
     }
 
     @Override
     public String getNetInterfaceName() {
-        return SystemProperties.get(SystemProperties.Cloud.DefaultImpl.Broadcast.INTERFACE_NAME);
+        return SystemProperties.get(SystemProperties.Cloud.Orchestrator.Broadcast.INTERFACE_NAME);
     }
 
     @Override
     public Integer getPort() {
-        return SystemProperties.getInteger(SystemProperties.Cloud.DefaultImpl.Broadcast.PORT);
+        return SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.Broadcast.PORT);
     }
 
     @Override
@@ -54,22 +54,22 @@ public class CloudBroadcastConsumer implements BroadcastConsumer {
 
     @Override
     public void onPing(BroadcastService.PingMessage pingMessage) {
-        String remoteHost = (String) pingMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS);
-        Integer remotePort = (Integer) pingMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT);
+        String remoteHost = (String) pingMessage.getCustomParameters().get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS);
+        Integer remotePort = (Integer) pingMessage.getCustomParameters().get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT);
         Node node = new Node();
         node.setLanAddress(remoteHost);
         node.setLanPort(remotePort);
-        CloudImpl.getInstance().registerConsumer(node);
+        CloudOrchestrator.getInstance().registerConsumer(node);
     }
 
     @Override
     public void onPong(BroadcastService.PongMessage pongMessage) {
-        String remoteHost = (String) pongMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS);
-        Integer remotePort = (Integer) pongMessage.getCustomParameters().get(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT);
+        String remoteHost = (String) pongMessage.getCustomParameters().get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS);
+        Integer remotePort = (Integer) pongMessage.getCustomParameters().get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT);
         Node node = new Node();
         node.setLanAddress(remoteHost);
         node.setLanPort(remotePort);
-        CloudImpl.getInstance().registerConsumer(node);
+        CloudOrchestrator.getInstance().registerConsumer(node);
     }
 
     @Override
