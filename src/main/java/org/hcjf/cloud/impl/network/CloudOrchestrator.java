@@ -375,6 +375,8 @@ public final class CloudOrchestrator extends Service<Node> {
      */
     private void updateNode(Node node, NodeIdentificationMessage message) {
         node.setId(message.getNode().getId());
+        node.setClusterName(message.getNode().getClusterName());
+        node.setDataCenterName(message.getNode().getDataCenterName());
         node.setName(message.getNode().getName());
         node.setVersion(message.getNode().getVersion());
         node.setStartupDate(message.getNode().getStartupDate());

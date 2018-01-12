@@ -4,9 +4,7 @@ import com.google.gson.JsonObject;
 import org.hcjf.service.ServiceConsumer;
 import org.hcjf.utils.bson.BsonParcelable;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -16,6 +14,8 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public static final class Fields {
         public static final String ID = "id";
+        public static final String CLUSTER_NAME = "clusterName";
+        public static final String DATA_CENTER_NAME = "dataCenterName";
         public static final String LOCAL = "local";
         public static final String NAME = "name";
         public static final String VERSION = "version";
@@ -27,6 +27,8 @@ public class Node implements ServiceConsumer, BsonParcelable {
     }
 
     private UUID id;
+    private String clusterName;
+    private String dataCenterName;
     private String name;
     private String version;
     private Date startupDate;
@@ -64,6 +66,22 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public String getClusterName() {
+        return clusterName;
+    }
+
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
+    public String getDataCenterName() {
+        return dataCenterName;
+    }
+
+    public void setDataCenterName(String dataCenterName) {
+        this.dataCenterName = dataCenterName;
     }
 
     public String getName() {
@@ -146,6 +164,8 @@ public class Node implements ServiceConsumer, BsonParcelable {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty(Fields.ID, getId().toString());
         jsonObject.addProperty(Fields.LOCAL, isLocalNode());
+        jsonObject.addProperty(Fields.CLUSTER_NAME, getClusterName());
+        jsonObject.addProperty(Fields.DATA_CENTER_NAME, getDataCenterName());
         jsonObject.addProperty(Fields.NAME, getName());
         jsonObject.addProperty(Fields.VERSION, getVersion());
         jsonObject.addProperty(Fields.STARTUP_DATE, getStartupDate().toString());
