@@ -11,6 +11,14 @@ public final class RemoteLeaf extends DistributedLeaf {
 
     @Override
     public Object getInstance() {
-        return null;
+        return RemoteValue.remoteValue;
+    }
+
+    public static final class RemoteValue {
+
+        public static final RemoteValue remoteValue = new RemoteValue();
+
+        private RemoteValue() {
+        }
     }
 }

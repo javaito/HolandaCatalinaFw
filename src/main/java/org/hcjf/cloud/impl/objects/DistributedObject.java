@@ -9,4 +9,6 @@ public interface DistributedObject {
 
     Object getInstance();
 
+    Long getLastUpdate();
+
 }

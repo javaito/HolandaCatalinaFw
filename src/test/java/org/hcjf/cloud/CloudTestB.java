@@ -1,6 +1,6 @@
 package org.hcjf.cloud;
 
-import org.hcjf.cloud.impl.network.CloudImpl;
+import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.impl.network.Node;
 import org.hcjf.properties.SystemProperties;
 
@@ -16,21 +16,21 @@ public class CloudTestB {
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
         System.setProperty(SystemProperties.Service.THREAD_POOL_MAX_SIZE, "2000");
 
-        System.setProperty(SystemProperties.Cloud.DefaultImpl.SERVER_LISTENER_PORT, "6163");
-        System.setProperty(SystemProperties.Cloud.DefaultImpl.ThisNode.NAME, "test-B");
-        System.setProperty(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_ADDRESS, "192.168.1.123");
-        System.setProperty(SystemProperties.Cloud.DefaultImpl.ThisNode.LAN_PORT, "6163");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.SERVER_LISTENER_PORT, "6163");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-B");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6163");
 
 
         Node node = new Node();
-        node.setLanAddress("192.168.1.123");
+        node.setLanAddress("172.16.102.45");
         node.setLanPort(6162);
-        CloudImpl.getInstance().registerConsumer(node);
+        CloudOrchestrator.getInstance().registerConsumer(node);
 
         node = new Node();
-        node.setLanAddress("192.168.1.123");
+        node.setLanAddress("172.16.102.45");
         node.setLanPort(6164);
-        CloudImpl.getInstance().registerConsumer(node);
+        CloudOrchestrator.getInstance().registerConsumer(node);
     }
 
 }

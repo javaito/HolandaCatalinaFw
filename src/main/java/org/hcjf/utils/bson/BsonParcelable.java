@@ -3,6 +3,8 @@ package org.hcjf.utils.bson;
 import org.hcjf.bson.*;
 import org.hcjf.utils.Introspection;
 
+import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -83,13 +85,22 @@ public interface BsonParcelable {
             document.setName(name);
             result = document;
         } else if(value.getClass().isArray()) {
-            result = toBson(name, Arrays.asList(value));
+            result = toBson(name, Arrays.asList((Object[])value));
         } else if(value.getClass().isEnum()) {
             result = new BsonPrimitive(name, value.toString());
         } else if(Class.class.equals(value.getClass())) {
             result = new BsonPrimitive(name, ((Class)value).getName());
         } else if(BsonType.fromValue(value) != null) {
             result = new BsonPrimitive(name, value);
+        } else if(Serializable.class.isAssignableFrom(value.getClass())) {
+            byte[] serializedObject = null;
+            try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                 ObjectOutputStream out = new ObjectOutputStream(byteArrayOutputStream)) {
+                out.writeObject(value);
+                serializedObject = byteArrayOutputStream.toByteArray();
+            } catch (Exception ex) {
+            }
+            result = new BsonPrimitive(name, serializedObject);
         } else {
             throw new IllegalArgumentException();
         }
@@ -149,7 +160,11 @@ public interface BsonParcelable {
     default Object fromBson(Class expectedDataType, BsonElement element) {
         Object result;
         if(Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
-            result = fromBson((BsonArray)element);
+            result = fromBson((BsonArray) element);
+        } else if(expectedDataType.isArray() && element instanceof BsonArray) {
+            Collection collection = fromBson((BsonArray) element);
+            result = collection.toArray((Object[]) Array.newInstance(
+                    expectedDataType.getComponentType(), collection.size()));
         } else if(Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
             result = fromBson((BsonDocument)element);
         } else if(BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
@@ -165,6 +180,13 @@ public interface BsonParcelable {
             try {
                 result = Class.forName(element.getAsString());
             } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException();
+            }
+        } else if(Serializable.class.isAssignableFrom(expectedDataType) && element instanceof BsonPrimitive) {
+            try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(element.getAsBytes());
+                 ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
+                result = in.readObject();
+            } catch (Exception ex) {
                 throw new IllegalArgumentException();
             }
         } else {

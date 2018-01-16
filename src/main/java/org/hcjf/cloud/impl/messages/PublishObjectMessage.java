@@ -1,5 +1,6 @@
 package org.hcjf.cloud.impl.messages;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -7,8 +8,9 @@ import java.util.UUID;
  */
 public class PublishObjectMessage extends Message {
 
-    private String path;
+    private String[] path;
     private Long timestamp;
+    private List<UUID> nodes;
     private Object value;
 
     public PublishObjectMessage() {
@@ -18,11 +20,11 @@ public class PublishObjectMessage extends Message {
         super(id);
     }
 
-    public String getPath() {
+    public String[] getPath() {
         return path;
     }
 
-    public void setPath(String path) {
+    public void setPath(String[] path) {
         this.path = path;
     }
 
@@ -34,6 +36,14 @@ public class PublishObjectMessage extends Message {
     @Override
     public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public List<UUID> getNodes() {
+        return nodes;
+    }
+
+    public void setNodes(List<UUID> nodes) {
+        this.nodes = nodes;
     }
 
     public Object getValue() {

@@ -1,6 +1,7 @@
 package org.hcjf.cloud.impl.network;
 
 import org.hcjf.cloud.impl.messages.*;
+import org.hcjf.cloud.impl.objects.*;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.log.Log;
@@ -29,12 +30,14 @@ public final class CloudOrchestrator extends Service<Node> {
     private Map<Node, CloudSession> sessionByNode;
     private Set<Node> sortedNodes;
     private Map<UUID, Node> waitingAck;
+    private Map<UUID, ResponseListener> responseListeners;
 
     private CloudWagonMessage wagonMessage;
     private Object wagonMonitor;
     private Long lastVisit;
 
     private CloudServer server;
+    private DistributedTree sharedStore;
     private Random random;
 
     private CloudOrchestrator() {
@@ -54,6 +57,7 @@ public final class CloudOrchestrator extends Service<Node> {
         sessionByNode = new HashMap<>();
         sortedNodes = new TreeSet<>(Comparator.comparing(Node::getId));
         waitingAck = new HashMap<>();
+        responseListeners = new HashMap<>();
 
         thisNode = new Node();
         thisNode.setId(UUID.randomUUID());
@@ -74,6 +78,7 @@ public final class CloudOrchestrator extends Service<Node> {
         lastVisit = System.currentTimeMillis();
 
         random = new Random();
+        sharedStore = new DistributedTree(Strings.EMPTY_STRING);
 
         fork(this::maintainConnections);
         fork(this::initWagon);
@@ -289,8 +294,30 @@ public final class CloudOrchestrator extends Service<Node> {
                 sendMessage(session, new AckMessage(message));
                 //TODO: put something into wagon
             }
+        } else if(message instanceof PublishPathMessage) {
+            addPath(((PublishPathMessage)message).getPath());
         } else if(message instanceof PublishObjectMessage) {
-
+            PublishObjectMessage objectMessage = (PublishObjectMessage) message;
+            if (objectMessage.getValue() != null) {
+                addObject(objectMessage.getValue(), objectMessage.getTimestamp(), objectMessage.getPath());
+            } else {
+                addObject(objectMessage.getTimestamp(), objectMessage.getPath());
+            }
+        } else if(message instanceof GetMessage) {
+            GetMessage getMessage = (GetMessage) message;
+            Object object = sharedStore.getInstance(getMessage.getPath());
+            if(object instanceof RemoteLeaf.RemoteValue) {
+                object = null;
+            }
+            ResponseMessage responseMessage = new ResponseMessage(getMessage.getId());
+            responseMessage.setValue(object);
+            sendMessage(session, responseMessage);
+        } else if(message instanceof ResponseMessage) {
+            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
+            ResponseListener responseListener = responseListeners.get(message.getId());
+            if(responseListener != null) {
+                responseListener.setMessage((ResponseMessage) message);
+            }
         } else if(message instanceof AckMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
                     session.getRemoteHost(), session.getRemotePort());
@@ -326,6 +353,14 @@ public final class CloudOrchestrator extends Service<Node> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private Object invoke(CloudSession session, Message message) {
+        ResponseListener responseListener = new ResponseListener();
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending invoke message: %s", message.getId().toString());
+        responseListeners.put(message.getId(), responseListener);
+        sendMessage(session, message);
+        return responseListener.getResponse(message);
     }
 
     /**
@@ -416,4 +451,120 @@ public final class CloudOrchestrator extends Service<Node> {
         return result;
     }
 
+    public void publishPath(String... path) {
+        synchronized (sharedStore) {
+            addPath(path);
+            PublishPathMessage publishPathMessage = new PublishPathMessage();
+            publishPathMessage.setPath(path);
+            for(CloudSession session : sessionByNode.values()) {
+                sendMessage(session, publishPathMessage);
+            }
+        }
+    }
+
+    public void publishObject(Object object, Long timestamp, String... path) {
+        synchronized (sharedStore) {
+            addObject(object, timestamp, path);
+            List<Node> nodes = new ArrayList<>();
+            boolean insert = false;
+            for(Node node : sortedNodes) {
+                if(node.equals(thisNode)) {
+                    insert = true;
+                    continue;
+                }
+
+                if(insert) {
+                    nodes.add(0, node);
+                } else {
+                    nodes.add(node);
+                }
+            }
+
+            if(!nodes.isEmpty()) {
+
+                List<UUID> nodeIds = new ArrayList<>();
+                nodeIds.add(thisNode.getId());
+                //TODO: Evaluate replication factor
+                nodeIds.add(nodes.get(0).getId());
+
+                PublishObjectMessage publishObjectMessage = new PublishObjectMessage();
+                publishObjectMessage.setPath(path);
+                publishObjectMessage.setTimestamp(timestamp);
+                publishObjectMessage.setNodes(nodeIds);
+
+                int counter = 0;
+                for (Node node : nodes) {
+                    if(counter < 0) {
+                        //TODO: Evaluate replication factor
+                        publishObjectMessage.setValue(timestamp);
+                    }
+                    sendMessage(sessionByNode.get(node), publishObjectMessage);
+                    publishObjectMessage.setValue(null);
+                    counter++;
+                }
+            }
+        }
+    }
+
+    public Object invoke(String... path) {
+        Object result = sharedStore.getInstance(path);
+        if(result instanceof RemoteLeaf.RemoteValue) {
+            GetMessage getMessage = new GetMessage(UUID.randomUUID());
+            getMessage.setPath(path);
+            for(CloudSession session : sessionByNode.values()) {
+                result = invoke(session, getMessage);
+                if(result != null) {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private void addPath(String... path) {
+        if(sharedStore.getInstance(path) == null) {
+            sharedStore.createPath(path);
+            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local path added: %s", Arrays.toString(path));
+        }
+    }
+
+    private void addObject(Object object, Long timestamp, String... path) {
+        sharedStore.add(object, timestamp, path);
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local leaf added: %s", Arrays.toString(path));
+    }
+
+    private void addObject(Long timestamp, String... path) {
+        sharedStore.add(timestamp, path);
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote leaf added: %s", Arrays.toString(path));
+    }
+
+    private final class ResponseListener {
+
+        private ResponseMessage responseMessage;
+
+        public Object getResponse(Message message) {
+            Object result = null;
+            synchronized (this) {
+                if(responseMessage == null) {
+                    try {
+                        this.wait(1000);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+
+            if(responseMessage != null) {
+                result = responseMessage.getValue();
+            }
+            responseListeners.remove(message.getId());
+            return result;
+        }
+
+        public void setMessage(ResponseMessage message) {
+            synchronized (this) {
+                responseMessage = message;
+                notifyAll();
+            }
+        }
+    }
 }
