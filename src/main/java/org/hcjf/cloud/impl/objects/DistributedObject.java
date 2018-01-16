@@ -7,4 +7,6 @@ public interface DistributedObject {
 
     String getName();
 
+    Object getInstance();
+
 }

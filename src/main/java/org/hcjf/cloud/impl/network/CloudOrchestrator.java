@@ -1,8 +1,6 @@
 package org.hcjf.cloud.impl.network;
 
 import org.hcjf.cloud.impl.messages.*;
-import org.hcjf.cloud.impl.objects.DistributedMap;
-import org.hcjf.cloud.impl.objects.DistributedObject;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.log.Log;
@@ -35,8 +33,6 @@ public final class CloudOrchestrator extends Service<Node> {
     private CloudWagonMessage wagonMessage;
     private Object wagonMonitor;
     private Long lastVisit;
-
-    private Map<String, DistributedMap> mapsStore;
 
     private CloudServer server;
     private Random random;
@@ -78,8 +74,6 @@ public final class CloudOrchestrator extends Service<Node> {
         lastVisit = System.currentTimeMillis();
 
         random = new Random();
-
-        mapsStore = new HashMap<>();
 
         fork(this::maintainConnections);
         fork(this::initWagon);
@@ -296,8 +290,7 @@ public final class CloudOrchestrator extends Service<Node> {
                 //TODO: put something into wagon
             }
         } else if(message instanceof PublishObjectMessage) {
-            PublishObjectMessage publishObjectMessage = (PublishObjectMessage) message;
-            addDistributedObject(publishObjectMessage.getName(), publishObjectMessage.getObjectClass());
+
         } else if(message instanceof AckMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
                     session.getRemoteHost(), session.getRemotePort());
@@ -423,29 +416,4 @@ public final class CloudOrchestrator extends Service<Node> {
         return result;
     }
 
-    public <D extends DistributedObject> D createObject(String objectName, Class objectClass) {
-        D result = addDistributedObject(objectName, objectClass);
-
-        if(result != null) {
-            PublishObjectMessage publishObjectMessage = new PublishObjectMessage();
-            for (CloudSession session : sessionByNode.values()) {
-                publishObjectMessage.setName(objectName);
-                publishObjectMessage.setObjectClass(objectClass);
-                sendMessage(session, publishObjectMessage);
-            }
-        }
-
-        return result;
-    }
-
-    private <D extends DistributedObject> D addDistributedObject(String name, Class objectClass) {
-        D result = null;
-        if(Map.class.isAssignableFrom(objectClass)) {
-            DistributedMap distributedMap = new DistributedMap(name);
-            mapsStore.put(name, distributedMap);
-            result = (D) distributedMap;
-            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Distributed map added: %s", name);
-        }
-        return result;
-    }
 }

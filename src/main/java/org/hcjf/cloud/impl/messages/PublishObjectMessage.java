@@ -7,8 +7,9 @@ import java.util.UUID;
  */
 public class PublishObjectMessage extends Message {
 
-    private String name;
-    private Class objectClass;
+    private String path;
+    private Long timestamp;
+    private Object value;
 
     public PublishObjectMessage() {
     }
@@ -17,19 +18,29 @@ public class PublishObjectMessage extends Message {
         super(id);
     }
 
-    public String getName() {
-        return name;
+    public String getPath() {
+        return path;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setPath(String path) {
+        this.path = path;
     }
 
-    public Class getObjectClass() {
-        return objectClass;
+    @Override
+    public Long getTimestamp() {
+        return timestamp;
     }
 
-    public void setObjectClass(Class objectClass) {
-        this.objectClass = objectClass;
+    @Override
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
     }
 }
