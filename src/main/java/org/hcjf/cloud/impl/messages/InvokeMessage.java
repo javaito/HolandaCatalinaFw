@@ -5,14 +5,14 @@ import java.util.UUID;
 /**
  * @author javaito
  */
-public class PublishPathMessage extends Message {
+public class InvokeMessage extends Message {
 
     private Object[] path;
 
-    public PublishPathMessage() {
+    public InvokeMessage() {
     }
 
-    public PublishPathMessage(UUID id) {
+    public InvokeMessage(UUID id) {
         super(id);
     }
 

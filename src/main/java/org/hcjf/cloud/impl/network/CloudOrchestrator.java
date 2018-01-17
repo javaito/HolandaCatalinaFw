@@ -27,7 +27,7 @@ public final class CloudOrchestrator extends Service<Node> {
     private Set<Node> nodes;
     private Map<String, Node> nodesByLanId;
     private Map<String, Node> nodesByWanId;
-    private Map<Node, CloudSession> sessionByNode;
+    private Map<UUID, CloudSession> sessionByNode;
     private Set<Node> sortedNodes;
     private Map<UUID, Node> waitingAck;
     private Map<UUID, ResponseListener> responseListeners;
@@ -117,7 +117,7 @@ public final class CloudOrchestrator extends Service<Node> {
 
     private void addNode(Node node, CloudSession session) {
         synchronized (sessionByNode) {
-            sessionByNode.put(node, session);
+            sessionByNode.put(node.getId(), session);
             sortedNodes.add(node);
             printNodes();
         }
@@ -125,7 +125,7 @@ public final class CloudOrchestrator extends Service<Node> {
 
     private void removeNode(Node node) {
         synchronized (sessionByNode) {
-            sessionByNode.remove(node);
+            sessionByNode.remove(node.getId());
             sortedNodes.remove(node);
             disconnected(node);
             printNodes();
@@ -150,7 +150,7 @@ public final class CloudOrchestrator extends Service<Node> {
         while(!Thread.currentThread().isInterrupted()) {
             for(Node node : nodes) {
                 synchronized (sessionByNode) {
-                    if (!sessionByNode.containsKey(node) && !node.getStatus().equals(Node.Status.CONNECTED)) {
+                    if (!sessionByNode.containsKey(node.getId()) && !node.getStatus().equals(Node.Status.CONNECTED)) {
                         CloudClient client = new CloudClient(node.getLanAddress(), node.getLanPort());
                         NetService.getInstance().registerConsumer(client);
                         if (client.waitForConnect()) {
@@ -206,7 +206,7 @@ public final class CloudOrchestrator extends Service<Node> {
                         }
                         if(nextDestination != null) {
                             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending wagon");
-                            sendMessage(sessionByNode.get(nextDestination), wagonMessage);
+                            sendMessage(sessionByNode.get(nextDestination.getId()), wagonMessage);
                         }
                     } else {
                         if(System.currentTimeMillis() - lastVisit > SystemProperties.getLong(
@@ -227,8 +227,8 @@ public final class CloudOrchestrator extends Service<Node> {
         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "connection lost with %s:%d",
                 session.getRemoteHost(), session.getRemotePort());
         synchronized (sessionByNode) {
-            for(Node node : sessionByNode.keySet()) {
-                if(sessionByNode.get(node).equals(session)) {
+            for(Node node : sortedNodes) {
+                if(sessionByNode.get(node.getId()).equals(session)) {
                     removeNode(node);
                     break;
                 }
@@ -297,20 +297,23 @@ public final class CloudOrchestrator extends Service<Node> {
         } else if(message instanceof PublishPathMessage) {
             addPath(((PublishPathMessage)message).getPath());
         } else if(message instanceof PublishObjectMessage) {
-            PublishObjectMessage objectMessage = (PublishObjectMessage) message;
-            if (objectMessage.getValue() != null) {
-                addObject(objectMessage.getValue(), objectMessage.getTimestamp(), objectMessage.getPath());
+            PublishObjectMessage publishObjectMessage = (PublishObjectMessage) message;
+            if (publishObjectMessage.getValue() != null) {
+                addObject(publishObjectMessage.getValue(), publishObjectMessage.getTimestamp(), publishObjectMessage.getPath());
             } else {
-                addObject(objectMessage.getTimestamp(), objectMessage.getPath());
+                addObject(publishObjectMessage.getTimestamp(), publishObjectMessage.getNodes(), publishObjectMessage.getPath());
             }
-        } else if(message instanceof GetMessage) {
-            GetMessage getMessage = (GetMessage) message;
-            Object object = sharedStore.getInstance(getMessage.getPath());
+        } else if(message instanceof InvokeMessage) {
+            InvokeMessage invokeMessage = (InvokeMessage) message;
+
+            ResponseMessage responseMessage = new ResponseMessage(invokeMessage.getId());
+            Object object = sharedStore.getInstance(invokeMessage.getPath());
             if(object instanceof RemoteLeaf.RemoteValue) {
-                object = null;
+                responseMessage.setNotFound(true);
+            } else {
+                responseMessage.setValue(object);
+                responseMessage.setNotFound(false);
             }
-            ResponseMessage responseMessage = new ResponseMessage(getMessage.getId());
-            responseMessage.setValue(object);
             sendMessage(session, responseMessage);
         } else if(message instanceof ResponseMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
@@ -451,7 +454,7 @@ public final class CloudOrchestrator extends Service<Node> {
         return result;
     }
 
-    public void publishPath(String... path) {
+    public void publishPath(Object... path) {
         synchronized (sharedStore) {
             addPath(path);
             PublishPathMessage publishPathMessage = new PublishPathMessage();
@@ -462,7 +465,7 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
-    public void publishObject(Object object, Long timestamp, String... path) {
+    public void publishObject(Object object, Long timestamp, Object... path) {
         synchronized (sharedStore) {
             addObject(object, timestamp, path);
             List<Node> nodes = new ArrayList<>();
@@ -481,11 +484,8 @@ public final class CloudOrchestrator extends Service<Node> {
             }
 
             if(!nodes.isEmpty()) {
-
                 List<UUID> nodeIds = new ArrayList<>();
                 nodeIds.add(thisNode.getId());
-                //TODO: Evaluate replication factor
-                nodeIds.add(nodes.get(0).getId());
 
                 PublishObjectMessage publishObjectMessage = new PublishObjectMessage();
                 publishObjectMessage.setPath(path);
@@ -497,8 +497,9 @@ public final class CloudOrchestrator extends Service<Node> {
                     if(counter < 0) {
                         //TODO: Evaluate replication factor
                         publishObjectMessage.setValue(timestamp);
+                        publishObjectMessage.getNodes().add(node.getId());
                     }
-                    sendMessage(sessionByNode.get(node), publishObjectMessage);
+                    sendMessage(sessionByNode.get(node.getId()), publishObjectMessage);
                     publishObjectMessage.setValue(null);
                     counter++;
                 }
@@ -506,35 +507,43 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
-    public Object invoke(String... path) {
-        Object result = sharedStore.getInstance(path);
+    public <O extends Object> O invoke(Object... path) {
+        O result = (O) sharedStore.getInstance(path);
         if(result instanceof RemoteLeaf.RemoteValue) {
-            GetMessage getMessage = new GetMessage(UUID.randomUUID());
+            InvokeMessage getMessage = new InvokeMessage(UUID.randomUUID());
             getMessage.setPath(path);
-            for(CloudSession session : sessionByNode.values()) {
-                result = invoke(session, getMessage);
-                if(result != null) {
-                    break;
-                }
+            CloudSession session = null;
+            Iterator<UUID> ids = ((RemoteLeaf.RemoteValue)result).getNodes().iterator();
+            while (ids.hasNext() && session == null) {
+                session = sessionByNode.get(ids.next());
+            }
+
+            if(session != null) {
+                result = (O) invoke(session, getMessage);
+            } else {
+                result = null;
             }
         }
         return result;
     }
 
-    private void addPath(String... path) {
+    private boolean addPath(Object... path) {
+        boolean result = false;
         if(sharedStore.getInstance(path) == null) {
             sharedStore.createPath(path);
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local path added: %s", Arrays.toString(path));
+            result = true;
         }
+        return result;
     }
 
-    private void addObject(Object object, Long timestamp, String... path) {
+    private void addObject(Object object, Long timestamp, Object... path) {
         sharedStore.add(object, timestamp, path);
         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local leaf added: %s", Arrays.toString(path));
     }
 
-    private void addObject(Long timestamp, String... path) {
-        sharedStore.add(timestamp, path);
+    private void addObject(Long timestamp, List<UUID> nodes, Object... path) {
+        sharedStore.add(timestamp, nodes, path);
         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote leaf added: %s", Arrays.toString(path));
     }
 

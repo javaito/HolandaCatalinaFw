@@ -8,7 +8,7 @@ import java.util.UUID;
  */
 public class PublishObjectMessage extends Message {
 
-    private String[] path;
+    private Object[] path;
     private Long timestamp;
     private List<UUID> nodes;
     private Object value;
@@ -20,11 +20,11 @@ public class PublishObjectMessage extends Message {
         super(id);
     }
 
-    public String[] getPath() {
+    public Object[] getPath() {
         return path;
     }
 
-    public void setPath(String[] path) {
+    public void setPath(Object[] path) {
         this.path = path;
     }
 

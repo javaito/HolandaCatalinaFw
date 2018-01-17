@@ -1,27 +1,25 @@
 package org.hcjf.cloud.impl.objects;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author javaito
  */
 public class DistributedTree implements DistributedObject {
 
-    private final String name;
-    private final Map<String, DistributedObject> branches;
+    private final Object key;
+    private final Map<Object, DistributedObject> branches;
     private final Long lastUpdate;
 
-    public DistributedTree(String name) {
-        this.name = name;
+    public DistributedTree(Object key) {
+        this.key = key;
         this.branches = new HashMap<>();
         this.lastUpdate = System.currentTimeMillis();
     }
 
     @Override
-    public final String getName() {
-        return name;
+    public final Object getKey() {
+        return key;
     }
 
     @Override
@@ -29,24 +27,36 @@ public class DistributedTree implements DistributedObject {
         return lastUpdate;
     }
 
-    public final LocalLeaf add(Object object, Long timestamp, String... path) {
+    public final int size() {
+        return branches.size();
+    }
+
+    public final boolean isEmpty() {
+        return branches.isEmpty();
+    }
+
+    public final boolean containsKey(Object key) {
+        return branches.containsKey(key);
+    }
+
+    public final LocalLeaf add(Object object, Long timestamp, Object... path) {
         Objects.requireNonNull(object, "Null distributed object");
         LocalLeaf result;
         createPath(0, path.length - 1, path);
         Object instance = getInstance(0, path.length - 1, path);
         if(instance instanceof DistributedTree) {
-            String name = path[path.length-1];
-            result = new LocalLeaf(name);
+            Object key = path[path.length-1];
+            result = new LocalLeaf(key);
             result.setLastUpdate(lastUpdate);
             result.setInstance(object);
 
-            DistributedLeaf leaf = (DistributedLeaf) branches.get(name);
+            DistributedLeaf leaf = (DistributedLeaf) branches.get(key);
             if(leaf != null) {
                 if(leaf.getLastUpdate() < timestamp) {
-                    ((DistributedTree) instance).branches.put(name, result);
+                    ((DistributedTree) instance).branches.put(key, result);
                 }
             } else {
-                ((DistributedTree) instance).branches.put(name, result);
+                ((DistributedTree) instance).branches.put(key, result);
             }
         } else {
             throw new IllegalArgumentException();
@@ -54,22 +64,25 @@ public class DistributedTree implements DistributedObject {
         return result;
     }
 
-    public final RemoteLeaf add(Long timestamp, String... path) {
+    public final RemoteLeaf add(Long timestamp, List<UUID> nodes, Object... path) {
         RemoteLeaf result;
         createPath(0, path.length - 1, path);
         Object instance = getInstance(0, path.length - 1, path);
         if(instance instanceof DistributedTree) {
-            String name = path[path.length-1];
-            result = new RemoteLeaf(name);
+            Object key = path[path.length-1];
+            result = new RemoteLeaf(key);
             result.setLastUpdate(lastUpdate);
+            RemoteLeaf.RemoteValue remoteValue = new RemoteLeaf.RemoteValue();
+            remoteValue.setNodes(nodes);
+            result.setRemoteValue(remoteValue);
 
-            DistributedLeaf leaf = (DistributedLeaf) branches.get(name);
+            DistributedLeaf leaf = (DistributedLeaf) branches.get(key);
             if(leaf != null) {
                 if(leaf.getLastUpdate() < timestamp) {
-                    ((DistributedTree) instance).branches.put(name, result);
+                    ((DistributedTree) instance).branches.put(key, result);
                 }
             } else {
-                ((DistributedTree) instance).branches.put(name, result);
+                ((DistributedTree) instance).branches.put(key, result);
             }
         } else {
             throw new IllegalArgumentException();
@@ -82,11 +95,11 @@ public class DistributedTree implements DistributedObject {
         return this;
     }
 
-    public Object getInstance(String... path) {
+    public Object getInstance(Object... path) {
         return getInstance(0, path.length, path);
     }
 
-    private Object getInstance(int index, int length, String... path) {
+    private Object getInstance(int index, int length, Object... path) {
         Object result = null;
         DistributedObject distributedObject = branches.get(path[index++]);
         if(distributedObject != null) {
@@ -99,17 +112,22 @@ public class DistributedTree implements DistributedObject {
         return result;
     }
 
-    public synchronized void createPath(String... path) {
-        createPath(0, path.length, path);
+    public synchronized boolean createPath(Object... path) {
+        return createPath(0, path.length, path);
     }
 
-    private void createPath(int index, int length, String... path) {
-        String name = path[index++];
-        if(!branches.containsKey(name)) {
-            branches.put(name, new DistributedTree(name));
+    private boolean createPath(int index, int length, Object... path) {
+        boolean result = false;
+        Object key = path[index++];
+        if(!branches.containsKey(key)) {
+            branches.put(key, new DistributedTree(key));
+            result = true;
         }
+
         if(index < length) {
-            createPath(index, length, path);
+            result = result && ((DistributedTree)branches.get(key)).createPath(index, length, path);
         }
+
+        return result;
     }
 }

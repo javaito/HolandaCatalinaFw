@@ -5,7 +5,7 @@ package org.hcjf.cloud.impl.objects;
  */
 public interface DistributedObject {
 
-    String getName();
+    Object getKey();
 
     Object getInstance();
 

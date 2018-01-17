@@ -3,6 +3,7 @@ package org.hcjf.properties;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.hcjf.cloud.impl.DefaultCloudServiceImpl;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
 
 import java.nio.file.Path;
@@ -602,7 +603,7 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");
-        defaults.put(Cloud.IMPL, "");
+        defaults.put(Cloud.IMPL, DefaultCloudServiceImpl.class.getName());
         defaults.put(Cloud.LOG_TAG, "CLOUD");
         defaults.put(Cloud.Orchestrator.SERVICE_NAME, "CloudDefaultImplService");
         defaults.put(Cloud.Orchestrator.AVAILABLE, "false");

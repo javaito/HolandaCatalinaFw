@@ -9,18 +9,18 @@ import java.util.UUID;
  */
 public abstract class DistributedLeaf implements DistributedObject {
 
-    private final String name;
+    private final Object key;
     private final Set<UUID> nodes;
     private Long lastUpdate;
 
-    public DistributedLeaf(String name) {
-        this.name = name;
+    public DistributedLeaf(Object key) {
+        this.key = key;
         this.nodes = new HashSet<>();
     }
 
     @Override
-    public String getName() {
-        return name;
+    public Object getKey() {
+        return key;
     }
 
     public final Long getLastUpdate() {

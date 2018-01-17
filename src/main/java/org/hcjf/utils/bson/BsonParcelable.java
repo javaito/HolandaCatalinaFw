@@ -92,15 +92,6 @@ public interface BsonParcelable {
             result = new BsonPrimitive(name, ((Class)value).getName());
         } else if(BsonType.fromValue(value) != null) {
             result = new BsonPrimitive(name, value);
-        } else if(Serializable.class.isAssignableFrom(value.getClass())) {
-            byte[] serializedObject = null;
-            try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                 ObjectOutputStream out = new ObjectOutputStream(byteArrayOutputStream)) {
-                out.writeObject(value);
-                serializedObject = byteArrayOutputStream.toByteArray();
-            } catch (Exception ex) {
-            }
-            result = new BsonPrimitive(name, serializedObject);
         } else {
             throw new IllegalArgumentException();
         }
@@ -180,13 +171,6 @@ public interface BsonParcelable {
             try {
                 result = Class.forName(element.getAsString());
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException();
-            }
-        } else if(Serializable.class.isAssignableFrom(expectedDataType) && element instanceof BsonPrimitive) {
-            try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(element.getAsBytes());
-                 ObjectInputStream in = new ObjectInputStream(byteArrayInputStream)) {
-                result = in.readObject();
-            } catch (Exception ex) {
                 throw new IllegalArgumentException();
             }
         } else {

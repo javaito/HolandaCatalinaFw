@@ -4,13 +4,15 @@ import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.impl.network.Node;
 import org.hcjf.properties.SystemProperties;
 
+import java.util.Map;
+
 /**
  * @author javaito.
  */
 public class CloudTestB {
 
     public static void main(String[] args) {
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
@@ -31,6 +33,33 @@ public class CloudTestB {
         node.setLanAddress("172.16.102.45");
         node.setLanPort(6164);
         CloudOrchestrator.getInstance().registerConsumer(node);
+
+
+        try {
+            Thread.sleep(20000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        Map<String, String> testingMap = Cloud.getMap("testing-map");
+        byte[] buffer = new byte[1024];
+        int readSize = 0;
+        String[] arguments;
+        while(!Thread.currentThread().isInterrupted()) {
+            try {
+                System.out.println(": ");
+                readSize = System.in.read(buffer);
+
+                arguments = new String(buffer, 0, readSize).trim().split(" ");
+
+                if(arguments[0].equalsIgnoreCase("put") && arguments.length == 3) {
+                    testingMap.put(arguments[1], arguments[2]);
+                } else if(arguments[0].equalsIgnoreCase("get") && arguments.length == 2) {
+                    System.out.println(testingMap.get(arguments[1]));
+                }
+
+            } catch (Exception ex){}
+        }
     }
 
 }

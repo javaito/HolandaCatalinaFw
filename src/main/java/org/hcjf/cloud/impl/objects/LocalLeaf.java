@@ -7,8 +7,8 @@ public final class LocalLeaf extends DistributedLeaf {
 
     private Object instance;
 
-    public LocalLeaf(String name) {
-        super(name);
+    public LocalLeaf(Object key) {
+        super(key);
     }
 
     @Override

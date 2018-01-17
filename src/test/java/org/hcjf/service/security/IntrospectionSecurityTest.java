@@ -69,7 +69,7 @@ public class IntrospectionSecurityTest {
 
     public static class SecurityBeanTest {
 
-        public static final String GET_NAME_PERMISSION = "getName";
+        public static final String GET_NAME_PERMISSION = "getKey";
         public static final String SET_NAME_PERMISSION = "setName";
 
         private String name;
