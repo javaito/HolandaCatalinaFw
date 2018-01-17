@@ -323,6 +323,7 @@ public final class SystemProperties extends Properties {
             public static final String ACK_TIMEOUT = "hcjf.cloud.orchestrator.ack.timeout";
             public static final String CLUSTER_NAME = "hcjf.cloud.orchestrator.cluster.name";
             public static final String WAGON_TIMEOUT = "hcjf.cloud.orchestrator.wagon.timeout";
+            public static final String INVOKE_TIMEOUT = "hcjf.cloud.orchestrator.invoke.timeout";
 
             public static final class ThisNode {
                 public static final String NAME = "hcjf.cloud.orchestrator.this.node.name";
@@ -610,6 +611,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME, "10000");
         defaults.put(Cloud.Orchestrator.ACK_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
+        defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "800");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
         defaults.put(Cloud.Orchestrator.ThisNode.VERSION, "0");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "127.0.0.1");

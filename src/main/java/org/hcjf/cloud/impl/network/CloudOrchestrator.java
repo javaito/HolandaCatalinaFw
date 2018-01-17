@@ -547,7 +547,7 @@ public final class CloudOrchestrator extends Service<Node> {
             synchronized (this) {
                 if(responseMessage == null) {
                     try {
-                        this.wait(1000);
+                        this.wait(SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
                     } catch (InterruptedException e) {
                     }
                 }
