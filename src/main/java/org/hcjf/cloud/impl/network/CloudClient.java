@@ -50,15 +50,12 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
     }
 
     @Override
-    protected MessageBuffer decode(NetPackage netPackage) {
+    protected synchronized MessageBuffer decode(NetPackage netPackage) {
         MessageBuffer message = this.messageBuffer;
         if(message == null) {
             message = new MessageBuffer();
         }
         message.append(netPackage.getPayload());
-        if(message.isComplete()) {
-            messageBuffer = null;
-        }
         return message;
     }
 
@@ -97,7 +94,12 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
 
     @Override
     protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
-        CloudOrchestrator.getInstance().incomingMessage(session, payLoad.getMessage());
+        if(payLoad.isComplete()) {
+            for(Message message : payLoad.getMessages()) {
+                CloudOrchestrator.getInstance().incomingMessage(session, message);
+            }
+            this.messageBuffer = payLoad.getLeftover();
+        }
     }
 
     @Override

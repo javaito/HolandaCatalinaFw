@@ -39,7 +39,11 @@ public class DistributedTree implements DistributedObject {
         return branches.containsKey(key);
     }
 
-    public final LocalLeaf add(Object object, Long timestamp, Object... path) {
+    public final Set keySet() {
+        return branches.keySet();
+    }
+
+    public final synchronized LocalLeaf add(Object object, Long timestamp, Object... path) {
         Objects.requireNonNull(object, "Null distributed object");
         LocalLeaf result;
         createPath(0, path.length - 1, path);
@@ -64,7 +68,7 @@ public class DistributedTree implements DistributedObject {
         return result;
     }
 
-    public final RemoteLeaf add(Long timestamp, List<UUID> nodes, Object... path) {
+    public final synchronized RemoteLeaf add(Long timestamp, List<UUID> nodes, Object... path) {
         RemoteLeaf result;
         createPath(0, path.length - 1, path);
         Object instance = getInstance(0, path.length - 1, path);

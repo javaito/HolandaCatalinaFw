@@ -43,22 +43,26 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
     }
 
     @Override
-    protected MessageBuffer decode(NetPackage netPackage) {
+    protected synchronized MessageBuffer decode(NetPackage netPackage) {
         MessageBuffer messageBuffer = buffersBySession.remove(netPackage.getSession());
         if(messageBuffer == null) {
             messageBuffer = new MessageBuffer();
         }
         messageBuffer.append(netPackage.getPayload());
-        if(!messageBuffer.isComplete()) {
+
+        if(messageBuffer.isComplete()) {
+            buffersBySession.put((CloudSession) netPackage.getSession(), messageBuffer.getLeftover());
+        } else {
             buffersBySession.put((CloudSession) netPackage.getSession(), messageBuffer);
         }
+
         return messageBuffer;
     }
 
     public void send(CloudSession session, Message message) throws IOException {
         MessageBuffer buffer = new MessageBuffer();
         buffer.append(message);
-        write(session, buffer, true);
+        write(session, buffer, false);
     }
 
     @Override
@@ -82,6 +86,10 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
 
     @Override
     protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
-        CloudOrchestrator.getInstance().incomingMessage(session, payLoad.getMessage());
+        if(payLoad.isComplete()) {
+            for(Message message : payLoad.getMessages()) {
+                CloudOrchestrator.getInstance().incomingMessage(session, message);
+            }
+        }
     }
 }

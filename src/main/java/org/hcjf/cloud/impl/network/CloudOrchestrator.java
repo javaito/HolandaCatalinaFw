@@ -1,5 +1,6 @@
 package org.hcjf.cloud.impl.network;
 
+import org.hcjf.bson.BsonDocument;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.cloud.impl.objects.*;
 import org.hcjf.io.net.NetService;
@@ -35,6 +36,7 @@ public final class CloudOrchestrator extends Service<Node> {
     private CloudWagonMessage wagonMessage;
     private Object wagonMonitor;
     private Long lastVisit;
+    private Map<String,List<Message>> wagonLoad;
 
     private CloudServer server;
     private DistributedTree sharedStore;
@@ -76,6 +78,7 @@ public final class CloudOrchestrator extends Service<Node> {
 
         wagonMonitor = new Object();
         lastVisit = System.currentTimeMillis();
+        wagonLoad = new HashMap<>();
 
         random = new Random();
         sharedStore = new DistributedTree(Strings.EMPTY_STRING);
@@ -206,6 +209,8 @@ public final class CloudOrchestrator extends Service<Node> {
                         }
                         if(nextDestination != null) {
                             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending wagon");
+                            Map<String,List<Message>> load = getWagonLoad();
+                            wagonMessage.getMessages().putAll(load);
                             sendMessage(sessionByNode.get(nextDestination.getId()), wagonMessage);
                         }
                     } else {
@@ -234,6 +239,24 @@ public final class CloudOrchestrator extends Service<Node> {
                 }
             }
         }
+    }
+
+    private void putWagonLoad(Node node, Message message) {
+        synchronized (wagonLoad) {
+            if(!wagonLoad.containsKey(node.getId().toString())) {
+                wagonLoad.put(node.getId().toString(), new ArrayList<>());
+            }
+            wagonLoad.get(node.getId().toString()).add(message);
+        }
+    }
+
+    private Map<String,List<Message>> getWagonLoad() {
+        Map<String,List<Message>> result = new HashMap<>();
+        synchronized (wagonLoad) {
+            result.putAll(wagonLoad);
+            wagonLoad.clear();
+        }
+        return result;
     }
 
     public void incomingMessage(CloudSession session, Message message) {
@@ -292,7 +315,10 @@ public final class CloudOrchestrator extends Service<Node> {
                 }
                 wagonMessage = (CloudWagonMessage) message;
                 sendMessage(session, new AckMessage(message));
-                //TODO: put something into wagon
+
+                for(Message messageOfWagon : wagonMessage.getMessages().remove(thisNode.getId().toString())) {
+                    incomingMessage(session, messageOfWagon);
+                }
             }
         } else if(message instanceof PublishPathMessage) {
             addPath(((PublishPathMessage)message).getPath());
@@ -468,41 +494,45 @@ public final class CloudOrchestrator extends Service<Node> {
     public void publishObject(Object object, Long timestamp, Object... path) {
         synchronized (sharedStore) {
             addObject(object, timestamp, path);
-            List<Node> nodes = new ArrayList<>();
-            boolean insert = false;
-            for(Node node : sortedNodes) {
-                if(node.equals(thisNode)) {
-                    insert = true;
-                    continue;
-                }
-
-                if(insert) {
-                    nodes.add(0, node);
-                } else {
-                    nodes.add(node);
-                }
+        }
+        List<Node> nodes = new ArrayList<>();
+        boolean insert = false;
+        for(Node node : sortedNodes) {
+            if(node.equals(thisNode)) {
+                insert = true;
+                continue;
             }
 
-            if(!nodes.isEmpty()) {
-                List<UUID> nodeIds = new ArrayList<>();
-                nodeIds.add(thisNode.getId());
+            if(insert) {
+                nodes.add(0, node);
+            } else {
+                nodes.add(node);
+            }
+        }
 
-                PublishObjectMessage publishObjectMessage = new PublishObjectMessage();
+        if(!nodes.isEmpty()) {
+            List<UUID> nodeIds = new ArrayList<>();
+            nodeIds.add(thisNode.getId());
+
+            int replicationFactor = SystemProperties.getInteger(
+                    SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
+
+            for (int i = 0; i < replicationFactor; i++) {
+                nodeIds.add(nodes.get(i).getId());
+            }
+
+            int counter = 0;
+            for (Node node : nodes) {
+                PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
                 publishObjectMessage.setPath(path);
                 publishObjectMessage.setTimestamp(timestamp);
                 publishObjectMessage.setNodes(nodeIds);
-
-                int counter = 0;
-                for (Node node : nodes) {
-                    if(counter < 0) {
-                        //TODO: Evaluate replication factor
-                        publishObjectMessage.setValue(timestamp);
-                        publishObjectMessage.getNodes().add(node.getId());
-                    }
-                    sendMessage(sessionByNode.get(node.getId()), publishObjectMessage);
-                    publishObjectMessage.setValue(null);
-                    counter++;
+                if(counter < replicationFactor) {
+                    publishObjectMessage.setValue(object);
                 }
+                sendMessage(sessionByNode.get(node.getId()), publishObjectMessage);
+//                putWagonLoad(node, publishObjectMessage);
+                counter++;
             }
         }
     }
@@ -518,11 +548,13 @@ public final class CloudOrchestrator extends Service<Node> {
                 session = sessionByNode.get(ids.next());
             }
 
+            long time = System.currentTimeMillis();
             if(session != null) {
                 result = (O) invoke(session, getMessage);
             } else {
                 result = null;
             }
+            System.out.println("Invoke time: " + (System.currentTimeMillis() - time));
         }
         return result;
     }

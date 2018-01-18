@@ -70,7 +70,8 @@ public class DistributedMap<K extends Object, V extends Object> implements Map<K
 
     @Override
     public Set<K> keySet() {
-        return null;
+        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Map.class.getName(), name);
+        return tree.keySet();
     }
 
     @Override

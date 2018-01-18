@@ -282,7 +282,12 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         try {
             session = checkSession(session, decodedPackage, netPackage);
             session.setChecked(true);
-            onRead(session, decodedPackage, netPackage);
+
+            try {
+                onRead(session, decodedPackage, netPackage);
+            } catch (Exception ex) {
+                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "On read method fail", ex);
+            }
         } catch (Exception ex){
             Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Check session fail", ex);
             session.setChecked(false);

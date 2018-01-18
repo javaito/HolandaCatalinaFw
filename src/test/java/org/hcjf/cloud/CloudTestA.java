@@ -41,7 +41,10 @@ public class CloudTestA {
             e.printStackTrace();
         }
 
+        System.out.println("Load done!");
+
         Map<String, String> testingMap = Cloud.getMap("testing-map");
+
         byte[] buffer = new byte[1024];
         int readSize = 0;
         String[] arguments;
@@ -50,14 +53,24 @@ public class CloudTestA {
                 System.out.println(": ");
                 readSize = System.in.read(buffer);
 
+                long time = System.currentTimeMillis();
                 arguments = new String(buffer, 0, readSize).trim().split(" ");
 
                 if(arguments[0].equalsIgnoreCase("put") && arguments.length == 3) {
                     testingMap.put(arguments[1], arguments[2]);
                 } else if(arguments[0].equalsIgnoreCase("get") && arguments.length == 2) {
                     System.out.println(testingMap.get(arguments[1]));
+                } else if(arguments[0].equalsIgnoreCase("keys") && arguments.length == 1) {
+                    System.out.println(testingMap.keySet().size());
+                    System.out.println(testingMap.keySet());
+                } else if(arguments[0].equalsIgnoreCase("load") && arguments.length == 1) {
+                    for (int i = 0; i < 5000; i++) {
+                        testingMap.put("nodeA-key" + i, "nodeA-value" + i);
+                    }
+                } else if(arguments[0].equalsIgnoreCase("size") && arguments.length == 1) {
+                    System.out.println(testingMap.size());
                 }
-
+                System.out.println("Execution time: " + (System.currentTimeMillis() - time));
             } catch (Exception ex){}
         }
     }
