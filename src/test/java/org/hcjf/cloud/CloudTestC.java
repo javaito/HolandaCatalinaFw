@@ -72,6 +72,8 @@ public class CloudTestC {
                     System.out.println(testingMap.size());
                 } else if(arguments[0].equalsIgnoreCase("size") && arguments.length == 1) {
                     System.out.println(testingMap.size());
+                } else if(arguments[0].equalsIgnoreCase("values") && arguments.length == 1) {
+                    System.out.println(testingMap.values());
                 }
                 System.out.println("Execution time: " + (System.currentTimeMillis() - time));
             } catch (Exception ex){}

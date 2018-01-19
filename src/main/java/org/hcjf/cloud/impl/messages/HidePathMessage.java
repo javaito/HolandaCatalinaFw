@@ -5,14 +5,14 @@ import java.util.UUID;
 /**
  * @author javaito
  */
-public class RemoveObjectMessage extends Message {
+public class HidePathMessage extends Message {
 
     private Object[] path;
 
-    public RemoveObjectMessage() {
+    public HidePathMessage() {
     }
 
-    public RemoveObjectMessage(UUID id) {
+    public HidePathMessage(UUID id) {
         super(id);
     }
 

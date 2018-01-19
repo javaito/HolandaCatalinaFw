@@ -1,6 +1,5 @@
 package org.hcjf.cloud.impl.network;
 
-import org.hcjf.bson.BsonDocument;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.cloud.impl.objects.*;
 import org.hcjf.io.net.NetService;
@@ -320,6 +319,8 @@ public final class CloudOrchestrator extends Service<Node> {
                     incomingMessage(session, messageOfWagon);
                 }
             }
+        } else if(message instanceof HidePathMessage) {
+            removePath(((HidePathMessage)message).getPath());
         } else if(message instanceof PublishPathMessage) {
             addPath(((PublishPathMessage)message).getPath());
         } else if(message instanceof PublishObjectMessage) {
@@ -492,49 +493,61 @@ public final class CloudOrchestrator extends Service<Node> {
     }
 
     public void publishObject(Object object, Long timestamp, Object... path) {
-        synchronized (sharedStore) {
-            addObject(object, timestamp, path);
-        }
-        List<Node> nodes = new ArrayList<>();
-        boolean insert = false;
-        for(Node node : sortedNodes) {
-            if(node.equals(thisNode)) {
-                insert = true;
-                continue;
-            }
+        addObject(object, timestamp, path);
 
-            if(insert) {
-                nodes.add(0, node);
-            } else {
-                nodes.add(node);
-            }
-        }
-
-        if(!nodes.isEmpty()) {
-            List<UUID> nodeIds = new ArrayList<>();
-            nodeIds.add(thisNode.getId());
-
-            int replicationFactor = SystemProperties.getInteger(
-                    SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
-
-            for (int i = 0; i < replicationFactor; i++) {
-                nodeIds.add(nodes.get(i).getId());
-            }
-
-            int counter = 0;
-            for (Node node : nodes) {
-                PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
-                publishObjectMessage.setPath(path);
-                publishObjectMessage.setTimestamp(timestamp);
-                publishObjectMessage.setNodes(nodeIds);
-                if(counter < replicationFactor) {
-                    publishObjectMessage.setValue(object);
+        fork(() -> {
+            List < Node > nodes = new ArrayList<>();
+            boolean insert = false;
+            for(Node node : sortedNodes) {
+                if(node.equals(thisNode)) {
+                    insert = true;
+                    continue;
                 }
-                sendMessage(sessionByNode.get(node.getId()), publishObjectMessage);
-//                putWagonLoad(node, publishObjectMessage);
-                counter++;
+
+                if(insert) {
+                    nodes.add(0, node);
+                } else {
+                    nodes.add(node);
+                }
             }
-        }
+
+            if(!nodes.isEmpty()) {
+                List<UUID> nodeIds = new ArrayList<>();
+                nodeIds.add(thisNode.getId());
+
+                int replicationFactor = SystemProperties.getInteger(
+                        SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
+
+                for (int i = 0; i < replicationFactor; i++) {
+                    nodeIds.add(nodes.get(i).getId());
+                }
+
+                int counter = 0;
+                for (Node node : nodes) {
+                    PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
+                    publishObjectMessage.setPath(path);
+                    publishObjectMessage.setTimestamp(timestamp);
+                    publishObjectMessage.setNodes(nodeIds);
+                    if(counter < replicationFactor) {
+                        publishObjectMessage.setValue(object);
+                    }
+                    sendMessage(sessionByNode.get(node.getId()), publishObjectMessage);
+                    counter++;
+                }
+            }
+        });
+    }
+
+    public void hidePath(Object... path) {
+        removePath(path);
+
+        fork(()->{
+            for (CloudSession session : sessionByNode.values()) {
+                HidePathMessage hidePathMessage = new HidePathMessage(UUID.randomUUID());
+                hidePathMessage.setPath(path);
+                sendMessage(session, hidePathMessage);
+            }
+        });
     }
 
     public <O extends Object> O invoke(Object... path) {
@@ -548,15 +561,17 @@ public final class CloudOrchestrator extends Service<Node> {
                 session = sessionByNode.get(ids.next());
             }
 
-            long time = System.currentTimeMillis();
             if(session != null) {
                 result = (O) invoke(session, getMessage);
             } else {
                 result = null;
             }
-            System.out.println("Invoke time: " + (System.currentTimeMillis() - time));
         }
         return result;
+    }
+
+    private void removePath(Object... path) {
+        sharedStore.remove(path);
     }
 
     private boolean addPath(Object... path) {

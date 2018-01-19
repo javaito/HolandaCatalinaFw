@@ -94,6 +94,38 @@ public class DistributedTree implements DistributedObject {
         return result;
     }
 
+    public final synchronized DistributedObject remove(Object... path) {
+        return remove(0, path);
+    }
+
+    private DistributedObject remove(int index, Object... path) {
+        DistributedObject result = null;
+        if(index + 1 == path.length) {
+            result = branches.remove(path[index]);
+        } else {
+            DistributedObject distributedObject = branches.get(index++);
+            if(distributedObject != null && distributedObject instanceof DistributedTree) {
+                result = remove(index, path);
+            }
+        }
+        return result;
+    }
+
+    public final synchronized void clear(Object... path) {
+        clear(0, path);
+    }
+
+    private void clear(int index, Object... path) {
+        DistributedObject distributedObject = branches.get(index++);
+        if(distributedObject instanceof DistributedTree) {
+            if(index == path.length) {
+                ((DistributedTree) distributedObject).branches.clear();
+            } else {
+                ((DistributedTree) distributedObject).clear(index, path);
+            }
+        }
+    }
+
     @Override
     public Object getInstance() {
         return this;

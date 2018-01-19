@@ -3,9 +3,7 @@ package org.hcjf.cloud.impl;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.impl.objects.DistributedTree;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author javaito
@@ -39,7 +37,13 @@ public class DistributedMap<K extends Object, V extends Object> implements Map<K
 
     @Override
     public boolean containsValue(Object value) {
-        return false;
+        boolean result = false;
+        for(Object mapValue : values()) {
+            if(result = mapValue.equals(value)) {
+                break;
+            }
+        }
+        return result;
     }
 
     @Override
@@ -55,17 +59,23 @@ public class DistributedMap<K extends Object, V extends Object> implements Map<K
 
     @Override
     public V remove(Object key) {
-        return null;
+        V result = CloudOrchestrator.getInstance().invoke(Map.class.getName(), name, key);
+        CloudOrchestrator.getInstance().hidePath(Map.class.getName(), name, key);
+        return result;
     }
 
     @Override
     public void putAll(Map<? extends K, ? extends V> m) {
-
+        for(Entry<? extends K, ? extends V> entry : m.entrySet()) {
+            put(entry.getKey(), entry.getValue());
+        }
     }
 
     @Override
     public void clear() {
-
+        for(K key : keySet()) {
+            CloudOrchestrator.getInstance().hidePath(Map.class.getName(), name, key);
+        }
     }
 
     @Override
@@ -76,11 +86,36 @@ public class DistributedMap<K extends Object, V extends Object> implements Map<K
 
     @Override
     public Collection<V> values() {
-        return null;
+        Collection<V> result = new ArrayList<>();
+        for(K key : keySet()) {
+            result.add(get(key));
+        }
+        return result;
     }
 
     @Override
     public Set<Entry<K, V>> entrySet() {
-        return null;
+        Set<Entry<K,V>> result = new HashSet<>();
+        for(K key : keySet()) {
+            result.add(new Entry<>() {
+                @Override
+                public K getKey() {
+                    return key;
+                }
+
+                @Override
+                public V getValue() {
+                    return CloudOrchestrator.getInstance().invoke(Map.class.getName(), name, key);
+                }
+
+                @Override
+                public V setValue(V value) {
+                    CloudOrchestrator.getInstance().publishObject(value,
+                            System.currentTimeMillis(), Map.class.getName(), name, key);
+                    return value;
+                }
+            });
+        }
+        return result;
     }
 }
