@@ -8,11 +8,11 @@ import java.util.*;
 /**
  * @author javaito
  */
-public class DistributedMap<K extends Object, V extends Object> implements Map<K, V> {
+public class MapImpl<K extends Object, V extends Object> implements Map<K, V> {
 
     private String name;
 
-    public DistributedMap(String name) {
+    public MapImpl(String name) {
         this.name = name;
         CloudOrchestrator.getInstance().publishPath(Map.class.getName(), name);
     }

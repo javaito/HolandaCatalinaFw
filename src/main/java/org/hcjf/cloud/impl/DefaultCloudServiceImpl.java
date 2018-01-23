@@ -18,9 +18,11 @@ import java.util.concurrent.locks.Lock;
 public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     private final Map<String,Map> mapInstances;
+    private final Map<String,Lock> lockInstances;
 
     public DefaultCloudServiceImpl() {
         this.mapInstances = new HashMap<>();
+        this.lockInstances = new HashMap<>();
     }
 
     @Override
@@ -29,7 +31,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
         synchronized (mapInstances) {
             result = mapInstances.get(mapName);
             if(result == null) {
-                result = new DistributedMap<>(mapName);
+                result = new MapImpl<>(mapName);
                 mapInstances.put(mapName, result);
             }
         }
@@ -63,7 +65,15 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     @Override
     public Lock getLock(String lockName) {
-        return null;
+        Lock result;
+        synchronized (lockInstances) {
+            result = lockInstances.get(lockName);
+            if(result == null) {
+                result = new LockImpl(lockName);
+                lockInstances.put(lockName, result);
+            }
+        }
+        return result;
     }
 
     @Override

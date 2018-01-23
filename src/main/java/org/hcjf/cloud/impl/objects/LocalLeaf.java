@@ -12,11 +12,11 @@ public final class LocalLeaf extends DistributedLeaf {
     }
 
     @Override
-    public Object getInstance() {
+    public final Object getInstance() {
         return instance;
     }
 
-    public void setInstance(Object instance) {
+    public final void setInstance(Object instance) {
         this.instance = instance;
     }
 }

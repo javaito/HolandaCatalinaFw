@@ -342,6 +342,14 @@ public final class CloudOrchestrator extends Service<Node> {
                 responseMessage.setNotFound(false);
             }
             sendMessage(session, responseMessage);
+        } else if(message instanceof LockMessage) {
+            LockMessage lockMessage = (LockMessage) message;
+            ResponseMessage responseMessage = new ResponseMessage(lockMessage.getId());
+            responseMessage.setValue(distributedLock(lockMessage.getTimestamp(), lockMessage.getPath()));
+            sendMessage(session, responseMessage);
+        } else if(message instanceof UnlockMessage) {
+            UnlockMessage unlockMessage = (UnlockMessage) message;
+            distributedUnlock(unlockMessage.getPath());
         } else if(message instanceof ResponseMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
@@ -391,6 +399,84 @@ public final class CloudOrchestrator extends Service<Node> {
         responseListeners.put(message.getId(), responseListener);
         sendMessage(session, message);
         return responseListener.getResponse(message);
+    }
+
+    private DistributedLock getDistributedLock(Object... path) {
+        DistributedLock distributedLock;
+        synchronized (sharedStore) {
+            distributedLock = (DistributedLock) sharedStore.getInstance(path);
+            if (distributedLock == null) {
+                distributedLock = new DistributedLock();
+                distributedLock.setStatus(DistributedLock.Status.UNLOCKED);
+                addObject(distributedLock, System.currentTimeMillis(), path);
+            }
+        }
+        return distributedLock;
+    }
+
+    public void lock(Object... path) {
+        DistributedLock distributedLock = getDistributedLock(path);
+        synchronized (distributedLock) {
+            while(!distributedLock.getStatus().equals(DistributedLock.Status.UNLOCKED)) {
+                try {
+                    distributedLock.wait();
+                } catch (InterruptedException e) {
+                }
+            }
+
+            distributedLock.setStatus(DistributedLock.Status.LOCKING);
+            LockMessage lockMessage = new LockMessage(UUID.randomUUID());
+            lockMessage.setPath(path);
+            lockMessage.setTimestamp(distributedLock.getTimestamp());
+            boolean locked;
+            while (!distributedLock.getStatus().equals(DistributedLock.Status.LOCKED)) {
+                locked = true;
+                for (CloudSession session : sessionByNode.values()) {
+                    if(!(locked = locked & (boolean) invoke(session, lockMessage))) {
+                        break;
+                    }
+                }
+                if (locked) {
+                    distributedLock.setStatus(DistributedLock.Status.LOCKED);
+                } else {
+                    distributedLock.setStatus(DistributedLock.Status.WAITING);
+                    try {
+                        distributedLock.wait();
+                    } catch (InterruptedException e) { }
+                }
+            }
+        }
+    }
+
+    private boolean distributedLock(Long timestamp, Object... path) {
+        boolean result;
+        DistributedLock distributedLock = getDistributedLock(path);
+        synchronized (distributedLock) {
+            result = distributedLock.getStatus().equals(DistributedLock.Status.UNLOCKED) ||
+                    distributedLock.getTimestamp() > timestamp;
+        }
+        return result;
+    }
+
+    public void unlock(Object... path) {
+        DistributedLock distributedLock = getDistributedLock(path);
+        synchronized (distributedLock) {
+            distributedLock.setStatus(DistributedLock.Status.UNLOCKED);
+            distributedLock.notifyAll();
+        }
+
+        UnlockMessage unlockMessage = new UnlockMessage(UUID.randomUUID());
+        unlockMessage.setPath(path);
+        for (CloudSession session : sessionByNode.values()) {
+            sendMessage(session, unlockMessage);
+        }
+    }
+
+    public synchronized void distributedUnlock(Object... path) {
+        DistributedLock distributedLock = getDistributedLock(path);
+        synchronized (distributedLock) {
+            distributedLock.notifyAll();
+        }
     }
 
     /**

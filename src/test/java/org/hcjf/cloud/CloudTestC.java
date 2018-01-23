@@ -6,6 +6,7 @@ import org.hcjf.properties.SystemProperties;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 /**
  * @author javaito.
@@ -45,6 +46,7 @@ public class CloudTestC {
         System.out.println("Load done!");
 
         Map<String, String> testingMap = Cloud.getMap("testing-map");
+        Lock lock = Cloud.getLock("testing-lock");
 
         byte[] buffer = new byte[1024];
         int readSize = 0;
@@ -74,9 +76,17 @@ public class CloudTestC {
                     System.out.println(testingMap.size());
                 } else if(arguments[0].equalsIgnoreCase("values") && arguments.length == 1) {
                     System.out.println(testingMap.values());
+                } else if(arguments[0].equalsIgnoreCase("lock") && arguments.length == 1) {
+                    lock.lock();
+                    System.out.println("Lock acquired!");
+                } else if(arguments[0].equalsIgnoreCase("unlock") && arguments.length == 1) {
+                    lock.unlock();
+                    System.out.println("Unlocked");
                 }
                 System.out.println("Execution time: " + (System.currentTimeMillis() - time));
-            } catch (Exception ex){}
+            } catch (Exception ex){
+                ex.printStackTrace();
+            }
         }
     }
 
