@@ -417,33 +417,35 @@ public final class CloudOrchestrator extends Service<Node> {
     public void lock(Object... path) {
         DistributedLock distributedLock = getDistributedLock(path);
         synchronized (distributedLock) {
-            while(!distributedLock.getStatus().equals(DistributedLock.Status.UNLOCKED)) {
+            while (!distributedLock.getStatus().equals(DistributedLock.Status.UNLOCKED)) {
                 try {
                     distributedLock.wait();
                 } catch (InterruptedException e) {
                 }
             }
-
             distributedLock.setStatus(DistributedLock.Status.LOCKING);
-            LockMessage lockMessage = new LockMessage(UUID.randomUUID());
-            lockMessage.setPath(path);
-            lockMessage.setTimestamp(distributedLock.getTimestamp());
-            boolean locked;
-            while (!distributedLock.getStatus().equals(DistributedLock.Status.LOCKED)) {
-                locked = true;
-                for (CloudSession session : sessionByNode.values()) {
-                    if(!(locked = locked & (boolean) invoke(session, lockMessage))) {
-                        break;
-                    }
+        }
+
+        LockMessage lockMessage = new LockMessage(UUID.randomUUID());
+        lockMessage.setPath(path);
+        lockMessage.setTimestamp(distributedLock.getTimestamp());
+        boolean locked;
+        while (!distributedLock.getStatus().equals(DistributedLock.Status.LOCKED)) {
+            locked = true;
+            for (CloudSession session : sessionByNode.values()) {
+                if (!(locked = locked & (boolean) invoke(session, lockMessage))) {
+                    break;
                 }
-                if (locked) {
-                    distributedLock.setStatus(DistributedLock.Status.LOCKED);
-                } else {
-                    distributedLock.setStatus(DistributedLock.Status.WAITING);
-                    try {
+            }
+            if (locked) {
+                distributedLock.setStatus(DistributedLock.Status.LOCKED);
+            } else {
+                distributedLock.setStatus(DistributedLock.Status.WAITING);
+                try {
+                    synchronized (distributedLock) {
                         distributedLock.wait();
-                    } catch (InterruptedException e) { }
-                }
+                    }
+                } catch (InterruptedException e) { }
             }
         }
     }
