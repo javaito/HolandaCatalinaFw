@@ -55,12 +55,12 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     @Override
     public void lock(String resourceName) throws InterruptedException {
-
+        getLock(resourceName).lock();
     }
 
     @Override
     public void unlock(String resourceName) throws InterruptedException {
-
+        getLock(resourceName).unlock();
     }
 
     @Override
@@ -78,7 +78,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     @Override
     public Condition getCondition(String conditionName, Lock lock) {
-        return null;
+        return ((LockImpl)lock).newCondition(conditionName);
     }
 
     @Override

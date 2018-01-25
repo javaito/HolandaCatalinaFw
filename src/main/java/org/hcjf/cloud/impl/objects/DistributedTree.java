@@ -161,7 +161,7 @@ public class DistributedTree implements DistributedObject {
         }
 
         if(index < length) {
-            result = result && ((DistributedTree)branches.get(key)).createPath(index, length, path);
+            result = result & ((DistributedTree)branches.get(key)).createPath(index, length, path);
         }
 
         return result;

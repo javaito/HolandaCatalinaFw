@@ -1,5 +1,7 @@
 package org.hcjf.cloud.impl.network;
 
+import org.hcjf.cloud.Cloud;
+import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.cloud.impl.objects.*;
 import org.hcjf.io.net.NetService;
@@ -350,6 +352,12 @@ public final class CloudOrchestrator extends Service<Node> {
         } else if(message instanceof UnlockMessage) {
             UnlockMessage unlockMessage = (UnlockMessage) message;
             distributedUnlock(unlockMessage.getPath());
+        } else if(message instanceof SignalMessage) {
+            SignalMessage signalMessage = (SignalMessage) message;
+            distributedSignal(signalMessage.getLockName(), signalMessage.getConditionName());
+        } else if(message instanceof SignalAllMessage) {
+            SignalAllMessage signalAllMessage = (SignalAllMessage) message;
+            distributedSignalAll(signalAllMessage.getLockName(), signalAllMessage.getConditionName());
         } else if(message instanceof ResponseMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
@@ -478,6 +486,38 @@ public final class CloudOrchestrator extends Service<Node> {
         DistributedLock distributedLock = getDistributedLock(path);
         synchronized (distributedLock) {
             distributedLock.notifyAll();
+        }
+    }
+
+    public void signal(String lockName, String conditionName) {
+        SignalMessage signalMessage = new SignalMessage(UUID.randomUUID());
+        signalMessage.setLockName(lockName);
+        signalMessage.setConditionName(conditionName);
+        for (CloudSession session : sessionByNode.values()) {
+            sendMessage(session, signalMessage);
+        }
+    }
+
+    private void distributedSignal(String lockName, String conditionName) {
+        LockImpl lock = (LockImpl) Cloud.getLock(lockName);
+        if(lock != null) {
+            ((LockImpl.ConditionImpl)lock.newCondition(conditionName)).distributedSignal();
+        }
+    }
+
+    public void signalAll(String lockName, String conditionName) {
+        SignalAllMessage signalAllMessage = new SignalAllMessage(UUID.randomUUID());
+        signalAllMessage.setLockName(lockName);
+        signalAllMessage.setConditionName(conditionName);
+        for (CloudSession session : sessionByNode.values()) {
+            sendMessage(session, signalAllMessage);
+        }
+    }
+
+    private void distributedSignalAll(String lockName, String conditionName) {
+        LockImpl lock = (LockImpl) Cloud.getLock(lockName);
+        if(lock != null) {
+            ((LockImpl.ConditionImpl)lock.newCondition(conditionName)).distributedSignalAll();
         }
     }
 

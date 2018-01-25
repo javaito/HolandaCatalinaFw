@@ -51,7 +51,7 @@ public abstract class CloudTimerTask implements Runnable {
                 //the system properties. If not bigger then the value is truncated to the min
                 //value of the system properties.
                 delay = getDelay();
-                if(delay < SystemProperties.getLong(SystemProperties.Cloud.TimerTask.MIN_VALUE_OF_DELAY)) {
+                if (delay < SystemProperties.getLong(SystemProperties.Cloud.TimerTask.MIN_VALUE_OF_DELAY)) {
                     delay = SystemProperties.getLong(SystemProperties.Cloud.TimerTask.MIN_VALUE_OF_DELAY);
                 }
 
@@ -60,7 +60,7 @@ public abstract class CloudTimerTask implements Runnable {
 
                 //Get the timestamp of the las execution of the task in the cloud.
                 lastExecution = timerTaskMap.get(mapName);
-                if(lastExecution == null) {
+                if (lastExecution == null) {
                     //If the last execution timestamp is null then this value is
                     //initialized with the current system timestamp.
                     lastExecution = System.currentTimeMillis();
@@ -77,22 +77,26 @@ public abstract class CloudTimerTask implements Runnable {
                 //If the current timestamp is equals than the las execution timestamp then
                 //this threat is the first in get the lock, for this is in charge to execute the task.
                 currentExecution = timerTaskMap.get(mapName);
-                if(currentExecution.equals(lastExecution)) {
-                    ServiceSession previousSession = ((ServiceThread)Thread.currentThread()).getSession();
+                if (currentExecution.equals(lastExecution)) {
+                    ServiceSession previousSession = ((ServiceThread) Thread.currentThread()).getSession();
                     //Execute the custom logic
                     try {
-                        ((ServiceThread)Thread.currentThread()).setSession(ServiceSession.getSystemSession());
+                        ((ServiceThread) Thread.currentThread()).setSession(ServiceSession.getSystemSession());
                         onRun();
                     } catch (Throwable ex) {
                         onError(ex);
                     } finally {
-                        ((ServiceThread)Thread.currentThread()).setSession(previousSession);
+                        ((ServiceThread) Thread.currentThread()).setSession(previousSession);
                     }
                     //Update the las execution value.
                     timerTaskMap.put(mapName, System.currentTimeMillis());
                 }
                 lock.unlock();
-            } catch (Exception ex){}
+            } catch (InterruptedException ex) {
+                break;
+            } catch (Exception ex){
+                ex.printStackTrace();
+            }
         }
     }
 

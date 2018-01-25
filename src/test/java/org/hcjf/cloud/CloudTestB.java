@@ -2,9 +2,13 @@ package org.hcjf.cloud;
 
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.impl.network.Node;
+import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
 
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -46,6 +50,35 @@ public class CloudTestB {
 
         Map<String, String> testingMap = Cloud.getMap("testing-map");
         Lock lock = Cloud.getLock("testing-lock");
+        Lock mapLock = Cloud.getLock("map-lock");
+        Condition condition = mapLock.newCondition();
+
+        new Thread(() -> {
+            mapLock.lock();
+            while(!Thread.currentThread().isInterrupted()) {
+                System.out.println("Map lock waiting!");
+                try {
+                    condition.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("Map lock notified!");
+                System.out.println(testingMap.entrySet());
+            }
+            mapLock.unlock();
+        }).start();
+
+        Service.run(new CloudTimerTask("testing-cloud-task") {
+            @Override
+            protected Long getDelay() {
+                return 1000L;
+            }
+
+            @Override
+            protected void onRun() {
+                System.out.println("Testing task executed!!!");
+            }
+        }, ServiceSession.getSystemSession());
 
         byte[] buffer = new byte[1024];
         int readSize = 0;
@@ -60,6 +93,7 @@ public class CloudTestB {
 
                 if(arguments[0].equalsIgnoreCase("put") && arguments.length == 3) {
                     testingMap.put(arguments[1], arguments[2]);
+                    condition.signalAll();
                 } else if(arguments[0].equalsIgnoreCase("get") && arguments.length == 2) {
                     System.out.println(testingMap.get(arguments[1]));
                 } else if(arguments[0].equalsIgnoreCase("keys") && arguments.length == 1) {
