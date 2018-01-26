@@ -1,10 +1,12 @@
 package org.hcjf.cloud.timer;
 
 import org.hcjf.cloud.Cloud;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -81,12 +83,15 @@ public abstract class CloudTimerTask implements Runnable {
                     ServiceSession previousSession = ((ServiceThread) Thread.currentThread()).getSession();
                     //Execute the custom logic
                     try {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),"Starting timer task execution %s", name);
                         ((ServiceThread) Thread.currentThread()).setSession(ServiceSession.getSystemSession());
                         onRun();
                     } catch (Throwable ex) {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),"Starting timer task error execution %s", name);
                         onError(ex);
                     } finally {
                         ((ServiceThread) Thread.currentThread()).setSession(previousSession);
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),"Ending timer task execution %s", name);
                     }
                     //Update the las execution value.
                     timerTaskMap.put(mapName, System.currentTimeMillis());
@@ -115,6 +120,6 @@ public abstract class CloudTimerTask implements Runnable {
      * Implements this method in order to process the error.
      * @param throwable Throwable instance.
      */
-    protected void onError(Throwable throwable) {
-    }
+    protected void onError(Throwable throwable) {}
+
 }

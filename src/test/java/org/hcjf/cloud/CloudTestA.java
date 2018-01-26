@@ -81,7 +81,7 @@ public class CloudTestA {
         }, ServiceSession.getSystemSession());
 
         byte[] buffer = new byte[1024];
-        int readSize = 0;
+        int readSize;
         String[] arguments;
         while(!Thread.currentThread().isInterrupted()) {
             try {

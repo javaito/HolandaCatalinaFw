@@ -9,6 +9,7 @@ public class LockMessage extends Message {
 
     private Object[] path;
     private Long timestamp;
+    private Long nanos;
 
     public LockMessage() {
     }
@@ -33,5 +34,13 @@ public class LockMessage extends Message {
     @Override
     public void setTimestamp(Long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public Long getNanos() {
+        return nanos;
+    }
+
+    public void setNanos(Long nanos) {
+        this.nanos = nanos;
     }
 }

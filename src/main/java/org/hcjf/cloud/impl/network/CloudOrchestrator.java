@@ -347,7 +347,8 @@ public final class CloudOrchestrator extends Service<Node> {
         } else if(message instanceof LockMessage) {
             LockMessage lockMessage = (LockMessage) message;
             ResponseMessage responseMessage = new ResponseMessage(lockMessage.getId());
-            responseMessage.setValue(distributedLock(lockMessage.getTimestamp(), lockMessage.getPath()));
+            responseMessage.setValue(distributedLock(lockMessage.getTimestamp(),
+                    lockMessage.getNanos(), lockMessage.getPath()));
             sendMessage(session, responseMessage);
         } else if(message instanceof UnlockMessage) {
             UnlockMessage unlockMessage = (UnlockMessage) message;
@@ -439,6 +440,7 @@ public final class CloudOrchestrator extends Service<Node> {
         lockMessage.setTimestamp(distributedLock.getTimestamp());
         boolean locked;
         while (!distributedLock.getStatus().equals(DistributedLock.Status.LOCKED)) {
+            lockMessage.setNanos(distributedLock.getNanos());
             locked = true;
             for (CloudSession session : sessionByNode.values()) {
                 if (!(locked = locked & (boolean) invoke(session, lockMessage))) {
@@ -451,19 +453,19 @@ public final class CloudOrchestrator extends Service<Node> {
                 distributedLock.setStatus(DistributedLock.Status.WAITING);
                 try {
                     synchronized (distributedLock) {
-                        distributedLock.wait();
+                        distributedLock.wait(1000);
                     }
                 } catch (InterruptedException e) { }
             }
         }
     }
 
-    private boolean distributedLock(Long timestamp, Object... path) {
+    private boolean distributedLock(Long timestamp, Long nanos, Object... path) {
         boolean result;
         DistributedLock distributedLock = getDistributedLock(path);
         synchronized (distributedLock) {
             result = distributedLock.getStatus().equals(DistributedLock.Status.UNLOCKED) ||
-                    distributedLock.getTimestamp() > timestamp;
+                    (distributedLock.getTimestamp() > timestamp && distributedLock.getNanos() > nanos);
         }
         return result;
     }

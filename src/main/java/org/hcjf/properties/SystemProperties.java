@@ -613,7 +613,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME, "10000");
         defaults.put(Cloud.Orchestrator.ACK_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
-        defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "2000");
+        defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "20000");
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "1");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
         defaults.put(Cloud.Orchestrator.ThisNode.VERSION, "0");
@@ -623,7 +623,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");
         defaults.put(Cloud.Orchestrator.Broadcast.INTERFACE_NAME, "eth0");
         defaults.put(Cloud.Orchestrator.Broadcast.PORT, "16000");
-        defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "30000");
+        defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "10000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");
         defaults.put(Cloud.TimerTask.LOCK_SUFFIX_NAME, "hcjf.cloud.timer.task.lock.");

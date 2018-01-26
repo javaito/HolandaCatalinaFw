@@ -6,11 +6,13 @@ package org.hcjf.cloud.impl.objects;
 public class DistributedLock{
 
     private Long timestamp;
+    private Long nanos;
     private Status status;
 
     public DistributedLock() {
         status = Status.UNLOCKED;
         this.timestamp = Long.MAX_VALUE;
+        this.nanos = Long.MAX_VALUE;
     }
 
     public final Status getStatus() {
@@ -20,10 +22,15 @@ public class DistributedLock{
     public final void setStatus(Status status) {
         this.timestamp = System.currentTimeMillis();
         this.status = status;
+        this.nanos = System.nanoTime();
     }
 
     public final Long getTimestamp() {
         return timestamp;
+    }
+
+    public final Long getNanos() {
+        return nanos;
     }
 
     public enum Status {

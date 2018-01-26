@@ -4,6 +4,7 @@ import org.hcjf.cloud.CloudServiceImpl;
 import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
+import org.hcjf.cloud.timer.CloudTimerTask;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -93,6 +94,5 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     @Override
     public void shutdown() {
-
     }
 }
