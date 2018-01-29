@@ -3,6 +3,7 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
+import org.hcjf.events.DistributedEvent;
 
 import java.util.Map;
 import java.util.Queue;
@@ -98,6 +99,12 @@ public interface CloudServiceImpl {
      * @return Instance of cache.
      */
     public CloudCache getCache(String cacheName);
+
+    /**
+     * Dispatch the event instance to the cloud.
+     * @param event Event instance.
+     */
+    public void dispatchEvent(DistributedEvent event);
 
     /**
      * Shutdown hook

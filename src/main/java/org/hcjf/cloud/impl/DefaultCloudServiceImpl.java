@@ -4,7 +4,9 @@ import org.hcjf.cloud.CloudServiceImpl;
 import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
+import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.timer.CloudTimerTask;
+import org.hcjf.events.DistributedEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -90,6 +92,11 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     @Override
     public CloudCache getCache(String cacheName) {
         return null;
+    }
+
+    @Override
+    public void dispatchEvent(DistributedEvent event) {
+        CloudOrchestrator.getInstance().dispatchEvent(event);
     }
 
     @Override

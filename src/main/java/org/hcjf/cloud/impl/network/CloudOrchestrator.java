@@ -4,6 +4,9 @@ import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.cloud.impl.objects.*;
+import org.hcjf.events.DistributedEvent;
+import org.hcjf.events.Events;
+import org.hcjf.events.RemoteEvent;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.log.Log;
@@ -359,6 +362,9 @@ public final class CloudOrchestrator extends Service<Node> {
         } else if(message instanceof SignalAllMessage) {
             SignalAllMessage signalAllMessage = (SignalAllMessage) message;
             distributedSignalAll(signalAllMessage.getLockName(), signalAllMessage.getConditionName());
+        } else if(message instanceof EventMessage) {
+            EventMessage eventMessage = (EventMessage) message;
+            distributedDispatchEvent(eventMessage.getEvent());
         } else if(message instanceof ResponseMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
@@ -521,6 +527,19 @@ public final class CloudOrchestrator extends Service<Node> {
         if(lock != null) {
             ((LockImpl.ConditionImpl)lock.newCondition(conditionName)).distributedSignalAll();
         }
+    }
+
+    public void dispatchEvent(DistributedEvent event) {
+        EventMessage eventMessage = new EventMessage(UUID.randomUUID());
+        eventMessage.setEvent(event);
+        for (CloudSession session : sessionByNode.values()) {
+            sendMessage(session, eventMessage);
+        }
+    }
+
+    private void distributedDispatchEvent(DistributedEvent event) {
+        RemoteEvent remoteEvent = new RemoteEvent(event);
+        Events.sendEvent(remoteEvent);
     }
 
     /**

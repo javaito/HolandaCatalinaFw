@@ -4,6 +4,7 @@ import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
 import org.hcjf.cloud.timer.CloudTimerTask;
+import org.hcjf.events.DistributedEvent;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 
@@ -160,6 +161,14 @@ public final class Cloud extends Service<CloudConsumer> {
      */
     public static CloudCache getCache(String cacheName) {
         return getInstance().impl.getCache(cacheName);
+    }
+
+    /**
+     * Dispatch the event instance to the cloud.
+     * @param event Event instance.
+     */
+    public static void dispatchEvent(DistributedEvent event) {
+        getInstance().impl.dispatchEvent(event);
     }
 
     /**
