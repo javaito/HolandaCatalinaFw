@@ -19,10 +19,12 @@ public class ServiceSession implements Comparable {
 
     private static final SystemSession SYSTEM_SESSION;
     private static final ServiceSession GUEST_SESSION;
+    private static final List<ServiceSessionSource> sources;
 
     static {
         GUEST_SESSION = new GuestSession();
         SYSTEM_SESSION = new SystemSession();
+        sources = new ArrayList<>();
     }
 
     private final UUID id;
@@ -338,6 +340,38 @@ public class ServiceSession implements Comparable {
     }
 
     /**
+     * Add session source into the global repository.
+     * @param source Session source.
+     */
+    public static void addServiceSessionSource(ServiceSessionSource source) {
+        Objects.requireNonNull(source, "Unable to add null source");
+        sources.add(source);
+    }
+
+    /**
+     * Finds the service session using the id of the session.
+     * @param sessionId Id of the session.
+     * @param <S> Expected service session type.
+     * @return Service session.
+     */
+    public static <S extends ServiceSession> S findSession(UUID sessionId) {
+        S result = null;
+        if(sessionId.equals(getSystemSession().getId())) {
+            result = (S) getSystemSession();
+        } else if(sessionId.equals(getGuestSession().getId())) {
+            result = (S) getGuestSession();
+        } else {
+            for (ServiceSessionSource source : sources) {
+                result = source.findSession(sessionId);
+                if (source != null) {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
      * Return the instance of the system session.
      * @return System session.
      */
@@ -452,5 +486,20 @@ public class ServiceSession implements Comparable {
         public boolean isStateful() {
             return stateful;
         }
+    }
+
+    /**
+     * This interface provides the generic gateway to find service session by id
+     */
+    public interface ServiceSessionSource {
+
+        /**
+         * Returns the service session instance indexed by the id parameter.
+         * @param sessionId Id to find the session.
+         * @param <S> Expected session type.
+         * @return Service session instance.
+         */
+        <S extends ServiceSession> S findSession(UUID sessionId);
+
     }
 }

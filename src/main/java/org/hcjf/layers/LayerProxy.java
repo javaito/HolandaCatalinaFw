@@ -16,7 +16,7 @@ public interface LayerProxy {
      * @param params Parameter's method.
      * @return Proxy interceptor instance.
      */
-    public ProxyInterceptor onBeforeInvoke(Method method, Object... params);
+    ProxyInterceptor onBeforeInvoke(Method method, Object... params);
 
     /**
      * This method is called after of layer invocation.
@@ -24,12 +24,12 @@ public interface LayerProxy {
      * @param result Layer's invocation result.
      * @param params Parameter's method.
      */
-    public void onAfterInvoke(Method method, Object result, Object... params);
+    void onAfterInvoke(Method method, Object result, Object... params);
 
     /**
      * This class is the result of the before invoke method.
      */
-    public static class ProxyInterceptor {
+    class ProxyInterceptor {
 
         private final boolean cached;
         private final Object result;

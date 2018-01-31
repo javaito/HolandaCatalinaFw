@@ -49,6 +49,7 @@ public final class SystemProperties extends Properties {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
         public static final String PLUGIN_THREADING_GRANT = "hcjf.layers.plugin.threading.grant";
         public static final String PLUGIN_FILE_ACCESS_GRANT = "hcjf.layers.plugin.file.access.grant";
+        public static final String DISTRIBUTED_LAYER_ENABLED = "hcjf.layers.distributed.layer.enabled";
 
         public static final class Deployment {
             public static final String SERVICE_NAME = "hcjf.layers.deployment.service.name";
@@ -396,6 +397,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Locale.LOG_TAG, "LOCALE");
 
         defaults.put(Layer.LOG_TAG, "LAYER");
+        defaults.put(Layer.DISTRIBUTED_LAYER_ENABLED, "false");
         defaults.put(Layer.Deployment.SERVICE_NAME, "DeploymentService");
         defaults.put(Layer.Deployment.SERVICE_PRIORITY, "0");
         defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_ENABLED, "true");

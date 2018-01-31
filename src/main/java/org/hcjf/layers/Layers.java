@@ -1,5 +1,6 @@
 package org.hcjf.layers;
 
+import org.hcjf.cloud.Cloud;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.plugins.DeploymentService;
 import org.hcjf.layers.plugins.Plugin;
@@ -9,7 +10,6 @@ import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.security.Grants;
 import org.hcjf.service.security.LazyPermission;
 import org.hcjf.service.security.Permission;
 import org.hcjf.service.security.SecurityPermissions;
@@ -19,7 +19,6 @@ import org.hcjf.utils.Version;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.URL;
@@ -74,13 +73,11 @@ public final class Layers {
 
     /**
      * Get from cache the implementation instance or create an instance.
-     * @param layerClass Layer interface class.
      * @param clazz Layer implementation class.
      * @param <L> Expected interface class.
      * @return Return the implementation instance.
      */
-    private static synchronized <L extends LayerInterface> L getImplementationInstance(
-            Class<? extends L> layerClass, Class<? extends Layer> clazz) {
+    private static synchronized <L extends LayerInterface> L getImplementationInstance(Class<? extends Layer> clazz) {
         L result = null;
         result = (L) instance.instanceCache.get(clazz);
         if (result == null) {
@@ -159,16 +156,27 @@ public final class Layers {
             }
 
             if(clazz != null) {
-                result = getImplementationInstance(layerClass, clazz);
+                result = getImplementationInstance(clazz);
             }
         }
 
+        //If not exists some implementation for the combination of layer and name implementation then
+        //going to try with the plugins.
         if(result == null) {
             if (instance.pluginLayerImplementations.containsKey(layerClass)) {
                 String className = instance.pluginLayerImplementations.get(layerClass).get(implName);
                 if (className != null) {
                     result = getPluginImplementationInstance(layerClass, className);
                 }
+            }
+        }
+
+        //If not exists some implementation or plugin then going to check the distributed layers,
+        //if this kind of layers are available.
+        if(result == null) {
+            if (SystemProperties.getBoolean(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED) &&
+                    Cloud.isLayerPublished(layerClass, implName)) {
+
             }
         }
 
@@ -193,8 +201,7 @@ public final class Layers {
             Map<String, Class<? extends Layer>> layersByName =
                     instance.layerImplementations.get(layerClass);
             for(String implName : layersByName.keySet()) {
-                result = getImplementationInstance(
-                        layerClass, layersByName.get(implName));
+                result = getImplementationInstance(layersByName.get(implName));
                 if(matcher.match(result)){
                     break;
                 } else {
@@ -281,6 +288,12 @@ public final class Layers {
             if(layerInstance instanceof Resourceable) {
                 ((Resourceable)layerInstance).createResource(layerInterfaceClass).forEach(
                         R->instance.resources.add(R));
+            }
+
+            if(SystemProperties.getBoolean(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED)) {
+                if (layerInstance instanceof DistributedLayerInterface) {
+                    Cloud.publishDistributedLayer(layerInterfaceClass, implName);
+                }
             }
         }
 

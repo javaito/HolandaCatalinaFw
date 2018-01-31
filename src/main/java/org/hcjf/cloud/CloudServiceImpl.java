@@ -4,7 +4,9 @@ import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
 import org.hcjf.events.DistributedEvent;
+import org.hcjf.layers.LayerInterface;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -12,7 +14,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
- * This clas must be implemented in order to create an
+ * This class must be implemented in order to create an
  * implementation to resolve the cloud interface.
  * @author javaito
  */
@@ -26,7 +28,7 @@ public interface CloudServiceImpl {
      * @param <V> Type of the map's values.
      * @return Return the instance of the distributed map.
      */
-    public <K extends Object, V extends Object> Map<K, V> getMap(String mapName);
+    <K extends Object, V extends Object> Map<K, V> getMap(String mapName);
 
     /**
      * This method provides an implementation of distributed queue. All the nodes
@@ -35,7 +37,7 @@ public interface CloudServiceImpl {
      * @param <V> Type of the queue's values.
      * @return Return the instance of the distributed queue.
      */
-    public <V extends Object> Queue<V> getQueue(String queueName);
+    <V extends Object> Queue<V> getQueue(String queueName);
 
     /**
      * This method provides an implementation of distributed set. All the nodes
@@ -44,7 +46,7 @@ public interface CloudServiceImpl {
      * @param <V> Type of the set's values.
      * @return Return the instance of the distributed set.
      */
-    public <V extends Object> Set<V> getSet(String setName);
+    <V extends Object> Set<V> getSet(String setName);
 
     /**
      * This method provides an implementation of distributed counter. All the nodes
@@ -52,7 +54,7 @@ public interface CloudServiceImpl {
      * @param counterName Name of the counter.
      * @return Return thr instance of the counter.
      */
-    public Counter getCounter(String counterName);
+    Counter getCounter(String counterName);
 
     /**
      * This method takes a resource an lock this for all the thread around the cluster
@@ -61,21 +63,21 @@ public interface CloudServiceImpl {
      * @param resourceName The name of the resource to lock.
      * @throws InterruptedException Interrupted exception
      */
-    public void lock(String resourceName) throws InterruptedException;
+    void lock(String resourceName) throws InterruptedException;
 
     /**
      * This method unlocks a previously locked resource.
      * @param resourceName The name of the resource locked.
      * @throws InterruptedException Interrupted exception.
      */
-    public void unlock(String resourceName) throws InterruptedException;
+    void unlock(String resourceName) throws InterruptedException;
 
     /**
      * Return the implementation of the Lock interface distributed.
      * @param lockName Name of the lock.
      * @return Distributed lock implementation.
      */
-    public Lock getLock(String lockName);
+    Lock getLock(String lockName);
 
     /**
      * Return the distributed lock condition over specific lock object.
@@ -83,7 +85,7 @@ public interface CloudServiceImpl {
      * @param lock Specific lock object.
      * @return Return the lock condition.
      */
-    public Condition getCondition(String conditionName, Lock lock);
+    Condition getCondition(String conditionName, Lock lock);
 
     /**
      * Creates a instance of cache into the cloud using the specific strategy to
@@ -91,24 +93,49 @@ public interface CloudServiceImpl {
      * @param cacheName Name of the cache instance.
      * @param strategies Set with the strategies for the cache instance.
      */
-    public void createCache(String cacheName, Set<CloudCacheStrategy> strategies);
+    void createCache(String cacheName, Set<CloudCacheStrategy> strategies);
 
     /**
      * Return the instance of cache named with specific name.
      * @param cacheName Name of the instance of cache.
      * @return Instance of cache.
      */
-    public CloudCache getCache(String cacheName);
+    CloudCache getCache(String cacheName);
 
     /**
      * Dispatch the event instance to the cloud.
      * @param event Event instance.
      */
-    public void dispatchEvent(DistributedEvent event);
+    void dispatchEvent(DistributedEvent event);
+
+    /**
+     * Publish a distributed layer into the cloud.
+     * @param layerClass Layer class.
+     * @param implName Layer implementation name.
+     */
+    void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName);
+
+    /**
+     * This method verifies if the layer and name indicated are published into the cloud.
+     * @param layerClass Layer class.
+     * @param implName Layer implementation name.
+     * @return Returns true if the layer is published and false in the otherwise.
+     */
+    boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName);
+
+    /**
+     * Invokes the remote instance of a layer.
+     * @param layerClass Layer interface class.
+     * @param method Method to invoke.
+     * @param parameters Parameters to invoke.
+     * @param <O> Expected return data type.
+     * @return Invocation result.
+     */
+    <O extends Object> O layerInvoke(Class<? extends LayerInterface> layerClass, String implName, Method method, Object... parameters);
 
     /**
      * Shutdown hook
      */
-    public void shutdown();
+    void shutdown();
 
 }

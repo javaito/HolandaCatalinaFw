@@ -3,18 +3,26 @@ package org.hcjf.cloud.impl.network;
 import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
-import org.hcjf.cloud.impl.objects.*;
+import org.hcjf.cloud.impl.objects.DistributedLayer;
+import org.hcjf.cloud.impl.objects.DistributedLock;
+import org.hcjf.cloud.impl.objects.DistributedTree;
+import org.hcjf.cloud.impl.objects.RemoteLeaf;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.events.Events;
 import org.hcjf.events.RemoteEvent;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
+import org.hcjf.layers.LayerInterface;
+import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -365,6 +373,10 @@ public final class CloudOrchestrator extends Service<Node> {
         } else if(message instanceof EventMessage) {
             EventMessage eventMessage = (EventMessage) message;
             distributedDispatchEvent(eventMessage.getEvent());
+        } else if(message instanceof PublishLayerMessage) {
+            PublishLayerMessage publishLayerMessage = (PublishLayerMessage) message;
+            DistributedLayer distributedLayer = getDistributedLayer(publishLayerMessage.getPath());
+            distributedLayer.addNode(publishLayerMessage.getNodeId());
         } else if(message instanceof ResponseMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
@@ -410,7 +422,8 @@ public final class CloudOrchestrator extends Service<Node> {
 
     private Object invoke(CloudSession session, Message message) {
         ResponseListener responseListener = new ResponseListener();
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending invoke message: %s", message.getId().toString());
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                "Sending invoke message: %s", message.getId().toString());
         responseListeners.put(message.getId(), responseListener);
         sendMessage(session, message);
         return responseListener.getResponse(message);
@@ -540,6 +553,83 @@ public final class CloudOrchestrator extends Service<Node> {
     private void distributedDispatchEvent(DistributedEvent event) {
         RemoteEvent remoteEvent = new RemoteEvent(event);
         Events.sendEvent(remoteEvent);
+    }
+
+    private DistributedLayer getDistributedLayer(Object... path) {
+        DistributedLayer distributedLayer;
+        synchronized (sharedStore) {
+            distributedLayer = (DistributedLayer) sharedStore.getInstance(path);
+            if (distributedLayer == null) {
+                try {
+                    distributedLayer = new DistributedLayer(Class.forName((String)path[path.length - 2]),
+                            (String)path[path.length - 1]);
+                    addObject(distributedLayer, System.currentTimeMillis(), path);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException();
+                }
+            }
+        }
+        return distributedLayer;
+    }
+
+    public void publishDistributedLayer(Object... path) {
+        getDistributedLayer(path);
+        PublishLayerMessage publishLayerMessage = new PublishLayerMessage();
+        publishLayerMessage.setPath(path);
+        publishLayerMessage.setNodeId(thisNode.getId());
+        for (CloudSession session : sessionByNode.values()) {
+            sendMessage(session, publishLayerMessage);
+        }
+    }
+
+    public <O extends Object> O layerInvoke(Object[] parameters, Method method, Object... path) {
+        O result;
+        DistributedLayer distributedLayer = getDistributedLayer(path);
+        UUID nodeId = distributedLayer.getNodeToInvoke();
+        CloudSession session = null;
+        while (nodeId != null) {
+            session = sessionByNode.get(nodeId);
+            if(session != null) {
+                break;
+            } else {
+                distributedLayer.removeNode(nodeId);
+                nodeId = null;
+            }
+        }
+        if(session != null) {
+            LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage();
+            layerInvokeMessage.setMethodName(method.getName());
+            layerInvokeMessage.setParameterTypes(method.getParameterTypes());
+            layerInvokeMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
+            layerInvokeMessage.setParameters(parameters);
+            layerInvokeMessage.setPath(path);
+            result = (O) invoke(session, layerInvokeMessage);
+        } else {
+            throw new RuntimeException();
+        }
+        return result;
+    }
+
+    public Object distributedLayerInvoke(
+            UUID sessionId, Class[] parameterTypes,
+            Object[] parameters, String methodName, Object... path) {
+        Object result;
+        DistributedLayer distributedLayer = getDistributedLayer(path);
+        Class layerInterface = distributedLayer.getLayerInterface();
+        Map<String, DistributedLayerInvoker> invokers =
+                Introspection.getInvokers(layerInterface, new DistributedLayerInvokerFilter(methodName, parameterTypes));
+        if(invokers.size() == 1) {
+            LayerInterface layer = Layers.get(layerInterface, distributedLayer.getLayerName());
+            try {
+                ServiceSession.getCurrentSession().addIdentity(ServiceSession.findSession(sessionId));
+                result = invokers.values().iterator().next().invoke(layer, parameters);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new RuntimeException();
+        }
+        return result;
     }
 
     /**
@@ -770,6 +860,35 @@ public final class CloudOrchestrator extends Service<Node> {
                 responseMessage = message;
                 notifyAll();
             }
+        }
+    }
+
+    private static final class DistributedLayerInvoker extends Introspection.Invoker {
+
+        public DistributedLayerInvoker(Class implementationClass, Method method) {
+            super(implementationClass, method);
+        }
+
+    }
+
+    private static final class DistributedLayerInvokerFilter implements Introspection.InvokerFilter<CloudOrchestrator.DistributedLayerInvoker> {
+
+        private final String name;
+        private final Class[] parameterTypes;
+
+        public DistributedLayerInvokerFilter(String name, Class[] parameterTypes) {
+            this.name = name;
+            this.parameterTypes = parameterTypes;
+        }
+
+        @Override
+        public Introspection.InvokerEntry<CloudOrchestrator.DistributedLayerInvoker> filter(Method method) {
+            Introspection.InvokerEntry<CloudOrchestrator.DistributedLayerInvoker> result = null;
+            if(method.getName().equalsIgnoreCase(name) && Arrays.equals(parameterTypes, method.getParameterTypes())) {
+                result = new Introspection.InvokerEntry<>(method.getName(),
+                        new CloudOrchestrator.DistributedLayerInvoker(method.getDeclaringClass(), method));
+            }
+            return result;
         }
     }
 }

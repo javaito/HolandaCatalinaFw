@@ -5,9 +5,12 @@ import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
 import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.events.DistributedEvent;
+import org.hcjf.layers.LayerInterface;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -179,18 +182,45 @@ public final class Cloud extends Service<CloudConsumer> {
         getInstance().fork(timerTask);
     }
 
+    /**
+     * Publish a distributed layer into the cloud.
+     * @param layerClass Layer class.
+     * @param implName Layer implementation name.
+     */
+    public static void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName) {
+        getInstance().impl.publishDistributedLayer(layerClass, implName);
+    }
+
+    /**
+     * This method verifies if the layer and name indicated are published into the cloud.
+     * @param layerClass Layer class.
+     * @param implName Layer implementation name.
+     * @return Returns true if the layer is published and false in the otherwise.
+     */
+    public static boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName) {
+        return getInstance().impl.isLayerPublished(layerClass, implName);
+    }
+
+    /**
+     * Invokes the remote instance of a layer.
+     * @param layerClass Layer interface class.
+     * @param method Method to invoke.
+     * @param parameters Parameters to invoke.
+     * @param <O> Expected return data type.
+     * @return Invocation result.
+     */
+    public static <O extends Object> O layerInvoke(Class<? extends LayerInterface> layerClass, String implName, Method method, Object... parameters){
+        return getInstance().impl.layerInvoke(layerClass, implName, method, parameters);
+    }
+
     @Override
     protected void shutdown(ShutdownStage stage) {
         impl.shutdown();
     }
 
     @Override
-    public void registerConsumer(CloudConsumer consumer) {
-
-    }
+    public void registerConsumer(CloudConsumer consumer) { }
 
     @Override
-    public void unregisterConsumer(CloudConsumer consumer) {
-
-    }
+    public void unregisterConsumer(CloudConsumer consumer) { }
 }

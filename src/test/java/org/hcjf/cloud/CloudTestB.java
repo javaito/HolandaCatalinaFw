@@ -3,6 +3,8 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.impl.network.Node;
 import org.hcjf.cloud.timer.CloudTimerTask;
+import org.hcjf.layers.DistributedLayerInterface;
+import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
@@ -121,4 +123,18 @@ public class CloudTestB {
         }
     }
 
+    public static class LayerTestB extends Layer implements DistributedLayerTest, DistributedLayerInterface {
+
+        public LayerTestB() {
+            super("TestB");
+        }
+
+        @Override
+        public String method(String value) {
+            String result = String.format("Result of invoke test B with value %s", value);
+            System.out.println(String.format("Test B invoked with value %s", value));
+            return result;
+        }
+
+    }
 }

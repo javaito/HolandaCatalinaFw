@@ -3,11 +3,13 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.impl.network.Node;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.timer.CloudTimerTask;
+import org.hcjf.layers.DistributedLayerInterface;
+import org.hcjf.layers.Layer;
+import org.hcjf.layers.Layers;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -116,6 +118,11 @@ public class CloudTestC {
                 } else if(arguments[0].equalsIgnoreCase("unlock") && arguments.length == 1) {
                     lock.unlock();
                     System.out.println("Unlocked");
+                } else if(arguments[0].equalsIgnoreCase("publish") && arguments.length == 1) {
+                    Layers.publishLayer(LayerTestC.class);
+                    System.out.println("Layer published");
+                } else if(arguments[0].equalsIgnoreCase("invoke") && arguments.length == 1) {
+
                 }
                 System.out.println("Execution time: " + (System.currentTimeMillis() - time));
             } catch (Exception ex){
@@ -124,4 +131,18 @@ public class CloudTestC {
         }
     }
 
+    public static class LayerTestC extends Layer implements DistributedLayerTest, DistributedLayerInterface {
+
+        public LayerTestC() {
+            super("TestC");
+        }
+
+        @Override
+        public String method(String value) {
+            String result = String.format("Result of invoke test C with value %s", value);
+            System.out.println(String.format("Test C invoked with value %s", value));
+            return result;
+        }
+
+    }
 }
