@@ -3,7 +3,6 @@ package org.hcjf.utils.bson;
 import org.hcjf.bson.*;
 import org.hcjf.utils.Introspection;
 
-import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -115,7 +114,7 @@ public interface BsonParcelable {
                 if(setter != null) {
                     element = document.get(accessors.getResourceName());
                     if(element != null) {
-                        setter.set(this, fromBson(setter.getParameterType(), element));
+                        setter.set(this, fromBson(setter.getParameterType(), setter.getParameterCollectionType(), element));
                     }
                 }
             } catch (Exception ex){}
@@ -129,8 +128,15 @@ public interface BsonParcelable {
      * @param document Bson document to create the map instance.
      * @return Map instance.
      */
-    default Map<String, Object> fromBson(BsonDocument document) {
-        return document.toMap();
+    default Map<String, Object> fromBson(Class expectedMapType, BsonDocument document) {
+        Map<String, Object> result = new HashMap<>();
+        Iterator<String> iterator = document.iterator();
+        String key;
+        while(iterator.hasNext()) {
+            key = iterator.next();
+            result.put(key, fromBson(expectedMapType, null, document.get(key)));
+        }
+        return result;
     }
 
     /**
@@ -138,8 +144,12 @@ public interface BsonParcelable {
      * @param array Bson array to create the collection instance.
      * @return Collection instance.
      */
-    default Collection fromBson(BsonArray array) {
-        return array.toList();
+    default Collection fromBson(Class expectedCollectionType, BsonArray array) {
+        List result = new ArrayList();
+        for (int i = 0; i < array.size(); i++) {
+            result.add(fromBson(expectedCollectionType, null, array.get(i)));
+        }
+        return result;
     }
 
     /**
@@ -148,16 +158,16 @@ public interface BsonParcelable {
      * @param element Bson element.
      * @return Object instance.
      */
-    default Object fromBson(Class expectedDataType, BsonElement element) {
+    default Object fromBson(Class expectedDataType, Class collectionDataType, BsonElement element) {
         Object result;
         if(Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
-            result = fromBson((BsonArray) element);
+            result = fromBson(collectionDataType, (BsonArray) element);
         } else if(expectedDataType.isArray() && element instanceof BsonArray) {
-            Collection collection = fromBson((BsonArray) element);
+            Collection collection = fromBson(expectedDataType.getComponentType(), (BsonArray) element);
             result = collection.toArray((Object[]) Array.newInstance(
                     expectedDataType.getComponentType(), collection.size()));
         } else if(Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
-            result = fromBson((BsonDocument)element);
+            result = fromBson(collectionDataType, (BsonDocument)element);
         } else if(BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
             try {
                 BsonParcelable parcelable = (BsonParcelable) expectedDataType.getConstructor().newInstance();

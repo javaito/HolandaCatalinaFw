@@ -26,6 +26,9 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
+ * This class implements a orchestrator in order to maintains the connection
+ * between nodes, synchronize all the time the node information and admin the
+ * communication between nodes using messages.
  * @author javaito.
  */
 public final class CloudOrchestrator extends Service<Node> {
@@ -63,6 +66,10 @@ public final class CloudOrchestrator extends Service<Node> {
         return instance;
     }
 
+    /**
+     * Init all the collections of the service, a thread for maintain the connections and
+     * other thread to move the cloud wagon instnace.
+     */
     @Override
     protected void init() {
         nodes = new HashSet<>();
@@ -377,6 +384,14 @@ public final class CloudOrchestrator extends Service<Node> {
             PublishLayerMessage publishLayerMessage = (PublishLayerMessage) message;
             DistributedLayer distributedLayer = getDistributedLayer(publishLayerMessage.getPath());
             distributedLayer.addNode(publishLayerMessage.getNodeId());
+        } else if(message instanceof LayerInvokeMessage) {
+            LayerInvokeMessage layerInvokeMessage = (LayerInvokeMessage) message;
+            Object result = distributedLayerInvoke(layerInvokeMessage.getSessionId(),
+                    layerInvokeMessage.getParameterTypes(), layerInvokeMessage.getParameters(),
+                    layerInvokeMessage.getMethodName(), layerInvokeMessage.getPath());
+            ResponseMessage responseMessage = new ResponseMessage(message.getId());
+            responseMessage.setValue(result);
+            sendMessage(session, responseMessage);
         } else if(message instanceof ResponseMessage) {
             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
@@ -572,6 +587,10 @@ public final class CloudOrchestrator extends Service<Node> {
         return distributedLayer;
     }
 
+    public boolean isDistributedLayerPublished(Object... path) {
+        return sharedStore.getInstance(path) != null;
+    }
+
     public void publishDistributedLayer(Object... path) {
         getDistributedLayer(path);
         PublishLayerMessage publishLayerMessage = new PublishLayerMessage();
@@ -597,7 +616,7 @@ public final class CloudOrchestrator extends Service<Node> {
             }
         }
         if(session != null) {
-            LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage();
+            LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage(UUID.randomUUID());
             layerInvokeMessage.setMethodName(method.getName());
             layerInvokeMessage.setParameterTypes(method.getParameterTypes());
             layerInvokeMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());

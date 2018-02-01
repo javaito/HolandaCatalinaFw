@@ -3,7 +3,7 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.impl.network.Node;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.timer.CloudTimerTask;
-import org.hcjf.layers.DistributedLayerInterface;
+import org.hcjf.layers.distributed.DistributedLayerInterface;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.properties.SystemProperties;
@@ -31,6 +31,7 @@ public class CloudTestC {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6164");
 
+        System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");
 
         Node node = new Node();
         node.setLanAddress("172.16.102.45");
@@ -71,64 +72,67 @@ public class CloudTestC {
             mapLock.unlock();
         }).start();
 
-        Service.run(new CloudTimerTask("testing-cloud-task") {
-            @Override
-            protected Long getDelay() {
-                return 1000L;
-            }
+//        Service.run(new CloudTimerTask("testing-cloud-task") {
+//            @Override
+//            protected Long getDelay() {
+//                return 1000L;
+//            }
+//
+//            @Override
+//            protected void onRun() {
+//                System.out.println("Testing task executed!!!");
+//            }
+//        }, ServiceSession.getSystemSession());
 
-            @Override
-            protected void onRun() {
-                System.out.println("Testing task executed!!!");
+        Service.run(()->{
+            byte[] buffer = new byte[1024];
+            int readSize = 0;
+            String[] arguments;
+            while(!Thread.currentThread().isInterrupted()) {
+                try {
+                    System.out.println(": ");
+                    readSize = System.in.read(buffer);
+
+                    long time = System.currentTimeMillis();
+                    arguments = new String(buffer, 0, readSize).trim().split(" ");
+
+                    if(arguments[0].equalsIgnoreCase("put") && arguments.length == 3) {
+                        testingMap.put(arguments[1], arguments[2]);
+                        condition.signalAll();
+                    } else if(arguments[0].equalsIgnoreCase("get") && arguments.length == 2) {
+                        System.out.println(testingMap.get(arguments[1]));
+                    } else if(arguments[0].equalsIgnoreCase("keys") && arguments.length == 1) {
+                        System.out.println(testingMap.keySet().size());
+                        System.out.println(testingMap.keySet());
+                    } else if(arguments[0].equalsIgnoreCase("load") && arguments.length == 1) {
+                        for (int i = 0; i < 5000; i++) {
+                            testingMap.put("nodeC-key" + i, "nodeC-value" + i);
+                        }
+                    } else if(arguments[0].equalsIgnoreCase("size") && arguments.length == 1) {
+                        System.out.println(testingMap.size());
+                    } else if(arguments[0].equalsIgnoreCase("size") && arguments.length == 1) {
+                        System.out.println(testingMap.size());
+                    } else if(arguments[0].equalsIgnoreCase("values") && arguments.length == 1) {
+                        System.out.println(testingMap.values());
+                    } else if(arguments[0].equalsIgnoreCase("lock") && arguments.length == 1) {
+                        lock.lock();
+                        System.out.println("Lock acquired!");
+                    } else if(arguments[0].equalsIgnoreCase("unlock") && arguments.length == 1) {
+                        lock.unlock();
+                        System.out.println("Unlocked");
+                    } else if(arguments[0].equalsIgnoreCase("publish") && arguments.length == 1) {
+                        Layers.publishLayer(LayerTestC.class);
+                        System.out.println("Layer published");
+                    } else if(arguments[0].equalsIgnoreCase("invoke") && arguments.length == 2) {
+                        DistributedLayerTest distributedLayerTest = Layers.get(DistributedLayerTest.class, arguments[1]);
+                        System.out.println("Result: " + distributedLayerTest.method("valueC"));
+                    }
+                    System.out.println("Execution time: " + (System.currentTimeMillis() - time));
+                } catch (Exception ex){
+                    ex.printStackTrace();
+                }
             }
         }, ServiceSession.getSystemSession());
-
-        byte[] buffer = new byte[1024];
-        int readSize = 0;
-        String[] arguments;
-        while(!Thread.currentThread().isInterrupted()) {
-            try {
-                System.out.println(": ");
-                readSize = System.in.read(buffer);
-
-                long time = System.currentTimeMillis();
-                arguments = new String(buffer, 0, readSize).trim().split(" ");
-
-                if(arguments[0].equalsIgnoreCase("put") && arguments.length == 3) {
-                    testingMap.put(arguments[1], arguments[2]);
-                    condition.signalAll();
-                } else if(arguments[0].equalsIgnoreCase("get") && arguments.length == 2) {
-                    System.out.println(testingMap.get(arguments[1]));
-                } else if(arguments[0].equalsIgnoreCase("keys") && arguments.length == 1) {
-                    System.out.println(testingMap.keySet().size());
-                    System.out.println(testingMap.keySet());
-                } else if(arguments[0].equalsIgnoreCase("load") && arguments.length == 1) {
-                    for (int i = 0; i < 5000; i++) {
-                        testingMap.put("nodeC-key" + i, "nodeC-value" + i);
-                    }
-                } else if(arguments[0].equalsIgnoreCase("size") && arguments.length == 1) {
-                    System.out.println(testingMap.size());
-                } else if(arguments[0].equalsIgnoreCase("size") && arguments.length == 1) {
-                    System.out.println(testingMap.size());
-                } else if(arguments[0].equalsIgnoreCase("values") && arguments.length == 1) {
-                    System.out.println(testingMap.values());
-                } else if(arguments[0].equalsIgnoreCase("lock") && arguments.length == 1) {
-                    lock.lock();
-                    System.out.println("Lock acquired!");
-                } else if(arguments[0].equalsIgnoreCase("unlock") && arguments.length == 1) {
-                    lock.unlock();
-                    System.out.println("Unlocked");
-                } else if(arguments[0].equalsIgnoreCase("publish") && arguments.length == 1) {
-                    Layers.publishLayer(LayerTestC.class);
-                    System.out.println("Layer published");
-                } else if(arguments[0].equalsIgnoreCase("invoke") && arguments.length == 1) {
-
-                }
-                System.out.println("Execution time: " + (System.currentTimeMillis() - time));
-            } catch (Exception ex){
-                ex.printStackTrace();
-            }
-        }
     }
 
     public static class LayerTestC extends Layer implements DistributedLayerTest, DistributedLayerInterface {
@@ -145,4 +149,5 @@ public class CloudTestC {
         }
 
     }
+
 }

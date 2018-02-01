@@ -7,7 +7,10 @@ import org.hcjf.cloud.counter.Counter;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.events.DistributedEvent;
+import org.hcjf.layers.Layer;
+import org.hcjf.layers.LayerInterface;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -97,6 +100,21 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     @Override
     public void dispatchEvent(DistributedEvent event) {
         CloudOrchestrator.getInstance().dispatchEvent(event);
+    }
+
+    @Override
+    public void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName) {
+        CloudOrchestrator.getInstance().publishDistributedLayer(Layer.class.getName(), layerClass.getName(), implName);
+    }
+
+    @Override
+    public boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName) {
+        return CloudOrchestrator.getInstance().isDistributedLayerPublished(Layer.class.getName(), layerClass.getName(), implName);
+    }
+
+    @Override
+    public <O> O layerInvoke(Class<? extends LayerInterface> layerClass, String implName, Method method, Object... parameters) {
+        return CloudOrchestrator.getInstance().layerInvoke(parameters, method, Layer.class.getName(), layerClass.getName(), implName);
     }
 
     @Override

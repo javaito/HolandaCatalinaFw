@@ -174,7 +174,7 @@ public abstract class Layer implements LayerInterface {
      * @throws Throwable Throw all the generated exceptions.
      */
     @Override
-    public final Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         //Add one into the executions counter.
         invocationMean.add(1);
 

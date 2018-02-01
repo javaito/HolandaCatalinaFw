@@ -2,6 +2,8 @@ package org.hcjf.layers;
 
 import org.hcjf.cloud.Cloud;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
+import org.hcjf.layers.distributed.DistributedLayer;
+import org.hcjf.layers.distributed.DistributedLayerInterface;
 import org.hcjf.layers.plugins.DeploymentService;
 import org.hcjf.layers.plugins.Plugin;
 import org.hcjf.layers.plugins.PluginClassLoader;
@@ -54,6 +56,7 @@ public final class Layers {
     private final Map<Class<? extends LayerInterface>, Map<String, Class<? extends Layer>>> layerImplementations;
     private final Map<Class<? extends LayerInterface>, String> defaultLayers;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> pluginLayerImplementations;
+    private final Map<Class<? extends LayerInterface>, Map<String, LayerInterface>> distributedLayers;
     private final Map<Class<? extends Layer>, LayerInterface> instanceCache;
     private final Map<String, LayerInterface> pluginWrapperCache;
     private final Map<String, Layer> pluginCache;
@@ -64,6 +67,7 @@ public final class Layers {
         implAlias = new HashMap<>();
         layerImplementations = new HashMap<>();
         pluginLayerImplementations = new HashMap<>();
+        distributedLayers = new HashMap<>();
         defaultLayers = new HashMap<>();
         instanceCache = new HashMap<>();
         pluginWrapperCache = new HashMap<>();
@@ -125,6 +129,30 @@ public final class Layers {
     }
 
     /**
+     * Gets from cache the distributed layer implementation instance or create a new instance
+     * for the combination of this class and implementation name.
+     * @param layerClass Layer interface to obtain.
+     * @param layerName Layer implementation name.
+     * @param <L> Expected layer type.
+     * @return Returns the implementation of distributed layer.
+     */
+    private static synchronized <L extends LayerInterface> L getDistributedImplementationInstance(
+            Class<? extends L> layerClass, String layerName) {
+        L result;
+        if(!instance.distributedLayers.containsKey(layerClass)) {
+            instance.distributedLayers.put(layerClass, new HashMap<>());
+        }
+
+        result = (L) instance.distributedLayers.get(layerClass).get(layerName);
+        if(result == null) {
+            result = (L) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
+                    new Class[]{layerClass}, new DistributedLayer(layerName, layerClass));
+            instance.distributedLayers.get(layerClass).put(layerName, result);
+        }
+        return result;
+    }
+
+    /**
      * Return the layer interface implementation indexed by implName parameter.
      * @param layerClass Layer interface for the expected implementation.
      * @param implName Implementation name.
@@ -176,7 +204,7 @@ public final class Layers {
         if(result == null) {
             if (SystemProperties.getBoolean(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED) &&
                     Cloud.isLayerPublished(layerClass, implName)) {
-
+                result = getDistributedImplementationInstance(layerClass, implName);
             }
         }
 
