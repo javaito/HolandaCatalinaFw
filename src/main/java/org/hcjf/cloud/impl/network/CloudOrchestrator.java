@@ -12,6 +12,7 @@ import org.hcjf.events.Events;
 import org.hcjf.events.RemoteEvent;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
+import org.hcjf.io.net.broadcast.BroadcastService;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
@@ -106,17 +107,34 @@ public final class CloudOrchestrator extends Service<Node> {
         fork(this::initWagon);
         server = new CloudServer();
         server.start();
+
+        try {
+            for (Node node : SystemProperties.getObjects(SystemProperties.Cloud.Orchestrator.NODES, Node.class)) {
+                registerConsumer(node);
+            }
+        } catch (Exception ex) {
+            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Load nodes from properties fail", ex);
+        }
+
+        if(SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.Broadcast.ENABLED)) {
+            CloudBroadcastConsumer broadcastConsumer = new CloudBroadcastConsumer();
+            BroadcastService.getInstance().registerConsumer(broadcastConsumer);
+        }
     }
 
+    /**
+     * Register a new node into the cluster.
+     * @param node Node to add.
+     */
     @Override
     public void registerConsumer(Node node) {
         String lanId = node.getLanId();
         String wanId = node.getWanId();
         boolean add = true;
-        if(lanId != null && nodesByLanId.containsKey(lanId)) {
+        if(lanId != null && (thisNode.getLanId().equalsIgnoreCase(lanId) || nodesByLanId.containsKey(lanId))) {
             add = false;
         }
-        if(wanId != null && nodesByWanId.containsKey(wanId)) {
+        if(wanId != null && (thisNode.getWanId().equalsIgnoreCase(wanId) || nodesByWanId.containsKey(wanId))) {
             add = false;
         }
         if(add) {
@@ -134,10 +152,14 @@ public final class CloudOrchestrator extends Service<Node> {
 
     @Override
     public void unregisterConsumer(Node node) {
-
     }
 
-    private void addNode(Node node, CloudSession session) {
+    /**
+     * This method is called when a node is connected.
+     * @param node Node connected.
+     * @param session Net session assigned to the connected node.
+     */
+    private void nodeConnected(Node node, CloudSession session) {
         synchronized (sessionByNode) {
             sessionByNode.put(node.getId(), session);
             sortedNodes.add(node);
@@ -145,7 +167,11 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
-    private void removeNode(Node node) {
+    /**
+     * This method is called when a node is disconnected.
+     * @param node node disconnected.
+     */
+    private void nodeDisconnected(Node node) {
         synchronized (sessionByNode) {
             sessionByNode.remove(node.getId());
             sortedNodes.remove(node);
@@ -154,6 +180,9 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
+    /**
+     * Prints a log record that show the information about all the connected nodes.
+     */
     private void printNodes() {
         synchronized (sessionByNode) {
             Strings.Builder builder = new Strings.Builder();
@@ -168,6 +197,10 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
+    /**
+     * This method is called into a new service thread in order to try to establish a connection
+     * for each node registered into the cloud service.
+     */
     private void maintainConnections() {
         while(!Thread.currentThread().isInterrupted()) {
             for(Node node : nodes) {
@@ -206,6 +239,9 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
+    /**
+     *
+     */
     private void initWagon() {
         while(!Thread.currentThread().isInterrupted()) {
             try {
@@ -253,7 +289,7 @@ public final class CloudOrchestrator extends Service<Node> {
         synchronized (sessionByNode) {
             for(Node node : sortedNodes) {
                 if(sessionByNode.get(node.getId()).equals(session)) {
-                    removeNode(node);
+                    nodeDisconnected(node);
                     break;
                 }
             }
@@ -293,7 +329,7 @@ public final class CloudOrchestrator extends Service<Node> {
                     ((CloudClient)session.getConsumer()).disconnect();
                 } else {
                     Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
-                    addNode(node, session);
+                    nodeConnected(node, session);
                     Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
                             node.getLanAddress(), node.getLanPort());
                     sendMessage(session, new AckMessage(message));
@@ -406,7 +442,7 @@ public final class CloudOrchestrator extends Service<Node> {
                 if(node != null) {
                     if(connected(node)) {
                         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as server %s", node);
-                        addNode(node, session);
+                        nodeConnected(node, session);
                     }
                 }
             }

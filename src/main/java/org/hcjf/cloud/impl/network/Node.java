@@ -38,7 +38,6 @@ public class Node implements ServiceConsumer, BsonParcelable {
     private Integer wanPort;
     private Status status;
     private boolean localNode;
-    private UUID waitForId;
 
     public Node() {
         status = Status.DISCONNECTED;

@@ -1,5 +1,6 @@
 package org.hcjf.cloud.impl.network;
 
+import org.hcjf.io.net.InetPortProvider;
 import org.hcjf.io.net.broadcast.BroadcastConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
 import org.hcjf.properties.SystemProperties;
@@ -44,7 +45,7 @@ public class CloudBroadcastConsumer implements BroadcastConsumer {
 
     @Override
     public Integer getPort() {
-        return SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.Broadcast.PORT);
+        return InetPortProvider.getUdpPort(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.Broadcast.PORT));
     }
 
     @Override

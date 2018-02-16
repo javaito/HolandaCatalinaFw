@@ -20,7 +20,7 @@ import java.util.concurrent.locks.Lock;
 public class CloudTestB {
 
     public static void main(String[] args) {
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
@@ -30,19 +30,9 @@ public class CloudTestB {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-B");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6163");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.NODES, "{172.16.102.45:6162,172.16.102.45:6163,172.16.102.45:6164}");
 
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");
-
-        Node node = new Node();
-        node.setLanAddress("172.16.102.45");
-        node.setLanPort(6162);
-        CloudOrchestrator.getInstance().registerConsumer(node);
-
-        node = new Node();
-        node.setLanAddress("172.16.102.45");
-        node.setLanPort(6164);
-        CloudOrchestrator.getInstance().registerConsumer(node);
-
 
         try {
             Thread.sleep(20000);

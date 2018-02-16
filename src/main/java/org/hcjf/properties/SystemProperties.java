@@ -1,11 +1,10 @@
 package org.hcjf.properties;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import org.hcjf.cloud.impl.DefaultCloudServiceImpl;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
 
+import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -327,6 +326,7 @@ public final class SystemProperties extends Properties {
             public static final String WAGON_TIMEOUT = "hcjf.cloud.orchestrator.wagon.timeout";
             public static final String INVOKE_TIMEOUT = "hcjf.cloud.orchestrator.invoke.timeout";
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
+            public static final String NODES = "hcjf.cloud.orchestrator.nodes";
 
             public static final class ThisNode {
                 public static final String NAME = "hcjf.cloud.orchestrator.this.node.name";
@@ -338,6 +338,7 @@ public final class SystemProperties extends Properties {
             }
 
             public static final class Broadcast {
+                public static final String ENABLED = "hcjf.cloud.orchestrator.broadcast.enabled";
                 public static final String TASK_NAME = "hcjf.cloud.orchestrator.broadcast.task.name";
                 public static final String IP_VERSION = "hcjf.cloud.orchestrator.broadcast.ip.version";
                 public static final String INTERFACE_NAME = "hcjf.cloud.orchestrator.broadcast.interface.name";
@@ -372,11 +373,13 @@ public final class SystemProperties extends Properties {
 
     private final Map<String, Object> instancesCache;
     private final JsonParser jsonParser;
+    private final Gson gson;
 
     private SystemProperties() {
         super(new Properties());
         instancesCache = new HashMap<>();
         jsonParser = new JsonParser();
+        gson = new Gson();
 
         defaults.put(HCJF_DEFAULT_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
         defaults.put(HCJF_DEFAULT_NUMBER_FORMAT, "0.000");
@@ -617,10 +620,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
         defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "20000");
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "1");
+        defaults.put(Cloud.Orchestrator.NODES, "[]");
+        defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
         defaults.put(Cloud.Orchestrator.ThisNode.VERSION, "0");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "127.0.0.1");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "9090");
+        defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");
         defaults.put(Cloud.Orchestrator.Broadcast.INTERFACE_NAME, "eth0");
@@ -1002,6 +1008,44 @@ public final class SystemProperties extends Properties {
                             + propertyName + ":" + propertyValue + "'", ex);
                 }
             }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the implementation object expected for the specific object type.
+     * @param propertyName Name of the property.
+     * @param objectType Object type.
+     * @param <O> Expected object instance.
+     * @return Object instance.
+     */
+    public static <O extends Object> O getObject(String propertyName, Class<O> objectType) {
+        try {
+            return  instance.gson.fromJson(get(propertyName), objectType);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("The property value has not a json object valid to create the instance: '"
+                    + propertyName + ":" + objectType + "'", ex);
+        }
+    }
+
+    /**
+     * Returns a list of expected object instances for the specific object type.
+     * @param propertyName Name of the property.
+     * @param objectType Object type.
+     * @param <O> Expected object instance.
+     * @return Object instances.
+     */
+    public static <O extends Object> List<O> getObjects(String propertyName, Class<O> objectType) {
+        List<O> result = new ArrayList<>();
+        try {
+            JsonArray array = (JsonArray) instance.jsonParser.parse(get(propertyName));
+            Iterator<JsonElement> iterator = array.iterator();
+            while(iterator.hasNext()) {
+                result.add(instance.gson.fromJson(iterator.next(), objectType));
+            }
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("The property value has not a json object valid to create the instance: '"
+                    + propertyName + ":" + objectType + "'", ex);
         }
         return result;
     }

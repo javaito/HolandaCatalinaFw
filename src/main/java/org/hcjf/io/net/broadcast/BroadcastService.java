@@ -3,6 +3,7 @@ package org.hcjf.io.net.broadcast;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
+import org.hcjf.io.net.InetPortProvider;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -19,6 +20,7 @@ import java.time.temporal.ChronoField;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * This service provides capabilities to register broadcast task in order to notify
@@ -32,6 +34,7 @@ public class BroadcastService extends Service<BroadcastConsumer> {
     private static final String IP_PROTOCOL_VERSION_6 = "6";
 
     private static final BroadcastService instance;
+    private static final UUID instanceId;
 
     private Map<String, BroadcastInterface> interfaces;
     private BroadcastSender sender;
@@ -42,6 +45,7 @@ public class BroadcastService extends Service<BroadcastConsumer> {
 
     static {
         instance = new BroadcastService(SystemProperties.get(SystemProperties.Net.Broadcast.SERVICE_NAME));
+        instanceId = UUID.randomUUID();
     }
 
     private BroadcastService(String serviceName) {
@@ -262,13 +266,18 @@ public class BroadcastService extends Service<BroadcastConsumer> {
                         pingMessage = new PingMessage();
                         pingMessage.setTaskName(consumer.getTaskName());
                         pingMessage.setHost(broadcastInterface.getLocalAddress().getHostName());
+                        pingMessage.setPort(broadcastInterface.getPort());
+                        pingMessage.setInstanceId(instanceId);
                         pingMessage.setTimestamp(instant.toEpochMilli());
                         pingMessage.setSignature(instance.sign(consumer.getTaskName(),consumer.getPrivateKey(), hour + minute));
                         pingMessage.setCustomParameters(consumer.getPingParameters());
                         byte[] body =  instance.encode(pingMessage);
-                        DatagramPacket packet = new DatagramPacket(body, body.length,
-                                broadcastInterface.getBroadcastAddress(), broadcastInterface.getPort());
-                        broadcastInterface.getBroadcastSocket().send(packet);
+                        DatagramPacket packet;
+                        for (int i = broadcastInterface.getPort(); i < broadcastInterface.getPort() + 10; i++) {
+                            packet = new DatagramPacket(body, body.length,
+                                    broadcastInterface.getBroadcastAddress(), i);
+                            broadcastInterface.getBroadcastSocket().send(packet);
+                        }
                     } catch (Exception ex) {
                         Log.w(SystemProperties.get(SystemProperties.Net.Broadcast.LOG_TAG),
                                 "", ex);
@@ -295,6 +304,8 @@ public class BroadcastService extends Service<BroadcastConsumer> {
                     shutdownMessage = new ShutdownMessage();
                     shutdownMessage.setTaskName(consumer.getTaskName());
                     shutdownMessage.setHost(broadcastInterface.getLocalAddress().getHostName());
+                    shutdownMessage.setPort(broadcastInterface.getPort());
+                    shutdownMessage.setInstanceId(instanceId);
                     shutdownMessage.setTimestamp(instant.toEpochMilli());
                     shutdownMessage.setSignature(instance.sign(consumer.getTaskName(),consumer.getPrivateKey(), hour + minute));
                     shutdownMessage.setCustomParameters(consumer.getPingParameters());
@@ -351,7 +362,7 @@ public class BroadcastService extends Service<BroadcastConsumer> {
                     BroadcastConsumer consumer = consumers.get(broadcastMessage.getTaskName());
 
                     if(broadcastMessage instanceof PingMessage) {
-                        if(!broadcastMessage.getHost().equals(broadcastInterface.getLocalAddress().getHostName())) {
+                        if(!broadcastMessage.getInstanceId().equals(instanceId)) {
                             consumer.onPing((PingMessage) broadcastMessage);
 
                             instant = Instant.now();
@@ -363,6 +374,8 @@ public class BroadcastService extends Service<BroadcastConsumer> {
                             PongMessage pongMessage = new PongMessage();
                             pongMessage.setTaskName(consumer.getTaskName());
                             pongMessage.setHost(broadcastInterface.getLocalAddress().getHostName());
+                            pongMessage.setPort(broadcastInterface.getPort());
+                            pongMessage.setInstanceId(instanceId);
                             pongMessage.setTimestamp(instant.toEpochMilli());
                             pongMessage.setSignature(instance.sign(consumer.getTaskName(),consumer.getPrivateKey(), hour + minute));
                             pongMessage.setCustomParameters(consumer.getPingParameters());
@@ -486,8 +499,10 @@ public class BroadcastService extends Service<BroadcastConsumer> {
 
         private String taskName;
         private String host;
+        private Integer port;
         private Long timestamp;
         private String signature;
+        private UUID instanceId;
         private Map<String,Object> customParameters;
 
         /**
@@ -523,6 +538,22 @@ public class BroadcastService extends Service<BroadcastConsumer> {
         }
 
         /**
+         * Returns the port number.
+         * @return Port number.
+         */
+        public Integer getPort() {
+            return port;
+        }
+
+        /**
+         * Set the port number.
+         * @param port Port number.
+         */
+        public void setPort(Integer port) {
+            this.port = port;
+        }
+
+        /**
          * Returns the creation timestamp.
          * @return Creation timestamp.
          */
@@ -554,6 +585,13 @@ public class BroadcastService extends Service<BroadcastConsumer> {
             this.signature = signature;
         }
 
+        public UUID getInstanceId() {
+            return instanceId;
+        }
+
+        public void setInstanceId(UUID instanceId) {
+            this.instanceId = instanceId;
+        }
 
         public Map<String, Object> getCustomParameters() {
             return customParameters;

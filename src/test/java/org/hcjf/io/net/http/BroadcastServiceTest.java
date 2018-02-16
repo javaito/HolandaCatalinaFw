@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.io.net.InetPortProvider;
 import org.hcjf.io.net.broadcast.BroadcastConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
 import org.hcjf.properties.SystemProperties;
@@ -44,12 +45,12 @@ public class BroadcastServiceTest {
 
         @Override
         public String getNetInterfaceName() {
-            return "eth0";
+            return "eno1";
         }
 
         @Override
         public Integer getPort() {
-            return 10025;
+            return InetPortProvider.getUdpPort(10025);
         }
 
         @Override
