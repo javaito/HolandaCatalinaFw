@@ -10,12 +10,10 @@ import java.util.UUID;
 public abstract class DistributedLeaf implements DistributedObject {
 
     private final Object key;
-    private final Set<UUID> nodes;
     private Long lastUpdate;
 
     public DistributedLeaf(Object key) {
         this.key = key;
-        this.nodes = new HashSet<>();
     }
 
     @Override

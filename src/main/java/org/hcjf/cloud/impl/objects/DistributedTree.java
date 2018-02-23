@@ -58,6 +58,8 @@ public class DistributedTree implements DistributedObject {
             if(leaf != null) {
                 if(leaf.getLastUpdate() < timestamp) {
                     ((DistributedTree) instance).branches.put(key, result);
+                } else {
+                    result = (LocalLeaf) branches.get(key);
                 }
             } else {
                 ((DistributedTree) instance).branches.put(key, result);

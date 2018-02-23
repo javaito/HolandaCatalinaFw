@@ -30,7 +30,12 @@ public class CloudTestC {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-C");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6164");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.NODES, "[{lanAddress:172.16.102.45,lanPort:6162},{lanAddress:172.16.102.45,lanPort:6163},{lanAddress:172.16.102.45,lanPort:6164}]");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.NODES,
+                "[" +
+                    "{lanAddress:172.16.102.45,lanPort:6162}," +
+                    "{lanAddress:172.16.102.45,lanPort:6163}," +
+                    "{lanAddress:172.16.102.45,lanPort:6164}" +
+                "]");
 
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");
 

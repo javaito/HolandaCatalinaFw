@@ -48,6 +48,8 @@ public final class CloudOrchestrator extends Service<Node> {
     private Set<Node> sortedNodes;
     private Map<UUID, Node> waitingAck;
     private Map<UUID, ResponseListener> responseListeners;
+    private List<Object[]> localObjects;
+    private List<Object[]> localLayers;
 
     private CloudWagonMessage wagonMessage;
     private Object wagonMonitor;
@@ -80,6 +82,8 @@ public final class CloudOrchestrator extends Service<Node> {
         sortedNodes = new TreeSet<>(Comparator.comparing(Node::getId));
         waitingAck = new HashMap<>();
         responseListeners = new HashMap<>();
+        localObjects = new ArrayList<>();
+        localLayers = new ArrayList<>();
 
         thisNode = new Node();
         thisNode.setId(UUID.randomUUID());
@@ -165,6 +169,12 @@ public final class CloudOrchestrator extends Service<Node> {
             sortedNodes.add(node);
             printNodes();
         }
+
+        fork(() -> {
+            for(Object[] path : localObjects) {
+
+            }
+        });
     }
 
     /**
@@ -186,7 +196,7 @@ public final class CloudOrchestrator extends Service<Node> {
     private void printNodes() {
         synchronized (sessionByNode) {
             Strings.Builder builder = new Strings.Builder();
-            builder.append(Strings.START_SUB_GROUP).append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+            builder.append(Strings.START_SUB_GROUP);
             for (Node node : sortedNodes) {
                 builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
                 builder.append(Strings.TAB).append(node.toJson(), Strings.ARGUMENT_SEPARATOR);
@@ -371,8 +381,11 @@ public final class CloudOrchestrator extends Service<Node> {
                 wagonMessage = (CloudWagonMessage) message;
                 sendMessage(session, new AckMessage(message));
 
-                for(Message messageOfWagon : wagonMessage.getMessages().remove(thisNode.getId().toString())) {
-                    incomingMessage(session, messageOfWagon);
+                List<Message> wagonMessages = wagonMessage.getMessages().remove(thisNode.getId().toString());
+                if(wagonMessages != null) {
+                    for (Message messageOfWagon : wagonMessages) {
+                        incomingMessage(session, messageOfWagon);
+                    }
                 }
             }
         } else if(message instanceof HidePathMessage) {
@@ -665,7 +678,7 @@ public final class CloudOrchestrator extends Service<Node> {
         return result;
     }
 
-    public Object distributedLayerInvoke(
+    private Object distributedLayerInvoke(
             UUID sessionId, Class[] parameterTypes,
             Object[] parameters, String methodName, Object... path) {
         Object result;
