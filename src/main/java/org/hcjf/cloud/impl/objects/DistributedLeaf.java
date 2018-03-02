@@ -11,9 +11,11 @@ public abstract class DistributedLeaf implements DistributedObject {
 
     private final Object key;
     private Long lastUpdate;
+    private final Set<UUID> nodes;
 
     public DistributedLeaf(Object key) {
         this.key = key;
+        this.nodes = new HashSet<>();
     }
 
     @Override
@@ -27,5 +29,9 @@ public abstract class DistributedLeaf implements DistributedObject {
 
     public final void setLastUpdate(Long lastUpdate) {
         this.lastUpdate = lastUpdate;
+    }
+
+    public Set<UUID> getNodes() {
+        return nodes;
     }
 }

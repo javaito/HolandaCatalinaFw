@@ -48,6 +48,8 @@ public abstract class CloudTimerTask implements Runnable {
         Long currentExecution;
         Long delay;
         while(!Thread.currentThread().isInterrupted()) {
+            //Try to block the task with the same name in the cloud.
+            lock.lock();
             try {
                 //Verify if the delay value of the task is grater than the min value of
                 //the system properties. If not bigger then the value is truncated to the min
@@ -56,9 +58,6 @@ public abstract class CloudTimerTask implements Runnable {
                 if (delay < SystemProperties.getLong(SystemProperties.Cloud.TimerTask.MIN_VALUE_OF_DELAY)) {
                     delay = SystemProperties.getLong(SystemProperties.Cloud.TimerTask.MIN_VALUE_OF_DELAY);
                 }
-
-                //Try to block the task with the same name in the cloud.
-                lock.lock();
 
                 //Get the timestamp of the las execution of the task in the cloud.
                 lastExecution = timerTaskMap.get(mapName);
@@ -96,11 +95,12 @@ public abstract class CloudTimerTask implements Runnable {
                     //Update the las execution value.
                     timerTaskMap.put(mapName, System.currentTimeMillis());
                 }
-                lock.unlock();
             } catch (InterruptedException ex) {
                 break;
             } catch (Exception ex){
                 ex.printStackTrace();
+            } finally {
+                lock.unlock();
             }
         }
     }

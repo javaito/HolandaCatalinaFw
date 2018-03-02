@@ -17,6 +17,38 @@ public class DistributedTree implements DistributedObject {
         this.lastUpdate = System.currentTimeMillis();
     }
 
+    public final List<Entry> filter(Class<? extends DistributedObject>... predicate) {
+        List<Entry> result = new ArrayList<>();
+        List<Object> path = new ArrayList<>();
+        return filter(path, result, predicate);
+    }
+
+    public final List<Entry> filter(List<Object> path, List<Entry> result, Class<? extends DistributedObject>... predicate) {
+        DistributedObject value;
+        for(Object key : branches.keySet()) {
+            value = branches.get(key);
+            path.add(key);
+            if(value instanceof DistributedTree) {
+                ((DistributedTree)value).filter(path, result, predicate);
+            } else if(evaluatePredicate(value.getClass(), predicate)) {
+                result.add(new Entry(path.toArray(), value));
+            }
+            path.remove(path.size() - 1);
+        }
+        return result;
+    }
+
+    private boolean evaluatePredicate(Class currentClass, Class<? extends DistributedObject>... predicate) {
+        boolean result = true;
+        for(Class<? extends DistributedObject> predicateClass : predicate) {
+            result = predicateClass.isAssignableFrom(currentClass);
+            if(!result) {
+                break;
+            }
+        }
+        return result;
+    }
+
     @Override
     public final Object getKey() {
         return key;
@@ -43,7 +75,7 @@ public class DistributedTree implements DistributedObject {
         return branches.keySet();
     }
 
-    public final synchronized LocalLeaf add(Object object, Long timestamp, Object... path) {
+    public final synchronized LocalLeaf add(Object object, List<UUID> nodes, Long timestamp, Object... path) {
         Objects.requireNonNull(object, "Null distributed object");
         LocalLeaf result;
         createPath(0, path.length - 1, path);
@@ -53,6 +85,7 @@ public class DistributedTree implements DistributedObject {
             result = new LocalLeaf(key);
             result.setLastUpdate(lastUpdate);
             result.setInstance(object);
+            result.getNodes().addAll(nodes);
 
             DistributedLeaf leaf = (DistributedLeaf) branches.get(key);
             if(leaf != null) {
@@ -78,14 +111,17 @@ public class DistributedTree implements DistributedObject {
             Object key = path[path.length-1];
             result = new RemoteLeaf(key);
             result.setLastUpdate(lastUpdate);
-            RemoteLeaf.RemoteValue remoteValue = new RemoteLeaf.RemoteValue();
-            remoteValue.setNodes(nodes);
-            result.setRemoteValue(remoteValue);
+            result.getNodes().addAll(nodes);
 
             DistributedLeaf leaf = (DistributedLeaf) branches.get(key);
             if(leaf != null) {
                 if(leaf.getLastUpdate() < timestamp) {
-                    ((DistributedTree) instance).branches.put(key, result);
+                    if(leaf instanceof RemoteLeaf) {
+                        RemoteLeaf currentLeaf = (RemoteLeaf) leaf;
+                        currentLeaf.getNodes().addAll(result.getNodes());
+                    } else {
+                        ((DistributedTree) instance).branches.put(key, result);
+                    }
                 }
             } else {
                 ((DistributedTree) instance).branches.put(key, result);
@@ -167,5 +203,24 @@ public class DistributedTree implements DistributedObject {
         }
 
         return result;
+    }
+
+    public static class Entry {
+
+        private final Object[] path;
+        private final DistributedObject value;
+
+        public Entry(Object[] path, DistributedObject value) {
+            this.path = path;
+            this.value = value;
+        }
+
+        public Object[] getPath() {
+            return path;
+        }
+
+        public DistributedObject getValue() {
+            return value;
+        }
     }
 }

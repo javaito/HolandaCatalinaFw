@@ -2,7 +2,9 @@ package org.hcjf.cloud.impl.objects;
 
 import org.hcjf.utils.bson.BsonParcelable;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -10,38 +12,14 @@ import java.util.UUID;
  */
 public final class RemoteLeaf extends DistributedLeaf {
 
-    private RemoteValue remoteValue;
 
     public RemoteLeaf(Object key) {
         super(key);
     }
 
-    public RemoteValue getRemoteValue() {
-        return remoteValue;
-    }
-
-    public void setRemoteValue(RemoteValue remoteValue) {
-        this.remoteValue = remoteValue;
-    }
-
     @Override
     public Object getInstance() {
-        return remoteValue;
+        return this;
     }
 
-    public static final class RemoteValue implements BsonParcelable {
-
-        private List<UUID> nodes;
-
-        public RemoteValue() {
-        }
-
-        public List<UUID> getNodes() {
-            return nodes;
-        }
-
-        public void setNodes(List<UUID> nodes) {
-            this.nodes = nodes;
-        }
-    }
 }

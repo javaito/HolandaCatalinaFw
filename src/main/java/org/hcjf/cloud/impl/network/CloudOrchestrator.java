@@ -3,10 +3,7 @@ package org.hcjf.cloud.impl.network;
 import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
-import org.hcjf.cloud.impl.objects.DistributedLayer;
-import org.hcjf.cloud.impl.objects.DistributedLock;
-import org.hcjf.cloud.impl.objects.DistributedTree;
-import org.hcjf.cloud.impl.objects.RemoteLeaf;
+import org.hcjf.cloud.impl.objects.*;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.events.Events;
 import org.hcjf.events.RemoteEvent;
@@ -48,8 +45,6 @@ public final class CloudOrchestrator extends Service<Node> {
     private Set<Node> sortedNodes;
     private Map<UUID, Node> waitingAck;
     private Map<UUID, ResponseListener> responseListeners;
-    private List<Object[]> localObjects;
-    private List<Object[]> localLayers;
 
     private CloudWagonMessage wagonMessage;
     private Object wagonMonitor;
@@ -82,8 +77,6 @@ public final class CloudOrchestrator extends Service<Node> {
         sortedNodes = new TreeSet<>(Comparator.comparing(Node::getId));
         waitingAck = new HashMap<>();
         responseListeners = new HashMap<>();
-        localObjects = new ArrayList<>();
-        localLayers = new ArrayList<>();
 
         thisNode = new Node();
         thisNode.setId(UUID.randomUUID());
@@ -170,11 +163,37 @@ public final class CloudOrchestrator extends Service<Node> {
             printNodes();
         }
 
-        fork(() -> {
-            for(Object[] path : localObjects) {
+        fork(() -> reorganize(node, session));
+    }
 
+    /**
+     *
+     * @param node
+     * @param session
+     */
+    private void reorganize(Node node, CloudSession session) {
+        LocalLeaf localLeaf;
+        Object[] path;
+        List<UUID> nodes = List.of(thisNode.getId());
+        for(DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
+            localLeaf = (LocalLeaf) entry.getValue();
+            path = entry.getPath();
+            if(localLeaf.getInstance() instanceof DistributedLayer) {
+                PublishLayerMessage publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
+                publishLayerMessage.setPath(path);
+                publishLayerMessage.setNodeId(thisNode.getId());
+                sendMessage(session, publishLayerMessage);
+            } else if(localLeaf.getInstance() instanceof DistributedLock) {
+                //Mmmm!!!!
+            } else {
+                PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
+                publishObjectMessage.setPath(path);
+                publishObjectMessage.setTimestamp(localLeaf.getLastUpdate());
+                publishObjectMessage.setNodes(nodes);
+
+                sendMessage(session, publishObjectMessage);
             }
-        });
+        }
     }
 
     /**
@@ -395,7 +414,7 @@ public final class CloudOrchestrator extends Service<Node> {
         } else if(message instanceof PublishObjectMessage) {
             PublishObjectMessage publishObjectMessage = (PublishObjectMessage) message;
             if (publishObjectMessage.getValue() != null) {
-                addObject(publishObjectMessage.getValue(), publishObjectMessage.getTimestamp(), publishObjectMessage.getPath());
+                addObject(publishObjectMessage.getValue(), publishObjectMessage.getNodes(), publishObjectMessage.getTimestamp(), publishObjectMessage.getPath());
             } else {
                 addObject(publishObjectMessage.getTimestamp(), publishObjectMessage.getNodes(), publishObjectMessage.getPath());
             }
@@ -404,7 +423,7 @@ public final class CloudOrchestrator extends Service<Node> {
 
             ResponseMessage responseMessage = new ResponseMessage(invokeMessage.getId());
             Object object = sharedStore.getInstance(invokeMessage.getPath());
-            if(object instanceof RemoteLeaf.RemoteValue) {
+            if(object instanceof RemoteLeaf) {
                 responseMessage.setNotFound(true);
             } else {
                 responseMessage.setValue(object);
@@ -500,7 +519,7 @@ public final class CloudOrchestrator extends Service<Node> {
             if (distributedLock == null) {
                 distributedLock = new DistributedLock();
                 distributedLock.setStatus(DistributedLock.Status.UNLOCKED);
-                addObject(distributedLock, System.currentTimeMillis(), path);
+                addObject(distributedLock, List.of(thisNode.getId()), System.currentTimeMillis(), path);
             }
         }
         return distributedLock;
@@ -525,9 +544,15 @@ public final class CloudOrchestrator extends Service<Node> {
         while (!distributedLock.getStatus().equals(DistributedLock.Status.LOCKED)) {
             lockMessage.setNanos(distributedLock.getNanos());
             locked = true;
-            for (CloudSession session : sessionByNode.values()) {
-                if (!(locked = locked & (boolean) invoke(session, lockMessage))) {
-                    break;
+            List<CloudSession> sessions = new ArrayList<>(sessionByNode.values());
+            for (CloudSession session : sessions) {
+                try {
+                    if (!(locked = locked & (boolean) invoke(session, lockMessage))) {
+                        break;
+                    }
+                } catch (Exception ex){
+                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                            "Unable to send lock message to session: ", session.getId());
                 }
             }
             if (locked) {
@@ -562,8 +587,14 @@ public final class CloudOrchestrator extends Service<Node> {
 
         UnlockMessage unlockMessage = new UnlockMessage(UUID.randomUUID());
         unlockMessage.setPath(path);
-        for (CloudSession session : sessionByNode.values()) {
-            sendMessage(session, unlockMessage);
+        List<CloudSession> sessions = new ArrayList<>(sessionByNode.values());
+        for (CloudSession session : sessions) {
+            try {
+                sendMessage(session, unlockMessage);
+            } catch (Exception ex){
+                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "Unable to send unlock message to session: ", session.getId());
+            }
         }
     }
 
@@ -627,7 +658,7 @@ public final class CloudOrchestrator extends Service<Node> {
                 try {
                     distributedLayer = new DistributedLayer(Class.forName((String)path[path.length - 2]),
                             (String)path[path.length - 1]);
-                    addObject(distributedLayer, System.currentTimeMillis(), path);
+                    addObject(distributedLayer, List.of(thisNode.getId()), System.currentTimeMillis(), path);
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException();
                 }
@@ -800,35 +831,35 @@ public final class CloudOrchestrator extends Service<Node> {
     }
 
     public void publishObject(Object object, Long timestamp, Object... path) {
-        addObject(object, timestamp, path);
+        List<UUID> nodeIds = new ArrayList<>();
+        nodeIds.add(thisNode.getId());
 
-        fork(() -> {
-            List < Node > nodes = new ArrayList<>();
-            boolean insert = false;
-            for(Node node : sortedNodes) {
-                if(node.equals(thisNode)) {
-                    insert = true;
-                    continue;
-                }
-
-                if(insert) {
-                    nodes.add(0, node);
-                } else {
-                    nodes.add(node);
-                }
+        List < Node > nodes = new ArrayList<>();
+        boolean insert = false;
+        for(Node node : sortedNodes) {
+            if(node.equals(thisNode)) {
+                insert = true;
+                continue;
             }
 
+            if(insert) {
+                nodes.add(0, node);
+            } else {
+                nodes.add(node);
+            }
+        }
+
+        int replicationFactor = SystemProperties.getInteger(
+                SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
+
+        for (int i = 0; i < replicationFactor; i++) {
+            nodeIds.add(nodes.get(i).getId());
+        }
+
+        addObject(object, nodeIds, timestamp, path);
+
+        fork(() -> {
             if(!nodes.isEmpty()) {
-                List<UUID> nodeIds = new ArrayList<>();
-                nodeIds.add(thisNode.getId());
-
-                int replicationFactor = SystemProperties.getInteger(
-                        SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
-
-                for (int i = 0; i < replicationFactor; i++) {
-                    nodeIds.add(nodes.get(i).getId());
-                }
-
                 int counter = 0;
                 for (Node node : nodes) {
                     PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
@@ -859,11 +890,11 @@ public final class CloudOrchestrator extends Service<Node> {
 
     public <O extends Object> O invoke(Object... path) {
         O result = (O) sharedStore.getInstance(path);
-        if(result instanceof RemoteLeaf.RemoteValue) {
+        if(result instanceof RemoteLeaf) {
             InvokeMessage getMessage = new InvokeMessage(UUID.randomUUID());
             getMessage.setPath(path);
             CloudSession session = null;
-            Iterator<UUID> ids = ((RemoteLeaf.RemoteValue)result).getNodes().iterator();
+            Iterator<UUID> ids = ((RemoteLeaf)result).getNodes().iterator();
             while (ids.hasNext() && session == null) {
                 session = sessionByNode.get(ids.next());
             }
@@ -891,8 +922,8 @@ public final class CloudOrchestrator extends Service<Node> {
         return result;
     }
 
-    private void addObject(Object object, Long timestamp, Object... path) {
-        sharedStore.add(object, timestamp, path);
+    private void addObject(Object object, List<UUID> nodes, Long timestamp, Object... path) {
+        sharedStore.add(object, nodes, timestamp, path);
         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local leaf added: %s", Arrays.toString(path));
     }
 

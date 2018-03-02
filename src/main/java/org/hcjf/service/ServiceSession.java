@@ -62,8 +62,10 @@ public class ServiceSession implements Comparable {
      * Remove the last added identity to the session.
      */
     public final void removeIdentity() {
-        if(!identities.isEmpty()) {
-            identities.remove(0);
+        synchronized (identities) {
+            if (!identities.isEmpty()) {
+                identities.remove(0);
+            }
         }
     }
 
@@ -74,8 +76,10 @@ public class ServiceSession implements Comparable {
      */
     public final <S extends ServiceSession> S currentIdentity() {
         S result = (S) this;
-        if(!identities.isEmpty()) {
-            result = (S) identities.get(0);
+        synchronized (identities) {
+            if (!identities.isEmpty()) {
+                result = (S) identities.get(0);
+            }
         }
         return result;
     }
