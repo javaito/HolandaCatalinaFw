@@ -163,7 +163,7 @@ public final class CloudOrchestrator extends Service<Node> {
             printNodes();
         }
 
-        fork(() -> reorganize(node, session));
+        fork(() -> reorganize(node, session, ReorganizationAction.CONNECT));
     }
 
     /**
@@ -171,29 +171,61 @@ public final class CloudOrchestrator extends Service<Node> {
      * @param node
      * @param session
      */
-    private void reorganize(Node node, CloudSession session) {
-        LocalLeaf localLeaf;
-        Object[] path;
-        List<UUID> nodes = List.of(thisNode.getId());
-        for(DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
-            localLeaf = (LocalLeaf) entry.getValue();
-            path = entry.getPath();
-            if(localLeaf.getInstance() instanceof DistributedLayer) {
-                PublishLayerMessage publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
-                publishLayerMessage.setPath(path);
-                publishLayerMessage.setNodeId(thisNode.getId());
-                sendMessage(session, publishLayerMessage);
-            } else if(localLeaf.getInstance() instanceof DistributedLock) {
-                //Mmmm!!!!
-            } else {
-                PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
-                publishObjectMessage.setPath(path);
-                publishObjectMessage.setTimestamp(localLeaf.getLastUpdate());
-                publishObjectMessage.setNodes(nodes);
+    private void reorganize(Node node, CloudSession session, ReorganizationAction action) {
+        long time = System.currentTimeMillis();
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Starting reorganization process by action : %s",
+                action.toString());
 
+        switch(action) {
+            case CONNECT: {
+                LocalLeaf localLeaf;
+                Object[] path;
+                List<UUID> nodes = List.of(thisNode.getId());
+                List<PublishObjectMessage.Path> paths = new ArrayList<>();
+
+                for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
+                    localLeaf = (LocalLeaf) entry.getValue();
+                    path = entry.getPath();
+                    if (localLeaf.getInstance() instanceof DistributedLayer) {
+                        PublishLayerMessage publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
+                        publishLayerMessage.setPath(path);
+                        publishLayerMessage.setNodeId(thisNode.getId());
+                        sendMessage(session, publishLayerMessage);
+                    } else if (localLeaf.getInstance() instanceof DistributedLock) {
+                        //Mmmm!!!!
+                    } else {
+                        paths.add(new PublishObjectMessage.Path(path));
+                    }
+                }
+
+                PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
+                publishObjectMessage.setTimestamp(System.currentTimeMillis());
+                publishObjectMessage.setNodes(nodes);
+                publishObjectMessage.setPaths(paths);
                 sendMessage(session, publishObjectMessage);
+                break;
+            }
+            case DISCONNECT: {
+                DistributedLeaf distributedLeaf;
+                for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class, RemoteLeaf.class)) {
+                    distributedLeaf = (DistributedLeaf) entry.getValue();
+                    distributedLeaf.getNodes().remove(node.getId());
+                }
+                break;
+            }
+            case TIME: {
+                LocalLeaf localLeaf;
+                List<PublishObjectMessage.Path> paths = new ArrayList<>();
+                for(DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
+                    localLeaf = (LocalLeaf) entry.getValue();
+//                    if(localLeaf.getNodes().size() < )
+                }
+                break;
             }
         }
+
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
+                action.toString(), System.currentTimeMillis() - time);
     }
 
     /**
@@ -413,10 +445,14 @@ public final class CloudOrchestrator extends Service<Node> {
             addPath(((PublishPathMessage)message).getPath());
         } else if(message instanceof PublishObjectMessage) {
             PublishObjectMessage publishObjectMessage = (PublishObjectMessage) message;
-            if (publishObjectMessage.getValue() != null) {
-                addObject(publishObjectMessage.getValue(), publishObjectMessage.getNodes(), publishObjectMessage.getTimestamp(), publishObjectMessage.getPath());
-            } else {
-                addObject(publishObjectMessage.getTimestamp(), publishObjectMessage.getNodes(), publishObjectMessage.getPath());
+            for(PublishObjectMessage.Path path : publishObjectMessage.getPaths()) {
+                if(path.getValue() != null) {
+                    addObject(path.getValue(), publishObjectMessage.getNodes(),
+                            publishObjectMessage.getTimestamp(), path.getPath());
+                } else {
+                    addObject(publishObjectMessage.getTimestamp(),
+                            publishObjectMessage.getNodes(), path.getPath());
+                }
             }
         } else if(message instanceof InvokeMessage) {
             InvokeMessage invokeMessage = (InvokeMessage) message;
@@ -598,7 +634,7 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
-    public synchronized void distributedUnlock(Object... path) {
+    private synchronized void distributedUnlock(Object... path) {
         DistributedLock distributedLock = getDistributedLock(path);
         synchronized (distributedLock) {
             distributedLock.notifyAll();
@@ -852,22 +888,26 @@ public final class CloudOrchestrator extends Service<Node> {
         int replicationFactor = SystemProperties.getInteger(
                 SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
 
-        for (int i = 0; i < replicationFactor; i++) {
+        for (int i = 0; i < replicationFactor && !nodes.isEmpty(); i++) {
             nodeIds.add(nodes.get(i).getId());
         }
 
         addObject(object, nodeIds, timestamp, path);
 
+
+        PublishObjectMessage.Path pathObject = new PublishObjectMessage.Path(path);
         fork(() -> {
             if(!nodes.isEmpty()) {
                 int counter = 0;
                 for (Node node : nodes) {
                     PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
-                    publishObjectMessage.setPath(path);
+                    publishObjectMessage.getPaths().add(pathObject);
                     publishObjectMessage.setTimestamp(timestamp);
                     publishObjectMessage.setNodes(nodeIds);
                     if(counter < replicationFactor) {
-                        publishObjectMessage.setValue(object);
+                        pathObject.setValue(object);
+                    } else {
+                        pathObject.setValue(null);
                     }
                     sendMessage(sessionByNode.get(node.getId()), publishObjectMessage);
                     counter++;
@@ -989,5 +1029,15 @@ public final class CloudOrchestrator extends Service<Node> {
             }
             return result;
         }
+    }
+
+    private enum ReorganizationAction {
+
+        CONNECT,
+
+        DISCONNECT,
+
+        TIME
+
     }
 }

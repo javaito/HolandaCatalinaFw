@@ -1,5 +1,8 @@
 package org.hcjf.cloud.impl.messages;
 
+import org.hcjf.utils.bson.BsonParcelable;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,10 +11,9 @@ import java.util.UUID;
  */
 public class PublishObjectMessage extends Message {
 
-    private Object[] path;
+    private List<Path> paths;
     private Long timestamp;
     private List<UUID> nodes;
-    private Object value;
 
     public PublishObjectMessage() {
     }
@@ -20,12 +22,12 @@ public class PublishObjectMessage extends Message {
         super(id);
     }
 
-    public Object[] getPath() {
-        return path;
+    public List<Path> getPaths() {
+        return paths;
     }
 
-    public void setPath(Object[] path) {
-        this.path = path;
+    public void setPaths(List<Path> paths) {
+        this.paths = paths;
     }
 
     @Override
@@ -46,11 +48,37 @@ public class PublishObjectMessage extends Message {
         this.nodes = nodes;
     }
 
-    public Object getValue() {
-        return value;
-    }
+    public static final class Path implements BsonParcelable {
 
-    public void setValue(Object value) {
-        this.value = value;
+        private Object[] path;
+        private Object value;
+
+        public Path() {
+        }
+
+        public Path(Object[] path) {
+            this.path = path;
+        }
+
+        public Path(Object[] path, Object value) {
+            this.path = path;
+            this.value = value;
+        }
+
+        public Object[] getPath() {
+            return path;
+        }
+
+        public void setPath(Object[] path) {
+            this.path = path;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public void setValue(Object value) {
+            this.value = value;
+        }
     }
 }
