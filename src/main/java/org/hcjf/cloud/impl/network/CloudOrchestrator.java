@@ -151,6 +151,24 @@ public final class CloudOrchestrator extends Service<Node> {
     public void unregisterConsumer(Node node) {
     }
 
+    private List<Node> getSortedNodes() {
+        List < Node > nodes = new ArrayList<>();
+        boolean insert = false;
+        for(Node node : sortedNodes) {
+            if(node.equals(thisNode)) {
+                insert = true;
+                continue;
+            }
+
+            if(insert) {
+                nodes.add(0, node);
+            } else {
+                nodes.add(node);
+            }
+        }
+        return nodes;
+    }
+
     /**
      * This method is called when a node is connected.
      * @param node Node connected.
@@ -214,11 +232,31 @@ public final class CloudOrchestrator extends Service<Node> {
                 break;
             }
             case TIME: {
+                int replicationFactor = SystemProperties.getInteger(
+                        SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
+
                 LocalLeaf localLeaf;
-                List<PublishObjectMessage.Path> paths = new ArrayList<>();
+                Map<UUID, List<PublishObjectMessage.Path>> pathsByNode = new HashMap<>();
+                for(Node sortedNode : getSortedNodes()) {
+                    pathsByNode.put(sortedNode.getId(), new ArrayList<>());
+                }
                 for(DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
                     localLeaf = (LocalLeaf) entry.getValue();
-//                    if(localLeaf.getNodes().size() < )
+                    if(localLeaf.getNodes().size() < replicationFactor) {
+                        for(Node sortedNode : getSortedNodes()) {
+                            if(!localLeaf.getNodes().contains(sortedNode.getId())) {
+                                pathsByNode.get(sortedNode.getId()).add(
+                                        new PublishObjectMessage.Path(entry.getPath(), localLeaf.getInstance()));
+                            }
+                        }
+                    }
+                }
+
+                for(UUID nodeId : pathsByNode.keySet()) {
+//                    PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
+//                    publishObjectMessage.getPaths().add(pathObject);
+//                    publishObjectMessage.setTimestamp(timestamp);
+//                    publishObjectMessage.setNodes(nodeIds);
                 }
                 break;
             }
@@ -870,20 +908,7 @@ public final class CloudOrchestrator extends Service<Node> {
         List<UUID> nodeIds = new ArrayList<>();
         nodeIds.add(thisNode.getId());
 
-        List < Node > nodes = new ArrayList<>();
-        boolean insert = false;
-        for(Node node : sortedNodes) {
-            if(node.equals(thisNode)) {
-                insert = true;
-                continue;
-            }
-
-            if(insert) {
-                nodes.add(0, node);
-            } else {
-                nodes.add(node);
-            }
-        }
+        List < Node > nodes = getSortedNodes();
 
         int replicationFactor = SystemProperties.getInteger(
                 SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
@@ -893,7 +918,6 @@ public final class CloudOrchestrator extends Service<Node> {
         }
 
         addObject(object, nodeIds, timestamp, path);
-
 
         PublishObjectMessage.Path pathObject = new PublishObjectMessage.Path(path);
         fork(() -> {

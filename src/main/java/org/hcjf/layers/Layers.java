@@ -344,13 +344,17 @@ public final class Layers {
             NamedUuid.registerName(layerInstance.getImplName());
         }
 
-        for(Method method : layerInstance.getClass().getDeclaredMethods()) {
-            for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
-                SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
+        Class classToIntrospect = layerInstance.getClass();
+        while(!classToIntrospect.equals(Layer.class) && !classToIntrospect.equals(Object.class)) {
+            for (Method method : classToIntrospect.getDeclaredMethods()) {
+                for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
+                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
+                }
+                for (LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
+                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
+                }
             }
-            for (LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
-                SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value());
-            }
+            classToIntrospect = classToIntrospect.getSuperclass();
         }
 
         return implName;

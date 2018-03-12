@@ -38,6 +38,14 @@ public class HttpServerTestSuit {
         Layers.publishLayer(Test1Crud.class);
         Layers.publishLayer(TestMapCrud.class);
 
+
+        CrudLayerInterface crudLayerInterface = Layers.get(CrudLayerInterface.class, "name");
+        crudLayerInterface.create(new Object());
+
+        Collection<JoinableMap> result = Query.evaluate("SELECT * ....");
+        //result.iterator().next().get()
+
+
 //        for (int i = 0; i < 1; i++) {
 //            try {
 //                HttpClient client = new HttpClient(new URL("http://www.httpwatch.com/httpgallery/chunked/chunkedimage.aspx"));
