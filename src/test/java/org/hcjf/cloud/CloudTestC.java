@@ -61,17 +61,17 @@ public class CloudTestC {
             mapLock.unlock();
         }, ServiceSession.getSystemSession());
 
-        Service.run(new CloudTimerTask("testing-cloud-task") {
-            @Override
-            protected Long getDelay() {
-                return 1000L;
-            }
-
-            @Override
-            protected void onRun() {
-                System.out.println("Testing task executed!!!");
-            }
-        }, ServiceSession.getSystemSession());
+//        Service.run(new CloudTimerTask("testing-cloud-task") {
+//            @Override
+//            protected Long getDelay() {
+//                return 1000L;
+//            }
+//
+//            @Override
+//            protected void onRun() {
+//                System.out.println("Testing task executed!!!");
+//            }
+//        }, ServiceSession.getSystemSession());
 
         Service.run(()->{
             byte[] buffer = new byte[1024];

@@ -13,13 +13,14 @@ public class PublishObjectMessage extends Message {
 
     private List<Path> paths;
     private Long timestamp;
-    private List<UUID> nodes;
 
     public PublishObjectMessage() {
+        this.paths = new ArrayList<>();
     }
 
     public PublishObjectMessage(UUID id) {
         super(id);
+        this.paths = new ArrayList<>();
     }
 
     public List<Path> getPaths() {
@@ -40,18 +41,11 @@ public class PublishObjectMessage extends Message {
         this.timestamp = timestamp;
     }
 
-    public List<UUID> getNodes() {
-        return nodes;
-    }
-
-    public void setNodes(List<UUID> nodes) {
-        this.nodes = nodes;
-    }
-
     public static final class Path implements BsonParcelable {
 
         private Object[] path;
         private Object value;
+        private List<UUID> nodes;
 
         public Path() {
         }
@@ -60,9 +54,20 @@ public class PublishObjectMessage extends Message {
             this.path = path;
         }
 
+        public Path(Object[] path, List<UUID> nodes) {
+            this.path = path;
+            this.nodes = nodes;
+        }
+
         public Path(Object[] path, Object value) {
             this.path = path;
             this.value = value;
+        }
+
+        public Path(Object[] path, Object value, List<UUID> nodes) {
+            this.path = path;
+            this.value = value;
+            this.nodes = nodes;
         }
 
         public Object[] getPath() {
@@ -79,6 +84,14 @@ public class PublishObjectMessage extends Message {
 
         public void setValue(Object value) {
             this.value = value;
+        }
+
+        public List<UUID> getNodes() {
+            return nodes;
+        }
+
+        public void setNodes(List<UUID> nodes) {
+            this.nodes = nodes;
         }
     }
 }

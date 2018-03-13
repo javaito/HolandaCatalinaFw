@@ -12,6 +12,7 @@ import java.util.UUID;
 public class CloudSession extends NetSession {
 
     private AckMessage ackMessage;
+    private Node node;
 
     public CloudSession(NetServiceConsumer consumer) {
         super(UUID.randomUUID(), consumer);
@@ -23,5 +24,13 @@ public class CloudSession extends NetSession {
 
     public void setAckMessage(AckMessage ackMessage) {
         this.ackMessage = ackMessage;
+    }
+
+    public Node getNode() {
+        return node;
+    }
+
+    public void setNode(Node node) {
+        this.node = node;
     }
 }

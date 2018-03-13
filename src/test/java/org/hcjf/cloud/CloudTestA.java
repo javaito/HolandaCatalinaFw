@@ -10,7 +10,10 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -61,18 +64,17 @@ public class CloudTestA {
             mapLock.unlock();
         }).start();
 
-        Service.run(new CloudTimerTask("testing-cloud-task") {
-            @Override
-            protected Long getDelay() {
-                return 1000L;
-            }
-
-            @Override
-            protected void onRun() {
-                System.out.println("Testing task executed!!!");
-            }
-        }, ServiceSession.getSystemSession());
-
+//        Service.run(new CloudTimerTask("testing-cloud-task") {
+//            @Override
+//            protected Long getDelay() {
+//                return 1000L;
+//            }
+//
+//            @Override
+//            protected void onRun() {
+//                System.out.println("Testing task executed!!!");
+//            }
+//        }, ServiceSession.getSystemSession());
 
         Service.run(() -> {
             byte[] buffer = new byte[1024];

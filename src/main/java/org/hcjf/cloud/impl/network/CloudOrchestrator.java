@@ -102,6 +102,7 @@ public final class CloudOrchestrator extends Service<Node> {
 
         fork(this::maintainConnections);
         fork(this::initWagon);
+        fork(this::initReorganizationTimer);
         server = new CloudServer();
         server.start();
 
@@ -178,6 +179,7 @@ public final class CloudOrchestrator extends Service<Node> {
         synchronized (sessionByNode) {
             sessionByNode.put(node.getId(), session);
             sortedNodes.add(node);
+            session.setNode(node);
             printNodes();
         }
 
@@ -185,11 +187,43 @@ public final class CloudOrchestrator extends Service<Node> {
     }
 
     /**
+     * This method is called when a node is disconnected.
+     * @param node node disconnected.
+     */
+    private void nodeDisconnected(Node node) {
+        synchronized (sessionByNode) {
+            sessionByNode.remove(node.getId());
+            sortedNodes.remove(node);
+            disconnected(node);
+            printNodes();
+        }
+
+        fork(() -> reorganize(node, null, ReorganizationAction.DISCONNECT));
+    }
+
+    /**
+     * Prints a log record that show the information about all the connected nodes.
+     */
+    private void printNodes() {
+        synchronized (sessionByNode) {
+            Strings.Builder builder = new Strings.Builder();
+            builder.append(Strings.START_SUB_GROUP);
+            for (Node node : sortedNodes) {
+                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                builder.append(Strings.TAB).append(node.toJson(), Strings.ARGUMENT_SEPARATOR);
+            }
+            builder.cleanBuffer();
+            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR).append(Strings.END_SUB_GROUP);
+            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "\r\n\r\nNodes: %s\r\n", builder.toString());
+        }
+    }
+
+    /**
      *
      * @param node
      * @param session
      */
-    private void reorganize(Node node, CloudSession session, ReorganizationAction action) {
+    private synchronized void reorganize(Node node, CloudSession session, ReorganizationAction action) {
         long time = System.currentTimeMillis();
         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Starting reorganization process by action : %s",
                 action.toString());
@@ -212,22 +246,23 @@ public final class CloudOrchestrator extends Service<Node> {
                     } else if (localLeaf.getInstance() instanceof DistributedLock) {
                         //Mmmm!!!!
                     } else {
-                        paths.add(new PublishObjectMessage.Path(path));
+                        paths.add(new PublishObjectMessage.Path(path, nodes));
                     }
                 }
 
                 PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
                 publishObjectMessage.setTimestamp(System.currentTimeMillis());
-                publishObjectMessage.setNodes(nodes);
                 publishObjectMessage.setPaths(paths);
                 sendMessage(session, publishObjectMessage);
                 break;
             }
             case DISCONNECT: {
+                System.out.println("Remove node: " + node.getId());
                 DistributedLeaf distributedLeaf;
                 for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class, RemoteLeaf.class)) {
                     distributedLeaf = (DistributedLeaf) entry.getValue();
                     distributedLeaf.getNodes().remove(node.getId());
+                    System.out.println("Nodes for path: " + distributedLeaf.getNodes());
                 }
                 break;
             }
@@ -242,21 +277,34 @@ public final class CloudOrchestrator extends Service<Node> {
                 }
                 for(DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
                     localLeaf = (LocalLeaf) entry.getValue();
-                    if(localLeaf.getNodes().size() < replicationFactor) {
-                        for(Node sortedNode : getSortedNodes()) {
-                            if(!localLeaf.getNodes().contains(sortedNode.getId())) {
-                                pathsByNode.get(sortedNode.getId()).add(
-                                        new PublishObjectMessage.Path(entry.getPath(), localLeaf.getInstance()));
+                    if(!(localLeaf.getInstance() instanceof DistributedLayer) &&
+                            !(localLeaf.getInstance() instanceof DistributedLock)) {
+                        if (localLeaf.getNodes().size() < replicationFactor) {
+                            for (Node sortedNode : getSortedNodes()) {
+                                if (!localLeaf.getNodes().contains(sortedNode.getId())) {
+                                    List<UUID> nodeIds = new ArrayList<>(localLeaf.getNodes());
+                                    nodeIds.add(sortedNode.getId());
+                                    pathsByNode.get(sortedNode.getId()).add(
+                                            new PublishObjectMessage.Path(entry.getPath(),
+                                                    localLeaf.getInstance(), nodeIds));
+                                }
                             }
                         }
                     }
                 }
 
                 for(UUID nodeId : pathsByNode.keySet()) {
-//                    PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
-//                    publishObjectMessage.getPaths().add(pathObject);
-//                    publishObjectMessage.setTimestamp(timestamp);
-//                    publishObjectMessage.setNodes(nodeIds);
+                    List<PublishObjectMessage.Path> paths = pathsByNode.get(nodeId);
+                    if(!paths.isEmpty()) {
+                        System.out.println("Paths to reorganize: " + paths);
+                        PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
+                        publishObjectMessage.setPaths(paths);
+                        publishObjectMessage.setTimestamp(System.currentTimeMillis());
+                        sendMessage(sessionByNode.get(nodeId), publishObjectMessage);
+                        for(PublishObjectMessage.Path path : paths) {
+                            addObject(path.getValue(), path.getNodes(), 0L, path.getPath());
+                        }
+                    }
                 }
                 break;
             }
@@ -264,36 +312,6 @@ public final class CloudOrchestrator extends Service<Node> {
 
         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
                 action.toString(), System.currentTimeMillis() - time);
-    }
-
-    /**
-     * This method is called when a node is disconnected.
-     * @param node node disconnected.
-     */
-    private void nodeDisconnected(Node node) {
-        synchronized (sessionByNode) {
-            sessionByNode.remove(node.getId());
-            sortedNodes.remove(node);
-            disconnected(node);
-            printNodes();
-        }
-    }
-
-    /**
-     * Prints a log record that show the information about all the connected nodes.
-     */
-    private void printNodes() {
-        synchronized (sessionByNode) {
-            Strings.Builder builder = new Strings.Builder();
-            builder.append(Strings.START_SUB_GROUP);
-            for (Node node : sortedNodes) {
-                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                builder.append(Strings.TAB).append(node.toJson(), Strings.ARGUMENT_SEPARATOR);
-            }
-            builder.cleanBuffer();
-            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR).append(Strings.END_SUB_GROUP);
-            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "\r\n\r\nNodes: %s\r\n", builder.toString());
-        }
     }
 
     /**
@@ -382,15 +400,28 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
+    public void initReorganizationTimer() {
+        while(!Thread.currentThread().isInterrupted()) {
+            try {
+                Thread.sleep(SystemProperties.getLong(
+                        SystemProperties.Cloud.Orchestrator.REORGANIZATION_TIMEOUT));
+                try {
+                    reorganize(null, null, ReorganizationAction.TIME);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            } catch (InterruptedException ex){
+                break;
+            }
+        }
+    }
+
     public void connectionLost(CloudSession session) {
         Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "connection lost with %s:%d",
                 session.getRemoteHost(), session.getRemotePort());
         synchronized (sessionByNode) {
-            for(Node node : sortedNodes) {
-                if(sessionByNode.get(node.getId()).equals(session)) {
-                    nodeDisconnected(node);
-                    break;
-                }
+            if(session.getNode() != null) {
+                nodeDisconnected(session.getNode());
             }
         }
     }
@@ -485,11 +516,11 @@ public final class CloudOrchestrator extends Service<Node> {
             PublishObjectMessage publishObjectMessage = (PublishObjectMessage) message;
             for(PublishObjectMessage.Path path : publishObjectMessage.getPaths()) {
                 if(path.getValue() != null) {
-                    addObject(path.getValue(), publishObjectMessage.getNodes(),
+                    addObject(path.getValue(), path.getNodes(),
                             publishObjectMessage.getTimestamp(), path.getPath());
                 } else {
                     addObject(publishObjectMessage.getTimestamp(),
-                            publishObjectMessage.getNodes(), path.getPath());
+                            path.getNodes(), path.getPath());
                 }
             }
         } else if(message instanceof InvokeMessage) {
@@ -573,7 +604,7 @@ public final class CloudOrchestrator extends Service<Node> {
                 ((CloudServer)consumer).send(session, message);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            server.destroySession(session);
         }
     }
 
@@ -913,13 +944,13 @@ public final class CloudOrchestrator extends Service<Node> {
         int replicationFactor = SystemProperties.getInteger(
                 SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
 
-        for (int i = 0; i < replicationFactor && !nodes.isEmpty(); i++) {
+        for (int i = 0; i < (replicationFactor - 1) && !nodes.isEmpty(); i++) {
             nodeIds.add(nodes.get(i).getId());
         }
 
         addObject(object, nodeIds, timestamp, path);
 
-        PublishObjectMessage.Path pathObject = new PublishObjectMessage.Path(path);
+        PublishObjectMessage.Path pathObject = new PublishObjectMessage.Path(path, nodeIds);
         fork(() -> {
             if(!nodes.isEmpty()) {
                 int counter = 0;
@@ -927,7 +958,6 @@ public final class CloudOrchestrator extends Service<Node> {
                     PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
                     publishObjectMessage.getPaths().add(pathObject);
                     publishObjectMessage.setTimestamp(timestamp);
-                    publishObjectMessage.setNodes(nodeIds);
                     if(counter < replicationFactor) {
                         pathObject.setValue(object);
                     } else {

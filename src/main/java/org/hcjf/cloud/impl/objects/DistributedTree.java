@@ -39,9 +39,9 @@ public class DistributedTree implements DistributedObject {
     }
 
     private boolean evaluatePredicate(Class currentClass, Class<? extends DistributedObject>... predicate) {
-        boolean result = true;
+        boolean result = false;
         for(Class<? extends DistributedObject> predicateClass : predicate) {
-            result = predicateClass.isAssignableFrom(currentClass);
+            result |= predicateClass.isAssignableFrom(currentClass);
             if(!result) {
                 break;
             }
@@ -99,7 +99,10 @@ public class DistributedTree implements DistributedObject {
                         ((DistributedTree) instance).branches.put(key, result);
                     }
                 } else {
-                    result = (LocalLeaf) branches.get(key);
+                    if(leaf instanceof LocalLeaf) {
+                        result = (LocalLeaf) branches.get(key);
+                        result.getNodes().addAll(nodes);
+                    }
                 }
             } else {
                 ((DistributedTree) instance).branches.put(key, result);
@@ -129,6 +132,11 @@ public class DistributedTree implements DistributedObject {
                         result.getNodes().addAll(nodes);
                     } else {
                         ((DistributedTree) instance).branches.put(key, result);
+                    }
+                } else {
+                    if(leaf instanceof RemoteLeaf) {
+                        result = (RemoteLeaf) branches.get(key);
+                        result.getNodes().addAll(nodes);
                     }
                 }
             } else {

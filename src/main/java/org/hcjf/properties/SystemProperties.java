@@ -324,6 +324,7 @@ public final class SystemProperties extends Properties {
             public static final String ACK_TIMEOUT = "hcjf.cloud.orchestrator.ack.timeout";
             public static final String CLUSTER_NAME = "hcjf.cloud.orchestrator.cluster.name";
             public static final String WAGON_TIMEOUT = "hcjf.cloud.orchestrator.wagon.timeout";
+            public static final String REORGANIZATION_TIMEOUT = "hcjf.cloud.orchestrator.reorganization.timeout";
             public static final String INVOKE_TIMEOUT = "hcjf.cloud.orchestrator.invoke.timeout";
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
@@ -617,9 +618,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.SERVER_LISTENER_PORT, "18080");
         defaults.put(Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME, "10000");
         defaults.put(Cloud.Orchestrator.ACK_TIMEOUT, "2000");
+        defaults.put(Cloud.Orchestrator.REORGANIZATION_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
         defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "20000");
-        defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "1");
+        defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");

@@ -104,6 +104,7 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
 
     @Override
     protected void onDisconnect(CloudSession session, NetPackage netPackage) {
+        System.out.println("Client disconnected!!!");
         CloudOrchestrator.getInstance().connectionLost(session);
     }
 }
