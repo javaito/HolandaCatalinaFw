@@ -13,6 +13,9 @@ import java.util.*;
  */
 public interface BsonParcelable {
 
+    String MAP_KEYS_FIELD_NAME = "K";
+    String MAP_VALUES_FIELD_NAME = "V";
+
     /**
      * Returns the bson representation of the instance.
      * @return Bson representation.
@@ -43,13 +46,23 @@ public interface BsonParcelable {
      * @param map Map instance.
      * @return Bson representation.
      */
-    default BsonDocument toBson(String name, Map<String, Object> map) {
+    default BsonDocument toBson(String name, Map map) {
         BsonDocument document = new BsonDocument(name);
-        for(Map.Entry<String, Object> entry : map.entrySet()) {
-            try {
-                document.put(toBson(entry.getKey(), entry.getValue()));
-            } catch (Exception ex) {}
+        List keys = new ArrayList();
+        List values = new ArrayList();
+
+        Object value;
+        for(Object key : map.keySet()) {
+            value = map.get(key);
+            if(value != null) {
+                keys.add(key);
+                values.add(value);
+            }
         }
+
+        document.put(toBson(MAP_KEYS_FIELD_NAME, keys));
+        document.put(toBson(MAP_VALUES_FIELD_NAME, values));
+
         return document;
     }
 
@@ -114,7 +127,9 @@ public interface BsonParcelable {
                 if(setter != null) {
                     element = document.get(accessors.getResourceName());
                     if(element != null) {
-                        setter.set(this, fromBson(setter.getParameterType(), setter.getParameterCollectionType(), element));
+                        setter.set(this, fromBson(setter.getParameterType(),
+                                setter.getParameterKeyType(),
+                                setter.getParameterCollectionType(), element));
                     }
                 }
             } catch (Exception ex){}
@@ -126,28 +141,40 @@ public interface BsonParcelable {
     /**
      * Returns a map instance from a bson document.
      * @param document Bson document to create the map instance.
+     * @param expectedKeyType Expected key type.
+     * @param expectedValueType Expected value type.
      * @return Map instance.
      */
-    default Map<String, Object> fromBson(Class expectedMapType, BsonDocument document) {
-        Map<String, Object> result = new HashMap<>();
-        Iterator<String> iterator = document.iterator();
-        String key;
-        while(iterator.hasNext()) {
-            key = iterator.next();
-            result.put(key, fromBson(expectedMapType, null, document.get(key)));
+    default Map fromBson(Class expectedKeyType, Class expectedValueType, BsonDocument document) {
+        Map result = new HashMap<>();
+        BsonArray keys = document.get(MAP_KEYS_FIELD_NAME).getAsArray();
+        BsonArray values = document.get(MAP_VALUES_FIELD_NAME).getAsArray();
+
+        Object key;
+        Object value;
+
+        for (int i = 0; i < keys.size(); i++) {
+            key = fromBson(expectedKeyType,
+                    null, null, keys.get(i));
+            value = fromBson(expectedValueType,
+                    null, null, values.get(i));
+            result.put(key, value);
         }
+
         return result;
     }
 
     /**
      * Returns a collection instance from a bson array.
      * @param array Bson array to create the collection instance.
+     * @param expectedCollectionType Expected data type for map's or collection's values.
      * @return Collection instance.
      */
     default Collection fromBson(Class expectedCollectionType, BsonArray array) {
         List result = new ArrayList();
         for (int i = 0; i < array.size(); i++) {
-            result.add(fromBson(expectedCollectionType, null, array.get(i)));
+            result.add(fromBson(expectedCollectionType,
+                    null, null, array.get(i)));
         }
         return result;
     }
@@ -156,32 +183,38 @@ public interface BsonParcelable {
      * Creates a instance using the expected data type and bson element.
      * @param expectedDataType Expected result data type.
      * @param element Bson element.
+     * @param keyType Expected data type for map's key.
+     * @param collectionDataType Expected data type for map's or collection's values.
      * @return Object instance.
      */
-    default Object fromBson(Class expectedDataType, Class collectionDataType, BsonElement element) {
+    default Object fromBson(Class expectedDataType, Class keyType, Class collectionDataType, BsonElement element) {
         Object result;
-        if(Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
-            result = fromBson(collectionDataType, (BsonArray) element);
-        } else if(expectedDataType.isArray() && element instanceof BsonArray) {
-            Collection collection = fromBson(expectedDataType.getComponentType(), (BsonArray) element);
-            result = collection.toArray((Object[]) Array.newInstance(
-                    expectedDataType.getComponentType(), collection.size()));
-        } else if(Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
-            result = fromBson(collectionDataType, (BsonDocument)element);
-        } else if(BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
-            try {
-                BsonParcelable parcelable = (BsonParcelable) expectedDataType.getConstructor().newInstance();
-                result = parcelable.populate((BsonDocument) element);
-            } catch (Exception ex) {
-                throw new IllegalArgumentException();
-            }
-        } else if(expectedDataType.isEnum() && element instanceof BsonPrimitive) {
-            result = Enum.valueOf(expectedDataType, element.getAsString());
-        } else if(expectedDataType.equals(Class.class) && element instanceof BsonPrimitive) {
-            try {
-                result = Class.forName(element.getAsString());
-            } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException();
+        if(expectedDataType != null) {
+            if (Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
+                result = fromBson(collectionDataType, (BsonArray) element);
+            } else if (expectedDataType.isArray() && element instanceof BsonArray) {
+                Collection collection = fromBson(expectedDataType.getComponentType(), (BsonArray) element);
+                result = collection.toArray((Object[]) Array.newInstance(
+                        expectedDataType.getComponentType(), collection.size()));
+            } else if (Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
+                result = fromBson(keyType, collectionDataType, (BsonDocument) element);
+            } else if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
+                try {
+                    BsonParcelable parcelable = (BsonParcelable) expectedDataType.getConstructor().newInstance();
+                    result = parcelable.populate((BsonDocument) element);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException();
+                }
+            } else if (expectedDataType.isEnum() && element instanceof BsonPrimitive) {
+                result = Enum.valueOf(expectedDataType, element.getAsString());
+            } else if (expectedDataType.equals(Class.class) && element instanceof BsonPrimitive) {
+                try {
+                    result = Class.forName(element.getAsString());
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalArgumentException();
+                }
+            } else {
+                return element.getValue();
             }
         } else {
             return element.getValue();
@@ -189,6 +222,9 @@ public interface BsonParcelable {
         return result;
     }
 
+    /**
+     * Internal class to create and populate the instance serialized into the bson document.
+     */
     final class Builder {
 
         private static final String PARCELABLE_CLASS_NAME = "__pcn__";
