@@ -257,12 +257,10 @@ public final class CloudOrchestrator extends Service<Node> {
                 break;
             }
             case DISCONNECT: {
-                System.out.println("Remove node: " + node.getId());
                 DistributedLeaf distributedLeaf;
                 for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class, RemoteLeaf.class)) {
                     distributedLeaf = (DistributedLeaf) entry.getValue();
                     distributedLeaf.getNodes().remove(node.getId());
-                    System.out.println("Nodes for path: " + distributedLeaf.getNodes());
                 }
                 break;
             }
@@ -296,7 +294,6 @@ public final class CloudOrchestrator extends Service<Node> {
                 for(UUID nodeId : pathsByNode.keySet()) {
                     List<PublishObjectMessage.Path> paths = pathsByNode.get(nodeId);
                     if(!paths.isEmpty()) {
-                        System.out.println("Paths to reorganize: " + paths);
                         PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
                         publishObjectMessage.setPaths(paths);
                         publishObjectMessage.setTimestamp(System.currentTimeMillis());
