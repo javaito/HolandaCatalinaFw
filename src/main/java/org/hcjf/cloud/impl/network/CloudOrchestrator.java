@@ -556,11 +556,18 @@ public final class CloudOrchestrator extends Service<Node> {
             distributedLayer.addNode(publishLayerMessage.getNodeId());
         } else if(message instanceof LayerInvokeMessage) {
             LayerInvokeMessage layerInvokeMessage = (LayerInvokeMessage) message;
-            Object result = distributedLayerInvoke(layerInvokeMessage.getSessionId(),
-                    layerInvokeMessage.getParameterTypes(), layerInvokeMessage.getParameters(),
-                    layerInvokeMessage.getMethodName(), layerInvokeMessage.getPath());
+            Object result = null;
+            Throwable throwable = null;
+            try {
+                result = distributedLayerInvoke(layerInvokeMessage.getSessionId(),
+                        layerInvokeMessage.getParameterTypes(), layerInvokeMessage.getParameters(),
+                        layerInvokeMessage.getMethodName(), layerInvokeMessage.getPath());
+            } catch (Throwable t) {
+                throwable = t;
+            }
             ResponseMessage responseMessage = new ResponseMessage(message.getId());
             responseMessage.setValue(result);
+            responseMessage.setThrowable(throwable);
             sendMessage(session, responseMessage);
         } else if(message instanceof ResponseMessage) {
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
@@ -1007,7 +1014,7 @@ public final class CloudOrchestrator extends Service<Node> {
         boolean result = false;
         if(sharedStore.getInstance(path) == null) {
             sharedStore.createPath(path);
-            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local path added: %s", Arrays.toString(path));
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local path added: %s", Arrays.toString(path));
             result = true;
         }
         return result;
@@ -1015,12 +1022,12 @@ public final class CloudOrchestrator extends Service<Node> {
 
     private void addObject(Object object, List<UUID> nodes, Long timestamp, Object... path) {
         sharedStore.add(object, nodes, timestamp, path);
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local leaf added: %s", Arrays.toString(path));
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local leaf added: %s", Arrays.toString(path));
     }
 
     private void addObject(Long timestamp, List<UUID> nodes, Object... path) {
         sharedStore.add(timestamp, nodes, path);
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote leaf added: %s", Arrays.toString(path));
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote leaf added: %s", Arrays.toString(path));
     }
 
     private final class ResponseListener {
@@ -1031,15 +1038,23 @@ public final class CloudOrchestrator extends Service<Node> {
             Object result = null;
             synchronized (this) {
                 if(responseMessage == null) {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                            "Response listener waiting for id: ", message.getId());
                     try {
-                        this.wait(SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
+                        wait(SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
                     } catch (InterruptedException e) {
                     }
                 }
             }
 
             if(responseMessage != null) {
-                result = responseMessage.getValue();
+                if(responseMessage.getThrowable() != null) {
+                    throw new RuntimeException(responseMessage.getThrowable());
+                } else {
+                    result = responseMessage.getValue();
+                }
+            } else {
+                throw new RuntimeException("Remote invocation timeout");
             }
             responseListeners.remove(message.getId());
             return result;
@@ -1047,6 +1062,8 @@ public final class CloudOrchestrator extends Service<Node> {
 
         public void setMessage(ResponseMessage message) {
             synchronized (this) {
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "Response listener notified with id: ", message.getId());
                 responseMessage = message;
                 notifyAll();
             }

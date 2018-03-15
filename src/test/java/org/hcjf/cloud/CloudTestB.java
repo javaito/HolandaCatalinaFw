@@ -20,7 +20,7 @@ import java.util.concurrent.locks.Lock;
 public class CloudTestB {
 
     public static void main(String[] args) {
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");

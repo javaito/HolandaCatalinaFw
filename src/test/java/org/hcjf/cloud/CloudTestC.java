@@ -20,7 +20,7 @@ import java.util.concurrent.locks.Lock;
 public class CloudTestC {
 
     public static void main(String[] args) {
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
@@ -132,7 +132,7 @@ public class CloudTestC {
         public String method(String value) {
             String result = String.format("Result of invoke test C with value %s", value);
             System.out.println(String.format("Test C invoked with value %s", value));
-            return result;
+            throw new RuntimeException("Exception in c-node");
         }
 
     }

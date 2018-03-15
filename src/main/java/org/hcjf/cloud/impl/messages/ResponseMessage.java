@@ -9,6 +9,7 @@ public class ResponseMessage extends Message {
 
     private Object value;
     private Boolean notFound;
+    private Throwable throwable;
 
     public ResponseMessage() {
     }
@@ -31,5 +32,13 @@ public class ResponseMessage extends Message {
 
     public void setNotFound(Boolean notFound) {
         this.notFound = notFound;
+    }
+
+    public Throwable getThrowable() {
+        return throwable;
+    }
+
+    public void setThrowable(Throwable throwable) {
+        this.throwable = throwable;
     }
 }
