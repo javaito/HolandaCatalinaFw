@@ -214,7 +214,7 @@ public final class CloudOrchestrator extends Service<Node> {
             }
             builder.cleanBuffer();
             builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR).append(Strings.END_SUB_GROUP);
-            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "\r\n\r\nNodes: %s\r\n", builder.toString());
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "\r\n\r\nNodes: %s\r\n", builder.toString());
         }
     }
 
@@ -225,7 +225,7 @@ public final class CloudOrchestrator extends Service<Node> {
      */
     private synchronized void reorganize(Node node, CloudSession session, ReorganizationAction action) {
         long time = System.currentTimeMillis();
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Starting reorganization process by action : %s",
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Starting reorganization process by action : %s",
                 action.toString());
 
         switch(action) {
@@ -307,7 +307,7 @@ public final class CloudOrchestrator extends Service<Node> {
             }
         }
 
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
                 action.toString(), System.currentTimeMillis() - time);
     }
 
@@ -323,12 +323,12 @@ public final class CloudOrchestrator extends Service<Node> {
                         CloudClient client = new CloudClient(node.getLanAddress(), node.getLanPort());
                         NetService.getInstance().registerConsumer(client);
                         if (client.waitForConnect()) {
-                            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Connected with %s:%d",
+                            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Connected with %s:%d",
                                     node.getLanAddress(), node.getLanPort());
 
                             if(connecting(node)) {
                                 try {
-                                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending credentials to %s:%d",
+                                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending credentials to %s:%d",
                                             node.getLanAddress(), node.getLanPort());
                                     client.send(new NodeIdentificationMessage(thisNode));
                                 } catch (IOException e) {
@@ -337,7 +337,7 @@ public final class CloudOrchestrator extends Service<Node> {
                                 }
                             }
                         } else {
-                            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to connected with %s:%d",
+                            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to connected with %s:%d",
                                     node.getLanAddress(), node.getLanPort());
                         }
                     }
@@ -414,7 +414,7 @@ public final class CloudOrchestrator extends Service<Node> {
     }
 
     public void connectionLost(CloudSession session) {
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "connection lost with %s:%d",
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "connection lost with %s:%d",
                 session.getRemoteHost(), session.getRemotePort());
         synchronized (sessionByNode) {
             if(session.getNode() != null) {
@@ -450,22 +450,22 @@ public final class CloudOrchestrator extends Service<Node> {
             }
             updateNode(node, nodeIdentificationMessage);
             if(session.getConsumer() instanceof CloudClient) {
-                Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials response from %s:%d",
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials response from %s:%d",
                         node.getLanAddress(), node.getLanPort());
                 if(!connected(node)){
                     ((CloudClient)session.getConsumer()).disconnect();
                 } else {
-                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
                     nodeConnected(node, session);
-                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
                             node.getLanAddress(), node.getLanPort());
                     sendMessage(session, new AckMessage(message));
                 }
             } else if(session.getConsumer() instanceof CloudServer) {
                 if(connecting(node)) {
-                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials from %s:%d",
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials from %s:%d",
                             node.getLanAddress(), node.getLanPort());
-                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Response credentials to %s:%d",
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Response credentials to %s:%d",
                             node.getLanAddress(), node.getLanPort());
                     NodeIdentificationMessage returnNodeIdentificationMessage = new NodeIdentificationMessage(thisNode);
                     waitingAck.put(returnNodeIdentificationMessage.getId(), node);
@@ -489,11 +489,11 @@ public final class CloudOrchestrator extends Service<Node> {
                 ((CloudClient)session.getConsumer()).disconnect();
             }
         } else if(message instanceof CloudWagonMessage) {
-            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming wagon");
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming wagon");
             synchronized (wagonMonitor) {
                 lastVisit = System.currentTimeMillis();
                 if(wagonMessage != null) {
-                    Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon crash");
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon crash");
                 }
                 wagonMessage = (CloudWagonMessage) message;
                 sendMessage(session, new AckMessage(message));
@@ -563,19 +563,19 @@ public final class CloudOrchestrator extends Service<Node> {
             responseMessage.setValue(result);
             sendMessage(session, responseMessage);
         } else if(message instanceof ResponseMessage) {
-            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {
                 responseListener.setMessage((ResponseMessage) message);
             }
         } else if(message instanceof AckMessage) {
-            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
                     session.getRemoteHost(), session.getRemotePort());
             if(session.getConsumer() instanceof CloudServer) {
                 Node node = waitingAck.remove(message.getId());
                 if(node != null) {
                     if(connected(node)) {
-                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as server %s", node);
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as server %s", node);
                         nodeConnected(node, session);
                     }
                 }
@@ -585,7 +585,7 @@ public final class CloudOrchestrator extends Service<Node> {
                 if (wagonMessage != null) {
                     if (message.getId().equals(wagonMessage.getId())) {
                         wagonMessage = null;
-                        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon gone");
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon gone");
                     }
                 }
             }
@@ -607,7 +607,7 @@ public final class CloudOrchestrator extends Service<Node> {
 
     private Object invoke(CloudSession session, Message message) {
         ResponseListener responseListener = new ResponseListener();
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Sending invoke message: %s", message.getId().toString());
         responseListeners.put(message.getId(), responseListener);
         sendMessage(session, message);

@@ -330,8 +330,11 @@ public final class SystemProperties extends Properties {
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
 
             public static final class ThisNode {
+                public static final String ID = "hcjf.cloud.orchestrator.this.node.id";
                 public static final String NAME = "hcjf.cloud.orchestrator.this.node.name";
                 public static final String VERSION = "hcjf.cloud.orchestrator.this.node.version";
+                public static final String CLUSTER_NAME = "hcjf.cloud.orchestrator.this.node.cluster.name";
+                public static final String DATA_CENTER_NAME = "hcjf.cloud.orchestrator.this.node.data.center.name";
                 public static final String LAN_ADDRESS = "hcjf.cloud.orchestrator.this.node.lan.address";
                 public static final String LAN_PORT = "hcjf.cloud.orchestrator.this.node.lan.port";
                 public static final String WAN_ADDRESS = "hcjf.cloud.orchestrator.this.node.wan.address";

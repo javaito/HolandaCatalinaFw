@@ -20,7 +20,7 @@ import java.util.concurrent.locks.Lock;
 public class CloudTestB {
 
     public static void main(String[] args) {
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
@@ -41,6 +41,7 @@ public class CloudTestB {
 
         System.out.println("Load done!");
 
+        Layers.publishLayer(LayerTestB.class);
         Map<String, String> testingMap = Cloud.getMap("testing-map");
         Lock lock = Cloud.getLock("testing-lock");
         Lock mapLock = Cloud.getLock("map-lock");
@@ -107,9 +108,6 @@ public class CloudTestB {
                     } else if(arguments[0].equalsIgnoreCase("unlock") && arguments.length == 1) {
                         lock.unlock();
                         System.out.println("Unlocked");
-                    } else if(arguments[0].equalsIgnoreCase("publish") && arguments.length == 1) {
-                        Layers.publishLayer(LayerTestB.class);
-                        System.out.println("Layer published");
                     } else if(arguments[0].equalsIgnoreCase("invoke") && arguments.length == 2) {
                         DistributedLayerTest distributedLayerTest = Layers.get(DistributedLayerTest.class, arguments[1]);
                         System.out.println("Result: " + distributedLayerTest.method("valueB"));

@@ -13,8 +13,9 @@ import java.util.*;
  */
 public interface BsonParcelable {
 
-    String MAP_KEYS_FIELD_NAME = "K";
-    String MAP_VALUES_FIELD_NAME = "V";
+    String MAP_KEYS_FIELD_NAME = "__K__";
+    String MAP_VALUES_FIELD_NAME = "__V__";
+    String PARCELABLE_CLASS_NAME = "__pcn__";
 
     /**
      * Returns the bson representation of the instance.
@@ -22,7 +23,7 @@ public interface BsonParcelable {
      */
     default BsonDocument toBson() {
         BsonDocument document = new BsonDocument();
-        document.put(Builder.PARCELABLE_CLASS_NAME, getClass().getName());
+        document.put(PARCELABLE_CLASS_NAME, getClass().getName());
         Map<String, Introspection.Accessors> accessorsMap = Introspection.getAccessors(getClass());
         Introspection.Getter getter;
         Object value;
@@ -199,12 +200,7 @@ public interface BsonParcelable {
             } else if (Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
                 result = fromBson(keyType, collectionDataType, (BsonDocument) element);
             } else if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
-                try {
-                    BsonParcelable parcelable = (BsonParcelable) expectedDataType.getConstructor().newInstance();
-                    result = parcelable.populate((BsonDocument) element);
-                } catch (Exception ex) {
-                    throw new IllegalArgumentException();
-                }
+                result = Builder.create((BsonDocument)element);
             } else if (expectedDataType.isEnum() && element instanceof BsonPrimitive) {
                 result = Enum.valueOf(expectedDataType, element.getAsString());
             } else if (expectedDataType.equals(Class.class) && element instanceof BsonPrimitive) {
@@ -226,8 +222,6 @@ public interface BsonParcelable {
      * Internal class to create and populate the instance serialized into the bson document.
      */
     final class Builder {
-
-        private static final String PARCELABLE_CLASS_NAME = "__pcn__";
 
         public static <P extends BsonParcelable> P create(BsonDocument document) {
             String className = document.get(PARCELABLE_CLASS_NAME).getAsString();
