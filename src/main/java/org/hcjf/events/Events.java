@@ -5,6 +5,7 @@ import org.hcjf.errors.Errors;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -127,16 +128,23 @@ public final class Events extends Service<EventListener> {
         instance.unregisterConsumer(eventListener);
     }
 
-    public static <E extends Event> E waitForEvent() throws InterruptedException {
-        return waitForEvent(Long.MAX_VALUE);
+    public static <E extends Event> E waitForEvent(Class<E> eventClass) throws InterruptedException {
+        return waitForEvent(eventClass, Long.MAX_VALUE);
     }
 
-    public static <E extends Event> E waitForEvent(long timeout) throws InterruptedException {
+    public static <E extends Event> E waitForEvent(Class<E> eventClass, long timeout) throws InterruptedException {
         AtomicReference<E> result = new AtomicReference<>();
-        addEventListener((EventListener<E>) event -> {
-            result.set(event);
-            synchronized (result) {
-                result.notifyAll();
+        addEventListener(new EventListener<E>(){
+            @Override
+            public void onEventReceive(E event) {
+                result.set(event);
+                synchronized (result) {
+                    result.notifyAll();
+                }
+            }
+            @Override
+            public Class<E> getEventType() {
+                return eventClass;
             }
         });
         synchronized (result) {
@@ -145,22 +153,12 @@ public final class Events extends Service<EventListener> {
         return result.get();
     }
 
-    public static <O extends Object, E extends Event> O waitForEvent(EventCollector<E> eventCollector) throws InterruptedException {
-        return waitForEvent(eventCollector, Long.MAX_VALUE);
+    public static <O extends Object, E extends Event> O waitForEvent(Class<E> eventClass, EventCollector<E> eventCollector) throws InterruptedException {
+        return waitForEvent(eventClass, eventCollector, Long.MAX_VALUE);
     }
 
-    public static <O extends Object, E extends Event> O waitForEvent(EventCollector<E> eventCollector, long timeout) throws InterruptedException {
-        AtomicReference<E> result = new AtomicReference<>();
-        addEventListener((EventListener<E>) event -> {
-            result.set(event);
-            synchronized (result) {
-                result.notifyAll();
-            }
-        });
-        synchronized (result) {
-            result.wait(timeout);
-        }
-        return eventCollector.collect(result.get());
+    public static <O extends Object, E extends Event> O waitForEvent(Class<E> eventClass, EventCollector<E> eventCollector, long timeout) throws InterruptedException {
+        return eventCollector.collect(waitForEvent(eventClass, timeout));
     }
 
     public interface EventCollector<E extends Event> {

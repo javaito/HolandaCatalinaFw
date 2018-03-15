@@ -5,6 +5,7 @@ import org.hcjf.utils.bson.BsonParcelable;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,19 +33,28 @@ public class BsonParcelableTest {
         Map<UUID, Map<String, Date>> map3 = new HashMap<>();
         map3.put(UUID.randomUUID(), innerMap);
 
-        TestClass testMap = new TestClass();
-        testMap.setMap1(map1);
-        testMap.setMap2(map2);
-        testMap.setMap3(map3);
+        TestSerializable testSerializable = new TestSerializable();
+        testSerializable.setField1("Hello world!!");
+        testSerializable.setField2(37);
 
-        BsonDocument bsonDocument = testMap.toBson();
+        TestClass testObject = new TestClass();
+        testObject.setMap1(map1);
+        testObject.setMap2(map2);
+        testObject.setMap3(map3);
+        testObject.setTestSerializable(testSerializable);
 
-        TestClass unserializedTestMap = BsonParcelable.Builder.create(bsonDocument);
+        BsonDocument bsonDocument = testObject.toBson();
 
-        Assert.assertEquals(testMap.getMap1().get(new UUID(0, 12)),
-                unserializedTestMap.getMap1().get(new UUID(0, 12)));
-        Assert.assertEquals(testMap.getMap1().get(new UUID(0, 13)),
-                unserializedTestMap.getMap1().get(new UUID(0, 13)));
+        TestClass unserializedTestObject = BsonParcelable.Builder.create(bsonDocument);
+
+        Assert.assertEquals(testObject.getMap1().get(new UUID(0, 12)),
+                unserializedTestObject.getMap1().get(new UUID(0, 12)));
+        Assert.assertEquals(testObject.getMap1().get(new UUID(0, 13)),
+                unserializedTestObject.getMap1().get(new UUID(0, 13)));
+        Assert.assertEquals(testObject.getTestSerializable().getField1(),
+                unserializedTestObject.getTestSerializable().getField1());
+        Assert.assertEquals(testObject.getTestSerializable().getField2(),
+                unserializedTestObject.getTestSerializable().getField2());
     }
 
     public static class TestClass implements BsonParcelable {
@@ -52,6 +62,7 @@ public class BsonParcelableTest {
         private Map<UUID, Integer> map1;
         private Map<String, Double> map2;
         private Map<UUID, Map<String, Date>> map3;
+        private TestSerializable testSerializable;
 
         public Map<UUID, Integer> getMap1() {
             return map1;
@@ -75,6 +86,36 @@ public class BsonParcelableTest {
 
         public void setMap3(Map<UUID, Map<String, Date>> map3) {
             this.map3 = map3;
+        }
+
+        public TestSerializable getTestSerializable() {
+            return testSerializable;
+        }
+
+        public void setTestSerializable(TestSerializable testSerializable) {
+            this.testSerializable = testSerializable;
+        }
+    }
+
+    public static class TestSerializable implements Serializable {
+
+        private String field1;
+        private Integer field2;
+
+        public String getField1() {
+            return field1;
+        }
+
+        public void setField1(String field1) {
+            this.field1 = field1;
+        }
+
+        public Integer getField2() {
+            return field2;
+        }
+
+        public void setField2(Integer field2) {
+            this.field2 = field2;
         }
     }
 }

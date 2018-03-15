@@ -3,6 +3,7 @@ package org.hcjf.utils.bson;
 import org.hcjf.bson.*;
 import org.hcjf.utils.Introspection;
 
+import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -105,6 +106,15 @@ public interface BsonParcelable {
             result = new BsonPrimitive(name, ((Class)value).getName());
         } else if(BsonType.fromValue(value) != null) {
             result = new BsonPrimitive(name, value);
+        } else if(Serializable.class.isAssignableFrom(value.getClass())) {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                oos.writeObject(value);
+                oos.flush();
+                result = new BsonPrimitive(name, baos.toByteArray());
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
         } else {
             throw new IllegalArgumentException();
         }
@@ -208,6 +218,14 @@ public interface BsonParcelable {
                     result = Class.forName(element.getAsString());
                 } catch (ClassNotFoundException e) {
                     throw new IllegalArgumentException();
+                }
+            } else if (Serializable.class.isAssignableFrom(expectedDataType) && !UUID.class.isAssignableFrom(expectedDataType) &&
+                    element instanceof BsonPrimitive && ((BsonPrimitive) element).getType().equals(BsonType.BINARY)) {
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(element.getAsBytes());
+                        ObjectInputStream ois = new ObjectInputStream(bais)) {
+                    result = ois.readObject();
+                } catch (Exception ex) {
+                    return element.getValue();
                 }
             } else {
                 return element.getValue();
