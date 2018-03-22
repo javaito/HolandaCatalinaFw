@@ -225,8 +225,8 @@ public final class CloudOrchestrator extends Service<Node> {
      */
     private synchronized void reorganize(Node node, CloudSession session, ReorganizationAction action) {
         long time = System.currentTimeMillis();
-        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Starting reorganization process by action : %s",
-                action.toString());
+//        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Starting reorganization process by action : %s",
+//                action.toString());
 
         switch(action) {
             case CONNECT: {
@@ -307,8 +307,8 @@ public final class CloudOrchestrator extends Service<Node> {
             }
         }
 
-        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
-                action.toString(), System.currentTimeMillis() - time);
+//        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
+//                action.toString(), System.currentTimeMillis() - time);
     }
 
     /**
@@ -319,26 +319,35 @@ public final class CloudOrchestrator extends Service<Node> {
         while(!Thread.currentThread().isInterrupted()) {
             for(Node node : nodes) {
                 synchronized (sessionByNode) {
-                    if (!sessionByNode.containsKey(node.getId()) && !node.getStatus().equals(Node.Status.CONNECTED)) {
-                        CloudClient client = new CloudClient(node.getLanAddress(), node.getLanPort());
-                        NetService.getInstance().registerConsumer(client);
-                        if (client.waitForConnect()) {
-                            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Connected with %s:%d",
-                                    node.getLanAddress(), node.getLanPort());
+                    if(node.getStatus().equals(Node.Status.LOST) &&
+                            (System.currentTimeMillis() - node.getLastStatusUpdate()) >
+                                    SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.NODE_LOST_TIMEOUT)) {
+                        disconnected(node);
+                    }
 
-                            if(connecting(node)) {
-                                try {
-                                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending credentials to %s:%d",
-                                            node.getLanAddress(), node.getLanPort());
-                                    client.send(new NodeIdentificationMessage(thisNode));
-                                } catch (IOException e) {
-                                    client.disconnect();
-                                    disconnected(node);
+                    if(!node.getStatus().equals(Node.Status.LOST)) {
+                        if (!sessionByNode.containsKey(node.getId()) && !node.getStatus().equals(Node.Status.CONNECTED)) {
+                            CloudClient client = new CloudClient(node.getLanAddress(), node.getLanPort());
+                            NetService.getInstance().registerConsumer(client);
+                            if (client.waitForConnect()) {
+                                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Connected with %s:%d",
+                                        node.getLanAddress(), node.getLanPort());
+
+                                if (connecting(node)) {
+                                    try {
+                                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending credentials to %s:%d",
+                                                node.getLanAddress(), node.getLanPort());
+                                        client.send(new NodeIdentificationMessage(thisNode));
+                                    } catch (IOException e) {
+                                        client.disconnect();
+                                        disconnected(node);
+                                    }
                                 }
+                            } else {
+                                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to connect with %s:%d",
+                                        node.getLanAddress(), node.getLanPort());
+                                lost(node);
                             }
-                        } else {
-                            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to connected with %s:%d",
-                                    node.getLanAddress(), node.getLanPort());
                         }
                     }
                 }
@@ -448,35 +457,40 @@ public final class CloudOrchestrator extends Service<Node> {
             if(node == null) {
                 node = nodesByWanId.get(nodeIdentificationMessage.getNode().getWanId());
             }
-            updateNode(node, nodeIdentificationMessage);
-            if(session.getConsumer() instanceof CloudClient) {
-                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials response from %s:%d",
-                        node.getLanAddress(), node.getLanPort());
-                if(!connected(node)){
-                    ((CloudClient)session.getConsumer()).disconnect();
-                } else {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
-                    nodeConnected(node, session);
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
+
+            if(node != null) {
+                updateNode(node, nodeIdentificationMessage);
+                if (session.getConsumer() instanceof CloudClient) {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials response from %s:%d",
                             node.getLanAddress(), node.getLanPort());
-                    sendMessage(session, new AckMessage(message));
-                }
-            } else if(session.getConsumer() instanceof CloudServer) {
-                if(connecting(node)) {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials from %s:%d",
-                            node.getLanAddress(), node.getLanPort());
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Response credentials to %s:%d",
-                            node.getLanAddress(), node.getLanPort());
-                    NodeIdentificationMessage returnNodeIdentificationMessage = new NodeIdentificationMessage(thisNode);
-                    waitingAck.put(returnNodeIdentificationMessage.getId(), node);
-                    sendMessage(session, returnNodeIdentificationMessage);
-                } else {
-                    try {
-                        ((CloudServer)session.getConsumer()).send(session, new BusyNodeMessage(thisNode));
-                    } catch (IOException e) {
-                        //TODO: Close the session
+                    if (!connected(node)) {
+                        ((CloudClient) session.getConsumer()).disconnect();
+                    } else {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
+                        nodeConnected(node, session);
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
+                                node.getLanAddress(), node.getLanPort());
+                        sendMessage(session, new AckMessage(message));
+                    }
+                } else if (session.getConsumer() instanceof CloudServer) {
+                    if (connecting(node)) {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming credentials from %s:%d",
+                                node.getLanAddress(), node.getLanPort());
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Response credentials to %s:%d",
+                                node.getLanAddress(), node.getLanPort());
+                        NodeIdentificationMessage returnNodeIdentificationMessage = new NodeIdentificationMessage(thisNode);
+                        waitingAck.put(returnNodeIdentificationMessage.getId(), node);
+                        sendMessage(session, returnNodeIdentificationMessage);
+                    } else {
+                        try {
+                            ((CloudServer) session.getConsumer()).send(session, new BusyNodeMessage(thisNode));
+                        } catch (IOException e) {
+                            //TODO: Close the session
+                        }
                     }
                 }
+            } else {
+                server.destroySession(session);
             }
         } else if(message instanceof BusyNodeMessage) {
             BusyNodeMessage busyNodeMessage = (BusyNodeMessage) message;
@@ -813,7 +827,7 @@ public final class CloudOrchestrator extends Service<Node> {
             layerInvokeMessage.setPath(path);
             result = (O) invoke(session, layerInvokeMessage);
         } else {
-            throw new RuntimeException();
+            throw new RuntimeException("Session not found!");
         }
         return result;
     }
@@ -876,6 +890,24 @@ public final class CloudOrchestrator extends Service<Node> {
     /**
      *
      * @param node
+     * @return
+     */
+    private boolean lost(Node node) {
+        Objects.requireNonNull(node, "Null node");
+
+        boolean result = false;
+        node.setConnectionAttempts(node.getConnectionAttempts() + 1);
+        if(node.getConnectionAttempts() >= 2) {
+            if(changeStatus(node, Node.Status.LOST)) {
+                node.setConnectionAttempts(0);
+            }
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param node
      * @param message
      */
     private void updateNode(Node node, NodeIdentificationMessage message) {
@@ -908,13 +940,19 @@ public final class CloudOrchestrator extends Service<Node> {
                 break;
             }
             case DISCONNECTED: {
-                if(status.equals(Node.Status.CONNECTING)) {
+                if(status.equals(Node.Status.CONNECTING) || status.equals(Node.Status.LOST)) {
                     result = true;
                 }
                 break;
             }
             case CONNECTING: {
                 if(status.equals(Node.Status.DISCONNECTED) || status.equals(Node.Status.CONNECTED)) {
+                    result = true;
+                }
+                break;
+            }
+            case LOST: {
+                if(status.equals(Node.Status.DISCONNECTED) || status.equals(Node.Status.CONNECTING)) {
                     result = true;
                 }
                 break;

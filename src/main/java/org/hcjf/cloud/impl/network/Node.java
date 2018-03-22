@@ -37,10 +37,14 @@ public class Node implements ServiceConsumer, BsonParcelable {
     private String wanAddress;
     private Integer wanPort;
     private Status status;
+    private Long lastStatusUpdate;
+    private Integer connectionAttempts;
     private boolean localNode;
 
     public Node() {
         status = Status.DISCONNECTED;
+        lastStatusUpdate = System.currentTimeMillis();
+        connectionAttempts = 0;
     }
 
     public String getLanId() {
@@ -145,6 +149,19 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public void setStatus(Status status) {
         this.status = status;
+        this.lastStatusUpdate = System.currentTimeMillis();
+    }
+
+    public Long getLastStatusUpdate() {
+        return lastStatusUpdate;
+    }
+
+    public Integer getConnectionAttempts() {
+        return connectionAttempts;
+    }
+
+    public void setConnectionAttempts(Integer connectionAttempts) {
+        this.connectionAttempts = connectionAttempts;
     }
 
     public boolean isLocalNode() {
@@ -185,6 +202,8 @@ public class Node implements ServiceConsumer, BsonParcelable {
     }
 
     public enum Status {
+
+        LOST,
 
         DISCONNECTED,
 

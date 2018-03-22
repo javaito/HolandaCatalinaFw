@@ -41,7 +41,7 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
     public void send(Message message) throws IOException {
         MessageBuffer buffer = new MessageBuffer();
         buffer.append(message);
-        write(session, buffer, true);
+        write(session, buffer, false);
     }
 
     @Override

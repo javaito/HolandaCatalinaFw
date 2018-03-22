@@ -62,7 +62,7 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
     public void send(CloudSession session, Message message) throws IOException {
         MessageBuffer buffer = new MessageBuffer();
         buffer.append(message);
-        write(session, buffer, true);
+        write(session, buffer, false);
     }
 
     @Override

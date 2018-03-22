@@ -321,6 +321,7 @@ public final class SystemProperties extends Properties {
             public static final String AVAILABLE = "hcjf.cloud.orchestrator.available";
             public static final String SERVER_LISTENER_PORT = "hcjf.cloud.orchestrator.server.listener.port";
             public static final String CONNECTION_LOOP_WAIT_TIME = "hcjf.cloud.orchestrator.connection.loop.wait.time";
+            public static final String NODE_LOST_TIMEOUT = "hcjf.cloud.orchestrator.node.lost.timeout";
             public static final String ACK_TIMEOUT = "hcjf.cloud.orchestrator.ack.timeout";
             public static final String CLUSTER_NAME = "hcjf.cloud.orchestrator.cluster.name";
             public static final String WAGON_TIMEOUT = "hcjf.cloud.orchestrator.wagon.timeout";
@@ -620,6 +621,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.SERVICE_PRIORITY, "0");
         defaults.put(Cloud.Orchestrator.SERVER_LISTENER_PORT, "18080");
         defaults.put(Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME, "10000");
+        defaults.put(Cloud.Orchestrator.NODE_LOST_TIMEOUT, "1800000");
         defaults.put(Cloud.Orchestrator.ACK_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.REORGANIZATION_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
