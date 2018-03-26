@@ -47,7 +47,7 @@ public class Node implements ServiceConsumer, BsonParcelable {
         connectionAttempts = 0;
     }
 
-    public String getLanId() {
+    public synchronized String getLanId() {
         String result = null;
         if(lanAddress != null) {
             result = createNodeHash(lanAddress, lanPort);
@@ -55,7 +55,7 @@ public class Node implements ServiceConsumer, BsonParcelable {
         return result;
     }
 
-    public String getWanId() {
+    public synchronized String getWanId() {
         String result = null;
         if(wanAddress != null) {
             result = createNodeHash(wanAddress, wanPort);
@@ -178,13 +178,17 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public JsonObject toJson() {
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty(Fields.ID, getId().toString());
+        if(getId() != null) {
+            jsonObject.addProperty(Fields.ID, getId().toString());
+        }
         jsonObject.addProperty(Fields.LOCAL, isLocalNode());
         jsonObject.addProperty(Fields.CLUSTER_NAME, getClusterName());
         jsonObject.addProperty(Fields.DATA_CENTER_NAME, getDataCenterName());
         jsonObject.addProperty(Fields.NAME, getName());
         jsonObject.addProperty(Fields.VERSION, getVersion());
-        jsonObject.addProperty(Fields.STARTUP_DATE, getStartupDate().toString());
+        if(getStartupDate() != null) {
+            jsonObject.addProperty(Fields.STARTUP_DATE, getStartupDate().toString());
+        }
         if(getLanAddress() != null) {
             jsonObject.addProperty(Fields.LAN_ADDRESS, getLanAddress());
             jsonObject.addProperty(Fields.LAN_PORT, getLanPort());

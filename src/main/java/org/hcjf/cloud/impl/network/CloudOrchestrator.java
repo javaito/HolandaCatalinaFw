@@ -79,7 +79,13 @@ public final class CloudOrchestrator extends Service<Node> {
         responseListeners = new HashMap<>();
 
         thisNode = new Node();
-        thisNode.setId(UUID.randomUUID());
+        UUID thisNodeId = SystemProperties.getUUID(SystemProperties.Cloud.Orchestrator.ThisNode.ID);
+        if(thisNodeId == null) {
+            thisNodeId = UUID.randomUUID();
+        }
+        thisNode.setId(thisNodeId);
+        thisNode.setDataCenterName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME));
+        thisNode.setClusterName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME));
         thisNode.setName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.NAME));
         thisNode.setVersion(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.VERSION));
         thisNode.setLanAddress(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS));
@@ -136,6 +142,7 @@ public final class CloudOrchestrator extends Service<Node> {
             add = false;
         }
         if(add) {
+            node.setStatus(Node.Status.DISCONNECTED);
             if (lanId != null) {
                 nodesByLanId.put(lanId, node);
             }
@@ -145,6 +152,7 @@ public final class CloudOrchestrator extends Service<Node> {
             }
 
             nodes.add(node);
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "New node registered: %s", node);
         }
     }
 
@@ -389,6 +397,7 @@ public final class CloudOrchestrator extends Service<Node> {
                             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending wagon");
                             Map<String,List<Message>> load = getWagonLoad();
                             wagonMessage.getMessages().putAll(load);
+                            wagonMessage.getNodes().addAll(nodes);
                             sendMessage(sessionByNode.get(nextDestination.getId()), wagonMessage);
                         }
                     } else {
@@ -458,6 +467,17 @@ public final class CloudOrchestrator extends Service<Node> {
                 node = nodesByWanId.get(nodeIdentificationMessage.getNode().getWanId());
             }
 
+            if(node == null && Objects.equals(nodeIdentificationMessage.getNode().getClusterName(), thisNode.getClusterName())) {
+                //In this case we need to add the node ass a new node
+                registerConsumer(nodeIdentificationMessage.getNode());
+
+                //Search again the node into the class collections.
+                node = nodesByLanId.get(nodeIdentificationMessage.getNode().getLanId());
+                if(node == null) {
+                    node = nodesByWanId.get(nodeIdentificationMessage.getNode().getWanId());
+                }
+            }
+
             if(node != null) {
                 updateNode(node, nodeIdentificationMessage);
                 if (session.getConsumer() instanceof CloudClient) {
@@ -516,6 +536,12 @@ public final class CloudOrchestrator extends Service<Node> {
                 if(wagonMessages != null) {
                     for (Message messageOfWagon : wagonMessages) {
                         incomingMessage(session, messageOfWagon);
+                    }
+                }
+
+                for(Node wagonNode : wagonMessage.getNodes()) {
+                    if(!nodesByLanId.containsKey(wagonNode.getLanId()) && !nodesByWanId.containsKey(wagonNode.getWanId())) {
+                        registerConsumer(wagonNode);
                     }
                 }
             }
