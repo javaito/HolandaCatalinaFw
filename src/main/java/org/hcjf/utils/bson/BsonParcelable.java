@@ -93,7 +93,7 @@ public interface BsonParcelable {
         if(Collection.class.isAssignableFrom(value.getClass())) {
             result = toBson(name, (Collection)value);
         } else if(Map.class.isAssignableFrom(value.getClass())) {
-            result = toBson(name, (Map<String, Object>)value);
+            result = toBson(name, (Map)value);
         } else if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
             BsonDocument document = ((BsonParcelable)value).toBson();
             document.setName(name);
