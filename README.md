@@ -1,10 +1,10 @@
 ![](https://img.shields.io/travis/javaito/HolandaCatalinaFw.svg)
 ![](https://img.shields.io/github/license/javaito/HolandaCatalinaFw.svg)
 ![](https://img.shields.io/github/release/javaito/HolandaCatalinaFw.svg)
+![Maven Central](https://img.shields.io/maven-central/v/com.github.javaito/hcjf.svg)
 ![](https://img.shields.io/github/forks/javaito/HolandaCatalinaFw.svg?style=social&label=Fork)
 ![](https://img.shields.io/github/stars/javaito/HolandaCatalinaFw.svg?style=social&label=Star)
 ![](https://img.shields.io/github/watchers/javaito/HolandaCatalinaFw.svg?style=social&label=Watch)
-![](https://img.shields.io/github/followers/javaito/HolandaCatalinaFw.svg?style=social&label=Follow)
 
 # Holanda Catalina
 
