@@ -12,6 +12,6 @@ Holland Catalina is a powerful framework to create your's solution based on a mi
  - [My first service](my-first-service.md)
  - [Very good things!](components.md)
 
-##Acknowledgements
+## Acknowledgements
 
  - [Microservice Architecture](http://microservices.io/index.html)
