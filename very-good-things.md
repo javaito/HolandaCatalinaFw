@@ -52,6 +52,8 @@ All the layers must comply with three characteristics in order to be published:
  - It must specify whether they are of the stateful or stateless type
  - It must implement one or more interfaces which extend the [LayerInterface](org.hcjf.layers.LayerInterface.java) interface
 
+### Publish layers
+
 Each one of the different implementations of the different types of layers must be published in order to be used in each of the instances of the framework.
 There are three ways to publish the implementation of a layer:
 
@@ -59,6 +61,67 @@ There are three ways to publish the implementation of a layer:
  ``` java
  Layers.publishLayer(LayerTestA.class);
  ```
+ - Deployin a jar file as plugin, this action publish all the layers into the jar automatically.
+ - All the distributed layers published by other node into the cluster are public for all the nodes.
+
+### Invoke layers
+
+In order to invoke a layer you have to indicate the class object that refers to the interface that you want to find and the name of the implementation that you want to execute
+
+### Example
+
+We're going to create the set of classes to build an example of publishing and using a layer with a couple of implementations
+The case study of the example, is the calculation of the average of a set of decimal numbers, one of the implementations is the arithmetic average and the other implementation is the harmonic average.
+
+### Layer interface definition
+``` java
+import org.hcjf.layers.LayerInterface;
+
+public interface AverageCalculation extends LayerInterface {
+
+    Double calculate(Double... samples);
+
+}
+```
+
+### Arithmetic Average
+``` java
+import org.hcjf.layers.Layer;
+
+public class ArithmeticAverage extends Layer implements AverageCalculation {
+
+    public ArithmeticAverage() {
+        super("arithmetic");
+    }
+
+    public Double calculation(Double... samples) {
+        return DoubleStream.of(samples).sum() / samples.length;
+    }
+}
+```
+
+### Harmonic Average
+``` java
+import org.hcjf.layers.Layer;
+
+public class HarmonicAverage extends Layer implements AverageCalculation {
+
+    public HarmonicAverage() {
+        suprt("harmonic");
+    }
+
+    public Double calculation(Double... samples) {
+        sum result = 0;
+        for(int i = 0: i < samples.length; i++) {
+            sum += 1/samples[i];
+        }
+        return samples.length / sum;
+    }
+}
+```
+
+### Use case for the average calculation
+
 
 ## Introspection cache
 
