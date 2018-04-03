@@ -94,7 +94,7 @@ public class ArithmeticAverage extends Layer implements AverageCalculation {
         super("arithmetic");
     }
 
-    public Double calculation(Double... samples) {
+    public Double calculate(Double... samples) {
         return DoubleStream.of(samples).sum() / samples.length;
     }
 }
@@ -110,7 +110,7 @@ public class HarmonicAverage extends Layer implements AverageCalculation {
         suprt("harmonic");
     }
 
-    public Double calculation(Double... samples) {
+    public Double calculate(Double... samples) {
         sum result = 0;
         for(int i = 0: i < samples.length; i++) {
             sum += 1/samples[i];
@@ -121,9 +121,154 @@ public class HarmonicAverage extends Layer implements AverageCalculation {
 ```
 
 ### Use case for the average calculation
+``` java
+public static void main(String[] args) {
 
+    Double[] data = {23.0, 34.2, 0.45, 14.6, 16.4, 9.0, -45.3};
+
+    //... In this block the layers are published
+    Layers.publish(HarmonicAverage.class);
+    Layers.publish(ArithmeticAverage.class);
+    //...
+
+
+    //... In this block the layers are consumed
+    AverageCalculation averageCalculation = Layers.get(AverageCalculation.class, args[0]);
+    System.out.println("Result: " + everageCalculation.calculate(data));
+}
+```
+As you can see in the example, depending on the name that is indicated in the method 'get ()' of the class Layers will be the implementation that will return the framework, but as all the implementations respect the same interface, it is possible to keep the same code modifying implementations
 
 ## Introspection cache
+This arises because all the generic processes that you want to develop involve introspection, that's why the framework contains a utility that allows you to store the result of an indexed introspection process with a name, which I call this cache of introspection.
+The main virtue of this mechanism is to improve the speed of access to the introspection by decreasing ten times the speed, for this reason this mechanism is expelled by all the modules of the framework.
+As with any cache, the first call to introspection with a particular filter takes the same amount of time as doing the process without a cache, but the time in the next calls decreases noticeably
+
+### Example
+``` java
+package org.hcjf.utils;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+
+public class IntrospectionTest {
+
+    @Test
+    public void testGetters() {
+        try {
+            Map<String, Introspection.Getter> getters = Introspection.getGetters(TestEntity.class);
+            Assert.assertTrue(getters.containsKey("integer"));
+            Assert.assertTrue(getters.get("integer").getReturnType().equals(Integer.class));
+            Assert.assertTrue(getters.containsKey("map1"));
+            Assert.assertTrue(getters.get("map1").getReturnType().equals(Map.class));
+            Assert.assertTrue(getters.get("map1").getReturnKeyType().equals(String.class));
+            Assert.assertTrue(getters.get("map1").getReturnCollectionType().equals(String.class));
+            Assert.assertTrue(getters.containsKey("map2"));
+            Assert.assertTrue(getters.get("map2").getReturnType().equals(Map.class));
+            Assert.assertTrue(getters.get("map2").getReturnKeyType().equals(String.class));
+            Assert.assertTrue(getters.get("map2").getReturnCollectionType().equals(Set.class));
+            Assert.assertTrue(getters.containsKey("collection1"));
+            Assert.assertTrue(getters.get("collection1").getReturnType().equals(Collection.class));
+            Assert.assertTrue(getters.get("collection1").getReturnKeyType() == null);
+            Assert.assertTrue(getters.get("collection1").getReturnCollectionType().equals(String.class));
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testSetters() {
+        try {
+            Map<String, Introspection.Setter> setters = Introspection.getSetters(TestEntity.class);
+            Assert.assertTrue(setters.containsKey("integer"));
+            Assert.assertTrue(setters.get("integer").getParameterType().equals(Integer.class));
+            Assert.assertTrue(setters.containsKey("map1"));
+            Assert.assertTrue(setters.get("map1").getParameterType().equals(Map.class));
+            Assert.assertTrue(setters.get("map1").getParameterKeyType().equals(String.class));
+            Assert.assertTrue(setters.get("map1").getParameterCollectionType().equals(String.class));
+            Assert.assertTrue(setters.containsKey("map2"));
+            Assert.assertTrue(setters.get("map2").getParameterType().equals(Map.class));
+            Assert.assertTrue(setters.get("map2").getParameterKeyType().equals(String.class));
+            Assert.assertTrue(setters.get("map2").getParameterCollectionType().equals(Set.class));
+            Assert.assertTrue(setters.containsKey("collection1"));
+            Assert.assertTrue(setters.get("collection1").getParameterCollectionType().equals(String.class));
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+    }
+
+    private static class TestEntity extends InheritanceTestEntity<String, Integer> {
+
+        private Integer integer;
+        private Map<String, String> map1;
+        private Map<String, Set<String>> map2;
+        private Collection<String> collection1;
+
+        public Integer getInteger() {
+            return integer;
+        }
+
+        public void setInteger(Integer integer) {
+            this.integer = integer;
+        }
+
+        public Map<String, String> getMap1() {
+            return map1;
+        }
+
+        public void setMap1(Map<String, String> map1) {
+            this.map1 = map1;
+        }
+
+        public Map<String, Set<String>> getMap2() {
+            return map2;
+        }
+
+        public void setMap2(Map<String, Set<String>> map2) {
+            this.map2 = map2;
+        }
+
+        public Collection<String> getCollection1() {
+            return collection1;
+        }
+
+        public void setCollection1(Collection<String> collection1) {
+            this.collection1 = collection1;
+        }
+
+        @Override
+        public Map<String, Integer> getGenericMap() {
+            return super.getGenericMap();
+        }
+    }
+
+    private static class InheritanceTestEntity<K extends Object, V extends Object> {
+
+        private Collection<V> genericCollection;
+        private Map<K,V> genericMap;
+
+        public Collection<V> getGenericCollection() {
+            return genericCollection;
+        }
+
+        public void setGenericCollection(Collection<V> genericCollection) {
+            this.genericCollection = genericCollection;
+        }
+
+        public Map<K, V> getGenericMap() {
+            return genericMap;
+        }
+
+        public void setGenericMap(Map<K, V> genericMap) {
+            this.genericMap = genericMap;
+        }
+    }
+}
+```
 
 ## Bson Parcelable
 
