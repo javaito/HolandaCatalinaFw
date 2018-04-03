@@ -14,7 +14,7 @@ Holland Catalina is a powerful framework to create your's solution based on a mi
  - [Introduction](introduction.md)
  - [Getting started](getting-started.md)
  - [My first service](my-first-service.md)
- - [Very good things!](components.md)
+ - [Very good things!](very-good-things.md)
 
 ## Acknowledgements
 
