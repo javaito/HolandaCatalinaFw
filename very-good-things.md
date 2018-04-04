@@ -277,7 +277,7 @@ public class IntrospectionTest {
 }
 ```
 
-## Queries [queries]
+## Queries
 Another thing very interesting into the HCJF is the query api. This api provides a very clear interface based on ANSI SQL which allows write our query in the same way that we would using a SQL data base, but this query run over our micro-services solucion using differents data soucers.
 This api is composed by four components:
 
@@ -286,18 +286,18 @@ This api is composed by four components:
  - [Functions](#query-functions)
  - [Resolution engine](#query-resolution-engine)
 
-### Compiler [query-compiler]
+### Compiler
 This component gives the capability of parse any query int the ANSI SQL format and creates a Query object as result. The Query object contains all the differents parts of the query, each part organized into the object and each of this can be iterated and obtained in order to inspect the query and take decisions base on this information.
 Then a simple example of query parser
 ``` java
 Query query = Query.compile("SELECT * FROM resource");
 ```
 
-### Data sources [query-data-sources]
+### Data sources
 
-### Functions [query-functions]
+### Functions
 
-### Resolution engine [query-resolution-engine]
+### Resolution engine
 
 ## Bson Parcelable
 Any object that implements the interface 'org.hcjf.utils.bson.BsonParcelable' has the ability to serialize its internal model in [bson](http://bsonspec.org/) format, for this by introspection in each of the methods of type 'get' of the class of the object, the values corresponding to the object are obtained.
