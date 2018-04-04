@@ -2,6 +2,13 @@
 
 In this section I want to show some of the most interesting things that are part of the internal structure of the framework, some of these things provide performance and scalability to the construction and maintenance of the project
 
+## Table of Contents
+ - [Internal services](##internal-services)
+ - [Layers](##layers)
+ - [Introspection cache](##introspection-cache)
+ - [Queries](##queries)
+ - [Bson Parcelable](##bson-parcelable)
+
 ## Internal services
 
 An internal service is an internal component of the framework responsible for performing a specific task that maintains communication with the application layer through observers that provide an interface with the service. This type of services start to work on demand, if they are not used they do not add load to the framework instance
@@ -73,7 +80,7 @@ In order to invoke a layer you have to indicate the class object that refers to 
 We're going to create the set of classes to build an example of publishing and using a layer with a couple of implementations
 The case study of the example, is the calculation of the average of a set of decimal numbers, one of the implementations is the arithmetic average and the other implementation is the harmonic average.
 
-### Layer interface definition
+#### Layer interface definition
 ``` java
 import org.hcjf.layers.LayerInterface;
 
@@ -84,7 +91,7 @@ public interface AverageCalculation extends LayerInterface {
 }
 ```
 
-### Arithmetic Average
+#### Arithmetic Average
 ``` java
 import org.hcjf.layers.Layer;
 
@@ -100,7 +107,7 @@ public class ArithmeticAverage extends Layer implements AverageCalculation {
 }
 ```
 
-### Harmonic Average
+#### Harmonic Average
 ``` java
 import org.hcjf.layers.Layer;
 
@@ -120,7 +127,7 @@ public class HarmonicAverage extends Layer implements AverageCalculation {
 }
 ```
 
-### Use case for the average calculation
+#### Use case for the average calculation
 ``` java
 public static void main(String[] args) {
 
@@ -270,11 +277,34 @@ public class IntrospectionTest {
 }
 ```
 
+## Queries [queries]
+Another thing very interesting into the HCJF is the query api. This api provides a very clear interface based on ANSI SQL which allows write our query in the same way that we would using a SQL data base, but this query run over our micro-services solucion using differents data soucers.
+This api is composed by four components:
+
+ - [Compiler](#query-compiler)
+ - [Data sources](#query-data-sources)
+ - [Functions](#query-functions)
+ - [Resolution engine](#query-resolution-engine)
+
+### Compiler [query-compiler]
+This component gives the capability of parse any query int the ANSI SQL format and creates a Query object as result. The Query object contains all the differents parts of the query, each part organized into the object and each of this can be iterated and obtained in order to inspect the query and take decisions base on this information.
+Then a simple example of query parser
+``` java
+Query query = Query.compile("SELECT * FROM resource");
+```
+
+### Data sources [query-data-sources]
+
+### Functions [query-functions]
+
+### Resolution engine [query-resolution-engine]
+
 ## Bson Parcelable
 Any object that implements the interface 'org.hcjf.utils.bson.BsonParcelable' has the ability to serialize its internal model in [bson](http://bsonspec.org/) format, for this by introspection in each of the methods of type 'get' of the class of the object, the values corresponding to the object are obtained.
 Just as you can serialize the object, you can also obtain the instance from the block of bytes generated from the serialization of the original object, for this purpose you will do introspection in the object class that you want to reconstruct, on each of the methods of the type 'set'.
 For all this we must bear in mind that an object that is intended to give the ability to be serializable in bson format must specify each of the methods 'set' and 'get' of the internal elements that are required for serialization
 
+### Example
 Creating some bson-parcelable classes
 
 ``` java
@@ -487,6 +517,4 @@ public class BsonParcelableTest {
 ```
 
 All the previous classes are in the set of test cases. [BsonParcelableTest](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/test/java/org/hcjf/utils/BsonParcelableTest.java)
-
-## Query
 
