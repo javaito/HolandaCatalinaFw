@@ -414,7 +414,7 @@ public static class TestSerializable implements Serializable {
         }
 }
 ```
-In the next block we show some of the most commons uses for the bson-serializable objects.
+In the next block we show some of the most common uses for the bson-serializable objects.
 ``` java
 package org.hcjf.utils;
 
