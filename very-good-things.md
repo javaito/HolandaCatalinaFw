@@ -275,6 +275,146 @@ Any object that implements the interface 'org.hcjf.utils.bson.BsonParcelable' ha
 Just as you can serialize the object, you can also obtain the instance from the block of bytes generated from the serialization of the original object, for this purpose you will do introspection in the object class that you want to reconstruct, on each of the methods of the type 'set'.
 For all this we must bear in mind that an object that is intended to give the ability to be serializable in bson format must specify each of the methods 'set' and 'get' of the internal elements that are required for serialization
 
+Creating some bson-parcelable classes
+
+``` java
+public static class Test2 implements BsonParcelable {
+
+        private List<Path> paths;
+
+        public List<Path> getPaths() {
+            return paths;
+        }
+
+        public void setPaths(List<Path> paths) {
+            this.paths = paths;
+        }
+}
+```
+
+``` java
+public static final class Path implements BsonParcelable {
+
+        private Object[] path;
+        private Object value;
+        private List<UUID> nodes;
+
+        public Path() {
+        }
+
+        public Path(Object[] path) {
+            this.path = path;
+        }
+
+        public Path(Object[] path, List<UUID> nodes) {
+            this.path = path;
+            this.nodes = nodes;
+        }
+
+        public Path(Object[] path, Object value) {
+            this.path = path;
+            this.value = value;
+        }
+
+        public Path(Object[] path, Object value, List<UUID> nodes) {
+            this.path = path;
+            this.value = value;
+            this.nodes = nodes;
+        }
+
+        public Object[] getPath() {
+            return path;
+        }
+
+        public void setPath(Object[] path) {
+            this.path = path;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public void setValue(Object value) {
+            this.value = value;
+        }
+
+        public List<UUID> getNodes() {
+            return nodes;
+        }
+
+        public void setNodes(List<UUID> nodes) {
+            this.nodes = nodes;
+        }
+}
+```
+
+``` java
+public class TestClass implements BsonParcelable {
+
+        private Map<UUID, Integer> map1;
+        private Map<String, Double> map2;
+        private Map<UUID, Map<String, Date>> map3;
+        private TestSerializable testSerializable;
+
+        public Map<UUID, Integer> getMap1() {
+            return map1;
+        }
+
+        public void setMap1(Map<UUID, Integer> map1) {
+            this.map1 = map1;
+        }
+
+        public Map<String, Double> getMap2() {
+            return map2;
+        }
+
+        public void setMap2(Map<String, Double> map2) {
+            this.map2 = map2;
+        }
+
+        public Map<UUID, Map<String, Date>> getMap3() {
+            return map3;
+        }
+
+        public void setMap3(Map<UUID, Map<String, Date>> map3) {
+            this.map3 = map3;
+        }
+
+        public TestSerializable getTestSerializable() {
+            return testSerializable;
+        }
+
+        public void setTestSerializable(TestSerializable testSerializable) {
+            this.testSerializable = testSerializable;
+        }
+    }
+```
+
+We gonna create a little serializable class in order to test the java serialized classes into the bson format
+``` java
+public static class TestSerializable implements Serializable {
+
+        private String field1;
+        private Integer field2;
+
+        public String getField1() {
+            return field1;
+        }
+
+        public void setField1(String field1) {
+            this.field1 = field1;
+        }
+
+        public Integer getField2() {
+            return field2;
+        }
+
+        public void setField2(Integer field2) {
+            this.field2 = field2;
+        }
+}
+```
+In the next block we show some of the most commons uses for the bson-serializable objects.
 ``` java
 package org.hcjf.utils;
 
@@ -343,133 +483,5 @@ public class BsonParcelableTest {
 
     }
 
-    public static class TestClass implements BsonParcelable {
-
-        private Map<UUID, Integer> map1;
-        private Map<String, Double> map2;
-        private Map<UUID, Map<String, Date>> map3;
-        private TestSerializable testSerializable;
-
-        public Map<UUID, Integer> getMap1() {
-            return map1;
-        }
-
-        public void setMap1(Map<UUID, Integer> map1) {
-            this.map1 = map1;
-        }
-
-        public Map<String, Double> getMap2() {
-            return map2;
-        }
-
-        public void setMap2(Map<String, Double> map2) {
-            this.map2 = map2;
-        }
-
-        public Map<UUID, Map<String, Date>> getMap3() {
-            return map3;
-        }
-
-        public void setMap3(Map<UUID, Map<String, Date>> map3) {
-            this.map3 = map3;
-        }
-
-        public TestSerializable getTestSerializable() {
-            return testSerializable;
-        }
-
-        public void setTestSerializable(TestSerializable testSerializable) {
-            this.testSerializable = testSerializable;
-        }
-    }
-
-    public static class TestSerializable implements Serializable {
-
-        private String field1;
-        private Integer field2;
-
-        public String getField1() {
-            return field1;
-        }
-
-        public void setField1(String field1) {
-            this.field1 = field1;
-        }
-
-        public Integer getField2() {
-            return field2;
-        }
-
-        public void setField2(Integer field2) {
-            this.field2 = field2;
-        }
-    }
-
-    public static class Test2 implements BsonParcelable {
-
-        private List<Path> paths;
-
-        public List<Path> getPaths() {
-            return paths;
-        }
-
-        public void setPaths(List<Path> paths) {
-            this.paths = paths;
-        }
-    }
-
-    public static final class Path implements BsonParcelable {
-
-        private Object[] path;
-        private Object value;
-        private List<UUID> nodes;
-
-        public Path() {
-        }
-
-        public Path(Object[] path) {
-            this.path = path;
-        }
-
-        public Path(Object[] path, List<UUID> nodes) {
-            this.path = path;
-            this.nodes = nodes;
-        }
-
-        public Path(Object[] path, Object value) {
-            this.path = path;
-            this.value = value;
-        }
-
-        public Path(Object[] path, Object value, List<UUID> nodes) {
-            this.path = path;
-            this.value = value;
-            this.nodes = nodes;
-        }
-
-        public Object[] getPath() {
-            return path;
-        }
-
-        public void setPath(Object[] path) {
-            this.path = path;
-        }
-
-        public Object getValue() {
-            return value;
-        }
-
-        public void setValue(Object value) {
-            this.value = value;
-        }
-
-        public List<UUID> getNodes() {
-            return nodes;
-        }
-
-        public void setNodes(List<UUID> nodes) {
-            this.nodes = nodes;
-        }
-    }
 }
 ```

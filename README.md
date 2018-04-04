@@ -8,7 +8,7 @@
 
 # Holanda Catalina
 
-Holland Catalina is a powerful framework to create your's solution based on a micro-services architecture, without realizing that you are doing it. ;)
+Holanda Catalina is a powerful framework to create your's solution based on a micro-services architecture, without realizing that you are doing it. ;)
 
 ## Table of Contents
  - [Introduction](introduction.md)
