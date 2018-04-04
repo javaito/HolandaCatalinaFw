@@ -6,7 +6,7 @@ In this section I want to show some of the most interesting things that are part
  - [Internal services](##internal-services)
  - [Layers](##layers)
  - [Introspection cache](##introspection-cache)
- - [Queries](##queries)
+ - [Queries](#queries)
  - [Bson Parcelable](##bson-parcelable)
 
 ## Internal services
