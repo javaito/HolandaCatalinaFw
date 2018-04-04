@@ -57,7 +57,7 @@ All the layers must comply with three characteristics in order to be published:
 
  - It must have a name that identifies the implementation
  - It must specify whether they are of the stateful or stateless type
- - It must implement one or more interfaces which extend the [LayerInterface](org.hcjf.layers.LayerInterface.java) interface
+ - It must implement one or more interfaces which extend the [LayerInterface](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/LayerInterface.java) interface
 
 ### Publish layers
 
@@ -288,12 +288,14 @@ This api is composed by four components:
 
 ### Compiler
 This component gives the capability of parse any query int the ANSI SQL format and creates a Query object as result. The Query object contains all the differents parts of the query, each part organized into the object and each of this can be iterated and obtained in order to inspect the query and take decisions base on this information.
-Then a simple example of query parser
+Then a simple example of query compiler
 ``` java
 Query query = Query.compile("SELECT * FROM resource");
 ```
+There are many examples of this component in the set of test cases of the framework. [Tests](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/test/java/org/hcjf/layers/query/QueryCompileTest.java)
 
 ### Data sources
+
 
 ### Functions
 
@@ -516,5 +518,5 @@ public class BsonParcelableTest {
 }
 ```
 
-All the previous classes are in the set of test cases. [BsonParcelableTest](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/test/java/org/hcjf/utils/BsonParcelableTest.java)
+All the previous classes are in the set of test cases. [Tests](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/test/java/org/hcjf/utils/BsonParcelableTest.java)
 
