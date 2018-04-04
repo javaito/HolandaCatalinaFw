@@ -5,7 +5,7 @@ In this section I want to show some of the most interesting things that are part
 ## Internal services
 
 An internal service is an internal component of the framework responsible for performing a specific task that maintains communication with the application layer through observers that provide an interface with the service. This type of services start to work on demand, if they are not used they do not add load to the framework instance
-Para crear un nuevo servicio interno solo hay que escribir dos clases una debe implementar la interfaz [ServiceConsumer](/src/main/java/org/hcjf/service/ServiceConsumer.java) y la otra clase que hay que escibir tiene que extender la clase [Service](/src/main/java/org/hcjf/service/Service.java)
+To create a new internal service you just have to write two classes one must implement the [ServiceConsumer](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/service/ServiceConsumer.java) interface and the other class that needs to be written has to extend the class [Service](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/service/Service.java).
 
 ### My service consumer class
 ``` java
@@ -61,7 +61,7 @@ There are three ways to publish the implementation of a layer:
  ``` java
  Layers.publishLayer(LayerTestA.class);
  ```
- - Deployin a jar file as plugin, this action publish all the layers into the jar automatically.
+ - Deploying a jar file as plugin, this action publish all the layers into the jar automatically.
  - All the distributed layers published by other node into the cluster are public for all the nodes.
 
 ### Invoke layers
@@ -107,7 +107,7 @@ import org.hcjf.layers.Layer;
 public class HarmonicAverage extends Layer implements AverageCalculation {
 
     public HarmonicAverage() {
-        suprt("harmonic");
+        super("harmonic");
     }
 
     public Double calculate(Double... samples) {
@@ -485,3 +485,8 @@ public class BsonParcelableTest {
 
 }
 ```
+
+All the previous classes are in the set of test cases. [BsonParcelableTest](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/test/java/org/hcjf/utils/BsonParcelableTest.java)
+
+## Query
+
