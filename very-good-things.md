@@ -281,10 +281,10 @@ public class IntrospectionTest {
 Another thing very interesting into the HCJF is the query api. This api provides a very clear interface based on ANSI SQL which allows write our query in the same way that we would using a SQL data base, but this query run over our micro-services solucion using differents data soucers.
 This api is composed by four components:
 
- - [Compiler](#query-compiler)
- - [Data sources](#query-data-sources)
- - [Functions](#query-functions)
- - [Resolution engine](#query-resolution-engine)
+ - [Compiler](#compiler)
+ - [Data sources](#data-sources)
+ - [Functions](#functions)
+ - [Resolution engine](#resolution-engine)
 
 ### Compiler
 This component gives the capability of parse any query int the ANSI SQL format and creates a Query object as result. The Query object contains all the differents parts of the query, each part organized into the object and each of this can be iterated and obtained in order to inspect the query and take decisions base on this information.
