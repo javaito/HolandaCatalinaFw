@@ -287,6 +287,11 @@ This api is composed by four components:
  - [Functions](#functions)
  - [Resolution engine](#resolution-engine)
 
+This feature doesn't have any relationship with a database engine, we adopt the SQL syntax because is very popular and clear for inspect set of data. Really what I want to achieve with the query implementation is manage the information about query and get information from heterogeneous sets of data.
+There are many test cases about query compilation and query resolution into the framework code.
+[Query compilation tests](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/test/java/org/hcjf/layers/query/QueryCompileTest.java)
+[Query resolution tests](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/test/java/org/hcjf/layers/query/QueryRunningTest.java)
+
 ### Compiler
 This component gives the capability of parse any query int the ANSI SQL format and creates a Query object as result. The Query object contains all the differents parts of the query, each part organized into the object and each of this can be iterated and obtained in order to inspect the query and take decisions base on this information.
 Then a simple example of query compiler
@@ -330,6 +335,8 @@ The resolution engine component take as input a query instance and resolve each 
  - GROUP
  - ORDER
  - LIMIT
+
+The resolution of each command run over the framework instance and don't have any relationship with a data base engine.
 
 ## Bson Parcelable
 Any object that implements the interface 'org.hcjf.utils.bson.BsonParcelable' has the ability to serialize its internal model in [bson](http://bsonspec.org/) format, for this by introspection in each of the methods of type 'get' of the class of the object, the values corresponding to the object are obtained.
