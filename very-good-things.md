@@ -324,6 +324,14 @@ Inside of the query api exists the possibility to define functions usable into t
 Query query = Query.compile("SELECT function(parameter1, parameter2) FROM resource");
 ```
 Actually the query compiler understand the function syntax and create a function instance into the query instance, but if we gonna to use the query resolution engine all the functions defined into the query must be exist into the layers definition, that means that for each function must exist a implementation of  the [QueryFunctionLayerInterface](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/query/functions/QueryFunctionLayerInterface.java) that implements it.
+Into the framework there are many functions implemented:
+
+ - [Bson functions](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/query/functions/BsonQueryFunctionLayer.java)
+ - [Collection functions](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/query/functions/CollectionQueryFunction.java)
+ - [Date functions](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/query/functions/DateQueryFunctionLayer.java)
+ - [Math functions](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/query/functions/MathQueryFunctionLayer.java)
+ - [Reference functions](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/query/functions/ReferenceFunctionLayer.java)
+ - [String functions](https://github.com/javaito/HolandaCatalinaFw/blob/master/src/main/java/org/hcjf/layers/query/functions/StringQueryFunctionLayer.java)
 
 ### Resolution engine
 The resolution engine component take as input a query instance and resolve each part of the query using the data source and consumer indicated as parameter, this parts are defined by the SQL operations:
