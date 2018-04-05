@@ -5,6 +5,7 @@ import org.hcjf.layers.plugins.PluginLayer;
 import org.hcjf.layers.storage.StorageLayerInterface;
 import org.hcjf.log.debug.Agent;
 import org.hcjf.log.debug.Agents;
+import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 import org.hcjf.service.security.Permission;
@@ -175,70 +176,76 @@ public abstract class Layer implements LayerInterface {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        //Add one into the executions counter.
-        invocationMean.add(1);
-
-        //Store the start time of the execution.
-        Long startTime = System.currentTimeMillis();
-
-        try {
-            if (Thread.currentThread() instanceof ServiceThread) {
-                analyzeThread();
-            }
-
-            Access access = checkAccess();
-
-            if (access == null) {
-                throw new SecurityException("Access null");
-            }
-            if (!access.granted) {
-                if (access.message != null && access.getThrowable() != null) {
-                    throw new SecurityException(access.getMessage(), access.getThrowable());
-                } else if (access.getMessage() != null) {
-                    throw new SecurityException(access.getMessage());
-                } else if (access.getThrowable() != null) {
-                    throw new SecurityException(access.getThrowable());
+        Object result;
+        if (!(Thread.currentThread() instanceof ServiceThread)) {
+            //If the current thread is not a service thread instance then
+            //this method is called again but using a service thread with a guest session.
+            result = Service.call(()-> {
+                try {
+                    return invoke(proxy, method, args);
+                } catch (Throwable throwable) {
+                    throw new RuntimeException(throwable);
                 }
-            }
+            }, ServiceSession.getGuestSession());
+        } else {
+            //Add one into the executions counter.
+            invocationMean.add(1);
 
-            ServiceThread serviceThread = null;
-            if (Thread.currentThread() instanceof ServiceThread) {
-                serviceThread = (ServiceThread) Thread.currentThread();
+            //Store the start time of the execution.
+            Long startTime = System.currentTimeMillis();
+
+            try {
+                analyzeThread();
+
+                Access access = checkAccess();
+
+                if (access == null) {
+                    throw new SecurityException("Access null");
+                }
+                if (!access.granted) {
+                    if (access.message != null && access.getThrowable() != null) {
+                        throw new SecurityException(access.getMessage(), access.getThrowable());
+                    } else if (access.getMessage() != null) {
+                        throw new SecurityException(access.getMessage());
+                    } else if (access.getThrowable() != null) {
+                        throw new SecurityException(access.getThrowable());
+                    }
+                }
+
+                ServiceThread serviceThread = (ServiceThread) Thread.currentThread();
                 serviceThread.putLayer(new ServiceSession.LayerStackElement(
                         getClass(), getImplName(), isPlugin(), isStateful()));
-            }
 
-            if(!method.getDeclaringClass().equals(LayerInterface.class)) {
-                Method implementationMethod = getTarget().getClass().getMethod(method.getName(), method.getParameterTypes());
-                for (Permission permission : implementationMethod.getDeclaredAnnotationsByType(Permission.class)) {
-                    SecurityPermissions.checkPermission(getTarget().getClass(), permission.value());
+                if (!method.getDeclaringClass().equals(LayerInterface.class)) {
+                    Method implementationMethod = getTarget().getClass().getMethod(method.getName(), method.getParameterTypes());
+                    for (Permission permission : implementationMethod.getDeclaredAnnotationsByType(Permission.class)) {
+                        SecurityPermissions.checkPermission(getTarget().getClass(), permission.value());
+                    }
                 }
-            }
 
-            Object result;
-            try {
-                LayerProxy.ProxyInterceptor interceptor = getProxy().onBeforeInvoke(method, args);
-                if (interceptor == null || !interceptor.isCached()) {
-                    result = method.invoke(getTarget(), args);
-                } else {
-                    result = interceptor.getResult();
+                try {
+                    LayerProxy.ProxyInterceptor interceptor = getProxy().onBeforeInvoke(method, args);
+                    if (interceptor == null || !interceptor.isCached()) {
+                        result = method.invoke(getTarget(), args);
+                    } else {
+                        result = interceptor.getResult();
+                    }
+                    getProxy().onAfterInvoke(method, result, args);
+                } catch (Throwable throwable) {
+                    //Add one to the error mean counter.
+                    errorMean.add(1);
+                    throw throwable;
+                } finally {
+                    if (serviceThread != null) {
+                        serviceThread.removeLayer();
+                    }
                 }
-                getProxy().onAfterInvoke(method, result, args);
-            } catch (Throwable throwable) {
-                //Add one to the error mean counter.
-                errorMean.add(1);
-                throw throwable;
             } finally {
-                if (serviceThread != null) {
-                    serviceThread.removeLayer();
-                }
+                //Add the invocation time int the layer counter.
+                executionTimeMean.add(System.currentTimeMillis() - startTime);
             }
-
-            return result;
-        } finally {
-            //Add the invocation time int the layer counter.
-            executionTimeMean.add(System.currentTimeMillis() - startTime);
         }
+        return result;
     }
 
     /**

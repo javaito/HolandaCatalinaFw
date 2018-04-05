@@ -178,61 +178,56 @@ public class QueryRunningTest {
 
     @Test
     public void select() {
-
         SystemProperties.get(SystemProperties.Service.SYSTEM_SESSION_NAME);
 
-        Service.run(() -> {
+        Query query = Query.compile("SELECT * FROM character");
+        Set<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
-            Query query = Query.compile("SELECT * FROM character");
-            Set<JoinableMap> resultSet = query.evaluate(dataSource);
-            Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+        query = Query.compile("SELECT * FROM character ORDER BY addressId, name DESC");
+        resultSet = query.evaluate(dataSource);
 
-            query = Query.compile("SELECT * FROM character ORDER BY addressId, name DESC");
-            resultSet = query.evaluate(dataSource);
+        query = Query.compile("SELECT now(), getYear(birthday), periodInDays(birthday), getMonth(birthday) FROM character");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
-            query = Query.compile("SELECT now(), getYear(birthday), periodInDays(birthday), getMonth(birthday) FROM character");
-            resultSet = query.evaluate(dataSource);
-            Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+        query = Query.compile("SELECT * FROM character GROUP BY getMonth(birthday)");
+        resultSet = query.evaluate(dataSource);
 
-            query = Query.compile("SELECT * FROM character GROUP BY getMonth(birthday)");
-            resultSet = query.evaluate(dataSource);
-
-            query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(integerValue(weight), integerValue(50.1)) ,2) AS smartWeight FROM character");
-            resultSet = query.evaluate(dataSource);
-            for(JoinableMap joinableMap : resultSet) {
-                if(((Number)joinableMap.get(WEIGHT)).doubleValue() > 50) {
-                    Assert.assertTrue(((Number)joinableMap.get("smartWeight")).doubleValue() > 2500);
-                } else {
-                    Assert.assertTrue(((Number)joinableMap.get("smartWeight")).intValue() == 2500);
-                }
+        query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(integerValue(weight), integerValue(50.1)) ,2) AS smartWeight FROM character");
+        resultSet = query.evaluate(dataSource);
+        for(JoinableMap joinableMap : resultSet) {
+            if(((Number)joinableMap.get(WEIGHT)).doubleValue() > 50) {
+                Assert.assertTrue(((Number)joinableMap.get("smartWeight")).doubleValue() > 2500);
+            } else {
+                Assert.assertTrue(((Number)joinableMap.get("smartWeight")).intValue() == 2500);
             }
+        }
 
-            query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
-            resultSet = query.evaluate(dataSource);
+        query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
+        resultSet = query.evaluate(dataSource);
 
-            query = Query.compile("SELECT name, nickname FROM character");
-            resultSet = query.evaluate(dataSource);
-            Assert.assertEquals(resultSet.iterator().next().size(), 2);
+        query = Query.compile("SELECT name, nickname FROM character");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.iterator().next().size(), 2);
 
-            query = Query.compile("SELECT *, name as nombre FROM character");
-            resultSet = query.evaluate(dataSource);
-            JoinableMap first = resultSet.iterator().next();
-            Assert.assertEquals(first.get("nombre"), first.get("name"));
+        query = Query.compile("SELECT *, name as nombre FROM character");
+        resultSet = query.evaluate(dataSource);
+        JoinableMap first = resultSet.iterator().next();
+        Assert.assertEquals(first.get("nombre"), first.get("name"));
 
-            query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight) FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
-            resultSet = query.evaluate(dataSource);
-            Assert.assertEquals(resultSet.size(), simpsonAddresses.size());
+        query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight) FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonAddresses.size());
 
-            query = Query.compile("SELECT bsonParse(body) AS body FROM character WHERE name LIKE 'Bartolomeo'");
-            resultSet = query.evaluate(dataSource);
-            Assert.assertEquals(((Map<String,Object>)resultSet.iterator().next().get(BODY)).get("field1"), "string");
+        query = Query.compile("SELECT bsonParse(body) AS body FROM character WHERE name LIKE 'Bartolomeo'");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(((Map<String,Object>)resultSet.iterator().next().get(BODY)).get("field1"), "string");
 
-            Layers.publishLayer(CustomFunction.class);
+        Layers.publishLayer(CustomFunction.class);
 
-            query = Query.compile("SELECT name, customFunction(integerValue(weight)) FROM character");
-            resultSet = query.evaluate(dataSource);
-
-        }, ServiceSession.getSystemSession(), true, 0);
+        query = Query.compile("SELECT name, customFunction(integerValue(weight)) FROM character");
+        resultSet = query.evaluate(dataSource);
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {

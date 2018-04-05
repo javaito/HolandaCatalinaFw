@@ -6,7 +6,9 @@ import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.*;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.service.ServiceThread;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
@@ -359,169 +361,173 @@ public class Query extends EvaluatorCollection {
      */
     public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer, Object... parameters) {
         Set<O> result;
-
-        //Creating result data collection.
-        if(orderParameters.size() > 0) {
-            //If the query has order fields then creates a tree set with
-            //a comparator using the order fields.
-            result = new TreeSet<>((o1, o2) -> {
-                int compareResult = 0;
-
-                Comparable<Object> comparable1;
-                Comparable<Object> comparable2;
-                for (QueryOrderParameter orderField : orderParameters) {
-                    try {
-                        if(orderField instanceof QueryOrderFunction) {
-                            comparable1 = consumer.resolveFunction(((QueryOrderFunction)orderField), o1, parameters);
-                            comparable2 = consumer.resolveFunction(((QueryOrderFunction)orderField), o2, parameters);
-                        } else {
-                            comparable1 = consumer.get(o1, (QueryParameter) orderField);
-                            comparable2 = consumer.get(o2, (QueryParameter) orderField);
-                        }
-                    } catch (ClassCastException ex) {
-                        throw new IllegalArgumentException("Order field must be comparable");
-                    }
-
-                    if(comparable1 == null ^ comparable2 == null) {
-                        compareResult = (comparable1 == null) ? -1 : 1;
-                    } else if(comparable1 == null && comparable2 == null) {
-                        compareResult = 0;
-                    } else {
-                        compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
-                    }
-
-                    if(compareResult != 0) {
-                        break;
-                    }
-                }
-
-                if (compareResult == 0) {
-                    compareResult = o1.hashCode() - o2.hashCode();
-                }
-
-                return compareResult;
-            });
+        if(!(Thread.currentThread() instanceof ServiceThread)) {
+            //If the current thread is not a service thread then we call this
+            //method again using a service thread.
+            result = Service.call(()->evaluate(dataSource, consumer, parameters), ServiceSession.getGuestSession());
         } else {
-            //If the query has not order fields then creates a linked hash set to
-            //maintain the natural order of the data.
-            result = new LinkedHashSet<>();
-        }
+            //Creating result data collection.
+            if (orderParameters.size() > 0) {
+                //If the query has order fields then creates a tree set with
+                //a comparator using the order fields.
+                result = new TreeSet<>((o1, o2) -> {
+                    int compareResult = 0;
 
-        Map<Evaluator,Object> valuesMap = createValuesMap(this, dataSource, consumer, parameters);
-
-        //Getting data from data source.
-        Collection<O> data;
-        try {
-            if (joins.size() > 0) {
-                //If the query has joins then data source must return the joined data
-                //collection using all the resources
-                data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer, valuesMap);
-            } else {
-                //Creates the first query for the original resource.
-                Query resolveQuery = new Query(getResourceName());
-                if (getStart() != null) {
-                    resolveQuery.setLimit(getLimit() + getStart());
-                } else {
-                    resolveQuery.setLimit(getLimit());
-                }
-                for(QueryReturnParameter queryReturnParameter : this.returnParameters) {
-                    if(queryReturnParameter instanceof QueryReturnField) {
-                        resolveQuery.returnParameters.add(new QueryReturnField(((QueryReturnField)queryReturnParameter).getFieldName()));
-                    }
-                }
-                copyEvaluators(resolveQuery, this, valuesMap);
-
-                //Initialize the evaluators cache because the evaluators in the simple
-                //query are valid into the platform evaluation environment.
-                initializeEvaluatorsCache();
-
-                //If the query has not joins then data source must return data from
-                //resource of the query.
-                data = dataSource.getResourceData(resolveQuery);
-            }
-
-            if (!groupParameters.isEmpty()) {
-                StringBuilder hashCode;
-
-                Groupable groupable;
-                Map<String, Groupable> groupables = new HashMap<>();
-                for (O object : data) {
-                    if (object instanceof Groupable) {
-                        groupable = (Groupable) object;
-                        hashCode = new StringBuilder();
-                        for(QueryReturnParameter returnParameter : groupParameters) {
-                            if(returnParameter instanceof QueryReturnField) {
-                                hashCode.append(consumer.get(object, ((QueryReturnField)returnParameter)).hashCode());
+                    Comparable<Object> comparable1;
+                    Comparable<Object> comparable2;
+                    for (QueryOrderParameter orderField : orderParameters) {
+                        try {
+                            if (orderField instanceof QueryOrderFunction) {
+                                comparable1 = consumer.resolveFunction(((QueryOrderFunction) orderField), o1, parameters);
+                                comparable2 = consumer.resolveFunction(((QueryOrderFunction) orderField), o2, parameters);
                             } else {
-                                hashCode.append(consumer.resolveFunction(((QueryReturnFunction)returnParameter), object, parameters).hashCode());
+                                comparable1 = consumer.get(o1, (QueryParameter) orderField);
+                                comparable2 = consumer.get(o2, (QueryParameter) orderField);
                             }
+                        } catch (ClassCastException ex) {
+                            throw new IllegalArgumentException("Order field must be comparable");
                         }
-                        if(groupables.containsKey(hashCode.toString())) {
-                            groupables.get(hashCode.toString()).group(groupable);
+
+                        if (comparable1 == null ^ comparable2 == null) {
+                            compareResult = (comparable1 == null) ? -1 : 1;
+                        } else if (comparable1 == null && comparable2 == null) {
+                            compareResult = 0;
                         } else {
-                            groupables.put(hashCode.toString(), groupable);
+                            compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+                        }
+
+                        if (compareResult != 0) {
+                            break;
                         }
                     }
-                }
 
-                data = (Collection<O>) groupables.values();
+                    if (compareResult == 0) {
+                        compareResult = o1.hashCode() - o2.hashCode();
+                    }
+
+                    return compareResult;
+                });
+            } else {
+                //If the query has not order fields then creates a linked hash set to
+                //maintain the natural order of the data.
+                result = new LinkedHashSet<>();
             }
 
-            //Filtering data
-            boolean add;
-            int start = getStart() == null ? 0 : getStart();
-            if (start < data.size()) {
-                for (O object : data) {
-                    add = true;
-                    for (Evaluator evaluator : getEvaluators()) {
-                        if (!isEvaluatorDone(evaluator)) {
-                            add = evaluator.evaluate(object, consumer, valuesMap);
-                            if (!add) {
-                                break;
+            Map<Evaluator, Object> valuesMap = createValuesMap(this, dataSource, consumer, parameters);
+
+            //Getting data from data source.
+            Collection<O> data;
+            try {
+                if (joins.size() > 0) {
+                    //If the query has joins then data source must return the joined data
+                    //collection using all the resources
+                    data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer, valuesMap);
+                } else {
+                    //Creates the first query for the original resource.
+                    Query resolveQuery = new Query(getResourceName());
+                    if (getStart() != null) {
+                        resolveQuery.setLimit(getLimit() + getStart());
+                    } else {
+                        resolveQuery.setLimit(getLimit());
+                    }
+                    for (QueryReturnParameter queryReturnParameter : this.returnParameters) {
+                        if (queryReturnParameter instanceof QueryReturnField) {
+                            resolveQuery.returnParameters.add(new QueryReturnField(((QueryReturnField) queryReturnParameter).getFieldName()));
+                        }
+                    }
+                    copyEvaluators(resolveQuery, this, valuesMap);
+
+                    //Initialize the evaluators cache because the evaluators in the simple
+                    //query are valid into the platform evaluation environment.
+                    initializeEvaluatorsCache();
+
+                    //If the query has not joins then data source must return data from
+                    //resource of the query.
+                    data = dataSource.getResourceData(resolveQuery);
+                }
+
+                if (!groupParameters.isEmpty()) {
+                    StringBuilder hashCode;
+
+                    Groupable groupable;
+                    Map<String, Groupable> groupables = new HashMap<>();
+                    for (O object : data) {
+                        if (object instanceof Groupable) {
+                            groupable = (Groupable) object;
+                            hashCode = new StringBuilder();
+                            for (QueryReturnParameter returnParameter : groupParameters) {
+                                if (returnParameter instanceof QueryReturnField) {
+                                    hashCode.append(consumer.get(object, ((QueryReturnField) returnParameter)).hashCode());
+                                } else {
+                                    hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, parameters).hashCode());
+                                }
+                            }
+                            if (groupables.containsKey(hashCode.toString())) {
+                                groupables.get(hashCode.toString()).group(groupable);
+                            } else {
+                                groupables.put(hashCode.toString(), groupable);
                             }
                         }
                     }
-                    if (add) {
-                        if (object instanceof Enlarged) {
-                            Enlarged originalObject = (Enlarged) object;
-                            Enlarged enlargedObject = (Enlarged) object;
-                            if(!returnAll) {
-                                //Clone the object and set the new result instance.
-                                enlargedObject = enlargedObject.cloneEmpty();
-                                object = (O) enlargedObject;
-                            }
-                            for (QueryReturnParameter returnParameter : getReturnParameters()) {
-                                if (returnParameter instanceof QueryReturnField) {
-                                    QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                    if (returnField.getAlias() != null) {
-                                        enlargedObject.put(returnField.getAlias(), originalObject.get(returnField.getFieldName()));
-                                    } else {
-                                        enlargedObject.put(returnField.getFieldName(), originalObject.get(returnField.getFieldName()));
-                                    }
-                                } else if (returnParameter instanceof QueryReturnFunction) {
-                                    QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                    enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                                            consumer.resolveFunction(function, originalObject, parameters));
+
+                    data = (Collection<O>) groupables.values();
+                }
+
+                //Filtering data
+                boolean add;
+                int start = getStart() == null ? 0 : getStart();
+                if (start < data.size()) {
+                    for (O object : data) {
+                        add = true;
+                        for (Evaluator evaluator : getEvaluators()) {
+                            if (!isEvaluatorDone(evaluator)) {
+                                add = evaluator.evaluate(object, consumer, valuesMap);
+                                if (!add) {
+                                    break;
                                 }
                             }
                         }
+                        if (add) {
+                            if (object instanceof Enlarged) {
+                                Enlarged originalObject = (Enlarged) object;
+                                Enlarged enlargedObject = (Enlarged) object;
+                                if (!returnAll) {
+                                    //Clone the object and set the new result instance.
+                                    enlargedObject = enlargedObject.cloneEmpty();
+                                    object = (O) enlargedObject;
+                                }
+                                for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                                    if (returnParameter instanceof QueryReturnField) {
+                                        QueryReturnField returnField = (QueryReturnField) returnParameter;
+                                        if (returnField.getAlias() != null) {
+                                            enlargedObject.put(returnField.getAlias(), originalObject.get(returnField.getFieldName()));
+                                        } else {
+                                            enlargedObject.put(returnField.getFieldName(), originalObject.get(returnField.getFieldName()));
+                                        }
+                                    } else if (returnParameter instanceof QueryReturnFunction) {
+                                        QueryReturnFunction function = (QueryReturnFunction) returnParameter;
+                                        enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
+                                                consumer.resolveFunction(function, originalObject, parameters));
+                                    }
+                                }
+                            }
 
-                        result.add(object);
+                            result.add(object);
+                        }
+                        if (getLimit() != null && result.size() == (start + getLimit())) {
+                            break;
+                        }
                     }
-                    if (getLimit() != null && result.size() == (start + getLimit())) {
-                        break;
+
+                    if (start > 0) {
+                        result = result.stream().skip(start).collect(Collectors.toSet());
                     }
                 }
-
-                if (start > 0) {
-                    result = result.stream().skip(start).collect(Collectors.toSet());
-                }
+            } finally {
+                clearEvaluatorsCache();
             }
-
-            return result;
-        } finally {
-            clearEvaluatorsCache();
         }
+        return result;
     }
 
     /**
@@ -1679,7 +1685,7 @@ public class Query extends EvaluatorCollection {
          * @param query Query object.
          * @return Data collection from the resource.
          */
-        public Collection<O> getResourceData(Query query);
+        Collection<O> getResourceData(Query query);
 
     }
 
@@ -1698,35 +1704,6 @@ public class Query extends EvaluatorCollection {
             return Layers.get(ReadRowsLayerInterface.class, query.getResourceName()).readRows(query);
         }
 
-    }
-
-    private static class GroupableIndex {
-
-        private final Object[] indexes;
-
-        public GroupableIndex(Object[] indexes) {
-            this.indexes = indexes;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            boolean result = false;
-
-            if(obj instanceof GroupableIndex) {
-                GroupableIndex groupableIndex = (GroupableIndex) obj;
-                if(groupableIndex.indexes.length == indexes.length) {
-                    result = true;
-                    for (int i = 0; i < indexes.length; i++) {
-                        result &= groupableIndex.indexes[i].equals(indexes[i]);
-                        if(!result) {
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return result;
-        }
     }
 
     /**
@@ -1935,7 +1912,7 @@ public class Query extends EvaluatorCollection {
          * Return the field alias, can be null.
          * @return Field alias.
          */
-        public String getAlias();
+        String getAlias();
 
     }
 
@@ -1989,7 +1966,7 @@ public class Query extends EvaluatorCollection {
          * Return the desc property.
          * @return Desc property.
          */
-        public boolean isDesc();
+        boolean isDesc();
 
     }
 
