@@ -326,7 +326,9 @@ public final class SystemProperties extends Properties {
             public static final String CLUSTER_NAME = "hcjf.cloud.orchestrator.cluster.name";
             public static final String WAGON_TIMEOUT = "hcjf.cloud.orchestrator.wagon.timeout";
             public static final String REORGANIZATION_TIMEOUT = "hcjf.cloud.orchestrator.reorganization.timeout";
+            public static final String REORGANIZATION_WARNING_TIME_LIMIT = "hcjf.cloud.orchestrator.reorganization.warning.time.limit";
             public static final String INVOKE_TIMEOUT = "hcjf.cloud.orchestrator.invoke.timeout";
+            public static final String TEST_NODE_TIMEOUT = "hcjf.cloud.orchestrator.test.node.timeout";
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
 
@@ -415,7 +417,7 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Service.STATIC_THREAD_NAME, "StaticServiceThread");
         defaults.put(Service.STATIC_THREAD_POOL_CORE_SIZE, "1");
-        defaults.put(Service.STATIC_THREAD_POOL_MAX_SIZE, "5");
+        defaults.put(Service.STATIC_THREAD_POOL_MAX_SIZE, "200");
         defaults.put(Service.STATIC_THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
         defaults.put(Service.THREAD_POOL_MAX_SIZE, "2000");
@@ -624,8 +626,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.NODE_LOST_TIMEOUT, "1800000");
         defaults.put(Cloud.Orchestrator.ACK_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.REORGANIZATION_TIMEOUT, "2000");
+        defaults.put(Cloud.Orchestrator.REORGANIZATION_WARNING_TIME_LIMIT, "1500");
         defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
-        defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "20000");
+        defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "120000");
+        defaults.put(Cloud.Orchestrator.TEST_NODE_TIMEOUT, "100");
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");

@@ -1,26 +1,20 @@
 package org.hcjf.cloud;
 
-import org.hcjf.cloud.impl.network.CloudOrchestrator;
-import org.hcjf.cloud.impl.network.Node;
-import org.hcjf.cloud.timer.CloudTimerTask;
+import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.distributed.DistributedLayerInterface;
-import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
  * @author javaito.
  */
-public class CloudTestA {
+public class CloudTestABis {
 
     public static void main(String[] args) {
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
@@ -29,12 +23,12 @@ public class CloudTestA {
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
         System.setProperty(SystemProperties.Service.THREAD_POOL_MAX_SIZE, "2000");
 
-        System.setProperty(SystemProperties.Cloud.Orchestrator.SERVER_LISTENER_PORT, "6162");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.SERVER_LISTENER_PORT, "6165");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc1");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME, "test-cluster");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-A");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-ABis");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6162");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6165");
         System.setProperty(SystemProperties.Cloud.Orchestrator.NODES,
                 "[" +
                         "{lanAddress:172.16.102.45,lanPort:6162}," +
@@ -135,7 +129,7 @@ public class CloudTestA {
 
         @Override
         public String method(String value) {
-            String result = String.format("Result of invoke test A with value %s", value);
+            String result = String.format("Result of invoke test ABis with value %s", value);
             System.out.println(String.format("Test A invoked with value %s", value));
             return result;
         }

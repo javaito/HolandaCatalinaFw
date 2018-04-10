@@ -24,7 +24,7 @@ public class HttpServerTestSuit {
 
         StackTraceElement[] elements = Thread.currentThread().getStackTrace();
 
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
@@ -39,10 +39,10 @@ public class HttpServerTestSuit {
         Layers.publishLayer(TestMapCrud.class);
 
 
-        CrudLayerInterface crudLayerInterface = Layers.get(CrudLayerInterface.class, "name");
-        crudLayerInterface.create(new Object());
-
-        Collection<JoinableMap> result = Query.evaluate("SELECT * ....");
+//        CrudLayerInterface crudLayerInterface = Layers.get(CrudLayerInterface.class, "name");
+//        crudLayerInterface.create(new Object());
+//
+//        Collection<JoinableMap> result = Query.evaluate("SELECT * ....");
         //result.iterator().next().get()
 
 

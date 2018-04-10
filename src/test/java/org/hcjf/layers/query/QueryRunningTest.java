@@ -6,8 +6,6 @@ import org.hcjf.layers.Layers;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.Service;
-import org.hcjf.service.ServiceSession;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

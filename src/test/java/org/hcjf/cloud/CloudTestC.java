@@ -24,6 +24,8 @@ public class CloudTestC {
         System.setProperty(SystemProperties.Service.THREAD_POOL_MAX_SIZE, "2000");
 
         System.setProperty(SystemProperties.Cloud.Orchestrator.SERVER_LISTENER_PORT, "6164");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc1");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME, "test-cluster");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-C");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6164");
@@ -31,7 +33,8 @@ public class CloudTestC {
                 "[" +
                     "{lanAddress:172.16.102.45,lanPort:6162}," +
                     "{lanAddress:172.16.102.45,lanPort:6163}," +
-                    "{lanAddress:172.16.102.45,lanPort:6164}" +
+                    "{lanAddress:172.16.102.45,lanPort:6164}," +
+                    "{lanAddress:172.16.102.45,lanPort:6165}" +
                 "]");
 
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");

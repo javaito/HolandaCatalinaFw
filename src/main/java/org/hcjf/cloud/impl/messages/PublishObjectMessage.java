@@ -3,6 +3,7 @@ package org.hcjf.cloud.impl.messages;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -92,6 +93,14 @@ public class PublishObjectMessage extends Message {
 
         public void setNodes(List<UUID> nodes) {
             this.nodes = nodes;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("{path:%s,value:%s,node:%s}",
+                    path == null ? "null" : Arrays.toString(path),
+                    value == null ? "null" : value.toString(),
+                    nodes == null ? "null" : Arrays.toString(nodes.toArray()));
         }
     }
 }

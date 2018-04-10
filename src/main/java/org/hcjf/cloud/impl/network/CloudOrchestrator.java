@@ -66,7 +66,7 @@ public final class CloudOrchestrator extends Service<Node> {
 
     /**
      * Init all the collections of the service, a thread for maintain the connections and
-     * other thread to move the cloud wagon instnace.
+     * other thread to move the cloud wagon instance.
      */
     @Override
     protected void init() {
@@ -233,8 +233,6 @@ public final class CloudOrchestrator extends Service<Node> {
      */
     private synchronized void reorganize(Node node, CloudSession session, ReorganizationAction action) {
         long time = System.currentTimeMillis();
-//        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Starting reorganization process by action : %s",
-//                action.toString());
 
         switch(action) {
             case CONNECT: {
@@ -247,10 +245,12 @@ public final class CloudOrchestrator extends Service<Node> {
                     localLeaf = (LocalLeaf) entry.getValue();
                     path = entry.getPath();
                     if (localLeaf.getInstance() instanceof DistributedLayer) {
-                        PublishLayerMessage publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
-                        publishLayerMessage.setPath(path);
-                        publishLayerMessage.setNodeId(thisNode.getId());
-                        sendMessage(session, publishLayerMessage);
+                        if(localLeaf.getNodes().contains(thisNode.getId())) {
+                            PublishLayerMessage publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
+                            publishLayerMessage.setPath(path);
+                            publishLayerMessage.setNodeId(thisNode.getId());
+                            sendMessage(session, publishLayerMessage);
+                        }
                     } else if (localLeaf.getInstance() instanceof DistributedLock) {
                         //Mmmm!!!!
                     } else {
@@ -315,8 +315,11 @@ public final class CloudOrchestrator extends Service<Node> {
             }
         }
 
-//        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
-//                action.toString(), System.currentTimeMillis() - time);
+        time = System.currentTimeMillis() - time;
+        if(time > SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.REORGANIZATION_WARNING_TIME_LIMIT)) {
+            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
+                    action.toString(), time);
+        }
     }
 
     /**
@@ -415,7 +418,8 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
-    public void initReorganizationTimer() {
+
+    private void initReorganizationTimer() {
         while(!Thread.currentThread().isInterrupted()) {
             try {
                 Thread.sleep(SystemProperties.getLong(
@@ -431,7 +435,7 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
-    public void connectionLost(CloudSession session) {
+    void connectionLost(CloudSession session) {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "connection lost with %s:%d",
                 session.getRemoteHost(), session.getRemotePort());
         synchronized (sessionByNode) {
@@ -459,7 +463,7 @@ public final class CloudOrchestrator extends Service<Node> {
         return result;
     }
 
-    public void incomingMessage(CloudSession session, Message message) {
+    void incomingMessage(CloudSession session, Message message) {
         if(message instanceof NodeIdentificationMessage) {
             NodeIdentificationMessage nodeIdentificationMessage = (NodeIdentificationMessage) message;
             Node node = nodesByLanId.get(nodeIdentificationMessage.getNode().getLanId());
@@ -592,9 +596,16 @@ public final class CloudOrchestrator extends Service<Node> {
             distributedDispatchEvent(eventMessage.getEvent());
         } else if(message instanceof PublishLayerMessage) {
             PublishLayerMessage publishLayerMessage = (PublishLayerMessage) message;
-            DistributedLayer distributedLayer = getDistributedLayer(publishLayerMessage.getPath());
+            DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
             distributedLayer.addNode(publishLayerMessage.getNodeId());
         } else if(message instanceof LayerInvokeMessage) {
+
+
+System.out.println(">>>>>>>>>Incoming layer invoke, id: " + message.getId().toString());
+
+
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                    "Incoming layer message: %s", message.getId());
             LayerInvokeMessage layerInvokeMessage = (LayerInvokeMessage) message;
             Object result = null;
             Throwable throwable = null;
@@ -608,11 +619,26 @@ public final class CloudOrchestrator extends Service<Node> {
             ResponseMessage responseMessage = new ResponseMessage(message.getId());
             responseMessage.setValue(result);
             responseMessage.setThrowable(throwable);
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                    "Sending response message: %s", message.getId());
             sendMessage(session, responseMessage);
+        } else if(message instanceof TestNodeMessage) {
+
+
+            System.out.println(">>>>>>>>>Response test, id: " + message.getId().toString());
+
+
+            sendMessage(session, new ResponseMessage(message.getId()));
         } else if(message instanceof ResponseMessage) {
-            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming response message: %s", message.getId().toString());
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                    "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {
+
+
+System.out.println(">>>>>>>>>Incoming layer response, id: " + message.getId().toString());
+
+
                 responseListener.setMessage((ResponseMessage) message);
             }
         } else if(message instanceof AckMessage) {
@@ -652,13 +678,32 @@ public final class CloudOrchestrator extends Service<Node> {
         }
     }
 
-    private Object invoke(CloudSession session, Message message) {
-        ResponseListener responseListener = new ResponseListener();
+    private Object invoke(CloudSession session, Message message, Long timeout) {
+        ResponseListener responseListener = new ResponseListener(timeout);
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Sending invoke message: %s", message.getId().toString());
         responseListeners.put(message.getId(), responseListener);
         sendMessage(session, message);
         return responseListener.getResponse(message);
+    }
+
+    private Object invoke(CloudSession session, Message message) {
+        return invoke(session, message,
+                SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
+    }
+
+    private boolean testNode(CloudSession session) {
+        boolean result = true;
+        try {
+            UUID id = UUID.randomUUID();
+System.out.println(">>>>>>>>>Testing node, id: " + id.toString());
+            invoke(session, new TestNodeMessage(id),
+                    SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.TEST_NODE_TIMEOUT));
+        } catch (Exception ex){
+            ex.printStackTrace();
+            result = false;
+        }
+        return result;
     }
 
     private DistributedLock getDistributedLock(Object... path) {
@@ -799,7 +844,7 @@ public final class CloudOrchestrator extends Service<Node> {
         Events.sendEvent(remoteEvent);
     }
 
-    private DistributedLayer getDistributedLayer(Object... path) {
+    private DistributedLayer getDistributedLayer(boolean local, Object... path) {
         DistributedLayer distributedLayer;
         synchronized (sharedStore) {
             distributedLayer = (DistributedLayer) sharedStore.getInstance(path);
@@ -807,7 +852,11 @@ public final class CloudOrchestrator extends Service<Node> {
                 try {
                     distributedLayer = new DistributedLayer(Class.forName((String)path[path.length - 2]),
                             (String)path[path.length - 1]);
-                    addObject(distributedLayer, List.of(thisNode.getId()), System.currentTimeMillis(), path);
+                    if(local) {
+                        addObject(distributedLayer, List.of(thisNode.getId()), System.currentTimeMillis(), path);
+                    } else {
+                        addObject(distributedLayer, List.of(), System.currentTimeMillis(), path);
+                    }
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException();
                 }
@@ -821,7 +870,7 @@ public final class CloudOrchestrator extends Service<Node> {
     }
 
     public void publishDistributedLayer(Object... path) {
-        getDistributedLayer(path);
+        getDistributedLayer(true, path);
         PublishLayerMessage publishLayerMessage = new PublishLayerMessage();
         publishLayerMessage.setPath(path);
         publishLayerMessage.setNodeId(thisNode.getId());
@@ -832,16 +881,16 @@ public final class CloudOrchestrator extends Service<Node> {
 
     public <O extends Object> O layerInvoke(Object[] parameters, Method method, Object... path) {
         O result;
-        DistributedLayer distributedLayer = getDistributedLayer(path);
+        DistributedLayer distributedLayer = getDistributedLayer(false, path);
         UUID nodeId = distributedLayer.getNodeToInvoke();
         CloudSession session = null;
         while (nodeId != null) {
             session = sessionByNode.get(nodeId);
-            if(session != null) {
+            if(session != null && testNode(session)) {
                 break;
             } else {
                 distributedLayer.removeNode(nodeId);
-                nodeId = null;
+                nodeId = distributedLayer.getNodeToInvoke();
             }
         }
         if(session != null) {
@@ -852,6 +901,7 @@ public final class CloudOrchestrator extends Service<Node> {
             layerInvokeMessage.setParameters(parameters);
             layerInvokeMessage.setPath(path);
             result = (O) invoke(session, layerInvokeMessage);
+            distributedLayer.nodeInvoked(nodeId);
         } else {
             throw new RuntimeException("Session not found!");
         }
@@ -862,7 +912,7 @@ public final class CloudOrchestrator extends Service<Node> {
             UUID sessionId, Class[] parameterTypes,
             Object[] parameters, String methodName, Object... path) {
         Object result;
-        DistributedLayer distributedLayer = getDistributedLayer(path);
+        DistributedLayer distributedLayer = getDistributedLayer(true, path);
         Class layerInterface = distributedLayer.getLayerInterface();
         Map<String, DistributedLayerInvoker> invokers =
                 Introspection.getInvokers(layerInterface, new DistributedLayerInvokerFilter(methodName, parameterTypes));
@@ -1096,16 +1146,21 @@ public final class CloudOrchestrator extends Service<Node> {
 
     private final class ResponseListener {
 
+        private final Long timeout;
         private ResponseMessage responseMessage;
 
+        public ResponseListener(Long timeout) {
+            this.timeout = timeout;
+        }
+
         public Object getResponse(Message message) {
-            Object result = null;
+            Object result;
             synchronized (this) {
                 if(responseMessage == null) {
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                            "Response listener waiting for id: ", message.getId());
+                            "Response listener waiting for id: %s", message.getId().toString());
                     try {
-                        wait(SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
+                        wait(timeout);
                     } catch (InterruptedException e) {
                     }
                 }
@@ -1127,7 +1182,7 @@ public final class CloudOrchestrator extends Service<Node> {
         public void setMessage(ResponseMessage message) {
             synchronized (this) {
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                        "Response listener notified with id: ", message.getId());
+                        "Response listener notified with id: %s", message.getId().toString());
                 responseMessage = message;
                 notifyAll();
             }

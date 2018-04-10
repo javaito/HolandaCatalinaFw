@@ -6,10 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author javaito
@@ -55,6 +52,17 @@ public class BsonParcelableTest {
                 unserializedTestObject.getTestSerializable().getField1());
         Assert.assertEquals(testObject.getTestSerializable().getField2(),
                 unserializedTestObject.getTestSerializable().getField2());
+
+        Test2 t2 = new Test2();
+        t2.setPaths(new ArrayList<>());
+        t2.getPaths().add(new Path(null, null, new ArrayList<>()));
+        t2.toBson();
+
+        t2 = new Test2();
+        t2.setPaths(null);
+        t2.toBson();
+
+
     }
 
     public static class TestClass implements BsonParcelable {
@@ -116,6 +124,73 @@ public class BsonParcelableTest {
 
         public void setField2(Integer field2) {
             this.field2 = field2;
+        }
+    }
+
+    public static class Test2 implements BsonParcelable {
+
+        private List<Path> paths;
+
+        public List<Path> getPaths() {
+            return paths;
+        }
+
+        public void setPaths(List<Path> paths) {
+            this.paths = paths;
+        }
+    }
+
+    public static final class Path implements BsonParcelable {
+
+        private Object[] path;
+        private Object value;
+        private List<UUID> nodes;
+
+        public Path() {
+        }
+
+        public Path(Object[] path) {
+            this.path = path;
+        }
+
+        public Path(Object[] path, List<UUID> nodes) {
+            this.path = path;
+            this.nodes = nodes;
+        }
+
+        public Path(Object[] path, Object value) {
+            this.path = path;
+            this.value = value;
+        }
+
+        public Path(Object[] path, Object value, List<UUID> nodes) {
+            this.path = path;
+            this.value = value;
+            this.nodes = nodes;
+        }
+
+        public Object[] getPath() {
+            return path;
+        }
+
+        public void setPath(Object[] path) {
+            this.path = path;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public void setValue(Object value) {
+            this.value = value;
+        }
+
+        public List<UUID> getNodes() {
+            return nodes;
+        }
+
+        public void setNodes(List<UUID> nodes) {
+            this.nodes = nodes;
         }
     }
 }
