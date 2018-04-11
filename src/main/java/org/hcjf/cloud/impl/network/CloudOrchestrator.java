@@ -599,11 +599,6 @@ public final class CloudOrchestrator extends Service<Node> {
             DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
             distributedLayer.addNode(publishLayerMessage.getNodeId());
         } else if(message instanceof LayerInvokeMessage) {
-
-
-System.out.println(">>>>>>>>>Incoming layer invoke, id: " + message.getId().toString());
-
-
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                     "Incoming layer message: %s", message.getId());
             LayerInvokeMessage layerInvokeMessage = (LayerInvokeMessage) message;
@@ -623,22 +618,12 @@ System.out.println(">>>>>>>>>Incoming layer invoke, id: " + message.getId().toSt
                     "Sending response message: %s", message.getId());
             sendMessage(session, responseMessage);
         } else if(message instanceof TestNodeMessage) {
-
-
-            System.out.println(">>>>>>>>>Response test, id: " + message.getId().toString());
-
-
             sendMessage(session, new ResponseMessage(message.getId()));
         } else if(message instanceof ResponseMessage) {
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                     "Incoming response message: %s", message.getId().toString());
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {
-
-
-System.out.println(">>>>>>>>>Incoming layer response, id: " + message.getId().toString());
-
-
                 responseListener.setMessage((ResponseMessage) message);
             }
         } else if(message instanceof AckMessage) {
@@ -696,7 +681,6 @@ System.out.println(">>>>>>>>>Incoming layer response, id: " + message.getId().to
         boolean result = true;
         try {
             UUID id = UUID.randomUUID();
-System.out.println(">>>>>>>>>Testing node, id: " + id.toString());
             invoke(session, new TestNodeMessage(id),
                     SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.TEST_NODE_TIMEOUT));
         } catch (Exception ex){
