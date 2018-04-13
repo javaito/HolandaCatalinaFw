@@ -13,7 +13,9 @@ public interface CreateLayerInterface<O extends Object> extends LayerInterface {
      * This method return the resource class of the layer.
      * @return Resource class.
      */
-    public Class<O> getResourceType();
+    default Class<O> getResourceType() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the creation of the resource.
@@ -22,13 +24,17 @@ public interface CreateLayerInterface<O extends Object> extends LayerInterface {
      *                   in order to create an instance of the resource.
      * @return The instance of the resource.
      */
-    public O create(O object, Map<String, Object> parameters);
+    default O create(O object, Map<String, Object> parameters) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the creation of the resource.
      * @param object Object to represents an instance of the resource.
      * @return The instance of the resource.
      */
-    public O create(O object);
+    default O create(O object) {
+        throw new UnsupportedOperationException();
+    }
 
 }

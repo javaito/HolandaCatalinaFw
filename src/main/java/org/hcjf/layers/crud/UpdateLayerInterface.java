@@ -15,7 +15,9 @@ public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
      * This method return the resource class of the layer.
      * @return Resource class.
      */
-    public Class<O> getResourceType();
+    default Class<O> getResourceType() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the update of the resource.
@@ -25,7 +27,9 @@ public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
      *                   in order to update an instance of the resource.
      * @return The instance updated.
      */
-    public O update(O object, Map<String, Object> parameters);
+    default O update(O object, Map<String, Object> parameters) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the update of the resource.
@@ -33,7 +37,9 @@ public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
      *               This instance must have an id to identify the updatable data.
      * @return The instance updated.
      */
-    public O update(O object);
+    default O update(O object) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the update operation over a add of the instances,
@@ -43,7 +49,9 @@ public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
      *                   instances.
      * @return Return the instances updated.
      */
-    public Collection<O> update(Query.QueryId queryId, Map<String, Object> parameters);
+    default Collection<O> update(Query.QueryId queryId, Map<String, Object> parameters) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the update operation over a add of the instances,
@@ -53,6 +61,8 @@ public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
      *                   instances.
      * @return Return the instances updated.
      */
-    public Collection<O> update(Query query, Map<String, Object> parameters);
+    default Collection<O> update(Query query, Map<String, Object> parameters) {
+        throw new UnsupportedOperationException();
+    }
 
 }

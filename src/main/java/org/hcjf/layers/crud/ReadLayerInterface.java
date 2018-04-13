@@ -22,13 +22,17 @@ public interface ReadLayerInterface<O extends Object> extends LayerInterface {
      * @param id Id to found the instance.
      * @return Return the instance founded or null if the instance is not found.
      */
-    public O read(Object id);
+    default O read(Object id) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation without filters.
      * @return List with all the instances of the resource.
      */
-    public Collection<O> read();
+    default Collection<O> read() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation using the filters
@@ -36,7 +40,9 @@ public interface ReadLayerInterface<O extends Object> extends LayerInterface {
      * @param query Query.
      * @return Return the list with the instances founded.
      */
-    public Collection<O> read(Query query);
+    default Collection<O> read(Query query) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation using the filters
@@ -45,7 +51,9 @@ public interface ReadLayerInterface<O extends Object> extends LayerInterface {
      * @param parameters Parameters to evaluate query.
      * @return Return the list with the instances founded.
      */
-    public Collection<O> read(Query query, Object... parameters);
+    default Collection<O> read(Query query, Object... parameters) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation using the filters
@@ -53,7 +61,9 @@ public interface ReadLayerInterface<O extends Object> extends LayerInterface {
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    public Collection<O> read(Query.QueryId queryId);
+    default Collection<O> read(Query.QueryId queryId) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation using the filters
@@ -62,6 +72,8 @@ public interface ReadLayerInterface<O extends Object> extends LayerInterface {
      * @param parameters Parameters to evaluate query.
      * @return Return the list with the instances founded.
      */
-    public Collection<O> read(Query.QueryId queryId, Object... parameters);
+    default Collection<O> read(Query.QueryId queryId, Object... parameters) {
+        throw new UnsupportedOperationException();
+    }
 
 }

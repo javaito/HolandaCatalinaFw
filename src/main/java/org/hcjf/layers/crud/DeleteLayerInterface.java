@@ -14,14 +14,18 @@ public interface DeleteLayerInterface<O extends Object> extends LayerInterface {
      * This method return the resource class of the layer.
      * @return Resource class.
      */
-    public Class<O> getResourceType();
+    default Class<O> getResourceType() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the delete operation over the resource.
      * @param id Id of the instance that gonna be deleted.
      * @return Instance of the resource that was deleted.
      */
-    public O delete(Object id);
+    default O delete(Object id) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the delete operation over a add of the instances.
@@ -29,7 +33,9 @@ public interface DeleteLayerInterface<O extends Object> extends LayerInterface {
      * @param queryId Id of the query.
      * @return Return the instances deleted.
      */
-    public Collection<O> delete(Query.QueryId queryId);
+    default Collection<O> delete(Query.QueryId queryId) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the delete operation over a add of the instances.
@@ -37,6 +43,8 @@ public interface DeleteLayerInterface<O extends Object> extends LayerInterface {
      * @param query Query to select the instances to delete.
      * @return Return the instances deleted.
      */
-    public Collection<O> delete(Query query);
+    default Collection<O> delete(Query query) {
+        throw new UnsupportedOperationException();
+    }
 
 }

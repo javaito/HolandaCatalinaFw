@@ -17,7 +17,9 @@ public interface ReadRowsLayerInterface extends LayerInterface {
      * @param query Query to read data.
      * @return Return the list with the instances founded.
      */
-    public Collection<JoinableMap> readRows(Query query);
+    default Collection<JoinableMap> readRows(Query query) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation using the filters
@@ -26,7 +28,9 @@ public interface ReadRowsLayerInterface extends LayerInterface {
      * @param parameters Parameters to evaluate query.
      * @return Return the list with the instances founded.
      */
-    public Collection<JoinableMap> readRows(Query query, Object... parameters);
+    default Collection<JoinableMap> readRows(Query query, Object... parameters) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation using the filters
@@ -34,7 +38,9 @@ public interface ReadRowsLayerInterface extends LayerInterface {
      * @param queryId Id of the query.
      * @return Return the list with the instances founded.
      */
-    public Collection<JoinableMap> readRows(Query.QueryId queryId);
+    default Collection<JoinableMap> readRows(Query.QueryId queryId) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method implements the read operation using the filters
@@ -43,6 +49,8 @@ public interface ReadRowsLayerInterface extends LayerInterface {
      * @param parameters Parameters to evaluate query.
      * @return Return the list with the instances founded.
      */
-    public Collection<JoinableMap> readRows(Query.QueryId queryId, Object... parameters);
+    default Collection<JoinableMap> readRows(Query.QueryId queryId, Object... parameters) {
+        throw new UnsupportedOperationException();
+    }
 
 }

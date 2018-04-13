@@ -6,6 +6,8 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
 
