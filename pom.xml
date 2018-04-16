@@ -98,7 +98,7 @@
         <dependency>
             <groupId>com.github.javaito</groupId>
             <artifactId>hcjf-bson</artifactId>
-            <version>1.0.5</version>
+            <version>1.0.6</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

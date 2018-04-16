@@ -200,39 +200,91 @@ public interface BsonParcelable {
      */
     default Object fromBson(Class expectedDataType, Class keyType, Class collectionDataType, BsonElement element) {
         Object result;
-        if(expectedDataType != null) {
-            if (Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
-                result = fromBson(collectionDataType, (BsonArray) element);
-            } else if (expectedDataType.isArray() && element instanceof BsonArray) {
-                Collection collection = fromBson(expectedDataType.getComponentType(), (BsonArray) element);
-                result = collection.toArray((Object[]) Array.newInstance(
-                        expectedDataType.getComponentType(), collection.size()));
-            } else if (Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
-                result = fromBson(keyType, collectionDataType, (BsonDocument) element);
-            } else if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
-                result = Builder.create((BsonDocument)element);
-            } else if (expectedDataType.isEnum() && element instanceof BsonPrimitive) {
-                result = Enum.valueOf(expectedDataType, element.getAsString());
-            } else if (expectedDataType.equals(Class.class) && element instanceof BsonPrimitive) {
-                try {
-                    result = Class.forName(element.getAsString());
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalArgumentException();
-                }
-            } else if (Serializable.class.isAssignableFrom(expectedDataType) && !UUID.class.isAssignableFrom(expectedDataType) &&
-                    element instanceof BsonPrimitive && ((BsonPrimitive) element).getType().equals(BsonType.BINARY)) {
-                try (ByteArrayInputStream bais = new ByteArrayInputStream(element.getAsBytes());
-                        ObjectInputStream ois = new ObjectInputStream(bais)) {
-                    result = ois.readObject();
-                } catch (Exception ex) {
-                    return element.getValue();
-                }
-            } else {
+
+        //Verify data type.
+        expectedDataType = typeFromBson(expectedDataType, element);
+
+        if (Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
+            result = fromBson(collectionDataType, (BsonArray) element);
+        } else if (expectedDataType.isArray() && element instanceof BsonArray) {
+            Collection collection = fromBson(expectedDataType.getComponentType(), (BsonArray) element);
+            result = collection.toArray((Object[]) Array.newInstance(
+                    expectedDataType.getComponentType(), collection.size()));
+        } else if (Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
+            result = fromBson(keyType, collectionDataType, (BsonDocument) element);
+        } else if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
+            result = Builder.create((BsonDocument)element);
+        } else if (expectedDataType.isEnum() && element instanceof BsonPrimitive) {
+            result = Enum.valueOf(expectedDataType, element.getAsString());
+        } else if (expectedDataType.equals(Class.class) && element instanceof BsonPrimitive) {
+            try {
+                result = Class.forName(element.getAsString());
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException();
+            }
+        } else if (Serializable.class.isAssignableFrom(expectedDataType) && !UUID.class.isAssignableFrom(expectedDataType) &&
+                element instanceof BsonPrimitive && ((BsonPrimitive) element).getType().equals(BsonType.BINARY)) {
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(element.getAsBytes());
+                    ObjectInputStream ois = new ObjectInputStream(bais)) {
+                result = ois.readObject();
+            } catch (Exception ex) {
                 return element.getValue();
             }
         } else {
             return element.getValue();
         }
+
+        return result;
+    }
+
+    /**
+     * This method verify if the expected data type is valid, if it is not valid then trying to
+     * deduct the data type from information into the bson element.
+     * @param expectedType Expected data type.
+     * @param element Bson element.
+     * @return Valid data type.
+     */
+    default Class typeFromBson(Class expectedType, BsonElement element) {
+        Class result = expectedType;
+
+        if(result == null || result.equals(Object.class)) {
+            if(element instanceof BsonArray) {
+                result = Collection.class;
+            } else if(element instanceof BsonDocument) {
+                if(((BsonDocument)element).hasElement(PARCELABLE_CLASS_NAME)) {
+                    try {
+                        result = Class.forName(((BsonDocument) element).get(PARCELABLE_CLASS_NAME).getAsString());
+                    } catch(Exception ex){
+                        result = Map.class;
+                    }
+                } else {
+                    result = Map.class;
+                }
+            } else {
+                BsonType type = ((BsonPrimitive)element).getType();
+                if(type.equals(BsonType.DATE)) {
+                    result = Date.class;
+                } else if(type.equals(BsonType.BOOLEAN)) {
+                    result = Boolean.class;
+                } else if(type.equals(BsonType.DOUBLE)) {
+                    result = Double.class;
+                } else if(type.equals(BsonType.INTEGER)) {
+                    result = Integer.class;
+                } else if(type.equals(BsonType.LONG)) {
+                    result = Long.class;
+                } else if(type.equals(BsonType.STRING)) {
+                    result = String.class;
+                } else if(type.equals(BsonType.BINARY)) {
+                    BsonBinarySubType subType = ((BsonPrimitive)element).getBinarySubType();
+                    if(subType.equals(BsonBinarySubType.UUID)) {
+                        result = UUID.class;
+                    } else if(subType.equals(BsonBinarySubType.GENERIC)) {
+                        result = byte[].class;
+                    }
+                }
+            }
+        }
+
         return result;
     }
 

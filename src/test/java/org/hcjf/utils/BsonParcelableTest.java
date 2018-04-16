@@ -30,6 +30,11 @@ public class BsonParcelableTest {
         Map<UUID, Map<String, Date>> map3 = new HashMap<>();
         map3.put(UUID.randomUUID(), innerMap);
 
+        Test2 t2 = new Test2();
+        t2.setPaths(new ArrayList<>());
+        t2.getPaths().add(new Path(null, null, new ArrayList<>()));
+        t2.toBson();
+
         TestSerializable testSerializable = new TestSerializable();
         testSerializable.setField1("Hello world!!");
         testSerializable.setField2(37);
@@ -39,6 +44,7 @@ public class BsonParcelableTest {
         testObject.setMap2(map2);
         testObject.setMap3(map3);
         testObject.setTestSerializable(testSerializable);
+        testObject.setTest2s(new Test2[]{t2, t2});
 
         BsonDocument bsonDocument = testObject.toBson();
 
@@ -52,17 +58,6 @@ public class BsonParcelableTest {
                 unserializedTestObject.getTestSerializable().getField1());
         Assert.assertEquals(testObject.getTestSerializable().getField2(),
                 unserializedTestObject.getTestSerializable().getField2());
-
-        Test2 t2 = new Test2();
-        t2.setPaths(new ArrayList<>());
-        t2.getPaths().add(new Path(null, null, new ArrayList<>()));
-        t2.toBson();
-
-        t2 = new Test2();
-        t2.setPaths(null);
-        t2.toBson();
-
-
     }
 
     public static class TestClass implements BsonParcelable {
@@ -71,6 +66,7 @@ public class BsonParcelableTest {
         private Map<String, Double> map2;
         private Map<UUID, Map<String, Date>> map3;
         private TestSerializable testSerializable;
+        private Test2[] test2s;
 
         public Map<UUID, Integer> getMap1() {
             return map1;
@@ -102,6 +98,14 @@ public class BsonParcelableTest {
 
         public void setTestSerializable(TestSerializable testSerializable) {
             this.testSerializable = testSerializable;
+        }
+
+        public Test2[] getTest2s() {
+            return test2s;
+        }
+
+        public void setTest2s(Test2[] test2s) {
+            this.test2s = test2s;
         }
     }
 
