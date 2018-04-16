@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -129,14 +130,18 @@ public class CloudTestA {
 
     public static class LayerTestA extends Layer implements DistributedLayerTest, DistributedLayerInterface {
 
+        private AtomicInteger counter;
+
         public LayerTestA() {
             super("TestA");
+            counter = new AtomicInteger(0);
         }
 
         @Override
         public String method(String value) {
             String result = String.format("Result of invoke test A with value %s", value);
             System.out.println(String.format("Test A invoked with value %s", value));
+            System.out.println("Invocation counter: " + counter.addAndGet(1));
             return result;
         }
 

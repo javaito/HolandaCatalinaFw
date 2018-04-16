@@ -629,7 +629,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.REORGANIZATION_WARNING_TIME_LIMIT, "1500");
         defaults.put(Cloud.Orchestrator.WAGON_TIMEOUT, "10000");
         defaults.put(Cloud.Orchestrator.INVOKE_TIMEOUT, "120000");
-        defaults.put(Cloud.Orchestrator.TEST_NODE_TIMEOUT, "100");
+        defaults.put(Cloud.Orchestrator.TEST_NODE_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");

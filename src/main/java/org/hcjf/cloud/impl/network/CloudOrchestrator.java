@@ -269,6 +269,9 @@ public final class CloudOrchestrator extends Service<Node> {
                 for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class, RemoteLeaf.class)) {
                     distributedLeaf = (DistributedLeaf) entry.getValue();
                     distributedLeaf.getNodes().remove(node.getId());
+                    if(distributedLeaf.getInstance() instanceof DistributedLayer) {
+                        ((DistributedLayer)distributedLeaf.getInstance()).removeNode(node.getId());
+                    }
                 }
                 break;
             }
@@ -868,15 +871,19 @@ public final class CloudOrchestrator extends Service<Node> {
         DistributedLayer distributedLayer = getDistributedLayer(false, path);
         UUID nodeId = distributedLayer.getNodeToInvoke();
         CloudSession session = null;
+        long startTime;
         while (nodeId != null) {
             session = sessionByNode.get(nodeId);
+            startTime = System.currentTimeMillis();
             if(session != null && testNode(session)) {
+                distributedLayer.addResponseTime(nodeId, (System.currentTimeMillis() - startTime));
                 break;
             } else {
-                distributedLayer.removeNode(nodeId);
+                distributedLayer.addResponseTime(nodeId, (System.currentTimeMillis() - startTime));
                 nodeId = distributedLayer.getNodeToInvoke();
             }
         }
+
         if(session != null) {
             LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage(UUID.randomUUID());
             layerInvokeMessage.setMethodName(method.getName());
@@ -884,8 +891,12 @@ public final class CloudOrchestrator extends Service<Node> {
             layerInvokeMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
             layerInvokeMessage.setParameters(parameters);
             layerInvokeMessage.setPath(path);
-            result = (O) invoke(session, layerInvokeMessage);
-            distributedLayer.nodeInvoked(nodeId);
+            startTime = System.currentTimeMillis();
+            try {
+                result = (O) invoke(session, layerInvokeMessage);
+            } finally {
+                distributedLayer.addResponseTime(nodeId, (System.currentTimeMillis() - startTime));
+            }
         } else {
             throw new RuntimeException("Session not found!");
         }

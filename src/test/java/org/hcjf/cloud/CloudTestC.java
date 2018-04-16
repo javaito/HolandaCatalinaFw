@@ -22,6 +22,8 @@ public class CloudTestC {
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
         System.setProperty(SystemProperties.Service.THREAD_POOL_MAX_SIZE, "2000");
+        System.setProperty(SystemProperties.Service.STATIC_THREAD_POOL_CORE_SIZE, "100");
+        System.setProperty(SystemProperties.Service.STATIC_THREAD_POOL_MAX_SIZE, "2000");
 
         System.setProperty(SystemProperties.Cloud.Orchestrator.SERVER_LISTENER_PORT, "6164");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc1");
@@ -112,7 +114,11 @@ public class CloudTestC {
                         System.out.println("Unlocked");
                     } else if(arguments[0].equalsIgnoreCase("invoke") && arguments.length == 2) {
                         DistributedLayerTest distributedLayerTest = Layers.get(DistributedLayerTest.class, arguments[1]);
-                        System.out.println("Result: " + distributedLayerTest.method("valueC"));
+                        for (int i = 0; i < 200; i++) {
+                            Service.run(()->System.out.println("Result: " + distributedLayerTest.method("valueC")), ServiceSession.getSystemSession());
+                            Service.run(()->System.out.println("Result: " + distributedLayerTest.method("valueC")), ServiceSession.getSystemSession());
+                            Service.run(()->System.out.println("Result: " + distributedLayerTest.method("valueC")), ServiceSession.getSystemSession());
+                        }
                     }
                     System.out.println("Execution time: " + (System.currentTimeMillis() - time));
                 } catch (Exception ex){

@@ -1,7 +1,6 @@
 package org.hcjf.cloud.impl.objects;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author javaito
@@ -11,7 +10,7 @@ public class DistributedLayer {
     private final Class layerInterface;
     private final String layerName;
     private final List<UUID> nodes;
-    private final Map<UUID,AtomicLong> nodesInvocationCounter;
+    private final Map<UUID,ResponseAverage> nodesInvocationCounter;
 
     public DistributedLayer(Class layerInterface, String layerName) {
         this.layerInterface = layerInterface;
@@ -39,25 +38,43 @@ public class DistributedLayer {
 
     public synchronized void addNode(UUID nodeId) {
         nodes.add(nodeId);
-
-        //Clean all the counters because there are a new node to resolve the layer invoke.
-        for(UUID id : nodesInvocationCounter.keySet()) {
-            nodesInvocationCounter.put(id, new AtomicLong());
-        }
-
-        nodesInvocationCounter.put(nodeId, new AtomicLong());
+        nodesInvocationCounter.put(nodeId, new ResponseAverage());
     }
 
     public synchronized void removeNode(UUID nodeId) {
-        nodesInvocationCounter.remove(nodeId);
         nodes.remove(nodeId);
+        nodesInvocationCounter.remove(nodeId);
     }
 
-    public synchronized void nodeInvoked(UUID nodeId) {
+    public synchronized void addResponseTime(UUID nodeId, Long responseTime) {
         if(nodesInvocationCounter.containsKey(nodeId)) {
-            nodesInvocationCounter.get(nodeId).addAndGet(1);
+            nodesInvocationCounter.get(nodeId).add(responseTime);
             nodes.sort((L, R) ->
                     (int) (nodesInvocationCounter.get(L).get() - nodesInvocationCounter.get(R).get()));
+        }
+    }
+
+    private class ResponseAverage {
+
+        private long accumulator;
+        private int size;
+
+        public ResponseAverage() {
+            accumulator = 0;
+            size = 1;
+        }
+
+        public void add(long value) {
+            if(size == 100) {
+                accumulator = accumulator / size;
+                size = 1;
+            }
+            accumulator += value;
+            size++;
+        }
+
+        public long get() {
+            return accumulator / size;
         }
     }
 }
