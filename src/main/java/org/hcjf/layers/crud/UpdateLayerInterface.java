@@ -12,14 +12,6 @@ import java.util.Map;
 public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
 
     /**
-     * This method return the resource class of the layer.
-     * @return Resource class.
-     */
-    default Class<O> getResourceType() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * This method implements the update of the resource.
      * @param object Instance of the resource that gonna be updated.
      *               This instance must have an id to identify the updatable data.

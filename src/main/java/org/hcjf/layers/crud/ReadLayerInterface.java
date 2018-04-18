@@ -11,12 +11,6 @@ import java.util.Collection;
 public interface ReadLayerInterface<O extends Object> extends LayerInterface {
 
     /**
-     * This method return the resource class of the layer.
-     * @return Resource class.
-     */
-    public Class<O> getResourceType();
-
-    /**
      * This method implements the read operation to find an instance of
      * the resource using only it's id.
      * @param id Id to found the instance.

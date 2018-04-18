@@ -11,14 +11,6 @@ import java.util.Collection;
 public interface DeleteLayerInterface<O extends Object> extends LayerInterface {
 
     /**
-     * This method return the resource class of the layer.
-     * @return Resource class.
-     */
-    default Class<O> getResourceType() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * This method implements the delete operation over the resource.
      * @param id Id of the instance that gonna be deleted.
      * @return Instance of the resource that was deleted.
