@@ -217,45 +217,78 @@ public final class Layers {
     }
 
     /**
-     * Return the instance of layer that match.
-     * @param layerClass Layer class.
-     * @param matcher Layer matcher.
-     * @param <L> Expected layer class.
-     * @return Layer instance.
+     * This method returns all the implementation of the specified layer class as parameter
+     * that match with the specified matcher as parameter.
+     * @param layerClass King of layer founding.
+     * @param matcher Matcher instance.
+     * @param <L> Expected layer interface type.
+     * @return Set with all the implementation of the layer, this set could be empty.
+     */
+    public static <L extends LayerInterface> Set<L> getAll(Class<? extends L> layerClass, LayerMatcher<L> matcher) {
+        return match(layerClass, matcher, false);
+    }
+
+    /**
+     * This method returns the first implementation of the specified layer class as parameter
+     * that match with the specified matcher as parameter.
+     * @param layerClass Kind of layer founding.
+     * @param matcher Matcher instance.
+     * @param <L> Expected layer implementation type.
+     * @return First implementation that match.
+     * @throws IllegalArgumentException if any implementation of this kind of layer match.
      */
     public static <L extends LayerInterface> L get(Class<? extends L> layerClass, LayerMatcher<L> matcher) {
-        L result = null;
+        Set<L> result = match(layerClass, matcher, true);
+
+        if(result.isEmpty()) {
+            throw new IllegalArgumentException("Layer implementation not found");
+        }
+
+        return result.iterator().next();
+    }
+
+    /**
+     * This method returns all the implementation of the specified layer class as parameter
+     * that match with the specified matcher as parameter. If the parameter only first is true then
+     * the result set only contains the first implementation that match.
+     * @param layerClass Kind of layer founding.
+     * @param matcher Matcher instance.
+     * @param onlyFirst Flag to indicate that the search stops with the first occurrence
+     * @param <L> Expected layer implementation type.
+     * @return Set with all the implementation of the layer, this set could be empty.
+     */
+    private static <L extends LayerInterface> Set<L> match(Class<? extends L> layerClass, LayerMatcher<L> matcher, boolean onlyFirst) {
+        Set<L> result = new HashSet<>();
+        L layerFounded;
         if(instance.layerImplementations.containsKey(layerClass)) {
             Map<String, Class<? extends Layer>> layersByName =
                     instance.layerImplementations.get(layerClass);
             for(String implName : layersByName.keySet()) {
-                result = getImplementationInstance(layersByName.get(implName));
-                if(matcher.match(result)){
-                    break;
-                } else {
-                    result = null;
-                }
-            }
-        }
-
-        if(result == null) {
-            if (instance.pluginLayerImplementations.containsKey(layerClass)) {
-                Map<String, String> layersByName =
-                        instance.pluginLayerImplementations.get(layerClass);
-                for (String implName : layersByName.keySet()) {
-                    result = getPluginImplementationInstance(
-                            layerClass, layersByName.get(implName));
-                    if(matcher.match(result)){
+                layerFounded = getImplementationInstance(layersByName.get(implName));
+                if(matcher.match(layerFounded)){
+                    result.add(layerFounded);
+                    if(onlyFirst) {
                         break;
-                    } else {
-                        result = null;
                     }
                 }
             }
         }
 
-        if(result == null) {
-            throw new IllegalArgumentException("Layer implementation not found");
+        if(result.isEmpty() || !onlyFirst) {
+            if (instance.pluginLayerImplementations.containsKey(layerClass)) {
+                Map<String, String> layersByName =
+                        instance.pluginLayerImplementations.get(layerClass);
+                for (String implName : layersByName.keySet()) {
+                    layerFounded = getPluginImplementationInstance(
+                            layerClass, layersByName.get(implName));
+                    if(matcher.match(layerFounded)){
+                        result.add(layerFounded);
+                        if(onlyFirst) {
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         return result;
