@@ -15,7 +15,7 @@ public interface EventListener<E extends Event> extends ServiceConsumer {
      * When a event is received.
      * @param event Received event.
      */
-    public void onEventReceive(E event);
+    void onEventReceived(E event);
 
     /**
      * Return the implementation type of the event listener.

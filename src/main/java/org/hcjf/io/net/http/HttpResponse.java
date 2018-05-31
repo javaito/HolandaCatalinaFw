@@ -11,7 +11,6 @@ public class HttpResponse extends HttpPackage {
 
     private static final int VERSION_INDEX = 0;
     private static final int RESPONSE_CODE_INDEX = 1;
-    private static final int REASON_PHRASE_INDEX = 2;
 
     private Integer responseCode;
     private String reasonPhrase;
@@ -73,12 +72,16 @@ public class HttpResponse extends HttpPackage {
         String[] parts = firstLine.split(LINE_FIELD_SEPARATOR);
 
         if(parts.length == 2) {
-            setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX]));
+            setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX].trim()));
             setHttpVersion(parts[VERSION_INDEX]);
-        } if(parts.length == 3) {
-            setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX]));
-            setReasonPhrase(parts[REASON_PHRASE_INDEX]);
+        } if(parts.length >= 3) {
+            setResponseCode(Integer.parseInt(parts[RESPONSE_CODE_INDEX].trim()));
             setHttpVersion(parts[VERSION_INDEX]);
+            StringBuilder reasonPhraseBuilder = new StringBuilder();
+            for (int i = 2; i < parts.length; i++) {
+                reasonPhraseBuilder.append(parts[i]);
+            }
+            setReasonPhrase(reasonPhraseBuilder.toString());
         }
     }
 

@@ -44,7 +44,7 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
         localDeploymentPlugins = new TreeSet<>();
 
         if(SystemProperties.getBoolean(SystemProperties.Layer.Deployment.CLOUD_DEPLOYMENT_ENABLED)) {
-            cloudDeploymentPlugins = Cloud.getMap(SystemProperties.get(SystemProperties.Layer.Deployment.CLOUD_DEPLOYMENT_MAP_NAME));
+            cloudDeploymentPlugins = Cloud.getMap(SystemProperties. get(SystemProperties.Layer.Deployment.CLOUD_DEPLOYMENT_MAP_NAME));
         } else {
             cloudDeploymentPlugins = null;
         }

@@ -5,7 +5,6 @@ import org.hcjf.errors.Errors;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -95,7 +94,7 @@ public final class Events extends Service<EventListener> {
 
     private void dispatchLocalEvent(Event event) {
         for (EventListener listener : getListeners(event)) {
-            fork(() -> listener.onEventReceive(event));
+            fork(() -> listener.onEventReceived(event));
         }
     }
 
@@ -136,7 +135,7 @@ public final class Events extends Service<EventListener> {
         AtomicReference<E> result = new AtomicReference<>();
         addEventListener(new EventListener<E>(){
             @Override
-            public void onEventReceive(E event) {
+            public void onEventReceived(E event) {
                 result.set(event);
                 synchronized (result) {
                     result.notifyAll();
