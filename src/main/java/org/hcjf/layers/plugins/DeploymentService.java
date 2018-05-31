@@ -197,7 +197,7 @@ public final class DeploymentService extends Service<DeploymentService.Deploymen
              * @param pluginVersion Plugin version.
              * @return True if the plugin will be deployed or false if the plugin is refused.
              */
-            public boolean matchPlugin(String pluginGroup, String pluginName, Version pluginVersion);
+            boolean matchPlugin(String pluginGroup, String pluginName, Version pluginVersion);
 
         }
 

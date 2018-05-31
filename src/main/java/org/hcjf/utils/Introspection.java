@@ -21,11 +21,63 @@ public final class Introspection {
     private static final Pattern GETTER_METHODS_PATTERN = Pattern.compile("^(get|is)([1,A-Z]|[1,0-9])(.*)");
     private static final Pattern SETTER_METHODS_PATTERN = Pattern.compile("^(set)([1,A-Z]|[1,0-9])(.*)");
 
+    private static final String PATH_SEPARATOR = "\\.";
+
     private static final int SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP = 2;
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
 
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
     private static final Map<Class, Map<String, Accessors>> accessorsCache = new HashMap<>();
+
+    /**
+     * This method resolve the path using introspection to navigate into the instance finding each element of the path.
+     * The path is a set of elements that represents a field, key or index each one.
+     * This is a path example: field.0.field.field.1
+     * @param instance Object to navigate.
+     * @param path Path to navigate the instance.
+     * @return Returns the value that point the path.
+     */
+    public static Object resolve(Object instance, String path) {
+        Object result = instance;
+        String[] pathElements = path.split(PATH_SEPARATOR);
+        for(String element : pathElements) {
+            if(result == null) {
+                break;
+            }
+
+            if(result instanceof Map) {
+                result = ((Map)result).get(element);
+            } else if(result instanceof List) {
+                try {
+                    Integer index = Integer.parseInt(element);
+                    result = ((List)result).get(index);
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to access to list value [" + element + "]");
+                }
+            } else if(result instanceof Collection) {
+                try {
+                    Integer index = Integer.parseInt(element);
+                    result = ((Collection)result).stream().skip(index-1).findFirst().get();
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to access to collection value [" + element + "]");
+                }
+            } else if(result.getClass().isArray()) {
+                try {
+                    Integer index = Integer.parseInt(element);
+                    result = Array.get(result, index);
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to access to array value [" + element + "]");
+                }
+            } else {
+                try {
+                    result = get(result, element);
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to access to field '" + element + "'");
+                }
+            }
+        }
+        return result;
+    }
 
     /**
      * Return the value that is the result of invoke the specific getter method.
