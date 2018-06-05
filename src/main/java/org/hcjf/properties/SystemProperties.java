@@ -4,7 +4,6 @@ import com.google.gson.*;
 import org.hcjf.cloud.impl.DefaultCloudServiceImpl;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
 
-import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -367,6 +366,12 @@ public final class SystemProperties extends Properties {
             public static final String CONDITION_SUFFIX_NAME = "hcjf.cloud.cache.condition.suffix.name";
             public static final String SIZE_STRATEGY_MAP_SUFFIX_NAME = "hcjf.cloud.cache.size.strategy.map.suffix.name";
         }
+
+        public static class Queue {
+            public static final String LOCK_NAME_TEMPLATE = "hcjf.cloud.queue.lock.name.template";
+            public static final String CONDITION_NAME_TEMPLATE = "hcjf.cloud.queue.condition.name.template";
+            public static final String DEFAULT_SIZE = "hcjf.cloud.queue.default.size";
+        }
     }
 
     //Java property names
@@ -651,6 +656,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Cache.LOCK_SUFFIX_NAME, "hcjf.cloud.cache.lock.");
         defaults.put(Cloud.Cache.CONDITION_SUFFIX_NAME, "hcjf.cloud.cache.condition.");
         defaults.put(Cloud.Cache.SIZE_STRATEGY_MAP_SUFFIX_NAME, "hcjf.cloud.cache.size.strategy.map.");
+        defaults.put(Cloud.Queue.LOCK_NAME_TEMPLATE, "hcjf.cloud.queue.lock.name.%s");
+        defaults.put(Cloud.Queue.CONDITION_NAME_TEMPLATE, "hcjf.cloud.queue.condition.name.%s");
+        defaults.put(Cloud.Queue.DEFAULT_SIZE, "100000");
 
         Properties system = System.getProperties();
         putAll(system);

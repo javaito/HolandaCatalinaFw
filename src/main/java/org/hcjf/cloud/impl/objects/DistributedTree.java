@@ -157,9 +157,9 @@ public class DistributedTree implements DistributedObject {
         if(index + 1 == path.length) {
             result = branches.remove(path[index]);
         } else {
-            DistributedObject distributedObject = branches.get(index++);
+            DistributedObject distributedObject = branches.get(path[index]);
             if(distributedObject != null && distributedObject instanceof DistributedTree) {
-                result = remove(index, path);
+                result = ((DistributedTree)distributedObject).remove(index + 1, path);
             }
         }
         return result;

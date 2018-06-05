@@ -8,6 +8,7 @@ import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
@@ -45,6 +46,7 @@ public class CloudTestC {
 
         Layers.publishLayer(LayerTestC.class);
         Map<String, String> testingMap = Cloud.getMap("testing-map");
+        Queue<String> testingQueue = Cloud.getQueue("testing-queue");
         Lock lock = Cloud.getLock("testing-lock");
         Lock mapLock = Cloud.getLock("map-lock");
         Condition condition = mapLock.newCondition();
@@ -119,6 +121,12 @@ public class CloudTestC {
                             Service.run(()->System.out.println("Result: " + distributedLayerTest.method("valueC")), ServiceSession.getSystemSession());
                             Service.run(()->System.out.println("Result: " + distributedLayerTest.method("valueC")), ServiceSession.getSystemSession());
                         }
+                    } else if(arguments[0].equalsIgnoreCase("offer") && arguments.length == 2) {
+                        testingQueue.offer(arguments[1]);
+                    } else if(arguments[0].equalsIgnoreCase("peek") && arguments.length == 1) {
+                        System.out.println(testingQueue.peek());
+                    } else if(arguments[0].equalsIgnoreCase("poll") && arguments.length == 1) {
+                        System.out.println(testingQueue.poll());
                     }
                     System.out.println("Execution time: " + (System.currentTimeMillis() - time));
                 } catch (Exception ex){

@@ -24,10 +24,12 @@ import java.util.concurrent.locks.Lock;
 public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     private final Map<String,Map> mapInstances;
+    private final Map<String,Queue> queueInstances;
     private final Map<String,Lock> lockInstances;
 
     public DefaultCloudServiceImpl() {
         this.mapInstances = new HashMap<>();
+        this.queueInstances = new HashMap<>();
         this.lockInstances = new HashMap<>();
     }
 
@@ -46,7 +48,15 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     @Override
     public <V> Queue<V> getQueue(String queueName) {
-        return null;
+        Queue<V> result;
+        synchronized (queueInstances) {
+            result = queueInstances.get(queueName);
+            if(result == null) {
+                result = new QueueImpl<>(queueName);
+                queueInstances.put(queueName, result);
+            }
+        }
+        return result;
     }
 
     @Override
