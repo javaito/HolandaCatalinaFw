@@ -294,14 +294,19 @@ public interface BsonParcelable {
     final class Builder {
 
         public static <P extends BsonParcelable> P create(BsonDocument document) {
+            P result;
             String className = document.get(PARCELABLE_CLASS_NAME).getAsString();
             try {
-                P result = (P) Class.forName(className).getConstructor().newInstance();
+                try {
+                    result = (P) Class.forName(className).getConstructor().newInstance();
+                } catch (ClassNotFoundException e) {
+                    result = (P) new BsonParcelableMap();
+                }
                 result.populate(document);
-                return result;
             } catch (Exception ex) {
                 throw new IllegalArgumentException("Unable to create parcelable instance: " + className, ex);
             }
+            return result;
         }
 
     }

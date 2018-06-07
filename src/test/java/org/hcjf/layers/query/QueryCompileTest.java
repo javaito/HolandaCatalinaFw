@@ -1,18 +1,8 @@
 package org.hcjf.layers.query;
 
-import junit.framework.AssertionFailedError;
-import org.hcjf.io.net.http.HttpHeader;
-import org.hcjf.io.net.http.HttpRequest;
-import org.hcjf.io.net.http.RequestBodyDecoderLayer;
-import org.hcjf.layers.Layers;
-import org.hcjf.properties.SystemProperties;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.UUID;
 
 /**

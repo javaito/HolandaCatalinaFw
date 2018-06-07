@@ -60,6 +60,46 @@ public class BsonParcelableTest {
                 unserializedTestObject.getTestSerializable().getField2());
     }
 
+    @Test
+    public void testAutoCast() {
+        Map<UUID, Integer> map1 = new HashMap<>();
+        map1.put(new UUID(0, 12), 12);
+        map1.put(new UUID(0, 13), 13);
+
+        Map<String,Double> map2 = new HashMap<>();
+        map2.put("First", 23.6);
+        map2.put("Second", 34.5);
+
+        Map<String, Date> innerMap = new HashMap<>();
+        innerMap.put("Today", new Date());
+        innerMap.put("Hoy", new Date());
+
+        Map<UUID, Map<String, Date>> map3 = new HashMap<>();
+        map3.put(UUID.randomUUID(), innerMap);
+
+        Test2 t2 = new Test2();
+        t2.setPaths(new ArrayList<>());
+        t2.getPaths().add(new Path(null, null, new ArrayList<>()));
+        t2.toBson();
+
+        TestSerializable testSerializable = new TestSerializable();
+        testSerializable.setField1("Hello world!!");
+        testSerializable.setField2(37);
+
+        TestClass testObject = new TestClass();
+        testObject.setMap1(map1);
+        testObject.setMap2(map2);
+        testObject.setMap3(map3);
+        testObject.setTestSerializable(testSerializable);
+        testObject.setTest2s(new Test2[]{t2, t2});
+
+        BsonDocument bsonDocument = testObject.toBson();
+        bsonDocument.put(BsonParcelable.PARCELABLE_CLASS_NAME, "no.class");
+
+        Map<String,Object> mapFromBsonParcelable = BsonParcelable.Builder.create(bsonDocument);
+
+    }
+
     public static class TestClass implements BsonParcelable {
 
         private Map<UUID, Integer> map1;
