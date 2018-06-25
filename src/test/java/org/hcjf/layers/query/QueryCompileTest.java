@@ -21,7 +21,6 @@ public class QueryCompileTest {
             Assert.fail(ex.getMessage());
         }
 
-
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field != 5 AND resource.field = '2017-07-07 22:15:32'");
             query = Query.compile(query.toString());

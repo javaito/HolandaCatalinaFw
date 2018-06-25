@@ -10,13 +10,15 @@ public class DistributedLayer {
     private final Class layerInterface;
     private final String layerName;
     private final List<UUID> nodes;
-    private final Map<UUID,ResponseAverage> nodesInvocationCounter;
+    private final List<UUID> serviceEndPoints;
+    private final Map<UUID,ResponseAverage> invocationCounter;
 
     public DistributedLayer(Class layerInterface, String layerName) {
         this.layerInterface = layerInterface;
         this.layerName = layerName;
         this.nodes = new ArrayList<>();
-        this.nodesInvocationCounter = new HashMap<>();
+        this.serviceEndPoints = new ArrayList<>();
+        this.invocationCounter = new HashMap<>();
     }
 
     public Class getLayerInterface() {
@@ -38,19 +40,38 @@ public class DistributedLayer {
 
     public synchronized void addNode(UUID nodeId) {
         nodes.add(nodeId);
-        nodesInvocationCounter.put(nodeId, new ResponseAverage());
+        invocationCounter.put(nodeId, new ResponseAverage());
     }
 
     public synchronized void removeNode(UUID nodeId) {
         nodes.remove(nodeId);
-        nodesInvocationCounter.remove(nodeId);
+        invocationCounter.remove(nodeId);
+    }
+
+    public synchronized UUID getServiceToInvoke() {
+        UUID result = null;
+        if(serviceEndPoints.size() > 0) {
+            result = serviceEndPoints.get(0);
+            serviceEndPoints.add(result);
+        }
+        return result;
+    }
+
+    public synchronized void addServiceEndPoint(UUID serviceEndPointId) {
+        serviceEndPoints.add(serviceEndPointId);
+        invocationCounter.put(serviceEndPointId, new ResponseAverage());
+    }
+
+    public synchronized void removeServiceEndPoint(UUID serviceEndPointId) {
+        serviceEndPoints.remove(serviceEndPointId);
+        invocationCounter.remove(serviceEndPointId);
     }
 
     public synchronized void addResponseTime(UUID nodeId, Long responseTime) {
-        if(nodesInvocationCounter.containsKey(nodeId)) {
-            nodesInvocationCounter.get(nodeId).add(responseTime);
+        if(invocationCounter.containsKey(nodeId)) {
+            invocationCounter.get(nodeId).add(responseTime);
             nodes.sort((L, R) ->
-                    (int) (nodesInvocationCounter.get(L).get() - nodesInvocationCounter.get(R).get()));
+                    (int) (invocationCounter.get(L).get() - invocationCounter.get(R).get()));
         }
     }
 

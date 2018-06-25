@@ -1,36 +1,15 @@
 package org.hcjf.cloud.impl.network;
 
-import com.google.gson.JsonObject;
-import org.hcjf.service.ServiceConsumer;
-import org.hcjf.utils.bson.BsonParcelable;
-
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * @author javaito
  */
-public class Node implements ServiceConsumer, BsonParcelable {
+public class Node extends NetworkComponent {
 
-    public static final class Fields {
-        public static final String ID = "id";
-        public static final String CLUSTER_NAME = "clusterName";
-        public static final String DATA_CENTER_NAME = "dataCenterName";
-        public static final String LOCAL = "local";
-        public static final String NAME = "name";
-        public static final String VERSION = "version";
-        public static final String STARTUP_DATE = "startupDate";
-        public static final String LAN_ADDRESS = "lanAddress";
-        public static final String LAN_PORT = "lanPort";
-        public static final String WAN_ADDRESS = "wanAddress";
-        public static final String WAN_PORT = "wanPort";
-    }
-
-    private UUID id;
+    private String version;
     private String clusterName;
     private String dataCenterName;
-    private String name;
-    private String version;
     private Date startupDate;
     private String lanAddress;
     private Integer lanPort;
@@ -63,12 +42,12 @@ public class Node implements ServiceConsumer, BsonParcelable {
         return result;
     }
 
-    public UUID getId() {
-        return id;
+    public String getVersion() {
+        return version;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     public String getClusterName() {
@@ -85,22 +64,6 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public void setDataCenterName(String dataCenterName) {
         this.dataCenterName = dataCenterName;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
     }
 
     public Date getStartupDate() {
@@ -174,35 +137,6 @@ public class Node implements ServiceConsumer, BsonParcelable {
 
     public static String createNodeHash(String remoteHost, Integer port) {
         return remoteHost + ":" + port;
-    }
-
-    public JsonObject toJson() {
-        JsonObject jsonObject = new JsonObject();
-        if(getId() != null) {
-            jsonObject.addProperty(Fields.ID, getId().toString());
-        }
-        jsonObject.addProperty(Fields.LOCAL, isLocalNode());
-        jsonObject.addProperty(Fields.CLUSTER_NAME, getClusterName());
-        jsonObject.addProperty(Fields.DATA_CENTER_NAME, getDataCenterName());
-        jsonObject.addProperty(Fields.NAME, getName());
-        jsonObject.addProperty(Fields.VERSION, getVersion());
-        if(getStartupDate() != null) {
-            jsonObject.addProperty(Fields.STARTUP_DATE, getStartupDate().toString());
-        }
-        if(getLanAddress() != null) {
-            jsonObject.addProperty(Fields.LAN_ADDRESS, getLanAddress());
-            jsonObject.addProperty(Fields.LAN_PORT, getLanPort());
-        }
-        if(getWanAddress() != null) {
-            jsonObject.addProperty(Fields.WAN_ADDRESS, getWanAddress());
-            jsonObject.addProperty(Fields.WAN_PORT, getWanPort());
-        }
-        return jsonObject;
-    }
-
-    @Override
-    public String toString() {
-        return toJson().toString();
     }
 
     public enum Status {

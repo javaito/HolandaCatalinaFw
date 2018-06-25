@@ -227,6 +227,13 @@ public final class SystemProperties extends Properties {
 
     }
 
+    public static final class ProcessDiscovery {
+        public static final String LOG_TAG = "hcjf.process.log.tag";
+        public static final String SERVICE_NAME = "hcjf.process.discovery.service.name";
+        public static final String SERVICE_PRIORITY = "hcjf.process.discovery.service.priority";
+        public static final String DELAY = "hcjf.process.delay";
+    }
+
     public static final class Query {
         public static final String LOG_TAG = "hcjf.query.log.tag";
         public static final String DEFAULT_LIMIT = "hcjf.query.default.limit";
@@ -326,10 +333,11 @@ public final class SystemProperties extends Properties {
             public static final String WAGON_TIMEOUT = "hcjf.cloud.orchestrator.wagon.timeout";
             public static final String REORGANIZATION_TIMEOUT = "hcjf.cloud.orchestrator.reorganization.timeout";
             public static final String REORGANIZATION_WARNING_TIME_LIMIT = "hcjf.cloud.orchestrator.reorganization.warning.time.limit";
-            public static final String INVOKE_TIMEOUT = "hcjf.cloud.orchestrator.invoke.timeout";
+            public static final String INVOKE_TIMEOUT = "hcjf.cloud.orchestrator.invokeNode.timeout";
             public static final String TEST_NODE_TIMEOUT = "hcjf.cloud.orchestrator.test.node.timeout";
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
+            public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
 
             public static final class ThisNode {
                 public static final String ID = "hcjf.cloud.orchestrator.this.node.id";
@@ -341,6 +349,14 @@ public final class SystemProperties extends Properties {
                 public static final String LAN_PORT = "hcjf.cloud.orchestrator.this.node.lan.port";
                 public static final String WAN_ADDRESS = "hcjf.cloud.orchestrator.this.node.wan.address";
                 public static final String WAN_PORT = "hcjf.cloud.orchestrator.this.node.wan.port";
+            }
+
+            public static final class ThisServiceEndPoint {
+                public static final String ID = "hcjf.cloud.orchestrator.this.service.end.point.id";
+                public static final String NAME = "hcjf.cloud.orchestrator.this.service.end.point.name";
+                public static final String GATEWAY_ADDRESS = "hcjf.cloud.orchestrator.this.service.end.point.gateway.address";
+                public static final String GATEWAY_PORT = "hcjf.cloud.orchestrator.this.service.end.point.gateway.port";
+                public static final String PUBLICATION_TIMEOUT = "hcjf.cloud.orchestrator.this.service.end.point.publication.timeout";
             }
 
             public static final class Broadcast {
@@ -548,6 +564,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Rest.QUERY_PATH, "query");
         defaults.put(Net.Rest.QUERY_PARAMETER, "q");
 
+        defaults.put(ProcessDiscovery.LOG_TAG, "PROCESS_DISCOVERY");
+        defaults.put(ProcessDiscovery.SERVICE_NAME, "Process Discovery Service");
+        defaults.put(ProcessDiscovery.SERVICE_PRIORITY, "1");
+        defaults.put(ProcessDiscovery.DELAY, "3000");
+
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
@@ -637,11 +658,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.TEST_NODE_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
+        defaults.put(Cloud.Orchestrator.SERVICE_END_POINTS, "[]");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
         defaults.put(Cloud.Orchestrator.ThisNode.VERSION, "0");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "127.0.0.1");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "9090");
+        defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "20000");
         defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");

@@ -12,10 +12,12 @@ public abstract class DistributedLeaf implements DistributedObject {
     private final Object key;
     private Long lastUpdate;
     private final Set<UUID> nodes;
+    private final Set<UUID> serviceEndPoints;
 
     public DistributedLeaf(Object key) {
         this.key = key;
         this.nodes = new HashSet<>();
+        this.serviceEndPoints = new HashSet<>();
     }
 
     @Override
@@ -33,5 +35,9 @@ public abstract class DistributedLeaf implements DistributedObject {
 
     public Set<UUID> getNodes() {
         return nodes;
+    }
+
+    public Set<UUID> getServiceEndPoints() {
+        return serviceEndPoints;
     }
 }

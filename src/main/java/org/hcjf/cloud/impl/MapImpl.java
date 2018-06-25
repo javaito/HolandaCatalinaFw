@@ -19,19 +19,19 @@ public class MapImpl<K extends Object, V extends Object> implements Map<K, V> {
 
     @Override
     public int size() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Map.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Map.class.getName(), name);
         return tree.size();
     }
 
     @Override
     public boolean isEmpty() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Map.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Map.class.getName(), name);
         return tree.isEmpty();
     }
 
     @Override
     public boolean containsKey(Object key) {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Map.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Map.class.getName(), name);
         return tree.containsKey(key);
     }
 
@@ -48,7 +48,7 @@ public class MapImpl<K extends Object, V extends Object> implements Map<K, V> {
 
     @Override
     public V get(Object key) {
-        return CloudOrchestrator.getInstance().invoke(Map.class.getName(), name, key);
+        return CloudOrchestrator.getInstance().invokeNode(Map.class.getName(), name, key);
     }
 
     @Override
@@ -59,7 +59,7 @@ public class MapImpl<K extends Object, V extends Object> implements Map<K, V> {
 
     @Override
     public V remove(Object key) {
-        V result = CloudOrchestrator.getInstance().invoke(Map.class.getName(), name, key);
+        V result = CloudOrchestrator.getInstance().invokeNode(Map.class.getName(), name, key);
         CloudOrchestrator.getInstance().hidePath(Map.class.getName(), name, key);
         return result;
     }
@@ -80,7 +80,7 @@ public class MapImpl<K extends Object, V extends Object> implements Map<K, V> {
 
     @Override
     public Set<K> keySet() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Map.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Map.class.getName(), name);
         return tree.keySet();
     }
 
@@ -105,7 +105,7 @@ public class MapImpl<K extends Object, V extends Object> implements Map<K, V> {
 
                 @Override
                 public V getValue() {
-                    return CloudOrchestrator.getInstance().invoke(Map.class.getName(), name, key);
+                    return CloudOrchestrator.getInstance().invokeNode(Map.class.getName(), name, key);
                 }
 
                 @Override

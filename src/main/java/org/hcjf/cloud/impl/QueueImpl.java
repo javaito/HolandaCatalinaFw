@@ -20,22 +20,22 @@ public class QueueImpl<O extends Object> implements Queue<O> {
 
     @Override
     public int size() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
         return tree.size();
     }
 
     @Override
     public boolean isEmpty() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
         return tree.isEmpty();
     }
 
     @Override
     public boolean contains(Object o) {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
         Boolean result = false;
         for(Object key : tree.keySet()) {
-            result = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, key).equals(o);
+            result = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, key).equals(o);
             if(result) {
                 break;
             }
@@ -45,7 +45,7 @@ public class QueueImpl<O extends Object> implements Queue<O> {
 
     @Override
     public Iterator<O> iterator() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
         return new Iterator<>() {
 
             Set keySet = Set.of(tree.keySet());
@@ -58,18 +58,18 @@ public class QueueImpl<O extends Object> implements Queue<O> {
 
             @Override
             public O next() {
-                return CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, iterator.next());
+                return CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, iterator.next());
             }
         };
     }
 
     @Override
     public Object[] toArray() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
         Object[] result = new Object[tree.size()];
         int i = 0;
         for(Object key : tree.keySet()) {
-            result[i++] = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, key);
+            result[i++] = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, key);
         }
         return result;
     }
@@ -87,10 +87,10 @@ public class QueueImpl<O extends Object> implements Queue<O> {
 
     @Override
     public boolean remove(Object o) {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
         Boolean result = false;
         for(Object key : tree.keySet()) {
-            result = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, key).equals(o);
+            result = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, key).equals(o);
             CloudOrchestrator.getInstance().hidePath(Queue.class.getName(), name, key);
             if(result) {
                 break;
@@ -143,7 +143,7 @@ public class QueueImpl<O extends Object> implements Queue<O> {
 
     @Override
     public void clear() {
-        DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+        DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
         for(Object key : tree.keySet()) {
             CloudOrchestrator.getInstance().hidePath(Queue.class.getName(), name, key);
         }
@@ -158,10 +158,10 @@ public class QueueImpl<O extends Object> implements Queue<O> {
     public O remove() {
         if(size() > 0) {
             O result;
-            DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+            DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
             TreeSet keys = new TreeSet();
             keys.addAll(tree.keySet());
-            result = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, keys.first());
+            result = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, keys.first());
             CloudOrchestrator.getInstance().hidePath(Queue.class.getName(), name, keys.first());
             return result;
         } else {
@@ -173,10 +173,10 @@ public class QueueImpl<O extends Object> implements Queue<O> {
     public O poll() {
         O result = null;
         if(size() > 0) {
-            DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+            DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
             TreeSet keys = new TreeSet();
             keys.addAll(tree.keySet());
-            result = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, keys.first());
+            result = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, keys.first());
             CloudOrchestrator.getInstance().hidePath(Queue.class.getName(), name, keys.first());
         }
         return result;
@@ -186,10 +186,10 @@ public class QueueImpl<O extends Object> implements Queue<O> {
     public O element() {
         if(size() > 0) {
             O result;
-            DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+            DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
             TreeSet keys = new TreeSet();
             keys.addAll(tree.keySet());
-            result = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, keys.first());
+            result = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, keys.first());
             return result;
         } else {
             throw new NoSuchElementException();
@@ -200,10 +200,10 @@ public class QueueImpl<O extends Object> implements Queue<O> {
     public O peek() {
         O result = null;
         if(size() > 0) {
-            DistributedTree tree = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name);
+            DistributedTree tree = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name);
             TreeSet keys = new TreeSet();
             keys.addAll(tree.keySet());
-            result = CloudOrchestrator.getInstance().invoke(Queue.class.getName(), name, keys.first());
+            result = CloudOrchestrator.getInstance().invokeNode(Queue.class.getName(), name, keys.first());
         }
         return result;
     }

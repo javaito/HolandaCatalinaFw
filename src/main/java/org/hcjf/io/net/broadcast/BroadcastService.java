@@ -279,8 +279,7 @@ public class BroadcastService extends Service<BroadcastConsumer> {
                             broadcastInterface.getBroadcastSocket().send(packet);
                         }
                     } catch (Exception ex) {
-                        Log.w(SystemProperties.get(SystemProperties.Net.Broadcast.LOG_TAG),
-                                "", ex);
+                        Log.w(SystemProperties.get(SystemProperties.Net.Broadcast.LOG_TAG), ex.getMessage());
                     }
                 }
 
