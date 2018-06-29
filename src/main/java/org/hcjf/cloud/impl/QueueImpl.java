@@ -6,8 +6,7 @@ import org.hcjf.cloud.impl.objects.DistributedTree;
 import java.util.*;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class QueueImpl<O extends Object> implements Queue<O> {
 

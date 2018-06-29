@@ -7,12 +7,18 @@ import java.util.*;
  */
 public final class Grants {
 
+    private static final Map<String, Grant> grantsById;
     private static final Map<String, Map<String,Grant>> grants;
 
     static {
+        grantsById = new HashMap<>();
         grants = new HashMap<>();
     }
 
+    /**
+     * Publish the new grant associated to the permission as parameter.
+     * @param permission Permission instance as parameter.
+     */
     public synchronized static void publishGrant(SecurityPermissions.SecurityPermission permission) {
         Grant grant = new Grant(permission.getName(), permission.getTargetClassName(), permission.getPermissionName());
         Map<String, Grant> grantsByClass = grants.get(permission.getTargetClassName());
@@ -21,8 +27,15 @@ public final class Grants {
             grants.put(permission.getTargetClassName(), grantsByClass);
         }
         grantsByClass.put(grant.getGrantName(), grant);
+        grantsById.put(grant.permissionId, grant);
     }
 
+    /**
+     * Returns the grant instance for the specific target class and permission name.
+     * @param targetClass Target class.
+     * @param permissionName Permission name.
+     * @return Returns the grant instance.
+     */
     public static Grant getGrant(Class targetClass, String permissionName) {
         Grant result = null;
         Map<String, Grant> grantsByClass = grants.get(targetClass.getName());
@@ -32,6 +45,19 @@ public final class Grants {
         return result;
     }
 
+    /**
+     * Returns the grant instance for the specific permission id.
+     * @param permissionId Permission id.
+     * @return Grant instance.
+     */
+    public static Grant getGrant(String permissionId) {
+        return grantsById.get(permissionId);
+    }
+
+    /**
+     * Returns all the grants stored into the framework instance.
+     * @return Collection of grants.
+     */
     public static Collection<Grant> getGrants() {
         Collection<Grant> result = new ArrayList<>();
         for(Map<String, Grant> grantsByClass : grants.values()) {
@@ -80,11 +106,22 @@ public final class Grants {
             return grantName;
         }
 
+        /**
+         * Returns the string representation of the grant instance.
+         * @return String representation of the grant instance.
+         */
         @Override
         public String toString() {
             return getPermissionId();
         }
 
+        /**
+         * Verify if the instance if equals to other grant instance.
+         * @param obj Objet to compare.
+         * @return If the object to compare is instance of the grant call the super
+         * implementation of the method, but if the object to compare is instance of
+         * string then compare the object with the id of the grant.
+         */
         @Override
         public boolean equals(Object obj) {
             boolean result = false;
