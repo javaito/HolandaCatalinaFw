@@ -15,6 +15,6 @@ public interface QueryFunctionLayerInterface extends LayerInterface {
      * @param parameters Function's parameters.
      * @return Function result.
      */
-    public Object evaluate(String functionName, Object... parameters);
+    Object evaluate(String functionName, Object... parameters);
 
 }

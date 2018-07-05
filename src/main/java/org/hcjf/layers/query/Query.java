@@ -13,6 +13,7 @@ import org.hcjf.utils.Introspection;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 
+import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,13 +41,16 @@ public class Query extends EvaluatorCollection {
     private boolean returnAll;
 
     static {
-        //Publishing function layers...
+        //Publishing default function layers...
         Layers.publishLayer(MathQueryFunctionLayer.class);
         Layers.publishLayer(StringQueryFunctionLayer.class);
         Layers.publishLayer(DateQueryFunctionLayer.class);
         Layers.publishLayer(ReferenceFunctionLayer.class);
         Layers.publishLayer(BsonQueryFunctionLayer.class);
         Layers.publishLayer(CollectionQueryFunction.class);
+
+        //Publishing default aggregate function layers...
+        Layers.publishLayer(CountQueryAggregateFunctionLayer.class);
     }
 
     public Query(String resource, QueryId id) {
@@ -361,6 +365,7 @@ public class Query extends EvaluatorCollection {
      */
     public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer, Object... parameters) {
         Set<O> result;
+        List<QueryReturnFunction> aggregateFunctions = new ArrayList<>();
         if(!(Thread.currentThread() instanceof ServiceThread)) {
             //If the current thread is not a service thread then we call this
             //method again using a service thread.
@@ -476,6 +481,14 @@ public class Query extends EvaluatorCollection {
                 //Filtering data
                 boolean add;
                 int start = getStart() == null ? 0 : getStart();
+
+                //Collect all the aggregate functions into the array list.
+                for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                    if(returnParameter instanceof QueryReturnFunction && ((QueryReturnFunction)returnParameter).isAggregate()) {
+                        aggregateFunctions.add((QueryReturnFunction) returnParameter);
+                    }
+                }
+
                 if (start < data.size()) {
                     for (O object : data) {
                         add = true;
@@ -491,7 +504,7 @@ public class Query extends EvaluatorCollection {
                             if (object instanceof Enlarged) {
                                 Enlarged originalObject = (Enlarged) object;
                                 Enlarged enlargedObject = (Enlarged) object;
-                                if (!returnAll) {
+                                if (!returnAll && aggregateFunctions.size() == 0) {
                                     //Clone the object and set the new result instance.
                                     enlargedObject = enlargedObject.cloneEmpty();
                                     object = (O) enlargedObject;
@@ -504,7 +517,7 @@ public class Query extends EvaluatorCollection {
                                         } else {
                                             enlargedObject.put(returnField.getFieldName(), originalObject.get(returnField.getFieldName()));
                                         }
-                                    } else if (returnParameter instanceof QueryReturnFunction) {
+                                    } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                         enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
                                                 consumer.resolveFunction(function, originalObject, parameters));
@@ -527,6 +540,16 @@ public class Query extends EvaluatorCollection {
                 clearEvaluatorsCache();
             }
         }
+
+        if(aggregateFunctions.size() > 0) {
+            JoinableMap aggregateResult = new JoinableMap(new HashMap<>());
+            for (QueryReturnFunction function : aggregateFunctions) {
+                aggregateResult.put(function.getAlias() == null ? function.toString() : function.getAlias(),
+                        consumer.resolveFunction(function, result, parameters));
+            }
+            result = (Set<O>)Set.of(aggregateResult);
+        }
+
         return result;
     }
 
@@ -1626,9 +1649,17 @@ public class Query extends EvaluatorCollection {
                 }
             }
 
-            QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
-                    SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-            return (R) queryFunctionLayerInterface.evaluate(function.getFunctionName(), parameterValues.toArray());
+            R result;
+            if(function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
+                QueryAggregateFunctionLayerInterface queryAggregateFunctionLayerInterface = Layers.get(QueryAggregateFunctionLayerInterface.class,
+                        SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
+                result = (R) queryAggregateFunctionLayerInterface.evaluate((Set) instance, parameters);
+            } else {
+                QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
+                        SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
+                result = (R) queryFunctionLayerInterface.evaluate(function.getFunctionName(), parameterValues.toArray());
+            }
+            return result;
         }
 
     }
@@ -1650,17 +1681,29 @@ public class Query extends EvaluatorCollection {
         public <R extends Object> R get(O instance, QueryParameter queryParameter) {
             Object result = null;
             if(queryParameter instanceof QueryField) {
-                String fieldName = ((QueryField)queryParameter).getFieldName();
+                QueryField queryField = (QueryField) queryParameter;
+                String fieldName = queryField.getFieldName();
                 try {
-                    if (instance instanceof JoinableMap) {
-                        result = ((JoinableMap) instance).get(fieldName);
-                    } else {
-                        Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
-                        if (getter != null) {
-                            result = getter.get(instance);
+                    if(queryField.getIndex() != null) {
+                        Integer index = Integer.parseInt(queryField.getIndex());
+                        if (instance instanceof Collection) {
+                            result = Array.get(((Collection)instance).toArray(), index);
+                        } else if(instance.getClass().isArray()) {
+                            result = Array.get(index, index);
                         } else {
-                            Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
-                                    "Order field not found: %s", fieldName);
+                            throw new IllegalArgumentException("The array is only for collection or array values");
+                        }
+                    } else {
+                        if (instance instanceof JoinableMap) {
+                            result = ((JoinableMap) instance).get(fieldName);
+                        } else {
+                            Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
+                            if (getter != null) {
+                                result = getter.get(instance);
+                            } else {
+                                Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
+                                        "Order field not found: %s", fieldName);
+                            }
                         }
                     }
                 } catch (Exception ex) {
@@ -1945,9 +1988,19 @@ public class Query extends EvaluatorCollection {
     public static class QueryReturnFunction extends QueryFunction implements QueryReturnParameter {
 
         private final String alias;
+        private boolean aggregate;
 
         public QueryReturnFunction(String originalFunction, String functionName, List<Object> parameters, String alias) {
             super(originalFunction, functionName, parameters);
+
+            aggregate = false;
+            try {
+                QueryAggregateFunctionLayerInterface aggregateFunctionLayerInterface =
+                        Layers.get(QueryAggregateFunctionLayerInterface.class,
+                                SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) +functionName);
+                aggregate = aggregateFunctionLayerInterface != null;
+            } catch (Exception ex){}
+
             this.alias = alias;
         }
 
@@ -1957,6 +2010,14 @@ public class Query extends EvaluatorCollection {
          */
         public String getAlias() {
             return alias;
+        }
+
+        /**
+         * Verify if the function is an aggregate function or not.
+         * @return True if the function is an aggregate function and false in the otherwise.
+         */
+        public boolean isAggregate() {
+            return aggregate;
         }
     }
 

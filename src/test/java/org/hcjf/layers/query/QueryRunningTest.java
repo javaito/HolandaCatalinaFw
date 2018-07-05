@@ -185,6 +185,14 @@ public class QueryRunningTest {
         query = Query.compile("SELECT * FROM character ORDER BY addressId, name DESC");
         resultSet = query.evaluate(dataSource);
 
+        query = Query.compile("SELECT count(*) FROM character");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.iterator().next().get("count(*)"), simpsonCharacters.size());
+
+        query = Query.compile("SELECT count(*) AS size FROM character");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.iterator().next().get("size"), simpsonCharacters.size());
+
         query = Query.compile("SELECT now(), getYear(birthday), periodInDays(birthday), getMonth(birthday) FROM character");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());

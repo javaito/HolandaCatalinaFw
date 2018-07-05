@@ -1,5 +1,7 @@
 package org.hcjf.service.security;
 
+import org.hcjf.utils.bson.BsonParcelable;
+
 import java.util.*;
 
 /**
@@ -70,7 +72,7 @@ public final class Grants {
      * System grant representation.
      * @author javaito
      */
-    public static final class Grant {
+    public static final class Grant implements BsonParcelable {
 
         private final String permissionId;
         private final String targetClassName;
