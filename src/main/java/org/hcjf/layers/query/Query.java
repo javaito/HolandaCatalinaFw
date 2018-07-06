@@ -1710,7 +1710,7 @@ public class Query extends EvaluatorCollection {
                     throw new IllegalArgumentException("Unable to obtain order field value", ex);
                 }
             } else if(queryParameter instanceof QueryFunction) {
-                throw new UnsupportedOperationException("Function: " + ((QueryFunction)queryParameter).getFunctionName());
+                result = resolveFunction((QueryFunction) queryParameter, instance);
             }
             return (R) result;
         }
