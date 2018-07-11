@@ -104,7 +104,13 @@ public class Query extends EvaluatorCollection {
     @Override
     protected Evaluator checkEvaluator(Evaluator evaluator) {
         if(evaluator instanceof FieldEvaluator) {
-            checkQueryParameter(((FieldEvaluator)evaluator).getQueryParameter());
+            FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+            if(fieldEvaluator.getLeftValue() instanceof QueryParameter) {
+                checkQueryParameter((QueryParameter) fieldEvaluator.getLeftValue());
+            }
+            if(fieldEvaluator.getRightValue() instanceof QueryParameter) {
+                checkQueryParameter((QueryParameter) fieldEvaluator.getRightValue());
+            }
         }
         return evaluator;
     }
@@ -115,6 +121,14 @@ public class Query extends EvaluatorCollection {
      */
     public final boolean returnAll() {
         return returnAll || returnParameters.isEmpty();
+    }
+
+    /**
+     * Returns the parameterized query based in this instance of query.
+     * @return Parameterized query instance.
+     */
+    public final ParameterizedQuery getParameterizedQuery() {
+        return new ParameterizedQuery(this);
     }
 
     /**
@@ -309,12 +323,11 @@ public class Query extends EvaluatorCollection {
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
-     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Object... parameters) {
-        return evaluate((query) -> dataSource, new IntrospectionConsumer<>(), parameters);
+    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource) {
+        return evaluate((query) -> dataSource, new IntrospectionConsumer<>());
     }
 
     /**
@@ -326,12 +339,11 @@ public class Query extends EvaluatorCollection {
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
-     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer, Object... parameters) {
-        return evaluate((query) -> dataSource, consumer, parameters);
+    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer) {
+        return evaluate((query) -> dataSource, consumer);
     }
 
     /**
@@ -342,12 +354,11 @@ public class Query extends EvaluatorCollection {
      * {@link LinkedHashSet} implementation in order to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
-     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Object... parameters) {
-        return evaluate(dataSource, new IntrospectionConsumer<>(), parameters);
+    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource) {
+        return evaluate(dataSource, new IntrospectionConsumer<>());
     }
 
     /**
@@ -359,18 +370,22 @@ public class Query extends EvaluatorCollection {
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
-     * @param parameters Query parameters.
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer, Object... parameters) {
+    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer) {
         Set<O> result;
         List<QueryReturnFunction> aggregateFunctions = new ArrayList<>();
         if(!(Thread.currentThread() instanceof ServiceThread)) {
             //If the current thread is not a service thread then we call this
             //method again using a service thread.
-            result = Service.call(()->evaluate(dataSource, consumer, parameters), ServiceSession.getGuestSession());
+            result = Service.call(()->evaluate(dataSource, consumer), ServiceSession.getGuestSession());
         } else {
+
+            //Initialize the evaluators cache because the evaluators in the simple
+            //query are valid into the platform evaluation environment.
+            initializeEvaluatorsCache();
+
             //Creating result data collection.
             if (orderParameters.size() > 0) {
                 //If the query has order fields then creates a tree set with
@@ -383,8 +398,8 @@ public class Query extends EvaluatorCollection {
                     for (QueryOrderParameter orderField : orderParameters) {
                         try {
                             if (orderField instanceof QueryOrderFunction) {
-                                comparable1 = consumer.resolveFunction(((QueryOrderFunction) orderField), o1, parameters);
-                                comparable2 = consumer.resolveFunction(((QueryOrderFunction) orderField), o2, parameters);
+                                comparable1 = consumer.resolveFunction(((QueryOrderFunction) orderField), o1);
+                                comparable2 = consumer.resolveFunction(((QueryOrderFunction) orderField), o2);
                             } else {
                                 comparable1 = consumer.get(o1, (QueryParameter) orderField);
                                 comparable2 = consumer.get(o2, (QueryParameter) orderField);
@@ -418,15 +433,13 @@ public class Query extends EvaluatorCollection {
                 result = new LinkedHashSet<>();
             }
 
-            Map<Evaluator, Object> valuesMap = createValuesMap(this, dataSource, consumer, parameters);
-
             //Getting data from data source.
             Collection<O> data;
             try {
                 if (joins.size() > 0) {
                     //If the query has joins then data source must return the joined data
                     //collection using all the resources
-                    data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer, valuesMap);
+                    data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
                 } else {
                     //Creates the first query for the original resource.
                     Query resolveQuery = new Query(getResourceName());
@@ -440,11 +453,7 @@ public class Query extends EvaluatorCollection {
                             resolveQuery.returnParameters.add(new QueryReturnField(((QueryReturnField) queryReturnParameter).getFieldName()));
                         }
                     }
-                    copyEvaluators(resolveQuery, this, valuesMap);
-
-                    //Initialize the evaluators cache because the evaluators in the simple
-                    //query are valid into the platform evaluation environment.
-                    initializeEvaluatorsCache();
+                    copyEvaluators(resolveQuery, this);
 
                     //If the query has not joins then data source must return data from
                     //resource of the query.
@@ -464,7 +473,7 @@ public class Query extends EvaluatorCollection {
                                 if (returnParameter instanceof QueryReturnField) {
                                     hashCode.append(consumer.get(object, ((QueryReturnField) returnParameter)).hashCode());
                                 } else {
-                                    hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, parameters).hashCode());
+                                    hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object).hashCode());
                                 }
                             }
                             if (groupables.containsKey(hashCode.toString())) {
@@ -494,7 +503,7 @@ public class Query extends EvaluatorCollection {
                         add = true;
                         for (Evaluator evaluator : getEvaluators()) {
                             if (!isEvaluatorDone(evaluator)) {
-                                add = evaluator.evaluate(object, consumer, valuesMap);
+                                add = evaluator.evaluate(object, dataSource, consumer);
                                 if (!add) {
                                     break;
                                 }
@@ -520,7 +529,7 @@ public class Query extends EvaluatorCollection {
                                     } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                         enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                                                consumer.resolveFunction(function, originalObject, parameters));
+                                                consumer.resolveFunction(function, originalObject));
                                     }
                                 }
                             }
@@ -545,7 +554,7 @@ public class Query extends EvaluatorCollection {
             JoinableMap aggregateResult = new JoinableMap(new HashMap<>());
             for (QueryReturnFunction function : aggregateFunctions) {
                 aggregateResult.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                        consumer.resolveFunction(function, result, parameters));
+                        consumer.resolveFunction(function, result));
             }
             result = (Set<O>)Set.of(aggregateResult);
         }
@@ -577,10 +586,14 @@ public class Query extends EvaluatorCollection {
      * Initialize the evaluators cache into the current session.
      */
     private void initializeEvaluatorsCache() {
-        ServiceSession session = ServiceSession.getCurrentSession();
+        ServiceSession session = ServiceSession.getCurrentIdentity();
         if(session != null) {
             session.put(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME),
                     new ArrayList<Evaluator>());
+            session.put(SystemProperties.get(SystemProperties.Query.EVALUATOR_LEFT_VALUES_CACHE_NAME),
+                    new HashMap<Evaluator, Object>());
+            session.put(SystemProperties.get(SystemProperties.Query.EVALUATOR_RIGHT_VALUES_CACHE_NAME),
+                    new HashMap<Evaluator, Object>());
         }
     }
 
@@ -588,9 +601,11 @@ public class Query extends EvaluatorCollection {
      * Removes the evaluators cache of the current session.
      */
     private void clearEvaluatorsCache() {
-        ServiceSession session = ServiceSession.getCurrentSession();
+        ServiceSession session = ServiceSession.getCurrentIdentity();
         if(session != null) {
             session.remove(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
+            session.remove(SystemProperties.get(SystemProperties.Query.EVALUATOR_LEFT_VALUES_CACHE_NAME));
+            session.remove(SystemProperties.get(SystemProperties.Query.EVALUATOR_RIGHT_VALUES_CACHE_NAME));
         }
     }
 
@@ -614,41 +629,17 @@ public class Query extends EvaluatorCollection {
      * Copy all the evaluator from the source collection to destiny collection.
      * @param dest Destiny collection.
      * @param src Source collection.
-     * @param valuesMap Resolved values.
      */
-    private void copyEvaluators(EvaluatorCollection dest, EvaluatorCollection src, Map<Evaluator, Object> valuesMap) {
+    private void copyEvaluators(EvaluatorCollection dest, EvaluatorCollection src) {
         for(Evaluator evaluator : src.getEvaluators()) {
             if(evaluator instanceof FieldEvaluator) {
-                dest.addEvaluator(((FieldEvaluator)evaluator).copy(valuesMap.get(evaluator)));
+                dest.addEvaluator(((FieldEvaluator)evaluator).copy());
             } else if(evaluator instanceof And) {
-                copyEvaluators(dest.and(), (EvaluatorCollection) evaluator, valuesMap);
+                copyEvaluators(dest.and(), (EvaluatorCollection) evaluator);
             } else if(evaluator instanceof Or) {
-                copyEvaluators(dest.or(), (EvaluatorCollection) evaluator, valuesMap);
+                copyEvaluators(dest.or(), (EvaluatorCollection) evaluator);
             }
         }
-    }
-
-    /**
-     * Creates a map with the value for all the unresolved values and raw values into
-     * each field evaluator.
-     * @param collection Evaluator collection.
-     * @param dataSource Data source.
-     * @param consumer Consumer.
-     * @param parameters Parameters.
-     * @return Map with all the needed values.
-     */
-    private Map<Evaluator, Object> createValuesMap(EvaluatorCollection collection,
-                                                   DataSource dataSource, Consumer consumer,
-                                                   Object... parameters){
-        Map<Evaluator, Object> result = new HashMap<>();
-        for(Evaluator evaluator : collection.getEvaluators()) {
-            if(evaluator instanceof FieldEvaluator) {
-                result.put(evaluator, ((FieldEvaluator)evaluator).getValue(dataSource, consumer, parameters));
-            } else if(evaluator instanceof EvaluatorCollection) {
-                result.putAll(createValuesMap((EvaluatorCollection)evaluator, dataSource, consumer, parameters));
-            }
-        }
-        return result;
     }
 
     /**
@@ -657,14 +648,14 @@ public class Query extends EvaluatorCollection {
      * @param consumer Consumer.
      * @return Joined data collection.
      */
-    private Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer, Map<Evaluator,Object> valuesMap) {
+    private Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
         Collection<Joinable> result = new ArrayList<>();
 
         //Creates the first query for the original resource.
         Query joinQuery = new Query(getResourceName());
         joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
         for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResource())) {
-            joinQuery.addEvaluator(((FieldEvaluator)evaluator).copy(valuesMap.get(evaluator)));
+            joinQuery.addEvaluator(((FieldEvaluator)evaluator).copy());
         }
         //Set the first query as start by default
         Query startQuery = joinQuery;
@@ -698,8 +689,7 @@ public class Query extends EvaluatorCollection {
         Map<Object, Set<Joinable>> indexedJoineables;
         Collection<Joinable> leftJoinables = new ArrayList<>();
         Collection<Joinable> rightJoinables = new ArrayList<>();
-        In in;
-        Join queryJoin = null;
+        Join queryJoin;
         Set<Object> keys;
         QueryField firstField;
         QueryField secondField;
@@ -792,12 +782,31 @@ public class Query extends EvaluatorCollection {
         List<Evaluator> result = new ArrayList<>();
         for(Evaluator evaluator : collection.getEvaluators()) {
             if(evaluator instanceof FieldEvaluator) {
-                QueryParameter queryParameter = ((FieldEvaluator) evaluator).getQueryParameter();
-                if((queryParameter instanceof QueryField &&
-                        ((QueryField)queryParameter).getResource().equals(resource)) ||
-                        (queryParameter instanceof QueryFunction &&
-                                ((QueryFunction)queryParameter).getResources().contains(resource))){
-                    result.add(evaluator);
+                FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+                QueryParameter queryParameter;
+                boolean evaluatorAdded = false;
+
+                if(fieldEvaluator.getLeftValue() instanceof QueryParameter) {
+                    queryParameter = (QueryParameter) fieldEvaluator.getLeftValue();
+                    if((queryParameter instanceof QueryField &&
+                            ((QueryField)queryParameter).getResource().equals(resource)) ||
+                            (queryParameter instanceof QueryFunction &&
+                                    ((QueryFunction)queryParameter).getResources().contains(resource))){
+                        result.add(evaluator);
+                        evaluatorAdded = true;
+                    }
+                }
+
+                if(!evaluatorAdded) {
+                    if(fieldEvaluator.getRightValue() instanceof QueryParameter) {
+                        queryParameter = (QueryParameter) fieldEvaluator.getRightValue();
+                        if((queryParameter instanceof QueryField &&
+                                ((QueryField)queryParameter).getResource().equals(resource)) ||
+                                (queryParameter instanceof QueryFunction &&
+                                        ((QueryFunction)queryParameter).getResources().contains(resource))){
+                            result.add(evaluator);
+                        }
+                    }
                 }
             } else if(evaluator instanceof EvaluatorCollection) {
                 EvaluatorCollection subCollection = null;
@@ -829,12 +838,7 @@ public class Query extends EvaluatorCollection {
         Set<Joinable> set;
         for(Joinable joinable : objects) {
             key = consumer.get(joinable, fieldIndex);
-            set = result.get(key);
-            if(set == null) {
-                set = new HashSet<>();
-                result.put(key, set);
-            }
-            set.add(joinable);
+            result.computeIfAbsent(key, k -> new HashSet<>()).add(joinable);
         }
 
         return result;
@@ -1006,7 +1010,12 @@ public class Query extends EvaluatorCollection {
             } else if(evaluator instanceof FieldEvaluator) {
                 result.append(separator);
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-                result.append(fieldEvaluator.getQueryParameter()).append(Strings.WHITE_SPACE);
+                if(fieldEvaluator.getLeftValue() == null) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
+                } else {
+                    result = toStringFieldEvaluatorValue(fieldEvaluator.getLeftValue(), fieldEvaluator.getLeftValue().getClass(), result);
+                }
+                result.append(Strings.WHITE_SPACE);
                 if (fieldEvaluator instanceof Distinct) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)).append(Strings.WHITE_SPACE);
                 } else if (fieldEvaluator instanceof Equals) {
@@ -1026,10 +1035,10 @@ public class Query extends EvaluatorCollection {
                 } else if (fieldEvaluator instanceof SmallerThan) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN)).append(Strings.WHITE_SPACE);
                 }
-                if(fieldEvaluator.getRawValue() == null) {
+                if(fieldEvaluator.getRightValue() == null) {
                     result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
                 } else {
-                    result = toStringFieldEvaluatorValue(fieldEvaluator.getRawValue(), fieldEvaluator.getValueType(), result);
+                    result = toStringFieldEvaluatorValue(fieldEvaluator.getRightValue(), fieldEvaluator.getRightValue().getClass(), result);
                 }
                 result.append(Strings.WHITE_SPACE);
             }
@@ -1284,14 +1293,12 @@ public class Query extends EvaluatorCollection {
      */
     private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, List<String> richTexts, AtomicInteger placesIndex) {
         String[] evaluatorValues;
-        Object firstObject;
-        Object secondObject;
+        Object leftValue;
+        Object rightValue;
         String firstArgument;
         String secondArgument;
         String operator;
         Evaluator evaluator = null;
-        QueryParameter queryParameter;
-        Object value;
 
         if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
@@ -1332,43 +1339,38 @@ public class Query extends EvaluatorCollection {
                     throw new IllegalArgumentException("Operator not found for expression: " + definition);
                 }
 
-                firstObject = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class);
-                secondObject = processStringValue(groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class);
+                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class);
+                if(leftValue instanceof String) {
+                    leftValue = Strings.reverseGrouping((String) leftValue, groups);
+                }
+                rightValue = processStringValue(groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class);
+                if(rightValue instanceof String) {
+                    rightValue = Strings.reverseGrouping((String) rightValue, groups);
+                }
                 operator = operator.trim();
 
-                if(firstObject instanceof QueryParameter) {
-                    queryParameter = (QueryParameter) firstObject;
-                    value = secondObject;
-                } else if(secondObject instanceof QueryParameter) {
-                    queryParameter = (QueryParameter) secondObject;
-                    value = firstObject;
-                } else {
-                    throw new IllegalArgumentException("");
-                }
-
-                if(value instanceof String) {
-                    value = Strings.reverseGrouping((String) value, groups);
-                }
 
                 if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)) ||
                         operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT_2))) {
-                    evaluator = new Distinct(queryParameter, value);
+                    evaluator = new Distinct(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))) {
-                    evaluator = new Equals(queryParameter, value);
+                    evaluator = new Equals(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))) {
-                    evaluator = new GreaterThan(queryParameter, value);
+                    evaluator = new GreaterThan(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))) {
-                    evaluator = new GreaterThanOrEqual(queryParameter, value);
+                    evaluator = new GreaterThanOrEqual(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))) {
-                    evaluator = new In(queryParameter, value);
+                    evaluator = new In(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))) {
-                    evaluator = new Like(queryParameter, value);
+                    evaluator = new Like(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN))) {
-                    evaluator = new NotIn(queryParameter, value);
+                    evaluator = new NotIn(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))) {
-                    evaluator = new SmallerThan(queryParameter, value);
+                    evaluator = new SmallerThan(leftValue, rightValue);
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
-                    evaluator = new SmallerThanOrEqual(queryParameter, value);
+                    evaluator = new SmallerThanOrEqual(leftValue, rightValue);
+                } else {
+                    throw new IllegalArgumentException("Unsupported operator '" + operator + "'");
                 }
 
                 collection.addEvaluator(evaluator);
@@ -1602,17 +1604,24 @@ public class Query extends EvaluatorCollection {
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
-        public <R extends Object> R get(O instance, QueryParameter queryParameter);
+        <R extends Object> R get(O instance, QueryParameter queryParameter);
 
         /**
          * This method must resolve the functions that are used into the query object.
          * @param function Query function.
          * @param instance Data object instance.
-         * @param parameters Parameters to resolve the finction.
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        public <R extends Object> R resolveFunction(QueryFunction function, Object instance, Object... parameters);
+        <R extends Object> R resolveFunction(QueryFunction function, Object instance);
+
+        /**
+         * This method must returns the parameter for the place indicated as parameter.
+         * @param place Place value.
+         * @param <R> Expected result type.
+         * @return Returns the value for the specific place.
+         */
+        <R extends Object> R getParameter(Integer place);
 
     }
 
@@ -1621,11 +1630,10 @@ public class Query extends EvaluatorCollection {
         /**
          * This method must resolve the functions that are used into the query object.
          * @param function Query function.
-         * @param parameters Parameters to resolve the finction.
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        public <R extends Object> R resolveFunction(QueryFunction function, Object instance, Object... parameters) {
+        public <R extends Object> R resolveFunction(QueryFunction function, Object instance) {
             List<Object> parameterValues = new ArrayList<>();
             Object currentParameter;
             Object value;
@@ -1634,7 +1642,7 @@ public class Query extends EvaluatorCollection {
                 if(currentParameter != null) {
                     if (currentParameter instanceof Query.QueryFunction) {
                         Query.QueryFunction innerFunction = (Query.QueryFunction) currentParameter;
-                        value = resolveFunction(innerFunction, instance, parameters);
+                        value = resolveFunction(innerFunction, instance);
                         if(value != null) {
                             parameterValues.add(value);
                         }
@@ -1653,7 +1661,7 @@ public class Query extends EvaluatorCollection {
             if(function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
                 QueryAggregateFunctionLayerInterface queryAggregateFunctionLayerInterface = Layers.get(QueryAggregateFunctionLayerInterface.class,
                         SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-                result = (R) queryAggregateFunctionLayerInterface.evaluate((Set) instance, parameters);
+                result = (R) queryAggregateFunctionLayerInterface.evaluate((Set) instance);
             } else {
                 QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
                         SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
@@ -1667,7 +1675,7 @@ public class Query extends EvaluatorCollection {
     /**
      * This private class is the default consume method of the queries.
      */
-    private static class IntrospectionConsumer<O extends Object> extends DefaultConsumer<O> {
+    public static class IntrospectionConsumer<O extends Object> extends DefaultConsumer<O> {
 
         /**
          * Get naming information from an instance.
@@ -1715,6 +1723,10 @@ public class Query extends EvaluatorCollection {
             return (R) result;
         }
 
+        @Override
+        public <R> R getParameter(Integer place) {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /**

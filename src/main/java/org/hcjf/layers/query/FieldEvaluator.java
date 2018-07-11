@@ -1,9 +1,13 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.ServiceSession;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This abstract class define the structure of the evaluating. The evaluator
@@ -13,64 +17,125 @@ import java.util.List;
  */
 public abstract class FieldEvaluator implements Evaluator {
 
-    private final Query.QueryParameter queryParameter;
-    private final Object value;
+    private final Object leftValue;
+    private final Object rightValue;
 
-    public FieldEvaluator(Query.QueryParameter queryParameter, Object value) {
-        this.queryParameter = queryParameter;
-        this.value = value;
+    public FieldEvaluator(Object leftValue, Object rightValue) {
+        this.leftValue = leftValue;
+        this.rightValue = rightValue;
     }
 
     /**
-     * Two evaluators are equals when are instances of the same class,
-     * his field names are equals and his values are equals
-     * @param obj Object to compare.
-     * @return True if the instance is equals than object parameter and
-     * false in the other ways.
+     * This method check if the evaluator contains a reference of the field indicated as parameter.
+     * @param fieldName Field name.
+     * @return True if the evaluator contains the reference and false in the otherwise.
      */
-    @Override
-    public boolean equals(Object obj) {
+    public final boolean containsReference(String fieldName) {
         boolean result = false;
-
-        if(obj.getClass().equals(getClass())) {
-            FieldEvaluator fieldEvaluator = (FieldEvaluator) obj;
-            result = this.queryParameter.equals(fieldEvaluator.queryParameter) &&
-                    this.value.equals(fieldEvaluator.value);
+        if(getLeftValue() instanceof Query.QueryField) {
+            result = ((Query.QueryField)getLeftValue()).getFieldName().equals(fieldName);
         }
-
+        if(!result && getRightValue() instanceof Query.QueryField) {
+            result = ((Query.QueryField)getRightValue()).getFieldName().equals(fieldName);
+        }
         return result;
     }
 
     /**
-     * Return the query field associated to the evaluator.
-     * @return Query field.
+     * Returns the left value of the evaluator.
+     * @return Left value of the evaluator.
      */
-    public Query.QueryParameter getQueryParameter() {
-        return queryParameter;
+    public final Object getLeftValue() {
+        return leftValue;
+    }
+
+    /**
+     * Returns the left processed value for the specific data source and consumer.
+     * @param currentResultSetElement Is the result set element to evaluate.
+     * @param dataSource Data source instance.
+     * @param consumer Consumer instance.
+     * @return Processed left value.
+     */
+    protected final Object getProcessedLeftValue(Object currentResultSetElement, Query.DataSource dataSource, Query.Consumer consumer) {
+        Object result;
+        if(getLeftValue() instanceof Query.QueryParameter) {
+            result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
+        } else {
+            Map<Evaluator, Object> cache = getLeftCache();
+            result = cache.get(this);
+            if (result == null) {
+                result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
+                cache.put(this, result);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the map that contains the processed left values for each evaluator.
+     * @return Cache instance
+     */
+    private final Map<Evaluator,Object> getLeftCache() {
+        return ServiceSession.getCurrentIdentity().get(SystemProperties.get(SystemProperties.Query.EVALUATOR_LEFT_VALUES_CACHE_NAME));
+    }
+
+    /**
+     * Returns the right value of the evaluator.
+     * @return Right value of the evaluator.
+     */
+    public final Object getRightValue() {
+        return rightValue;
+    }
+
+    /**
+     * Returns the right processed value for the specific data source and consumer.
+     * @param currentResultSetElement Is the result set element to evaluate.
+     * @param dataSource Data source instance.
+     * @param consumer Consumer instance.
+     * @return Processed right value.
+     */
+    protected final Object getProcessedRightValue(Object currentResultSetElement, Query.DataSource dataSource, Query.Consumer consumer) {
+        Object result;
+        if(getRightValue() instanceof Query.QueryParameter) {
+            result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
+        } else {
+            Map<Evaluator, Object> cache = getRightCache();
+            result = cache.get(this);
+            if (result == null) {
+                result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
+                cache.put(this, result);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the map that contains the processed right values for each evaluator.
+     * @return Cache instance
+     */
+    private Map<Evaluator,Object> getRightCache() {
+        return ServiceSession.getCurrentIdentity().get(SystemProperties.get(SystemProperties.Query.EVALUATOR_RIGHT_VALUES_CACHE_NAME));
     }
 
     /**
      * Return the value to compare with the field's object of the data collection's
      * instance.
+     * @param currentResultSetElement Is the result set element to evaluate.
      * @param dataSource Query associated data source.
      * @param consumer Query associated data consumer.
-     * @param parameters Query parameters.
      * @return Object value.
      */
-    public final Object getValue(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
-        Object result = value;
-        if(result instanceof UnprocessedValue) {
-            result = ((UnprocessedValue)value).process(dataSource, consumer, parameters);
-        }
+    private final Object getProcessedValue(Object currentResultSetElement, Object rawValue, Query.DataSource dataSource, Query.Consumer consumer) {
+        Object result = rawValue;
 
-        if(result instanceof Collection) {
+        if(result instanceof UnprocessedValue) {
+            result = ((UnprocessedValue)result).process(dataSource, consumer);
+        } else if(result instanceof Query.QueryParameter) {
+            result = consumer.get(currentResultSetElement, (Query.QueryParameter) result);
+        } else if(result instanceof Collection) {
             Collection<Object> collectionResult = new ArrayList<>();
             for(Object internalValue : (Collection)result) {
-                if(internalValue instanceof UnprocessedValue) {
-                    collectionResult.add(((UnprocessedValue)internalValue).process(dataSource, consumer, parameters));
-                } else {
-                    collectionResult.add(internalValue);
-                }
+                getProcessedValue(currentResultSetElement, internalValue, dataSource, consumer);
             }
             result = collectionResult;
         }
@@ -79,59 +144,15 @@ public abstract class FieldEvaluator implements Evaluator {
     }
 
     /**
-     * Return the raw value container into the evaluator.
-     * @return Raw value.
-     */
-    public final Object getRawValue() {
-        return value;
-    }
-
-    /**
-     * Return the class of the original value.
-     * @return Class of the original value.
-     */
-    public final Class getValueType() {
-        return value.getClass();
-    }
-
-    /**
-     * Return the evaluated field name in case this is a QueryField and not a QueryFunction
-     * @return string
-     */
-    public final String getFieldName() {
-        String result = null;
-        if(getQueryParameter() instanceof Query.QueryField) {
-            result = ((Query.QueryField)getQueryParameter()).getFieldName();
-        }
-        return result;
-    }
-
-    /**
      * Copy this field evaluator with other value.
-     * @param newValue New value.
      * @return New instance.
      */
-    public final FieldEvaluator copy(Object newValue) {
+    public final FieldEvaluator copy() {
         try {
-            return getClass().getConstructor(Query.QueryParameter.class, Object.class).
-                    newInstance(getQueryParameter(), newValue);
+            return getClass().getConstructor(Object.class, Object.class).
+                    newInstance(leftValue, rightValue);
         } catch (Exception e) {
-            throw new RuntimeException("");
-        }
-    }
-
-    /**
-     * Copy this field evaluator with other field and other value.
-     * @param newFieldName Field name.
-     * @param newValue New value.
-     * @return New instance.
-     */
-    public final FieldEvaluator copy(String newFieldName, Object newValue) {
-        try {
-            return getClass().getConstructor(Query.QueryParameter.class, Object.class).
-                    newInstance(new Query.QueryField(newFieldName), newValue);
-        } catch (Exception e) {
-            throw new RuntimeException("");
+            throw new RuntimeException("", e);
         }
     }
 
@@ -156,12 +177,32 @@ public abstract class FieldEvaluator implements Evaluator {
     }
 
     /**
+     * Two evaluators are equals when are instances of the same class,
+     * his field names are equals and his values are equals
+     * @param obj Object to compare.
+     * @return True if the instance is equals than object parameter and
+     * false in the other ways.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        boolean result = false;
+
+        if(obj.getClass().equals(getClass())) {
+            FieldEvaluator fieldEvaluator = (FieldEvaluator) obj;
+            result = this.leftValue.equals(fieldEvaluator.leftValue) &&
+                    this.rightValue.equals(fieldEvaluator.rightValue);
+        }
+
+        return result;
+    }
+
+    /**
      * Return the string representation of the evaluator.
      * @return Format: ClassName[fieldName,value]
      */
     @Override
     public String toString() {
-        return getClass() + "[" + queryParameter + "," + value + "]";
+        return getClass() + "[" + leftValue + "," + rightValue + "]";
     }
 
     /**
@@ -173,10 +214,9 @@ public abstract class FieldEvaluator implements Evaluator {
          * Return the processed value.
          * @param dataSource Data source of the in-evaluation object.
          * @param consumer Consumer for the object.
-         * @param parameters Implementation parameters.
          * @return Processed value.
          */
-        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters);
+        Object process(Query.DataSource dataSource, Query.Consumer consumer);
 
     }
 
@@ -195,16 +235,11 @@ public abstract class FieldEvaluator implements Evaluator {
          * Return the processed value.
          * @param dataSource Data source of the in-evaluation object.
          * @param consumer Consumer for the object.
-         * @param parameters Implementation parameters.
          * @return Processed value.
          */
         @Override
-        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
-            if(parameters.length <= place) {
-                throw new IllegalArgumentException("Non-specified replaceable value, index " + place);
-            }
-
-            return parameters[place];
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer) {
+            return consumer.getParameter(place);
         }
     }
 
@@ -234,15 +269,14 @@ public abstract class FieldEvaluator implements Evaluator {
          * The rest of the parameters are the parameter to evaluate the sub-query..
          * @param dataSource Data source of the in-evaluation object.
          * @param consumer Consumer for the object.
-         * @param parameters Implementation parameters.
          * @return If the return fields size is one then the result will be a a list of values, else if the return fields
          * size is greater than one then the result will be a collection with object instance.
          */
         @Override
-        public Object process(Query.DataSource dataSource, Query.Consumer consumer, Object... parameters) {
+        public Object process(Query.DataSource dataSource, Query.Consumer consumer) {
             Object result;
             Collection<Object> collection;
-            Collection<Object> subQueryResult = query.evaluate(dataSource, consumer, parameters);
+            Collection<Object> subQueryResult = query.evaluate(dataSource, consumer);
             if(query.getReturnParameters().size() == 1){
                 List<Object> listResult = new ArrayList<>();
                 for(Object element : subQueryResult) {

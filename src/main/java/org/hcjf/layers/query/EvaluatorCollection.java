@@ -122,33 +122,15 @@ public abstract class EvaluatorCollection {
 
     protected Evaluator checkEvaluator(Evaluator evaluator) {
         if(evaluator instanceof FieldEvaluator) {
-            checkQueryParameter(((FieldEvaluator)evaluator).getQueryParameter());
+            FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+            if(fieldEvaluator.getLeftValue() instanceof Query.QueryParameter) {
+                checkQueryParameter((Query.QueryParameter) fieldEvaluator.getLeftValue());
+            }
+            if(fieldEvaluator.getRightValue() instanceof Query.QueryParameter) {
+                checkQueryParameter((Query.QueryParameter) fieldEvaluator.getRightValue());
+            }
         }
         return evaluator;
-    }
-
-    /**
-     * Return the value or set of values that corresponds to evaluators on provided fieldName and types
-     * @param fieldName Name of the field evaluator.
-     * @param evaluatorType Field evaluator type.
-     * @return Object
-     */
-    public Object getFieldEvaluatorValue(String fieldName, Class<? extends FieldEvaluator>... evaluatorType) {
-        Set<Object> results = new HashSet<>();
-        for (Evaluator evaluator : getFieldEvaluators(fieldName, evaluatorType)) {
-            if(evaluator instanceof FieldEvaluator) {
-                results.add(((FieldEvaluator)evaluator).getRawValue());
-            }
-        }
-        Object result = null;
-        if(!results.isEmpty()) {
-            if(results.size() == 1) {
-                result = results.iterator().next();
-            } else {
-                result = results;
-            }
-        }
-        return result;
     }
 
     /**
@@ -165,7 +147,7 @@ public abstract class EvaluatorCollection {
 
             } else if (evaluator instanceof FieldEvaluator) {
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-                if(fieldEvaluator.getFieldName().equals(fieldName)) {
+                if(fieldEvaluator.containsReference(fieldName)) {
                     if(evaluatorType.length == 0) {
                         results.add(fieldEvaluator);
                     } else {

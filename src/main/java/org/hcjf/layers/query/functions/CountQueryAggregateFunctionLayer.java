@@ -3,8 +3,7 @@ package org.hcjf.layers.query.functions;
 import java.util.Set;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class CountQueryAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer {
 

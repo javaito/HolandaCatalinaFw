@@ -29,8 +29,8 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
             result = false;
             //The first time that call this method.
             if(evaluator instanceof Equals) {
-                if(((Equals)evaluator).getQueryParameter() instanceof Query.QueryField &&
-                        ((Equals)evaluator).getRawValue() instanceof Query.QueryField) {
+                if(((Equals)evaluator).getLeftValue() instanceof Query.QueryField &&
+                        ((Equals)evaluator).getRightValue() instanceof Query.QueryField) {
                     joinCondition = (Equals) evaluator;
                 } else {
                     throw new IllegalArgumentException("The join condition must be between two resource fields.");
@@ -63,7 +63,7 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
      * @return Left field.
      */
     public Query.QueryField getLeftField() {
-        return (Query.QueryField) joinCondition.getQueryParameter();
+        return (Query.QueryField) joinCondition.getLeftValue();
     }
 
     /**
@@ -71,7 +71,7 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
      * @return Right field.
      */
     public Query.QueryField getRightField() {
-        return (Query.QueryField) joinCondition.getRawValue();
+        return (Query.QueryField) joinCondition.getRightValue();
     }
 
     /**

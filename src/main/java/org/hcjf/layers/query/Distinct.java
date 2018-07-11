@@ -9,12 +9,12 @@ import java.util.Map;
  */
 public class Distinct extends Equals {
 
-    public Distinct(String fieldName, Object value) {
-        super(fieldName, value);
+    public Distinct(Object leftValue, Object rightValue) {
+        super(leftValue, rightValue);
     }
 
-    public Distinct(Query.QueryParameter parameter, Object value) {
-        super(parameter, value);
+    public Distinct(String fieldName, Object value) {
+        super(fieldName, value);
     }
 
     /**
@@ -22,15 +22,15 @@ public class Distinct extends Equals {
      * the parameter instance are distinct.
      * This method support any kind of object like field value and parameter value too.
      * @param object Instance to obtain the field value.
+     * @param dataSource Data source
      * @param consumer Data source consumer
-     * @param valuesMap Contains the definitive values to evaluate the query.
      * @return True if the two values are distinct and false in other ways
      * @throws IllegalArgumentException If is impossible to get value from instance
      * with introspection.
      */
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
-        return !super.evaluate(object, consumer, valuesMap);
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+        return !super.evaluate(object, dataSource, consumer);
     }
 
 }

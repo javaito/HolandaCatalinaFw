@@ -1,7 +1,5 @@
 package org.hcjf.layers.query;
 
-import java.util.Map;
-
 /**
  * Evaluate if the field's value of the instance is greater than the
  * parameter value.
@@ -11,8 +9,8 @@ public class GreaterThan extends FieldEvaluator {
 
     private final boolean orEquals;
 
-    protected GreaterThan(Query.QueryParameter parameter, Object value, boolean orEquals) {
-        super(parameter, value);
+    protected GreaterThan(Object leftValue, Object rightValue, boolean orEquals) {
+        super(leftValue, rightValue);
         this.orEquals = orEquals;
     }
 
@@ -20,8 +18,8 @@ public class GreaterThan extends FieldEvaluator {
         this(new Query.QueryField(fieldName), value, orEquals);
     }
 
-    public GreaterThan(Query.QueryParameter parameter, Object value) {
-        this(parameter, value, false);
+    public GreaterThan(Object leftValue, Object rightValue) {
+        this(leftValue, rightValue, false);
     }
 
     public GreaterThan(String fieldName, Object value) {
@@ -32,8 +30,8 @@ public class GreaterThan extends FieldEvaluator {
      * Evaluate if the field's value of the instance is greater than the
      * parameter value.
      * @param object Object of the data collection.
+     * @param dataSource Data source.
      * @param consumer Data source consumer
-     * @param valuesMap Values
      * @return True if he field's value is greater than the parameter value and
      * false in the other ways.
      * @throws IllegalArgumentException
@@ -42,41 +40,39 @@ public class GreaterThan extends FieldEvaluator {
      * If the parameter value and field's value are incompatible: 'Incompatible types between value and field's value'
      */
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
         boolean result;
         try {
-            Object value = valuesMap.get(this);
-            if(value instanceof Query.QueryParameter) {
-                value = consumer.get(object, ((Query.QueryParameter)value));
-            }
-            Object fieldValue = consumer.get(object, getQueryParameter());
+            Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
+            Object rightValue = getProcessedRightValue(object, dataSource, consumer);
 
-            if(fieldValue instanceof Number && value instanceof Number) {
-                if(fieldValue instanceof Double || fieldValue instanceof Float ||
-                        value instanceof Double || value instanceof Float) {
-                    fieldValue = Double.valueOf(((Number)fieldValue).doubleValue());
-                    value = Double.valueOf(((Number)value).doubleValue());
+            if(leftValue instanceof Number && rightValue instanceof Number) {
+                if(leftValue instanceof Double || leftValue instanceof Float ||
+                        rightValue instanceof Double || rightValue instanceof Float) {
+                    leftValue = Double.valueOf(((Number)leftValue).doubleValue());
+                    rightValue = Double.valueOf(((Number)rightValue).doubleValue());
                 } else {
-                    fieldValue = Long.valueOf(((Number)fieldValue).longValue());
-                    value = Long.valueOf(((Number)value).longValue());
+                    leftValue = Long.valueOf(((Number)leftValue).longValue());
+                    rightValue = Long.valueOf(((Number)rightValue).longValue());
                 }
             }
 
-            if(Comparable.class.isAssignableFrom(value.getClass()) &&
-                    Comparable.class.isAssignableFrom(fieldValue.getClass())) {
-                if(fieldValue.getClass().isAssignableFrom(value.getClass()) ||
-                        value.getClass().isAssignableFrom(fieldValue.getClass())) {
+            if(Comparable.class.isAssignableFrom(leftValue.getClass()) &&
+                    Comparable.class.isAssignableFrom(rightValue.getClass())) {
+                if(leftValue.getClass().isAssignableFrom(rightValue.getClass()) ||
+                        rightValue.getClass().isAssignableFrom(leftValue.getClass())) {
                     if(orEquals) {
-                        result = ((Comparable)fieldValue).compareTo(value) >= 0;
+                        result = ((Comparable)leftValue).compareTo(rightValue) >= 0;
                     } else {
-                        result = ((Comparable)fieldValue).compareTo(value) > 0;
+                        result = ((Comparable)leftValue).compareTo(rightValue) > 0;
                     }
                 } else {
-                    throw new IllegalArgumentException("Incompatible types between value and field's value ("
-                            + getQueryParameter().toString() + "): " + value.getClass() + " != " + fieldValue.getClass());
+                    throw new IllegalArgumentException("Incompatible types between values and field's value: " +
+                            leftValue.getClass() + " != " + rightValue.getClass());
                 }
             } else {
-                throw new IllegalArgumentException("Unsupported evaluator type: " + value.getClass());
+                throw new IllegalArgumentException("Unsupported evaluator type: [" +
+                        leftValue.getClass() + ", " + rightValue.getClass() + "]");
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Greater than evaluator fail", ex);

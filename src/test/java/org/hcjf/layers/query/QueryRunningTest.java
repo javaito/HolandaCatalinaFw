@@ -230,6 +230,34 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(((Map<String,Object>)resultSet.iterator().next().get(BODY)).get("field1"), "string");
 
+        query = Query.compile("SELECT bsonParse(body) AS body FROM character WHERE name LIKE ?");
+        ParameterizedQuery parameterizedQuery = query.getParameterizedQuery();
+        resultSet = parameterizedQuery.add("Bartolomeo").evaluate(dataSource);
+        Assert.assertEquals(((Map<String,Object>)resultSet.iterator().next().get(BODY)).get("field1"), "string");
+
+        query = Query.compile("SELECT * FROM character WHERE weight > ? AND weight < ?");
+        parameterizedQuery = query.getParameterizedQuery();
+        resultSet = parameterizedQuery.add(40).add(100).evaluate(dataSource);
+        for(JoinableMap row : resultSet){
+            Assert.assertTrue((double)row.get("weight") > 40 && (double)row.get("weight") < 100);
+        }
+
+        resultSet = parameterizedQuery.add(40).add(80).evaluate(dataSource);
+        for(JoinableMap row : resultSet){
+            Assert.assertTrue((double)row.get("weight") > 40 && (double)row.get("weight") < 80);
+        }
+
+        query = Query.compile("SELECT * FROM character WHERE weight >= ? AND weight <= ?");
+        parameterizedQuery = query.getParameterizedQuery();
+        resultSet = parameterizedQuery.add(40).add(108).evaluate(dataSource);
+
+        query = Query.compile("SELECT * FROM character WHERE weight < ? OR weight > ?");
+        parameterizedQuery = query.getParameterizedQuery();
+        resultSet = parameterizedQuery.add(40).add(100).evaluate(dataSource);
+        for(JoinableMap row : resultSet){
+            Assert.assertTrue((double)row.get("weight") < 40 || (double)row.get("weight") > 100);
+        }
+
         Layers.publishLayer(CustomFunction.class);
 
         query = Query.compile("SELECT name, customFunction(integerValue(weight)) FROM character");

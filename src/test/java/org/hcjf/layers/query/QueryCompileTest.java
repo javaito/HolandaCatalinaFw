@@ -157,42 +157,42 @@ public class QueryCompileTest {
     public void testCompileNumericDataType() {
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 5");
-            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRightValue() instanceof Number);
         } catch (Exception ex) {
             Assert.fail("Unable to decode integer number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 5.3");
-            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRightValue() instanceof Number);
         } catch (Exception ex) {
             Assert.fail("Unable to decode decimal number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = -0.00023");
-            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRightValue() instanceof Number);
         } catch (Exception ex) {
             Assert.fail("Unable to decode negative decimal number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = -2.3E-4");
-            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRightValue() instanceof Number);
         } catch (Exception ex) {
             Assert.fail("Unable to decode negative scientific number with negative exponent");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = -2.3E4");
-            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRightValue() instanceof Number);
         } catch (Exception ex) {
             Assert.fail("Unable to decode negative scientific number");
         }
 
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2.3E4");
-            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof Number);
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRightValue() instanceof Number);
         } catch (Exception ex) {
             Assert.fail("Unable to decode scientific number");
         }
@@ -205,7 +205,7 @@ public class QueryCompileTest {
     public void testCompileNumericUUIDType() {
         try {
             Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84");
-            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRawValue() instanceof UUID);
+            Assert.assertTrue(((FieldEvaluator) query.getEvaluators().iterator().next()).getRightValue() instanceof UUID);
         } catch (Exception ex) {
             Assert.fail("Unable to decode UUID data type");
         }

@@ -11,8 +11,8 @@ import java.util.regex.Pattern;
  */
 public class Like extends FieldEvaluator {
 
-    public Like(Query.QueryParameter parameter, Object value) {
-        super(parameter, value);
+    public Like(Object leftValue, Object rightValue) {
+        super(leftValue, rightValue);
     }
 
     public Like(String fieldName, Object value) {
@@ -20,21 +20,18 @@ public class Like extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
-        boolean result = false;
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+        boolean result;
 
         try {
-            Object value = valuesMap.get(this);
-            if(value instanceof Query.QueryParameter) {
-                value = consumer.get(object, (Query.QueryParameter)value);
-            }
-            Object fieldValue = consumer.get(object, getQueryParameter());
-            if(fieldValue instanceof String) {
-                if(value instanceof Pattern) {
-                    result = ((Pattern)value).matcher((String)fieldValue).matches();
-                } else if(value instanceof String) {
-                    String stringFieldValue = (String) fieldValue;
-                    String stringValue = (String) value;
+            Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
+            Object rightValue = getProcessedRightValue(object, dataSource, consumer);
+            if(leftValue instanceof String) {
+                if(rightValue instanceof Pattern) {
+                    result = ((Pattern)rightValue).matcher((String)leftValue).matches();
+                } else if(rightValue instanceof String) {
+                    String stringFieldValue = (String) leftValue;
+                    String stringValue = (String) rightValue;
                     String wildcard = SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE_WILDCARD);
                     if(stringValue.startsWith(wildcard)) {
                         if(stringValue.endsWith(wildcard)) {
@@ -47,7 +44,11 @@ public class Like extends FieldEvaluator {
                     } else {
                         result = stringFieldValue.toUpperCase().contains(stringValue.toUpperCase());
                     }
+                } else {
+                    throw new IllegalArgumentException("The right value in the like operation must be a string or pattern");
                 }
+            } else {
+                throw new IllegalArgumentException("The left value in the like operation must be a string");
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Like evaluator fail", ex);

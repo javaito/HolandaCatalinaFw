@@ -9,8 +9,8 @@ import java.util.Map;
  */
 public class Equals extends FieldEvaluator {
 
-    public Equals(Query.QueryParameter parameter, Object value) {
-        super(parameter, value);
+    public Equals(Object leftValue, Object rightValue) {
+        super(leftValue, rightValue);
     }
 
     public Equals(String fieldName, Object value) {
@@ -23,28 +23,25 @@ public class Equals extends FieldEvaluator {
      * This method support any kind of object like field value and parameter value too.
      * @param object Instance to obtain the field value.
      * @param consumer Data source consumer
-     * @param valuesMap Contains the definitive values to evaluate the query.
      * @return True if the two values are equals and false in other ways
      * @throws IllegalArgumentException If is impossible to get value from instance
      * with introspection.
      */
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
         boolean result;
         try {
-            Object fieldValue = valuesMap.get(this);
-            if(fieldValue instanceof Query.QueryParameter) {
-                fieldValue = consumer.get(object, ((Query.QueryParameter)fieldValue));
-            }
-            Object consumerValue = consumer.get(object, getQueryParameter());
-            if(fieldValue instanceof Number) {
-                result = numberEquals((Number) fieldValue, consumerValue);
-            } else if(fieldValue.getClass().isEnum() && consumerValue.getClass().equals(String.class)) {
-                result = fieldValue.toString().equals(consumerValue);
-            } else if(consumerValue.getClass().isEnum() && fieldValue.getClass().equals(String.class)) {
-                result = consumerValue.toString().equals(fieldValue);
+            Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
+            Object rightValue = getProcessedRightValue(object, dataSource, consumer);
+
+            if(leftValue instanceof Number) {
+                result = numberEquals((Number) leftValue, rightValue);
+            } else if(leftValue.getClass().isEnum() && rightValue.getClass().equals(String.class)) {
+                result = leftValue.toString().equals(rightValue);
+            } else if(rightValue.getClass().isEnum() && leftValue.getClass().equals(String.class)) {
+                result = rightValue.toString().equals(leftValue);
             } else {
-                result = fieldValue.equals(consumerValue) || consumerValue.equals(fieldValue);
+                result = leftValue.equals(rightValue) || rightValue.equals(leftValue);
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Equals evaluator fail", ex);

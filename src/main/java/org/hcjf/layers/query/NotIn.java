@@ -1,7 +1,5 @@
 package org.hcjf.layers.query;
 
-import java.util.Map;
-
 /**
  * @author javaito
  *
@@ -12,12 +10,12 @@ public class NotIn extends In {
         super(fieldName, value);
     }
 
-    public NotIn(Query.QueryParameter parameter, Object value) {
-        super(parameter, value);
+    public NotIn(Object leftValue, Object rightValue) {
+        super(leftValue, rightValue);
     }
 
     @Override
-    public boolean evaluate(Object object, Query.Consumer consumer, Map<Evaluator, Object> valuesMap) {
-        return !super.evaluate(object, consumer, valuesMap);
+    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+        return !super.evaluate(object, dataSource, consumer);
     }
 }
