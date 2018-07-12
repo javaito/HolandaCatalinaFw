@@ -1,19 +1,20 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.bson.BsonDocument;
+import org.hcjf.layers.Layer;
+import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
-import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.*;
-import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
-import org.hcjf.utils.Introspection;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
+import org.hcjf.utils.bson.BsonCustomBuilderLayer;
+import org.hcjf.utils.bson.BsonParcelable;
 
-import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,7 +29,9 @@ import java.util.stream.Collectors;
  * @author javaito
  *
  */
-public class Query extends EvaluatorCollection {
+public class Query extends EvaluatorCollection implements Queryable {
+
+    private static final String QUERY_BSON_FIELD_NAME = "__query__";
 
     private final QueryId id;
     private final QueryResource resource;
@@ -51,6 +54,9 @@ public class Query extends EvaluatorCollection {
 
         //Publishing default aggregate function layers...
         Layers.publishLayer(CountQueryAggregateFunctionLayer.class);
+
+        //Publishing bson parcelable builder layer...
+        Layers.publishLayer(QueryBsonBuilderLayer.class);
     }
 
     public Query(String resource, QueryId id) {
@@ -326,8 +332,9 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
+    @Override
     public final <O extends Object> Set<O> evaluate(Collection<O> dataSource) {
-        return evaluate((query) -> dataSource, new IntrospectionConsumer<>());
+        return evaluate((query) -> dataSource, new Queryable.IntrospectionConsumer<>());
     }
 
     /**
@@ -342,7 +349,8 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer) {
+    @Override
+    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Queryable.Consumer<O> consumer) {
         return evaluate((query) -> dataSource, consumer);
     }
 
@@ -357,8 +365,9 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource) {
-        return evaluate(dataSource, new IntrospectionConsumer<>());
+    @Override
+    public final <O extends Object> Set<O> evaluate(Queryable.DataSource<O> dataSource) {
+        return evaluate(dataSource, new Queryable.IntrospectionConsumer<>());
     }
 
     /**
@@ -373,7 +382,8 @@ public class Query extends EvaluatorCollection {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    public final <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer) {
+    @Override
+    public final <O extends Object> Set<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
         Set<O> result;
         List<QueryReturnFunction> aggregateFunctions = new ArrayList<>();
         if(!(Thread.currentThread() instanceof ServiceThread)) {
@@ -439,7 +449,7 @@ public class Query extends EvaluatorCollection {
                 if (joins.size() > 0) {
                     //If the query has joins then data source must return the joined data
                     //collection using all the resources
-                    data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
+                    data = (Collection<O>) join((Queryable.DataSource<Joinable>) dataSource, (Queryable.Consumer<Joinable>) consumer);
                 } else {
                     //Creates the first query for the original resource.
                     Query resolveQuery = new Query(getResourceName());
@@ -648,7 +658,7 @@ public class Query extends EvaluatorCollection {
      * @param consumer Consumer.
      * @return Joined data collection.
      */
-    private Collection<Joinable> join(DataSource<Joinable> dataSource, Consumer<Joinable> consumer) {
+    private Collection<Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
         Collection<Joinable> result = new ArrayList<>();
 
         //Creates the first query for the original resource.
@@ -831,7 +841,7 @@ public class Query extends EvaluatorCollection {
      * @param consumer Implementation to get the value from the collection
      * @return Return the filtered data indexed by value of the parameter field.
      */
-    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, QueryField fieldIndex, Consumer<Joinable> consumer) {
+    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, QueryField fieldIndex, Queryable.Consumer<Joinable> consumer) {
         Map<Object, Set<Joinable>> result = new HashMap<>();
 
         Object key;
@@ -1086,6 +1096,29 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
+     * This method is a particular implementation to create a bson document from a query instance.
+     * @return Returns a bson document.
+     */
+    @Override
+    public BsonDocument toBson() {
+        BsonDocument document = new BsonDocument();
+        document.put(PARCELABLE_CLASS_NAME, getClass().getName());
+        document.put(QUERY_BSON_FIELD_NAME, toString());
+        return document;
+    }
+
+    /**
+     * This particular implementation do nothing to populate the instance.
+     * @param document Bson document to populate the parcelable.
+     * @param <P> Expected bson parcelable type.
+     * @return Returns the same instance.
+     */
+    @Override
+    public <P extends BsonParcelable> P populate(BsonDocument document) {
+        return (P) this;
+    }
+
+    /**
      * Evaluates the query using a readable data source.
      * @param query Query to evaluate.
      * @return Collections of joinable map instances.
@@ -1100,7 +1133,7 @@ public class Query extends EvaluatorCollection {
      * @return Collections of joinable map instances.
      */
     public static Collection<JoinableMap> evaluate(Query query) {
-        return query.evaluate(new ReadableDataSource());
+        return query.evaluate(new Queryable.ReadableDataSource());
     }
 
     /**
@@ -1590,178 +1623,6 @@ public class Query extends EvaluatorCollection {
     }
 
     /**
-     * This class provides an interface to consume a
-     * different collection of naming data to be useful in evaluation
-     * process.
-     */
-    public interface Consumer<O extends Object> {
-
-        /**
-         * Get naming information from an instance.
-         * @param instance Data source.
-         * @param queryParameter Query parameter.
-         * @param <R> Expected response type.
-         * @return Return the data storage in the data source indexed
-         * by the parameter name.
-         */
-        <R extends Object> R get(O instance, QueryParameter queryParameter);
-
-        /**
-         * This method must resolve the functions that are used into the query object.
-         * @param function Query function.
-         * @param instance Data object instance.
-         * @param <R> Expected result.
-         * @return Return the value obtained of the function resolution.
-         */
-        <R extends Object> R resolveFunction(QueryFunction function, Object instance);
-
-        /**
-         * This method must returns the parameter for the place indicated as parameter.
-         * @param place Place value.
-         * @param <R> Expected result type.
-         * @return Returns the value for the specific place.
-         */
-        <R extends Object> R getParameter(Integer place);
-
-    }
-
-    public static abstract class DefaultConsumer <O extends Object> implements Consumer<O> {
-
-        /**
-         * This method must resolve the functions that are used into the query object.
-         * @param function Query function.
-         * @param <R> Expected result.
-         * @return Return the value obtained of the function resolution.
-         */
-        public <R extends Object> R resolveFunction(QueryFunction function, Object instance) {
-            List<Object> parameterValues = new ArrayList<>();
-            Object currentParameter;
-            Object value;
-            for (int i = 0; i < function.getParameters().size(); i++) {
-                currentParameter = function.getParameters().get(i);
-                if(currentParameter != null) {
-                    if (currentParameter instanceof Query.QueryFunction) {
-                        Query.QueryFunction innerFunction = (Query.QueryFunction) currentParameter;
-                        value = resolveFunction(innerFunction, instance);
-                        if(value != null) {
-                            parameterValues.add(value);
-                        }
-                    } else if (currentParameter instanceof Query.QueryParameter) {
-                        value = get((O) instance, ((QueryParameter) currentParameter));
-                        if(value != null) {
-                            parameterValues.add(value);
-                        }
-                    } else {
-                        parameterValues.add(currentParameter);
-                    }
-                }
-            }
-
-            R result;
-            if(function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
-                QueryAggregateFunctionLayerInterface queryAggregateFunctionLayerInterface = Layers.get(QueryAggregateFunctionLayerInterface.class,
-                        SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-                result = (R) queryAggregateFunctionLayerInterface.evaluate((Set) instance);
-            } else {
-                QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
-                        SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-                result = (R) queryFunctionLayerInterface.evaluate(function.getFunctionName(), parameterValues.toArray());
-            }
-            return result;
-        }
-
-    }
-
-    /**
-     * This private class is the default consume method of the queries.
-     */
-    public static class IntrospectionConsumer<O extends Object> extends DefaultConsumer<O> {
-
-        /**
-         * Get naming information from an instance.
-         *
-         * @param instance    Data source.
-         * @param queryParameter Query parameter.
-         * @return Return the data storage in the data source indexed
-         * by the parameter name.
-         */
-        @Override
-        public <R extends Object> R get(O instance, QueryParameter queryParameter) {
-            Object result = null;
-            if(queryParameter instanceof QueryField) {
-                QueryField queryField = (QueryField) queryParameter;
-                String fieldName = queryField.getFieldName();
-                try {
-                    if(queryField.getIndex() != null) {
-                        Integer index = Integer.parseInt(queryField.getIndex());
-                        if (instance instanceof Collection) {
-                            result = Array.get(((Collection)instance).toArray(), index);
-                        } else if(instance.getClass().isArray()) {
-                            result = Array.get(index, index);
-                        } else {
-                            throw new IllegalArgumentException("The array is only for collection or array values");
-                        }
-                    } else {
-                        if (instance instanceof JoinableMap) {
-                            result = ((JoinableMap) instance).get(fieldName);
-                        } else {
-                            Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
-                            if (getter != null) {
-                                result = getter.get(instance);
-                            } else {
-                                Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
-                                        "Order field not found: %s", fieldName);
-                            }
-                        }
-                    }
-                } catch (Exception ex) {
-                    throw new IllegalArgumentException("Unable to obtain order field value", ex);
-                }
-            } else if(queryParameter instanceof QueryFunction) {
-                result = resolveFunction((QueryFunction) queryParameter, instance);
-            }
-            return (R) result;
-        }
-
-        @Override
-        public <R> R getParameter(Integer place) {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    /**
-     * This interface must implements a provider to obtain the data collection
-     * for diferents resources.
-     */
-    public interface DataSource<O extends Object> {
-
-        /**
-         * This method musr return the data of diferents resources using some query.
-         * @param query Query object.
-         * @return Data collection from the resource.
-         */
-        Collection<O> getResourceData(Query query);
-
-    }
-
-    /**
-     * This data source find all the resources that implements {@link ReadRowsLayerInterface} interface
-     */
-    public static class ReadableDataSource implements DataSource<JoinableMap> {
-
-        /**
-         * Return the collection of data as query response.
-         * @param query Query object.
-         * @return Collection of data.
-         */
-        @Override
-        public Collection<JoinableMap> getResourceData(Query query) {
-            return Layers.get(ReadRowsLayerInterface.class, query.getResourceName()).readRows(query);
-        }
-
-    }
-
-    /**
      * Group all the query components.
      */
     public interface QueryComponent {}
@@ -2079,6 +1940,27 @@ public class Query extends EvaluatorCollection {
          */
         public boolean isDesc() {
             return desc;
+        }
+
+    }
+
+    /**
+     * This inner class implements the custom method to create a query instance from a bson document.
+     */
+    public static class QueryBsonBuilderLayer extends Layer implements BsonCustomBuilderLayer<Query> {
+
+        public QueryBsonBuilderLayer() {
+            super(Query.class.getName());
+        }
+
+        /**
+         * This implementation required that the document contains a field called '__query__' to create the query instance.
+         * @param document Bson document.
+         * @return Returns a query instance.
+         */
+        @Override
+        public Query create(BsonDocument document) {
+            return Query.compile(document.get(QUERY_BSON_FIELD_NAME).getAsString());
         }
 
     }

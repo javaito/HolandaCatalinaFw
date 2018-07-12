@@ -56,7 +56,7 @@ public abstract class FieldEvaluator implements Evaluator {
      * @param consumer Consumer instance.
      * @return Processed left value.
      */
-    protected final Object getProcessedLeftValue(Object currentResultSetElement, Query.DataSource dataSource, Query.Consumer consumer) {
+    protected final Object getProcessedLeftValue(Object currentResultSetElement, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result;
         if(getLeftValue() instanceof Query.QueryParameter) {
             result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
@@ -94,7 +94,7 @@ public abstract class FieldEvaluator implements Evaluator {
      * @param consumer Consumer instance.
      * @return Processed right value.
      */
-    protected final Object getProcessedRightValue(Object currentResultSetElement, Query.DataSource dataSource, Query.Consumer consumer) {
+    protected final Object getProcessedRightValue(Object currentResultSetElement, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result;
         if(getRightValue() instanceof Query.QueryParameter) {
             result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
@@ -125,7 +125,7 @@ public abstract class FieldEvaluator implements Evaluator {
      * @param consumer Query associated data consumer.
      * @return Object value.
      */
-    private final Object getProcessedValue(Object currentResultSetElement, Object rawValue, Query.DataSource dataSource, Query.Consumer consumer) {
+    private final Object getProcessedValue(Object currentResultSetElement, Object rawValue, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result = rawValue;
 
         if(result instanceof UnprocessedValue) {
@@ -216,7 +216,7 @@ public abstract class FieldEvaluator implements Evaluator {
          * @param consumer Consumer for the object.
          * @return Processed value.
          */
-        Object process(Query.DataSource dataSource, Query.Consumer consumer);
+        Object process(Queryable.DataSource dataSource, Queryable.Consumer consumer);
 
     }
 
@@ -238,7 +238,7 @@ public abstract class FieldEvaluator implements Evaluator {
          * @return Processed value.
          */
         @Override
-        public Object process(Query.DataSource dataSource, Query.Consumer consumer) {
+        public Object process(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
             return consumer.getParameter(place);
         }
     }
@@ -273,7 +273,7 @@ public abstract class FieldEvaluator implements Evaluator {
          * size is greater than one then the result will be a collection with object instance.
          */
         @Override
-        public Object process(Query.DataSource dataSource, Query.Consumer consumer) {
+        public Object process(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
             Object result;
             Collection<Object> collection;
             Collection<Object> subQueryResult = query.evaluate(dataSource, consumer);

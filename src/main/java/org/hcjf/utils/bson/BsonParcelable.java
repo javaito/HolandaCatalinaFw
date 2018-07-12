@@ -1,6 +1,7 @@
 package org.hcjf.utils.bson;
 
 import org.hcjf.bson.*;
+import org.hcjf.layers.Layers;
 import org.hcjf.utils.Introspection;
 
 import java.io.*;
@@ -300,7 +301,12 @@ public interface BsonParcelable {
                 try {
                     result = (P) Class.forName(className).getConstructor().newInstance();
                 } catch (ClassNotFoundException e) {
-                    result = (P) new BsonParcelableMap();
+                    try {
+                        BsonCustomBuilderLayer bsonCustomBuilderLayer = Layers.get(BsonCustomBuilderLayer.class, className);
+                        result = (P) bsonCustomBuilderLayer.create(document);
+                    } catch (Exception ex) {
+                        result = (P) new BsonParcelableMap();
+                    }
                 }
                 result.populate(document);
             } catch (Exception ex) {

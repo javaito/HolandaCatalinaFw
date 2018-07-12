@@ -40,7 +40,7 @@ public class GreaterThan extends FieldEvaluator {
      * If the parameter value and field's value are incompatible: 'Incompatible types between value and field's value'
      */
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         boolean result;
         try {
             Object leftValue = getProcessedLeftValue(object, dataSource, consumer);

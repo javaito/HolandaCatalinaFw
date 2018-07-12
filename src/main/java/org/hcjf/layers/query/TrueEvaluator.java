@@ -14,7 +14,7 @@ public final class TrueEvaluator implements Evaluator {
      * @return Return every time true.
      */
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         return true;
     }
 

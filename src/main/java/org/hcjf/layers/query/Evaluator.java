@@ -1,7 +1,5 @@
 package org.hcjf.layers.query;
 
-import java.util.Map;
-
 /**
  * @author javaito
  *
@@ -17,5 +15,5 @@ public interface Evaluator {
      * @return Return true if the object must be part of the result add or false in the
      * other ways.
      */
-    boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer);
+    boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer);
 }

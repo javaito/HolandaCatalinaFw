@@ -2,7 +2,6 @@ package org.hcjf.layers.query;
 
 import org.hcjf.properties.SystemProperties;
 
-import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -20,7 +19,7 @@ public class Like extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         boolean result;
 
         try {

@@ -3,7 +3,6 @@ package org.hcjf.layers.query;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author javaito
@@ -20,7 +19,7 @@ public class In extends FieldEvaluator {
     }
 
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         boolean result = false;
 
         try {

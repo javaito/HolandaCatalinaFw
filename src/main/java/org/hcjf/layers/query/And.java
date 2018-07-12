@@ -18,7 +18,7 @@ public class And extends EvaluatorCollection implements Evaluator {
      * @return Returns the result of the concatenation.
      */
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         boolean result = true;
 
         for(Evaluator evaluator : getEvaluators()) {

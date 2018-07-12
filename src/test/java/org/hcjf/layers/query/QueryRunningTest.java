@@ -145,7 +145,7 @@ public class QueryRunningTest {
 
     }
 
-    private static class TestDataSource implements Query.DataSource<JoinableMap> {
+    private static class TestDataSource implements Queryable.DataSource<JoinableMap> {
 
         @Override
         public Collection<JoinableMap> getResourceData(Query query) {
@@ -181,6 +181,9 @@ public class QueryRunningTest {
         Query query = Query.compile("SELECT * FROM character");
         Set<JoinableMap> resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+        query = Query.compile("SELECT * FROM credentials WHERE methodName = 'user-password' AND get(fields, 'javaito') = '1234'");
+        System.out.println();
 
         query = Query.compile("SELECT * FROM character ORDER BY addressId, name DESC");
         resultSet = query.evaluate(dataSource);

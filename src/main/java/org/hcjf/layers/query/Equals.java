@@ -1,7 +1,5 @@
 package org.hcjf.layers.query;
 
-import java.util.Map;
-
 /**
  * Compare two object and return true if the objects are equals and false in other ways.
  * @author javaito
@@ -28,7 +26,7 @@ public class Equals extends FieldEvaluator {
      * with introspection.
      */
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         boolean result;
         try {
             Object leftValue = getProcessedLeftValue(object, dataSource, consumer);

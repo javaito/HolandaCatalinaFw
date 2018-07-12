@@ -18,7 +18,7 @@ public class Or extends EvaluatorCollection implements Evaluator {
      * @return Returns the value of the concat all the values.
      */
     @Override
-    public boolean evaluate(Object object, Query.DataSource dataSource, Query.Consumer consumer) {
+    public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         boolean result = false;
 
         for(Evaluator evaluator : getEvaluators()) {
