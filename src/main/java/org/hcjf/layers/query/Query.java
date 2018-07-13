@@ -1134,11 +1134,11 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     /**
      * Evaluates the query using a readable data source.
-     * @param query Query to evaluate.
+     * @param queryable Query to evaluate.
      * @return Collections of joinable map instances.
      */
-    public static Collection<JoinableMap> evaluate(Query query) {
-        return query.evaluate(new Queryable.ReadableDataSource());
+    public static Collection<JoinableMap> evaluate(Queryable queryable) {
+        return queryable.evaluate(new Queryable.ReadableDataSource());
     }
 
     /**
