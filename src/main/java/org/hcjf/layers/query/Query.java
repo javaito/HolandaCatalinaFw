@@ -409,11 +409,11 @@ public class Query extends EvaluatorCollection implements Queryable {
                     for (QueryOrderParameter orderField : orderParameters) {
                         try {
                             if (orderField instanceof QueryOrderFunction) {
-                                comparable1 = consumer.resolveFunction(((QueryOrderFunction) orderField), o1);
-                                comparable2 = consumer.resolveFunction(((QueryOrderFunction) orderField), o2);
+                                comparable1 = consumer.resolveFunction(((QueryOrderFunction) orderField), o1, dataSource);
+                                comparable2 = consumer.resolveFunction(((QueryOrderFunction) orderField), o2, dataSource);
                             } else {
-                                comparable1 = consumer.get(o1, (QueryParameter) orderField);
-                                comparable2 = consumer.get(o2, (QueryParameter) orderField);
+                                comparable1 = consumer.get(o1, (QueryParameter) orderField, dataSource);
+                                comparable2 = consumer.get(o2, (QueryParameter) orderField, dataSource);
                             }
                         } catch (ClassCastException ex) {
                             throw new IllegalArgumentException("Order field must be comparable");
@@ -482,9 +482,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                             hashCode = new StringBuilder();
                             for (QueryReturnParameter returnParameter : groupParameters) {
                                 if (returnParameter instanceof QueryReturnField) {
-                                    hashCode.append(consumer.get(object, ((QueryReturnField) returnParameter)).hashCode());
+                                    hashCode.append(consumer.get(object, ((QueryReturnField) returnParameter), dataSource).hashCode());
                                 } else {
-                                    hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object).hashCode());
+                                    hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource).hashCode());
                                 }
                             }
                             if (groupables.containsKey(hashCode.toString())) {
@@ -540,7 +540,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                         enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                                                consumer.resolveFunction(function, originalObject));
+                                                consumer.resolveFunction(function, originalObject, dataSource));
                                     }
                                 }
                             }
@@ -565,7 +565,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             JoinableMap aggregateResult = new JoinableMap(new HashMap<>());
             for (QueryReturnFunction function : aggregateFunctions) {
                 aggregateResult.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                        consumer.resolveFunction(function, result));
+                        consumer.resolveFunction(function, result, dataSource));
             }
             result = (Set<O>)Set.of(aggregateResult);
         }
@@ -726,13 +726,13 @@ public class Query extends EvaluatorCollection implements Queryable {
                     secondField = queryJoin.getRightField();
                 }
 
-                indexedJoineables = index(leftJoinables, firstField, consumer);
+                indexedJoineables = index(leftJoinables, firstField, consumer, dataSource);
                 leftJoinables.clear();
                 keys = indexedJoineables.keySet();
                 joinQuery.addEvaluator(new In(secondField.toString(), keys));
                 rightJoinables.addAll(dataSource.getResourceData(joinQuery));
                 for (Joinable rightJoinable : rightJoinables) {
-                    Set<Joinable> joinables = indexedJoineables.get(consumer.get(rightJoinable, secondField));
+                    Set<Joinable> joinables = indexedJoineables.get(consumer.get(rightJoinable, secondField, dataSource));
                     if(joinables != null) {
                         for (Joinable leftJoinable : joinables) {
                             leftJoinables.add(leftJoinable.join(rightJoinable));
@@ -764,13 +764,13 @@ public class Query extends EvaluatorCollection implements Queryable {
                 secondField = queryJoin.getLeftField();
             }
 
-            indexedJoineables = index(rightJoinables, firstField, consumer);
+            indexedJoineables = index(rightJoinables, firstField, consumer, dataSource);
             rightJoinables.clear();
             keys = indexedJoineables.keySet();
             joinQuery.addEvaluator(new In(secondField.toString(), keys));
             leftJoinables.addAll(dataSource.getResourceData(joinQuery));
             for (Joinable leftJoinable : leftJoinables) {
-                Set<Joinable> joinables = indexedJoineables.get(consumer.get(leftJoinable, secondField));
+                Set<Joinable> joinables = indexedJoineables.get(consumer.get(leftJoinable, secondField, dataSource));
                 if(joinables != null) {
                     for (Joinable rightJoinable : joinables) {
                         rightJoinables.add(rightJoinable.join(leftJoinable));
@@ -842,13 +842,13 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param consumer Implementation to get the value from the collection
      * @return Return the filtered data indexed by value of the parameter field.
      */
-    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, QueryField fieldIndex, Queryable.Consumer<Joinable> consumer) {
+    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, QueryField fieldIndex, Consumer<Joinable> consumer, DataSource<Joinable> dataSource) {
         Map<Object, Set<Joinable>> result = new HashMap<>();
 
         Object key;
         Set<Joinable> set;
         for(Joinable joinable : objects) {
-            key = consumer.get(joinable, fieldIndex);
+            key = consumer.get(joinable, fieldIndex, dataSource);
             result.computeIfAbsent(key, k -> new HashSet<>()).add(joinable);
         }
 

@@ -162,8 +162,8 @@ public class ParameterizedQuery implements Queryable {
          * @return Returns the value of the inner consumer.
          */
         @Override
-        public Object get(Object instance, Query.QueryParameter queryParameter) {
-            return consumer.get(instance, queryParameter);
+        public Object get(Object instance, Query.QueryParameter queryParameter, DataSource dataSource) {
+            return consumer.get(instance, queryParameter, dataSource);
         }
 
         /**
@@ -173,8 +173,8 @@ public class ParameterizedQuery implements Queryable {
          * @return Returns the value of the inner consumer.
          */
         @Override
-        public Object resolveFunction(Query.QueryFunction function, Object instance) {
-            return consumer.resolveFunction(function, instance);
+        public Object resolveFunction(Query.QueryFunction function, Object instance, DataSource dataSource) {
+            return consumer.resolveFunction(function, instance, dataSource);
         }
 
         /**

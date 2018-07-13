@@ -82,20 +82,22 @@ public interface Queryable extends BsonParcelable {
          * Get naming information from an instance.
          * @param instance Data source.
          * @param queryParameter Query parameter.
+         * @param dataSource Data source
          * @param <R> Expected response type.
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
-        <R extends Object> R get(O instance, Query.QueryParameter queryParameter);
+        <R extends Object> R get(O instance, Query.QueryParameter queryParameter, DataSource<O> dataSource);
 
         /**
          * This method must resolve the functions that are used into the query object.
          * @param function Query function.
          * @param instance Data object instance.
+         * @param dataSource Data source
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        <R extends Object> R resolveFunction(Query.QueryFunction function, Object instance);
+        <R extends Object> R resolveFunction(Query.QueryFunction function, Object instance, DataSource<O> dataSource);
 
         /**
          * This method must returns the parameter for the place indicated as parameter.
@@ -130,7 +132,8 @@ public interface Queryable extends BsonParcelable {
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        public <R extends Object> R resolveFunction(Query.QueryFunction function, Object instance) {
+        @Override
+        public <R extends Object> R resolveFunction(Query.QueryFunction function, Object instance, DataSource<O> dataSource) {
             List<Object> parameterValues = new ArrayList<>();
             Object currentParameter;
             Object value;
@@ -139,15 +142,18 @@ public interface Queryable extends BsonParcelable {
                 if(currentParameter != null) {
                     if (currentParameter instanceof Query.QueryFunction) {
                         Query.QueryFunction innerFunction = (Query.QueryFunction) currentParameter;
-                        value = resolveFunction(innerFunction, instance);
+                        value = resolveFunction(innerFunction, instance, dataSource);
                         if(value != null) {
                             parameterValues.add(value);
                         }
                     } else if (currentParameter instanceof Query.QueryParameter) {
-                        value = get((O) instance, ((Query.QueryParameter) currentParameter));
-                        if(value != null) {
+                        value = get((O) instance, ((Query.QueryParameter) currentParameter), dataSource);
+                        if (value != null) {
                             parameterValues.add(value);
                         }
+                    } else if (currentParameter instanceof FieldEvaluator.UnprocessedValue) {
+                        parameterValues.add(((FieldEvaluator.UnprocessedValue)currentParameter).
+                                process(dataSource, this));
                     } else {
                         parameterValues.add(currentParameter);
                     }
@@ -183,7 +189,7 @@ public interface Queryable extends BsonParcelable {
          * by the parameter name.
          */
         @Override
-        public <R extends Object> R get(O instance, Query.QueryParameter queryParameter) {
+        public <R extends Object> R get(O instance, Query.QueryParameter queryParameter, DataSource<O> dataSource) {
             Object result = null;
             if(queryParameter instanceof Query.QueryField) {
                 Query.QueryField queryField = (Query.QueryField) queryParameter;
@@ -215,7 +221,7 @@ public interface Queryable extends BsonParcelable {
                     throw new IllegalArgumentException("Unable to obtain order field value", ex);
                 }
             } else if(queryParameter instanceof Query.QueryFunction) {
-                result = resolveFunction((Query.QueryFunction) queryParameter, instance);
+                result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);
             }
             return (R) result;
         }

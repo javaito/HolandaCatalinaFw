@@ -131,7 +131,7 @@ public abstract class FieldEvaluator implements Evaluator {
         if(result instanceof UnprocessedValue) {
             result = ((UnprocessedValue)result).process(dataSource, consumer);
         } else if(result instanceof Query.QueryParameter) {
-            result = consumer.get(currentResultSetElement, (Query.QueryParameter) result);
+            result = consumer.get(currentResultSetElement, (Query.QueryParameter) result, dataSource);
         } else if(result instanceof Collection) {
             Collection<Object> collectionResult = new ArrayList<>();
             for(Object internalValue : (Collection)result) {
@@ -280,7 +280,7 @@ public abstract class FieldEvaluator implements Evaluator {
             if(query.getReturnParameters().size() == 1){
                 List<Object> listResult = new ArrayList<>();
                 for(Object element : subQueryResult) {
-                    listResult.add(consumer.get(element, (Query.QueryParameter) query.getReturnParameters().get(0)));
+                    listResult.add(consumer.get(element, (Query.QueryParameter) query.getReturnParameters().get(0), dataSource));
                 }
                 collection = listResult;
             } else {
