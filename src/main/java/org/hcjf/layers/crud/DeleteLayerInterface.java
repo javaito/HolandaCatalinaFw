@@ -2,6 +2,7 @@ package org.hcjf.layers.crud;
 
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.Queryable;
 
 import java.util.Collection;
 
@@ -22,20 +23,10 @@ public interface DeleteLayerInterface<O extends Object> extends LayerInterface {
     /**
      * This method implements the delete operation over a add of the instances.
      * This instances are selected using the query like a filter.
-     * @param queryId Id of the query.
+     * @param queryable Instance that contains all the information to evaluate a query.
      * @return Return the instances deleted.
      */
-    default Collection<O> delete(Query.QueryId queryId) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the delete operation over a add of the instances.
-     * This instances are selected using the query like a filter.
-     * @param query Query to select the instances to delete.
-     * @return Return the instances deleted.
-     */
-    default Collection<O> delete(Query query) {
+    default Collection<O> delete(Queryable queryable) {
         throw new UnsupportedOperationException();
     }
 

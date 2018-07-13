@@ -1,6 +1,10 @@
 package org.hcjf.utils;
 
+import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
+import org.hcjf.bson.BsonEncoder;
+import org.hcjf.layers.query.ParameterizedQuery;
+import org.hcjf.layers.query.Query;
 import org.hcjf.utils.bson.BsonParcelable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -97,7 +101,26 @@ public class BsonParcelableTest {
         bsonDocument.put(BsonParcelable.PARCELABLE_CLASS_NAME, "no.class");
 
         Map<String,Object> mapFromBsonParcelable = BsonParcelable.Builder.create(bsonDocument);
+    }
 
+    @Test
+    public void testQuery() {
+        Query query = Query.compile("SELECT * FROM resource WHERE field1 = ?");
+        BsonDocument document = query.toBson();
+        byte[] serializedQuery = BsonEncoder.encode(document);
+        document = BsonDecoder.decode(serializedQuery);
+        Query query1 = BsonParcelable.Builder.create(document);
+        Assert.assertEquals(query.toString(), query1.toString());
+
+        ParameterizedQuery parameterizedQuery = new ParameterizedQuery(query1);
+        parameterizedQuery.add(34);
+        document = parameterizedQuery.toBson();
+        serializedQuery = BsonEncoder.encode(document);
+        document = BsonDecoder.decode(serializedQuery);
+        ParameterizedQuery parameterizedQuery1 = BsonParcelable.Builder.create(document);
+
+
+        System.out.println();
     }
 
     public static class TestClass implements BsonParcelable {

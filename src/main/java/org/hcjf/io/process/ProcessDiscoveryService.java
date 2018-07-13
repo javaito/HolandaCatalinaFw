@@ -9,8 +9,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public class ProcessDiscoveryService extends Service<ProcessDiscoveryConsumer> {
 

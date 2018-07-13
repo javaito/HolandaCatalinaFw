@@ -300,7 +300,7 @@ public interface BsonParcelable {
             try {
                 try {
                     result = (P) Class.forName(className).getConstructor().newInstance();
-                } catch (ClassNotFoundException e) {
+                } catch (Exception e) {
                     try {
                         BsonCustomBuilderLayer bsonCustomBuilderLayer = Layers.get(BsonCustomBuilderLayer.class, className);
                         result = (P) bsonCustomBuilderLayer.create(document);

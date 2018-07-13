@@ -3,8 +3,7 @@ package org.hcjf.io.process;
 import org.hcjf.service.ServiceConsumer;
 
 /**
- * @author Javier Quiroga.
- * @email javier.quiroga@sitrack.com
+ * @author javaito
  */
 public interface ProcessDiscoveryConsumer extends ServiceConsumer {
 

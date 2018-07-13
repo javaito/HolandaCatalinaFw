@@ -42,6 +42,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
     private boolean returnAll;
+    private String stringRepresentation;
 
     static {
         //Publishing default function layers...
@@ -899,89 +900,93 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return String representation.
      */
     @Override
-    public String toString() {
-        Strings.Builder result = new Strings.Builder();
+    public synchronized String toString() {
+        String result = stringRepresentation;
+        if(result == null) {
+            Strings.Builder resultBuilder = new Strings.Builder();
 
-        //Print select
-        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));
-        result.append(Strings.WHITE_SPACE);
-        if(returnAll) {
-            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
-            SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
-            result.append(Strings.WHITE_SPACE);
-        }
-        for(QueryReturnParameter field : getReturnParameters()) {
-            result.append(field);
-            if(field.getAlias() != null) {
-                result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.AS));
-                result.append(Strings.WHITE_SPACE).append(field.getAlias());
+            //Print select
+            resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));
+            resultBuilder.append(Strings.WHITE_SPACE);
+            if (returnAll) {
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
+                SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+                resultBuilder.append(Strings.WHITE_SPACE);
             }
-            result.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
-        }
-        result.cleanBuffer();
-
-        //Print from
-        result.append(Strings.WHITE_SPACE);
-        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.FROM));
-        result.append(Strings.WHITE_SPACE);
-        result.append(getResourceName());
-        result.append(Strings.WHITE_SPACE);
-
-        //Print joins
-        for(Join join : joins) {
-            if(!(join.getType() == Join.JoinType.JOIN)) {
-                result.append(join.getType());
-                result.append(Strings.WHITE_SPACE);
-            }
-            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)).append(Strings.WHITE_SPACE);
-            result.append(join.getResourceName()).append(Strings.WHITE_SPACE);
-            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ON)).append(Strings.WHITE_SPACE);
-            result.append(join.getLeftField()).append(Strings.WHITE_SPACE);
-            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
-            result.append(join.getRightField()).append(Strings.WHITE_SPACE);
-            if(join.getEvaluators().size() > 0) {
-                result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND)).append(Strings.WHITE_SPACE);
-                toStringEvaluatorCollection(result, join);
-            }
-        }
-
-        if(evaluators.size() > 0) {
-            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE)).append(Strings.WHITE_SPACE);
-            toStringEvaluatorCollection(result, this);
-        }
-
-        if(groupParameters.size() > 0) {
-            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
-            for(QueryReturnParameter groupParameter : groupParameters) {
-                result.append(groupParameter, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
-            }
-            result.append(Strings.WHITE_SPACE);
-            result.cleanBuffer();
-        }
-
-        if(orderParameters.size() > 0) {
-            result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
-            for(QueryOrderParameter orderField : orderParameters) {
-                result.append(orderField);
-                if(orderField.isDesc()) {
-                    result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
+            for (QueryReturnParameter field : getReturnParameters()) {
+                resultBuilder.append(field);
+                if (field.getAlias() != null) {
+                    resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.AS));
+                    resultBuilder.append(Strings.WHITE_SPACE).append(field.getAlias());
                 }
-                result.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
+                resultBuilder.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
             }
-            result.cleanBuffer();
+            resultBuilder.cleanBuffer();
+
+            //Print from
+            resultBuilder.append(Strings.WHITE_SPACE);
+            resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.FROM));
+            resultBuilder.append(Strings.WHITE_SPACE);
+            resultBuilder.append(getResourceName());
+            resultBuilder.append(Strings.WHITE_SPACE);
+
+            //Print joins
+            for (Join join : joins) {
+                if (!(join.getType() == Join.JoinType.JOIN)) {
+                    resultBuilder.append(join.getType());
+                    resultBuilder.append(Strings.WHITE_SPACE);
+                }
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)).append(Strings.WHITE_SPACE);
+                resultBuilder.append(join.getResourceName()).append(Strings.WHITE_SPACE);
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ON)).append(Strings.WHITE_SPACE);
+                resultBuilder.append(join.getLeftField()).append(Strings.WHITE_SPACE);
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
+                resultBuilder.append(join.getRightField()).append(Strings.WHITE_SPACE);
+                if (join.getEvaluators().size() > 0) {
+                    resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND)).append(Strings.WHITE_SPACE);
+                    toStringEvaluatorCollection(resultBuilder, join);
+                }
+            }
+
+            if (evaluators.size() > 0) {
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE)).append(Strings.WHITE_SPACE);
+                toStringEvaluatorCollection(resultBuilder, this);
+            }
+
+            if (groupParameters.size() > 0) {
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
+                for (QueryReturnParameter groupParameter : groupParameters) {
+                    resultBuilder.append(groupParameter, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+                }
+                resultBuilder.append(Strings.WHITE_SPACE);
+                resultBuilder.cleanBuffer();
+            }
+
+            if (orderParameters.size() > 0) {
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
+                for (QueryOrderParameter orderField : orderParameters) {
+                    resultBuilder.append(orderField);
+                    if (orderField.isDesc()) {
+                        resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC));
+                    }
+                    resultBuilder.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
+                }
+                resultBuilder.cleanBuffer();
+            }
+
+            if (getStart() != null) {
+                resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.START));
+                resultBuilder.append(Strings.WHITE_SPACE).append(getStart());
+            }
+
+            if (getLimit() != null) {
+                resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
+                resultBuilder.append(Strings.WHITE_SPACE).append(getLimit());
+            }
+            result = resultBuilder.toString();
         }
 
-        if(getStart() != null) {
-            result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.START));
-            result.append(Strings.WHITE_SPACE).append(getStart());
-        }
-
-        if(getLimit() != null) {
-            result.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
-            result.append(Strings.WHITE_SPACE).append(getLimit());
-        }
-
-        return result.toString();
+        return result;
     }
 
     /**
@@ -1331,7 +1336,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         String firstArgument;
         String secondArgument;
         String operator;
-        Evaluator evaluator = null;
+        Evaluator evaluator;
 
         if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
@@ -1596,6 +1601,11 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
 
         return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof Query) && obj.toString().equals(toString());
     }
 
     /**

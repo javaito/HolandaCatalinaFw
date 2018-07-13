@@ -1,6 +1,5 @@
 package org.hcjf.layers;
 
-import org.hcjf.layers.crud.CrudLayerInterface;
 import org.hcjf.layers.plugins.PluginLayer;
 import org.hcjf.layers.storage.StorageLayerInterface;
 import org.hcjf.log.debug.Agent;
@@ -119,16 +118,6 @@ public abstract class Layer implements LayerInterface {
      */
     protected final <L extends LayerInterface> L getLayer(Class<? extends L> layerClass, String implName) {
         return Layers.get(layerClass, implName);
-    }
-
-    /**
-     * Delegation method to get some crud layer implementation.
-     * @param implName Layer implementation name.
-     * @param <L> Expected crud layer implementation class.
-     * @return Crud layer implementation.
-     */
-    protected final <L extends CrudLayerInterface<?>> L getCrudLayer(String implName) {
-        return (L) getLayer(CrudLayerInterface.class, implName);
     }
 
     /**
