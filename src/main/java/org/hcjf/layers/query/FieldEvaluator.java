@@ -3,11 +3,9 @@ package org.hcjf.layers.query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This abstract class define the structure of the evaluating. The evaluator
@@ -135,7 +133,13 @@ public abstract class FieldEvaluator implements Evaluator {
         } else if(result instanceof Collection) {
             Collection<Object> collectionResult = new ArrayList<>();
             for(Object internalValue : (Collection)result) {
-                getProcessedValue(currentResultSetElement, internalValue, dataSource, consumer);
+                collectionResult.add(getProcessedValue(currentResultSetElement, internalValue, dataSource, consumer));
+            }
+            result = collectionResult;
+        } else if(result.getClass().isArray()) {
+            Collection<Object> collectionResult = new ArrayList<>();
+            for (int i = 0; i < Array.getLength(result); i++) {
+                collectionResult.add(getProcessedValue(currentResultSetElement, Array.get(result, i), dataSource, consumer));
             }
             result = collectionResult;
         }
