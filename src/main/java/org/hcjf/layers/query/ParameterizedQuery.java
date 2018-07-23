@@ -163,7 +163,13 @@ public class ParameterizedQuery implements Queryable {
          */
         @Override
         public Object get(Object instance, Query.QueryParameter queryParameter, DataSource dataSource) {
-            return consumer.get(instance, queryParameter, dataSource);
+            Object result;
+            if(queryParameter instanceof Query.QueryFunction) {
+                result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);
+            } else {
+                result = consumer.get(instance, queryParameter, dataSource);
+            }
+            return result;
         }
 
         /**
