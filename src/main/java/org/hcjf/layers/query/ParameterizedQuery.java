@@ -123,7 +123,7 @@ public class ParameterizedQuery implements Queryable {
      */
     @Override
     public final <O extends Object> Set<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
-        Set<O> result = query.evaluate(dataSource, new ParameterizedIntrospectionConsumer(consumer));
+        Set<O> result = query.evaluate(dataSource, new ParameterizedConsumer(consumer));
         parameters.clear();
         return result;
     }
@@ -147,11 +147,11 @@ public class ParameterizedQuery implements Queryable {
     /**
      * This implementation use the parameters of the instance.
      */
-    private class ParameterizedIntrospectionConsumer implements Queryable.Consumer {
+    private class ParameterizedConsumer extends Queryable.DefaultConsumer {
 
         private final Consumer consumer;
 
-        public ParameterizedIntrospectionConsumer(Consumer consumer) {
+        public ParameterizedConsumer(Consumer consumer) {
             this.consumer = consumer;
         }
 
@@ -164,17 +164,6 @@ public class ParameterizedQuery implements Queryable {
         @Override
         public Object get(Object instance, Query.QueryParameter queryParameter, DataSource dataSource) {
             return consumer.get(instance, queryParameter, dataSource);
-        }
-
-        /**
-         * Call the implementation of the inner consumer instance.
-         * @param function Query function.
-         * @param instance Data object instance.
-         * @return Returns the value of the inner consumer.
-         */
-        @Override
-        public Object resolveFunction(Query.QueryFunction function, Object instance, DataSource dataSource) {
-            return consumer.resolveFunction(function, instance, dataSource);
         }
 
         /**
