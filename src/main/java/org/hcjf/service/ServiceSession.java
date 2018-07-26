@@ -35,7 +35,6 @@ public class ServiceSession implements Comparable {
     private final ThreadMXBean threadMXBean;
     private final List<ServiceSession> identities;
     private final Set<Grants.Grant> grants;
-    private ServiceSession parent;
     private Locale locale;
 
     public ServiceSession(UUID id) {
@@ -55,7 +54,6 @@ public class ServiceSession implements Comparable {
      */
     public final void addIdentity(ServiceSession serviceSession) {
         if(serviceSession != null) {
-            serviceSession.parent = this;
             identities.add(0, serviceSession);
         }
     }
@@ -66,7 +64,7 @@ public class ServiceSession implements Comparable {
     public final void removeIdentity() {
         synchronized (identities) {
             if (!identities.isEmpty()) {
-                identities.remove(0).parent = null;
+                identities.remove(0);
             }
         }
     }
@@ -111,22 +109,6 @@ public class ServiceSession implements Comparable {
     }
 
     /**
-     * Return the properties name of the session.
-     * @return Unmodifiable properties map.
-     */
-    public final Map<String, Object> getProperties() {
-        Map<String, Object> result = null;
-        if(parent == null) {
-            if (properties.containsKey(Thread.currentThread().getId())) {
-                result = Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
-            }
-        } else {
-            result = parent.getProperties();
-        }
-        return result;
-    }
-
-    /**
      * Start some thread over this session.
      */
     public final synchronized void startThread() {
@@ -159,14 +141,32 @@ public class ServiceSession implements Comparable {
     protected void onEndThread(){}
 
     /**
+     * Return the properties name of the session.
+     * @return Unmodifiable properties map.
+     */
+    public final Map<String, Object> getProperties() {
+        Map<String, Object> result = null;
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
+            if (properties.containsKey(Thread.currentThread().getId())) {
+                result = Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
+            }
+        } else {
+            result = ServiceSession.getCurrentSession().getProperties();
+        }
+        return result;
+    }
+
+    /**
      * Put all the properties over the session.
      * @param properties Properties.
      */
     public final void putAll(Map<String, Object> properties) {
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             this.properties.get(Thread.currentThread().getId()).putAll(properties);
         } else {
-            parent.putAll(properties);
+            ServiceSession.getCurrentSession().putAll(properties);
         }
     }
 
@@ -176,10 +176,11 @@ public class ServiceSession implements Comparable {
      * @param propertyValue Property value.
      */
     public final void put(String propertyName, Object propertyValue) {
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
         } else {
-            parent.put(propertyName, propertyValue);
+            ServiceSession.getCurrentSession().put(propertyName, propertyValue);
         }
     }
 
@@ -191,10 +192,11 @@ public class ServiceSession implements Comparable {
      */
     public final <O extends Object> O get(String propertyName) {
         O result;
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             result = (O) properties.get(Thread.currentThread().getId()).get(propertyName);
         } else {
-            result = parent.get(propertyName);
+            result = ServiceSession.getGuestSession().get(propertyName);
         }
         return result;
     }
@@ -207,10 +209,11 @@ public class ServiceSession implements Comparable {
      */
     public final <O extends Object> O remove(String propertyName) {
         O result;
-        if(parent == null) {
-            result = (O) properties.get(Thread.currentThread().getId()).remove(propertyName);
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
+            return (O) properties.get(Thread.currentThread().getId()).remove(propertyName);
         } else {
-            result = parent.remove(propertyName);
+            result = ServiceSession.getCurrentSession().remove(propertyName);
         }
         return result;
     }
@@ -220,10 +223,11 @@ public class ServiceSession implements Comparable {
      * @param element Layer stack element.
      */
     public final void putLayer(LayerStackElement element) {
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             layerStack.get(Thread.currentThread().getId()).add(0, element);
         } else {
-            parent.putLayer(element);
+            ServiceSession.getCurrentSession().putLayer(element);
         }
     }
 
@@ -231,10 +235,11 @@ public class ServiceSession implements Comparable {
      * Removes the head of the layer stack.
      */
     public final void removeLayer() {
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             layerStack.get(Thread.currentThread().getId()).remove(0);
         } else {
-            parent.removeLayer();
+            ServiceSession.getCurrentSession().removeLayer();
         }
     }
 
@@ -244,10 +249,11 @@ public class ServiceSession implements Comparable {
      */
     public final Collection<LayerStackElement> getLayerStack() {
         Collection<LayerStackElement> result;
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             result = Collections.unmodifiableCollection(layerStack.get(Thread.currentThread().getId()));
         } else {
-            result = parent.getLayerStack();
+            result = ServiceSession.getCurrentSession().getLayerStack();
         }
         return result;
     }
@@ -258,12 +264,13 @@ public class ServiceSession implements Comparable {
      */
     public final LayerStackElement getCurrentLayer() {
         LayerStackElement result = null;
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             if (layerStack.get(Thread.currentThread().getId()).size() > 0) {
                 result = layerStack.get(Thread.currentThread().getId()).get(0);
             }
         } else {
-            result = parent.getCurrentLayer();
+            result = ServiceSession.getCurrentSession().getCurrentLayer();
         }
         return result;
     }
@@ -274,12 +281,13 @@ public class ServiceSession implements Comparable {
      */
     public final LayerStackElement getInvokerLayer() {
         LayerStackElement result = null;
-        if(parent == null) {
+        //Verify if this instance is a current session of is a identity
+        if(ServiceSession.getCurrentSession().equals(this)) {
             if (layerStack.get(Thread.currentThread().getId()).size() > 1) {
                 result = layerStack.get(Thread.currentThread().getId()).get(1);
             }
         } else {
-            result = parent.getInvokerLayer();
+            result = ServiceSession.getCurrentSession().getInvokerLayer();
         }
         return result;
     }
