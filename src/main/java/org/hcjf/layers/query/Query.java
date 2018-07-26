@@ -1445,7 +1445,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 trimmedStringValue = richTexts.get(Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_RICH_TEXT, Strings.EMPTY_STRING)));
 
                 //Clean the value to remove all the skip characters into the string value.
-                trimmedStringValue.replace(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.RICH_TEXT_SEPARATOR, Strings.RICH_TEXT_SEPARATOR);
+                trimmedStringValue = trimmedStringValue.replace(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.RICH_TEXT_SEPARATOR, Strings.RICH_TEXT_SEPARATOR);
 
                 try {
                     result = SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).parse(trimmedStringValue);
