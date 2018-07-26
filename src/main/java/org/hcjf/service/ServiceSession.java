@@ -196,7 +196,7 @@ public class ServiceSession implements Comparable {
         if(ServiceSession.getCurrentSession().equals(this)) {
             result = (O) properties.get(Thread.currentThread().getId()).get(propertyName);
         } else {
-            result = ServiceSession.getGuestSession().get(propertyName);
+            result = ServiceSession.getCurrentSession().get(propertyName);
         }
         return result;
     }
