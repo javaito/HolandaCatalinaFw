@@ -1,5 +1,7 @@
 package org.hcjf.cloud.impl.messages;
 
+import org.hcjf.io.net.messages.Message;
+
 import java.util.UUID;
 
 /**
@@ -10,7 +12,6 @@ public class LayerInvokeMessage extends Message {
     private Object[] path;
     private String methodName;
     private Class[] parameterTypes;
-    private UUID sessionId;
     private Object[] parameters;
 
     public LayerInvokeMessage() {
@@ -42,14 +43,6 @@ public class LayerInvokeMessage extends Message {
 
     public void setParameterTypes(Class[] parameterTypes) {
         this.parameterTypes = parameterTypes;
-    }
-
-    public UUID getSessionId() {
-        return sessionId;
-    }
-
-    public void setSessionId(UUID sessionId) {
-        this.sessionId = sessionId;
     }
 
     public Object[] getParameters() {

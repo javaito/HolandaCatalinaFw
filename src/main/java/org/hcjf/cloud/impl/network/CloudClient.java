@@ -1,27 +1,26 @@
 package org.hcjf.cloud.impl.network;
 
-import org.hcjf.cloud.impl.messages.Message;
+import org.hcjf.io.net.messages.Message;
 import org.hcjf.cloud.impl.messages.ShutdownMessage;
 import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.io.net.messages.MessageBuffer;
+import org.hcjf.io.net.messages.MessagesNode;
 
 import java.io.IOException;
 
 /**
  * @author javaito
  */
-public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
+public class CloudClient extends MessagesNode<CloudSession> {
 
     private final CloudSession session;
-    private MessageBuffer messageBuffer;
-    private Boolean connected;
 
     public CloudClient(String host, Integer port) {
-        super(host, port, NetService.TransportLayerProtocol.TCP);
+        super(host, port);
         this.session = new CloudSession(this);
-        this.connected = null;
     }
 
     @Override
@@ -38,27 +37,6 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
         disconnect(session, "");
     }
 
-    public void send(Message message) throws IOException {
-        MessageBuffer buffer = new MessageBuffer();
-        buffer.append(message);
-        write(session, buffer, false);
-    }
-
-    @Override
-    protected byte[] encode(MessageBuffer payLoad) {
-        return payLoad.getBytes();
-    }
-
-    @Override
-    protected synchronized MessageBuffer decode(NetPackage netPackage) {
-        MessageBuffer message = this.messageBuffer;
-        if(message == null) {
-            message = new MessageBuffer();
-        }
-        message.append(netPackage.getPayload());
-        return message;
-    }
-
     @Override
     public void destroySession(NetSession session) {
     }
@@ -70,36 +48,9 @@ public class CloudClient extends NetClient<CloudSession, MessageBuffer> {
         return messageBuffer;
     }
 
-    public synchronized boolean waitForConnect() {
-        if(connected == null) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-            }
-        }
-        return connected;
-    }
-
     @Override
-    protected synchronized void onConnect(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
-        connected = true;
-        notifyAll();
-    }
-
-    @Override
-    protected synchronized void onConnectFail() {
-        connected = false;
-        notifyAll();
-    }
-
-    @Override
-    protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
-        if(payLoad.isComplete()) {
-            for(Message message : payLoad.getMessages()) {
-                CloudOrchestrator.getInstance().incomingMessage(session, message);
-            }
-            this.messageBuffer = payLoad.getLeftover();
-        }
+    protected void onRead(CloudSession session, Message message) {
+        CloudOrchestrator.getInstance().incomingMessage(session, message);
     }
 
     @Override

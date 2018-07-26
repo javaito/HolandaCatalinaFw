@@ -10,6 +10,8 @@ import org.hcjf.events.RemoteEvent;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
+import org.hcjf.io.net.messages.Message;
+import org.hcjf.io.net.messages.ResponseMessage;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
@@ -655,18 +657,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         } else if(message instanceof InvokeMessage) {
             InvokeMessage invokeMessage = (InvokeMessage) message;
 
-            ResponseMessage responseMessage = new ResponseMessage(invokeMessage.getId());
+            ResponseMessage responseMessage = new ResponseMessage(invokeMessage);
             Object object = sharedStore.getInstance(invokeMessage.getPath());
-            if(object instanceof RemoteLeaf) {
-                responseMessage.setNotFound(true);
-            } else {
-                responseMessage.setValue(object);
-                responseMessage.setNotFound(false);
-            }
+            responseMessage.setValue(object);
             sendMessageToNode(session, responseMessage);
         } else if(message instanceof LockMessage) {
             LockMessage lockMessage = (LockMessage) message;
-            ResponseMessage responseMessage = new ResponseMessage(lockMessage.getId());
+            ResponseMessage responseMessage = new ResponseMessage(lockMessage);
             responseMessage.setValue(distributedLock(lockMessage.getTimestamp(),
                     lockMessage.getNanos(), lockMessage.getPath()));
             sendMessageToNode(session, responseMessage);
@@ -701,14 +698,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             } catch (Throwable t) {
                 throwable = t;
             }
-            ResponseMessage responseMessage = new ResponseMessage(message.getId());
+            ResponseMessage responseMessage = new ResponseMessage(message);
             responseMessage.setValue(result);
             responseMessage.setThrowable(throwable);
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                     "Sending response message: %s", message.getId());
             sendMessageToNode(session, responseMessage);
         } else if(message instanceof TestNodeMessage) {
-            sendMessageToNode(session, new ResponseMessage(message.getId()));
+            sendMessageToNode(session, new ResponseMessage(message));
         } else if(message instanceof ResponseMessage) {
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {

@@ -1,5 +1,7 @@
 package org.hcjf.cloud.impl.messages;
 
+import org.hcjf.io.net.messages.Message;
+
 /**
  * @author javaito
  */

@@ -1,5 +1,7 @@
 package org.hcjf.cloud.impl.messages;
 
+import org.hcjf.io.net.messages.Message;
+
 import java.util.UUID;
 
 /**
@@ -8,7 +10,6 @@ import java.util.UUID;
 public class LockMessage extends Message {
 
     private Object[] path;
-    private Long timestamp;
     private Long nanos;
 
     public LockMessage() {
@@ -24,16 +25,6 @@ public class LockMessage extends Message {
 
     public void setPath(Object[] path) {
         this.path = path;
-    }
-
-    @Override
-    public Long getTimestamp() {
-        return timestamp;
-    }
-
-    @Override
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
     }
 
     public Long getNanos() {

@@ -902,34 +902,36 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     netPackage = sslHelpers.get(session).write(netPackage);
                                 } else {
                                     byte[] byteData = netPackage.getPayload();
-                                    if (byteData.length == 0) {
-                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Empty write data");
-                                    }
-                                    int begin = 0;
-                                    int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
-                                            session.getConsumer().getOutputBufferSize() : byteData.length - begin;
-
-                                    while (begin < byteData.length) {
-                                        ioThread.getOutputBuffer().limit(length);
-                                        ioThread.getOutputBuffer().put(byteData, begin, length);
-                                        ioThread.getOutputBuffer().rewind();
-
-                                        if (channel instanceof SocketChannel) {
-                                            int writtenData = 0;
-                                            while (writtenData < length) {
-                                                writtenData += ((SocketChannel) channel).write(ioThread.getOutputBuffer());
-                                            }
-                                        } else if (channel instanceof DatagramChannel) {
-                                            SocketAddress address = addresses.get(netPackage.getSession());
-                                            if (sessionsByAddress.get(address).equals(netPackage.getSession())) {
-                                                ((DatagramChannel) channel).send(ioThread.getOutputBuffer(), address);
-                                            }
+                                    if(byteData != null){
+                                        if (byteData.length == 0) {
+                                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Empty write data");
                                         }
-
-                                        ioThread.getOutputBuffer().rewind();
-                                        begin += length;
-                                        length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
+                                        int begin = 0;
+                                        int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
                                                 session.getConsumer().getOutputBufferSize() : byteData.length - begin;
+
+                                        while (begin < byteData.length) {
+                                            ioThread.getOutputBuffer().limit(length);
+                                            ioThread.getOutputBuffer().put(byteData, begin, length);
+                                            ioThread.getOutputBuffer().rewind();
+
+                                            if (channel instanceof SocketChannel) {
+                                                int writtenData = 0;
+                                                while (writtenData < length) {
+                                                    writtenData += ((SocketChannel) channel).write(ioThread.getOutputBuffer());
+                                                }
+                                            } else if (channel instanceof DatagramChannel) {
+                                                SocketAddress address = addresses.get(netPackage.getSession());
+                                                if (sessionsByAddress.get(address).equals(netPackage.getSession())) {
+                                                    ((DatagramChannel) channel).send(ioThread.getOutputBuffer(), address);
+                                                }
+                                            }
+
+                                            ioThread.getOutputBuffer().rewind();
+                                            begin += length;
+                                            length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
+                                                    session.getConsumer().getOutputBufferSize() : byteData.length - begin;
+                                        }
                                     }
                                 }
 
@@ -943,8 +945,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 onAction(netPackage, consumer);
                             }
 
-                            //Change the key operation to finish write loop
-                            channel.keyFor(getSelector()).interestOps(SelectionKey.OP_READ);
+                            try {
+                                //Change the key operation to finish write loop
+                                channel.keyFor(getSelector()).interestOps(SelectionKey.OP_READ);
+                            } catch (Exception ex) {
+                                Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Write error", ex);
+                            }
 
                             break;
                         }

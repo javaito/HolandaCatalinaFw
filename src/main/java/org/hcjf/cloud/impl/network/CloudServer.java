@@ -1,29 +1,22 @@
 package org.hcjf.cloud.impl.network;
 
-import org.hcjf.cloud.impl.messages.Message;
+import org.hcjf.io.net.messages.Message;
 import org.hcjf.cloud.impl.messages.ShutdownMessage;
 import org.hcjf.io.net.NetPackage;
-import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
-import org.hcjf.io.net.NetSession;
+import org.hcjf.io.net.messages.MessageBuffer;
+import org.hcjf.io.net.messages.MessagesServer;
 import org.hcjf.properties.SystemProperties;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author javaito
  */
-public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
-
-    private final Map<CloudSession,MessageBuffer> buffersBySession;
+public class CloudServer extends MessagesServer<CloudSession> {
 
     public CloudServer() {
         super(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.SERVER_LISTENER_PORT),
                 NetService.TransportLayerProtocol.TCP,
                 false, true);
-        buffersBySession = new HashMap<>();
     }
 
     @Override
@@ -35,41 +28,6 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
     @Override
     public CloudSession checkSession(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
         return session;
-    }
-
-    @Override
-    protected byte[] encode(MessageBuffer payLoad) {
-        return payLoad.getBytes();
-    }
-
-    @Override
-    protected synchronized MessageBuffer decode(NetPackage netPackage) {
-        MessageBuffer messageBuffer = buffersBySession.remove(netPackage.getSession());
-        if(messageBuffer == null) {
-            messageBuffer = new MessageBuffer();
-        }
-        messageBuffer.append(netPackage.getPayload());
-
-        if(messageBuffer.isComplete()) {
-            buffersBySession.put((CloudSession) netPackage.getSession(), messageBuffer.getLeftover());
-        } else {
-            buffersBySession.put((CloudSession) netPackage.getSession(), messageBuffer);
-        }
-
-        return messageBuffer;
-    }
-
-    public void send(CloudSession session, Message message) throws IOException {
-        MessageBuffer buffer = new MessageBuffer();
-        buffer.append(message);
-        write(session, buffer, false);
-    }
-
-    @Override
-    public void destroySession(NetSession session) {
-        if(session instanceof CloudSession) {
-            buffersBySession.remove(session);
-        }
     }
 
     @Override
@@ -85,11 +43,7 @@ public class CloudServer extends NetServer<CloudSession, MessageBuffer> {
     }
 
     @Override
-    protected void onRead(CloudSession session, MessageBuffer payLoad, NetPackage netPackage) {
-        if(payLoad.isComplete()) {
-            for(Message message : payLoad.getMessages()) {
-                CloudOrchestrator.getInstance().incomingMessage(session, message);
-            }
-        }
+    protected void onRead(CloudSession session, Message message) {
+        CloudOrchestrator.getInstance().incomingMessage(session, message);
     }
 }

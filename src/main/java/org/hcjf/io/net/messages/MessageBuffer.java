@@ -1,8 +1,7 @@
-package org.hcjf.cloud.impl.network;
+package org.hcjf.io.net.messages;
 
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonEncoder;
-import org.hcjf.cloud.impl.messages.Message;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.nio.ByteBuffer;
@@ -22,11 +21,19 @@ public final class MessageBuffer {
         this.messages = new ArrayList<>();
     }
 
+    /**
+     * Appends a message into the buffer.
+     * @param message Message to append.
+     */
     public synchronized void append(Message message) {
         this.messages.add(message);
         buffer = ByteBuffer.wrap(BsonEncoder.encode(message.toBson()));
     }
 
+    /**
+     * Appends data into the buffer.
+     * @param data Data to append.
+     */
     public synchronized void append(byte[] data) {
         if(messages.isEmpty()) {
             if (buffer == null) {
@@ -71,18 +78,34 @@ public final class MessageBuffer {
         }
     }
 
+    /**
+     * This method indicate when buffer contains some massage decoded.
+     * @return Returns true if the buffer contains messages decoded or false in the otherwise.
+     */
     public synchronized boolean isComplete() {
         return !messages.isEmpty();
     }
 
+    /**
+     * Returns the messages decoded contained into the buffer.
+     * @return List of decoded messages.
+     */
     public List<Message> getMessages() {
         return messages;
     }
 
+    /**
+     * Returns the left over data that is a incomplete message.
+     * @return Left over data.
+     */
     public MessageBuffer getLeftover() {
         return leftover;
     }
 
+    /**
+     * Returns the byte array that represent the message.
+     * @return Internal byte array.
+     */
     public synchronized byte[] getBytes() {
         buffer.rewind();
         return buffer.array();

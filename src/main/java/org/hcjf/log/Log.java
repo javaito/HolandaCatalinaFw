@@ -482,9 +482,36 @@ public final class Log extends Service<LogPrinter> {
                 }
             }
 
+            if (getGroup().equals(LogGroup.ERROR)) {
+                printWriter.print(Strings.StandardOutput.RED_BOLD);
+            } else if (getGroup().equals(LogGroup.WARNING)) {
+                printWriter.print(Strings.StandardOutput.YELLOW_BOLD);
+            } else if (getGroup().equals(LogGroup.DEBUG)) {
+                printWriter.print(Strings.StandardOutput.PURPLE_BOLD);
+            } else {
+                printWriter.print(Strings.StandardOutput.GREEN_BOLD);
+            }
+
             printWriter.print(dateFormat.format(getDate()));
+
+            printWriter.print(Strings.StandardOutput.RESET);
+
             printWriter.print(" [");
+
+            if (getGroup().equals(LogGroup.ERROR)) {
+                printWriter.print(Strings.StandardOutput.RED_BOLD);
+            } else if (getGroup().equals(LogGroup.WARNING)) {
+                printWriter.print(Strings.StandardOutput.YELLOW_BOLD);
+            } else if (getGroup().equals(LogGroup.DEBUG)) {
+                printWriter.print(Strings.StandardOutput.PURPLE_BOLD);
+            } else {
+                printWriter.print(Strings.StandardOutput.GREEN_BOLD);
+            }
+
             printWriter.print(group);
+
+            printWriter.print(Strings.StandardOutput.RESET);
+
             printWriter.print("][");
             printWriter.print(tag);
             printWriter.print("][");

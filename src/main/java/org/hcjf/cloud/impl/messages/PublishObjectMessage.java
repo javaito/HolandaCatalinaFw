@@ -1,5 +1,6 @@
 package org.hcjf.cloud.impl.messages;
 
+import org.hcjf.io.net.messages.Message;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import java.util.UUID;
 public class PublishObjectMessage extends Message {
 
     private List<Path> paths;
-    private Long timestamp;
 
     public PublishObjectMessage() {
         this.paths = new ArrayList<>();
@@ -30,16 +30,6 @@ public class PublishObjectMessage extends Message {
 
     public void setPaths(List<Path> paths) {
         this.paths = paths;
-    }
-
-    @Override
-    public Long getTimestamp() {
-        return timestamp;
-    }
-
-    @Override
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
     }
 
     public static final class Path implements BsonParcelable {
