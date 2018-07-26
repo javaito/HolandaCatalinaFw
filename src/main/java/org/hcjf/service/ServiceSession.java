@@ -35,6 +35,7 @@ public class ServiceSession implements Comparable {
     private final ThreadMXBean threadMXBean;
     private final List<ServiceSession> identities;
     private final Set<Grants.Grant> grants;
+    private ServiceSession parent;
     private Locale locale;
 
     public ServiceSession(UUID id) {
@@ -54,6 +55,7 @@ public class ServiceSession implements Comparable {
      */
     public final void addIdentity(ServiceSession serviceSession) {
         if(serviceSession != null) {
+            serviceSession.parent = this;
             identities.add(0, serviceSession);
         }
     }
@@ -64,7 +66,7 @@ public class ServiceSession implements Comparable {
     public final void removeIdentity() {
         synchronized (identities) {
             if (!identities.isEmpty()) {
-                identities.remove(0);
+                identities.remove(0).parent = null;
             }
         }
     }
@@ -114,8 +116,12 @@ public class ServiceSession implements Comparable {
      */
     public final Map<String, Object> getProperties() {
         Map<String, Object> result = null;
-        if(properties.containsKey(Thread.currentThread().getId())) {
-            result = Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
+        if(parent == null) {
+            if (properties.containsKey(Thread.currentThread().getId())) {
+                result = Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
+            }
+        } else {
+            result = parent.getProperties();
         }
         return result;
     }
@@ -157,7 +163,11 @@ public class ServiceSession implements Comparable {
      * @param properties Properties.
      */
     public final void putAll(Map<String, Object> properties) {
-        this.properties.get(Thread.currentThread().getId()).putAll(properties);
+        if(parent == null) {
+            this.properties.get(Thread.currentThread().getId()).putAll(properties);
+        } else {
+            parent.putAll(properties);
+        }
     }
 
     /**
@@ -166,7 +176,11 @@ public class ServiceSession implements Comparable {
      * @param propertyValue Property value.
      */
     public final void put(String propertyName, Object propertyValue) {
-        properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
+        if(parent == null) {
+            properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
+        } else {
+            parent.put(propertyName, propertyValue);
+        }
     }
 
     /**
@@ -176,7 +190,13 @@ public class ServiceSession implements Comparable {
      * @return Session value.
      */
     public final <O extends Object> O get(String propertyName) {
-        return (O) properties.get(Thread.currentThread().getId()).get(propertyName);
+        O result;
+        if(parent == null) {
+            result = (O) properties.get(Thread.currentThread().getId()).get(propertyName);
+        } else {
+            result = parent.get(propertyName);
+        }
+        return result;
     }
 
     /**
@@ -186,7 +206,13 @@ public class ServiceSession implements Comparable {
      * @return Session value removed.
      */
     public final <O extends Object> O remove(String propertyName) {
-        return (O) properties.get(Thread.currentThread().getId()).remove(propertyName);
+        O result;
+        if(parent == null) {
+            result = (O) properties.get(Thread.currentThread().getId()).remove(propertyName);
+        } else {
+            result = parent.remove(propertyName);
+        }
+        return result;
     }
 
     /**
@@ -194,14 +220,22 @@ public class ServiceSession implements Comparable {
      * @param element Layer stack element.
      */
     public final void putLayer(LayerStackElement element) {
-        layerStack.get(Thread.currentThread().getId()).add(0, element);
+        if(parent == null) {
+            layerStack.get(Thread.currentThread().getId()).add(0, element);
+        } else {
+            parent.putLayer(element);
+        }
     }
 
     /**
      * Removes the head of the layer stack.
      */
     public final void removeLayer() {
-        layerStack.get(Thread.currentThread().getId()).remove(0);
+        if(parent == null) {
+            layerStack.get(Thread.currentThread().getId()).remove(0);
+        } else {
+            parent.removeLayer();
+        }
     }
 
     /**
@@ -209,7 +243,13 @@ public class ServiceSession implements Comparable {
      * @return Layer stack.
      */
     public final Collection<LayerStackElement> getLayerStack() {
-        return Collections.unmodifiableCollection(layerStack.get(Thread.currentThread().getId()));
+        Collection<LayerStackElement> result;
+        if(parent == null) {
+            result = Collections.unmodifiableCollection(layerStack.get(Thread.currentThread().getId()));
+        } else {
+            result = parent.getLayerStack();
+        }
+        return result;
     }
 
     /**
@@ -218,8 +258,12 @@ public class ServiceSession implements Comparable {
      */
     public final LayerStackElement getCurrentLayer() {
         LayerStackElement result = null;
-        if(layerStack.get(Thread.currentThread().getId()).size() > 0) {
-            result = layerStack.get(Thread.currentThread().getId()).get(0);
+        if(parent == null) {
+            if (layerStack.get(Thread.currentThread().getId()).size() > 0) {
+                result = layerStack.get(Thread.currentThread().getId()).get(0);
+            }
+        } else {
+            result = parent.getCurrentLayer();
         }
         return result;
     }
@@ -230,8 +274,12 @@ public class ServiceSession implements Comparable {
      */
     public final LayerStackElement getInvokerLayer() {
         LayerStackElement result = null;
-        if(layerStack.get(Thread.currentThread().getId()).size() > 1) {
-            result = layerStack.get(Thread.currentThread().getId()).get(1);
+        if(parent == null) {
+            if (layerStack.get(Thread.currentThread().getId()).size() > 1) {
+                result = layerStack.get(Thread.currentThread().getId()).get(1);
+            }
+        } else {
+            result = parent.getInvokerLayer();
         }
         return result;
     }
