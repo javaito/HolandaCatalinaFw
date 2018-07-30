@@ -23,7 +23,7 @@ public class Cryptography {
     private SecureRandom secureRandom;
     private String algorithm;
     private final static String TR_PATTERN = "%s/%s/%s";
-
+    private SecretKey secretKey;
 
     public Cryptography() {
         this(SystemProperties.getInteger(SystemProperties.Cryptography.Random.IV_SIZE),
@@ -61,21 +61,20 @@ public class Cryptography {
 
     }
 
-    public byte[] encrypt(byte[] message, byte[] key) {
-        return this.convert(Cipher.ENCRYPT_MODE, message,key);
+    public byte[] encrypt(byte[] message) {
+        return this.convert(Cipher.ENCRYPT_MODE, message);
     }
 
-    public byte[] decrypt(byte[] message, byte[] key) {
-        return this.convert(Cipher.DECRYPT_MODE, message,key);
+    public byte[] decrypt(byte[] message) {
+        return this.convert(Cipher.DECRYPT_MODE, message);
     }
 
-    private byte[] convert(int encryptMode, byte[] message, byte[] key) {
+    private byte[] convert(int encryptMode, byte[] message) {
 
 
         byte[] result = new byte[0];
         try {
 
-            SecretKeySpec secretKey = new SecretKeySpec(key, "AES");
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(encryptMode, secretKey);
 
@@ -130,5 +129,9 @@ public class Cryptography {
         //secureRandom.nextBytes(iv);
 
         return result;*/
+    }
+
+    public void setKey(byte[] key) {
+        this.secretKey = new SecretKeySpec(key, "AES");
     }
 }
