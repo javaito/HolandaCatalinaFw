@@ -478,7 +478,7 @@ public final class Strings {
      * @return Byte array.
      */
     public static byte[] hexToBytes(String hex) {
-       if ((hex.length() % 2) != 0) {
+        if ((hex.length() % 2) != 0) {
             throw new IllegalArgumentException("Input string must contain an even number of characters");
         }
         int len = hex.length();
