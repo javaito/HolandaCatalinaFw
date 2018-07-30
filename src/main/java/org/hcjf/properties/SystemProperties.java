@@ -90,6 +90,23 @@ public final class SystemProperties extends Properties {
         public static final String CLOUD_TIMER_TASK_NAME = "hcjf.collector.cloud.timer.task.name";
     }
 
+
+    public static final class Cryptography{
+
+        public static final String ALGORITHM = "hcjf.cryptography.algorithm";
+        public static final String OPERATION_MODE = "hcjf.cryptography.operation.mode";
+        public static final String PADDING_SCHEME = "hcjf.cryptography.padding.scheme";
+        public static final String AAD = "hcjf.cryptography.aad";
+
+        public static final class Random {
+            public static final String IV_SIZE = "hcjf.cryptography.random.iv.size";
+        }
+
+        public static final class GCM {
+            public static final String TAG_BIT_LENGTH = "hcjf.cryptography.gcm.tag.bit.length";
+        }
+    }
+
     public static final class Log {
         public static final String SERVICE_NAME = "hcjf.log.service.name";
         public static final String SERVICE_PRIORITY = "hcjf.log.service.priority";
@@ -461,6 +478,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Collector.FLUSH_PERIOD, Long.toString(5 * 60 * 1000));
         defaults.put(Collector.CLOUD_SAVE_MODE, "false");
         defaults.put(Collector.CLOUD_TIMER_TASK_NAME, "CollectorsFlushCycle");
+
+        defaults.put(Cryptography.ALGORITHM,"AES");
+        defaults.put(Cryptography.OPERATION_MODE,"GCM");
+        defaults.put(Cryptography.PADDING_SCHEME,"PKCS5Padding");
+        defaults.put(Cryptography.Random.IV_SIZE,96);
+        defaults.put(Cryptography.GCM.TAG_BIT_LENGTH,128);
+        defaults.put(Cryptography.AAD,"HolandaCatalinaCrypt");
 
         defaults.put(Encoding.SERVICE_NAME, "EncodingService");
         defaults.put(Encoding.SERVICE_PRIORITY, "1");
