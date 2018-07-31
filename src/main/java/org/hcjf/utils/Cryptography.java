@@ -20,14 +20,15 @@ public class Cryptography {
     private Cipher cipher;
     private byte[] iv;
     private byte[] aadData;
-    private String algorithm;
+    private SecureRandom secureRandom;
+    private String operationMode;
     private final static String TR_PATTERN = "%s/%s/%s";
     private SecretKey secretKey;
     private int tagBigLength;
 
     public Cryptography() {
         this(SystemProperties.get(SystemProperties.Cryptography.KEY),
-                SystemProperties.get(SystemProperties.Cryptography.Random.IV),
+                SystemProperties.getInteger(SystemProperties.Cryptography.Random.IV_SIZE),
                 SystemProperties.get(SystemProperties.Cryptography.AAD),
                 SystemProperties.get(SystemProperties.Cryptography.ALGORITHM),
                 SystemProperties.get(SystemProperties.Cryptography.OPERATION_MODE),
@@ -35,15 +36,16 @@ public class Cryptography {
                 SystemProperties.getInteger(SystemProperties.Cryptography.GCM.TAG_BIT_LENGTH));
     }
 
-    public Cryptography(String key, String ivString,String aad, String algorithm, String operationMode, String paddingScheme, int tagBigLength) {
-        
-        this.iv = ivString.getBytes();
-        this.aadData = aad.getBytes();
+    public Cryptography(String key, int ivSize,String aad, String algorithm, String operationMode, String paddingScheme, int tagBigLength) {
+
+        iv = new byte[ivSize];
+        aadData = aad.getBytes();
+        secureRandom = new SecureRandom();
         this.tagBigLength = tagBigLength;
         this.secretKey = new SecretKeySpec(Strings.hexToBytes(key), "AES");
 
         String transformation = String.format(TR_PATTERN,algorithm,operationMode,paddingScheme);
-        this.algorithm = algorithm;
+        this.operationMode = operationMode;
 
         try {
             cipher = Cipher.getInstance(transformation);
@@ -53,19 +55,30 @@ public class Cryptography {
             System.out.println("Exception while encrypting. Padding Scheme being requested is not available this environment " + noSuchPaddingExc);
         }
 
-        if(operationMode.equals("GCM")) {
-            // Initialize GCM Parameters
-            spec = new GCMParameterSpec(tagBigLength, iv);
-        }
-
     }
 
     public byte[] encrypt(byte[] message) {
-        return this.convert(Cipher.ENCRYPT_MODE, message);
+        secureRandom.nextBytes(iv);
+        if(operationMode.equals("GCM")) {
+            // Initialize GCM Parameters
+            this.spec = new GCMParameterSpec(tagBigLength, iv);
+        }
+        byte[] encryptedMessage = this.convert(Cipher.ENCRYPT_MODE, message);
+        byte[] result = new byte[encryptedMessage.length + iv.length];
+        System.arraycopy(iv,0,result,0,iv.length);
+        System.arraycopy(encryptedMessage,0,result,iv.length,encryptedMessage.length);
+        return result;
     }
 
     public byte[] decrypt(byte[] message) {
-        return this.convert(Cipher.DECRYPT_MODE, message);
+        byte[] messageFragment = new byte[message.length - iv.length];
+        System.arraycopy(message,0,iv,0,iv.length);
+        System.arraycopy(message,iv.length,messageFragment,0,messageFragment.length);
+
+        if(operationMode.equals("GCM")) {
+            this.spec = new GCMParameterSpec(tagBigLength, iv);
+        }
+        return this.convert(Cipher.DECRYPT_MODE, messageFragment);
     }
 
     private byte[] convert(int encryptMode, byte[] message) {

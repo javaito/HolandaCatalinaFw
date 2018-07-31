@@ -100,7 +100,7 @@ public final class SystemProperties extends Properties {
         public static final String AAD = "hcjf.cryptography.aad";
 
         public static final class Random {
-            public static final String IV = "hcjf.cryptography.random.iv.size";
+            public static final String IV_SIZE = "hcjf.cryptography.random.iv.size";
         }
 
         public static final class GCM {
@@ -484,7 +484,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cryptography.ALGORITHM,"AES");
         defaults.put(Cryptography.OPERATION_MODE,"GCM");
         defaults.put(Cryptography.PADDING_SCHEME,"PKCS5Padding");
-        defaults.put(Cryptography.Random.IV,"RandomIVTestService");
+        defaults.put(Cryptography.Random.IV_SIZE,"96");
         defaults.put(Cryptography.GCM.TAG_BIT_LENGTH,"128");
         defaults.put(Cryptography.AAD,"HolandaCatalinaCrypt");
 
