@@ -20,13 +20,14 @@ public class Cryptography {
     private Cipher cipher;
     private byte[] iv;
     private byte[] aadData;
-    private SecureRandom secureRandom;
     private String algorithm;
     private final static String TR_PATTERN = "%s/%s/%s";
     private SecretKey secretKey;
+    private int tagBigLength;
 
     public Cryptography() {
-        this(SystemProperties.getInteger(SystemProperties.Cryptography.Random.IV_SIZE),
+        this(SystemProperties.get(SystemProperties.Cryptography.KEY),
+                SystemProperties.get(SystemProperties.Cryptography.Random.IV),
                 SystemProperties.get(SystemProperties.Cryptography.AAD),
                 SystemProperties.get(SystemProperties.Cryptography.ALGORITHM),
                 SystemProperties.get(SystemProperties.Cryptography.OPERATION_MODE),
@@ -34,14 +35,12 @@ public class Cryptography {
                 SystemProperties.getInteger(SystemProperties.Cryptography.GCM.TAG_BIT_LENGTH));
     }
 
-    public Cryptography(int ivsize,String aad, String algorithm, String operationMode, String paddingScheme, int tagBigLength) {
-
-        //Initializing IV
-        iv = new byte[ivsize];
-        aadData = aad.getBytes();
-        secureRandom = new SecureRandom() ;
-        secureRandom.nextBytes(iv); // SecureRandom initialized using self-seeding
-
+    public Cryptography(String key, String ivString,String aad, String algorithm, String operationMode, String paddingScheme, int tagBigLength) {
+        
+        this.iv = ivString.getBytes();
+        this.aadData = aad.getBytes();
+        this.tagBigLength = tagBigLength;
+        this.secretKey = new SecretKeySpec(Strings.hexToBytes(key), "AES");
 
         String transformation = String.format(TR_PATTERN,algorithm,operationMode,paddingScheme);
         this.algorithm = algorithm;
@@ -71,34 +70,7 @@ public class Cryptography {
 
     private byte[] convert(int encryptMode, byte[] message) {
 
-
-        byte[] result = new byte[0];
-        try {
-
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(encryptMode, secretKey);
-
-
-            result =  cipher.doFinal(message);
-        } catch (IllegalBlockSizeException e) {
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        }
-
-        return result;
-
-
-        /*
-
         byte[] result = null;
-        SecretKey secretKey = new SecretKeySpec(key, 0, key.length, this.algorithm);
 
         try {
             cipher.init(encryptMode, secretKey, spec, new SecureRandom());
@@ -126,9 +98,7 @@ public class Cryptography {
             System.out.println("Exception while encrypting, due to padding scheme " + badPaddingExc) ;
         }
 
-        //secureRandom.nextBytes(iv);
-
-        return result;*/
+        return result;
     }
 
     public void setKey(byte[] key) {
