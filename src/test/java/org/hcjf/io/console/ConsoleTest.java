@@ -8,6 +8,7 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.Cryptography;
 
 import java.util.*;
 
@@ -27,7 +28,8 @@ public class ConsoleTest {
 
         Layers.publishLayer(TestLayer.class);
 
-        ConsoleServer consoleServer = new ConsoleServer(5900) {
+        Cryptography cryptography = new Cryptography();
+        ConsoleServer consoleServer = new ConsoleServer(5900, cryptography) {
 
             @Override
             protected ServerMetadata getMetadata() {
@@ -65,6 +67,15 @@ public class ConsoleTest {
 
                 System.out.println(queryable.toString());
                 Collection<JoinableMap> result = new ArrayList<>();
+
+                for (int i = 0; i < 5; i++) {
+                    JoinableMap joinableMap = new JoinableMap("resource");
+                    joinableMap.put("field1", "value1");
+                    joinableMap.put("field2", "value2");
+                    joinableMap.put("field3", "value3");
+                    joinableMap.put("field4", "value4");
+                    result.add(joinableMap);
+                }
 
 
 

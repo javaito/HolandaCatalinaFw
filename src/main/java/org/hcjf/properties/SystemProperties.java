@@ -181,6 +181,10 @@ public final class SystemProperties extends Properties {
 
         }
 
+        public static final class Messages {
+            public static final String LOG_TAG = "hcjf.net.messages.log.tag";
+        }
+
         public static final class Http {
             public static final String LOG_TAG = "hcjf.net.http.server.log.tag";
             public static final String SERVER_NAME = "hcjf.net.http.server.name";
@@ -548,6 +552,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Ssl.DEFAULT_PROTOCOL, "TLSv1.2");
         defaults.put(Net.Ssl.IO_THREAD_NAME, "SslIoThread");
         defaults.put(Net.Ssl.ENGINE_THREAD_NAME, "SslEngineThread");
+
+        defaults.put(Net.Messages.LOG_TAG, "MESSAGES");
 
         defaults.put(Net.Http.LOG_TAG, "HTTP_SERVER");
         defaults.put(Net.Http.SERVER_NAME, "HCJF Web Server");

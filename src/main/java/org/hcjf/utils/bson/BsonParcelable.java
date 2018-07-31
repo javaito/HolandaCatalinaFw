@@ -6,6 +6,7 @@ import org.hcjf.utils.Introspection;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -96,11 +97,17 @@ public interface BsonParcelable {
         } else if(Map.class.isAssignableFrom(value.getClass())) {
             result = toBson(name, (Map)value);
         } else if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
-            BsonDocument document = ((BsonParcelable)value).toBson();
+            BsonDocument document = ((BsonParcelable) value).toBson();
             document.setName(name);
             result = document;
+        } else if(byte[].class.equals(value.getClass())) {
+            result = new BsonPrimitive(name, value);
         } else if(value.getClass().isArray()) {
-            result = toBson(name, Arrays.asList((Object[])value));
+            ArrayList arrayList = new ArrayList();
+            for (int i = 0; i < Array.getLength(value); i++) {
+                arrayList.add(Array.get(value, i));
+            }
+            result = toBson(name, arrayList);
         } else if(value.getClass().isEnum()) {
             result = new BsonPrimitive(name, value.toString());
         } else if(Class.class.equals(value.getClass())) {
@@ -223,16 +230,24 @@ public interface BsonParcelable {
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException();
             }
+        } else if (byte[].class.equals(expectedDataType)) {
+            if(byte[].class.equals(element.getValue().getClass())) {
+                result = element.getValue();
+            } else if(ByteBuffer.class.isAssignableFrom(element.getValue().getClass())) {
+                result = ((ByteBuffer)element.getValue()).array();
+            } else {
+                result = element.getValue();
+            }
         } else if (Serializable.class.isAssignableFrom(expectedDataType) && !UUID.class.isAssignableFrom(expectedDataType) &&
                 element instanceof BsonPrimitive && ((BsonPrimitive) element).getType().equals(BsonType.BINARY)) {
             try (ByteArrayInputStream bais = new ByteArrayInputStream(element.getAsBytes());
-                    ObjectInputStream ois = new ObjectInputStream(bais)) {
+                 ObjectInputStream ois = new ObjectInputStream(bais)) {
                 result = ois.readObject();
             } catch (Exception ex) {
-                return element.getValue();
+                result = element.getValue();
             }
         } else {
-            return element.getValue();
+            result = element.getValue();
         }
 
         return result;

@@ -92,6 +92,9 @@ public final class Strings {
     public static final String END_GROUP = ")";
     public static final String START_SUB_GROUP = "[";
     public static final String END_SUB_GROUP = "]";
+    public static final String START_OBJECT = "{";
+    public static final String END_OBJECT = "}";
+    public static final String OBJETC_FIELD_SEPARATOR = ":";
     public static final String REPLACEABLE_GROUP = "$";
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";

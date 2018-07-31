@@ -14,6 +14,7 @@ import org.hcjf.layers.Layers;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.Cryptography;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -27,8 +28,12 @@ import java.util.UUID;
 public abstract class ConsoleServer extends MessagesServer<ConsoleSession> {
 
     public ConsoleServer(Integer port) {
+        this(port, null);
+    }
+
+    public ConsoleServer(Integer port, Cryptography cryptography) {
         super(port, NetService.TransportLayerProtocol.TCP,
-                false, true);
+                false, true, cryptography);
     }
 
     /**

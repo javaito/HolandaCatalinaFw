@@ -1,9 +1,16 @@
 package org.hcjf.io.net.messages;
 
+import org.hcjf.bson.BsonDecoder;
+import org.hcjf.bson.BsonDocument;
+import org.hcjf.bson.BsonEncoder;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.log.Log;
+import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Cryptography;
+import org.hcjf.utils.bson.BsonParcelable;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,10 +24,26 @@ import java.util.Map;
 public abstract class MessagesServer<S extends NetSession> extends NetServer<S, MessageBuffer> {
 
     private final Map<S,MessageBuffer> buffersBySession;
+    private final Cryptography cryptography;
 
-    public MessagesServer(Integer port, NetService.TransportLayerProtocol protocol, boolean multiSession, boolean disconnectAndRemove) {
+    public MessagesServer(Integer port, NetService.TransportLayerProtocol protocol,
+                          boolean multiSession, boolean disconnectAndRemove) {
+        this(port, protocol, multiSession, disconnectAndRemove, null);
+    }
+
+    public MessagesServer(Integer port, NetService.TransportLayerProtocol protocol,
+                          boolean multiSession, boolean disconnectAndRemove, Cryptography cryptography) {
         super(port, protocol, multiSession, disconnectAndRemove);
-        buffersBySession = new HashMap<>();
+        this.buffersBySession = new HashMap<>();
+        this.cryptography = cryptography;
+    }
+
+    /**
+     * Returns true if the server use a encrypted protocol and false in the otherwise
+     * @return Is encrypted or no.
+     */
+    public final boolean isEncrypted() {
+        return cryptography != null;
     }
 
     /**
@@ -63,7 +86,7 @@ public abstract class MessagesServer<S extends NetSession> extends NetServer<S, 
      */
     public final void send(S session, Message message) throws IOException {
         MessageBuffer buffer = new MessageBuffer();
-        buffer.append(message);
+        buffer.append(isEncrypted() ? encrypt(message) : message);
         write(session, buffer, false);
     }
 
@@ -86,9 +109,41 @@ public abstract class MessagesServer<S extends NetSession> extends NetServer<S, 
     protected final void onRead(S session, MessageBuffer payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
             for(Message message : payLoad.getMessages()) {
-                onRead(session, message);
+                try {
+                    onRead(session, isEncrypted() ? decrypt((EncryptedMessage) message) : message);
+                } catch (ClassCastException ex) {
+                    Log.w(SystemProperties.get(SystemProperties.Net.Messages.LOG_TAG),
+                            "Incoming not encrypted message and the server has a cryptography policy");
+                }
             }
         }
+    }
+
+    /**
+     * This method must encrypt the message and create an instance of {@link EncryptedMessage}
+     * wrapping the original message.
+     * @param message Original message.
+     * @return Encrypted message.
+     */
+    protected EncryptedMessage encrypt(Message message) {
+        EncryptedMessage encryptedMessage = new EncryptedMessage();
+        encryptedMessage.setId(message.getId());
+        encryptedMessage.setSessionId(message.getSessionId());
+        encryptedMessage.setTimestamp(message.getTimestamp());
+        encryptedMessage.setEncrypedData(cryptography.encrypt(
+                BsonEncoder.encode(message.toBson())));
+        return encryptedMessage;
+    }
+
+    /**
+     * This method must decrypt the encrypted message and returns the original message decrypted.
+     * @param encryptedMessage Incoming encrypted message.
+     * @return Original message decrypted.
+     */
+    protected Message decrypt(EncryptedMessage encryptedMessage) {
+        BsonDocument document = BsonDecoder.decode(cryptography.decrypt(
+                encryptedMessage.getEncrypedData()));
+        return BsonParcelable.Builder.create(document);
     }
 
     /**

@@ -65,6 +65,20 @@ public class BsonParcelableTest {
     }
 
     @Test
+    public void testByteArray() {
+        TestByteArray testByteArray = new TestByteArray();
+        testByteArray.setArray("test array".getBytes());
+
+        BsonDocument bsonDocument = testByteArray.toBson();
+        byte[] bsonAsArray = BsonEncoder.encode(bsonDocument);
+
+        bsonDocument = BsonDecoder.decode(bsonAsArray);
+
+        TestByteArray testByteArray1 = BsonParcelable.Builder.create(bsonDocument);
+        Assert.assertEquals(new String(testByteArray.getArray()), new String(testByteArray1.getArray()));
+    }
+
+    @Test
     public void testAutoCast() {
         Map<UUID, Integer> map1 = new HashMap<>();
         map1.put(new UUID(0, 12), 12);
@@ -121,6 +135,19 @@ public class BsonParcelableTest {
 
 
         System.out.println();
+    }
+
+    public static class TestByteArray implements BsonParcelable {
+
+        private byte[] array;
+
+        public byte[] getArray() {
+            return array;
+        }
+
+        public void setArray(byte[] array) {
+            this.array = array;
+        }
     }
 
     public static class TestClass implements BsonParcelable {
