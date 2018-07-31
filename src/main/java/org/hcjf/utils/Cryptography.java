@@ -59,10 +59,7 @@ public class Cryptography {
 
     public byte[] encrypt(byte[] message) {
         secureRandom.nextBytes(iv);
-        if(operationMode.equals("GCM")) {
-            // Initialize GCM Parameters
-            this.spec = new GCMParameterSpec(tagBigLength, iv);
-        }
+        initParameterSpec();
         byte[] encryptedMessage = this.convert(Cipher.ENCRYPT_MODE, message);
         byte[] result = new byte[encryptedMessage.length + iv.length];
         System.arraycopy(iv,0,result,0,iv.length);
@@ -74,11 +71,14 @@ public class Cryptography {
         byte[] messageFragment = new byte[message.length - iv.length];
         System.arraycopy(message,0,iv,0,iv.length);
         System.arraycopy(message,iv.length,messageFragment,0,messageFragment.length);
+        initParameterSpec();
+        return this.convert(Cipher.DECRYPT_MODE, messageFragment);
+    }
 
+    private void initParameterSpec() {
         if(operationMode.equals("GCM")) {
             this.spec = new GCMParameterSpec(tagBigLength, iv);
         }
-        return this.convert(Cipher.DECRYPT_MODE, messageFragment);
     }
 
     private byte[] convert(int encryptMode, byte[] message) {
