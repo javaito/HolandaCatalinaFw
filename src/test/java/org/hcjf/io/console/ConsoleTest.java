@@ -1,6 +1,7 @@
 package org.hcjf.io.console;
 
 import org.hcjf.io.net.NetService;
+import org.hcjf.io.net.messages.MessageBuffer;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.query.JoinableMap;
@@ -68,12 +69,28 @@ public class ConsoleTest {
                 System.out.println(queryable.toString());
                 Collection<JoinableMap> result = new ArrayList<>();
 
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < 40; i++) {
                     JoinableMap joinableMap = new JoinableMap("resource");
                     joinableMap.put("field1", "value1");
                     joinableMap.put("field2", "value2");
                     joinableMap.put("field3", "value3");
                     joinableMap.put("field4", "value4");
+                    joinableMap.put("field4", "value1");
+                    joinableMap.put("field5", "value2");
+                    joinableMap.put("field6", "value3");
+                    joinableMap.put("field7", "value4");
+                    joinableMap.put("field8", "value1");
+                    joinableMap.put("field9", "value2");
+                    joinableMap.put("field10", "value3");
+                    joinableMap.put("field11", "value4");
+                    joinableMap.put("field12", "value1");
+                    joinableMap.put("field13", "value2");
+                    joinableMap.put("field14", "value3");
+                    joinableMap.put("field15", "value4");
+                    joinableMap.put("field16", "value1");
+                    joinableMap.put("field17", "value2");
+                    joinableMap.put("field17", "value3");
+                    joinableMap.put("field19", "value4");
                     result.add(joinableMap);
                 }
 

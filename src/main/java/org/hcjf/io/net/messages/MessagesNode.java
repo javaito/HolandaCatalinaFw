@@ -59,12 +59,11 @@ public abstract class MessagesNode<S extends NetSession> extends NetClient<S, Me
      */
     @Override
     protected final synchronized MessageBuffer decode(NetPackage netPackage) {
-        MessageBuffer message = this.messageBuffer;
-        if(message == null) {
-            message = new MessageBuffer();
+        if(messageBuffer == null) {
+            messageBuffer = new MessageBuffer();
         }
-        message.append(netPackage.getPayload());
-        return message;
+        messageBuffer.append(netPackage.getPayload());
+        return messageBuffer;
     }
 
     /**
@@ -134,7 +133,7 @@ public abstract class MessagesNode<S extends NetSession> extends NetClient<S, Me
      * @param netPackage Net package.
      */
     @Override
-    protected final void onRead(S session, MessageBuffer payLoad, NetPackage netPackage) {
+    protected final synchronized void onRead(S session, MessageBuffer payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
             for(Message message : payLoad.getMessages()) {
                 try {

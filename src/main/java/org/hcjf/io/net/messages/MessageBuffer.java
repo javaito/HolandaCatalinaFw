@@ -6,6 +6,7 @@ import org.hcjf.utils.bson.BsonParcelable;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -91,7 +92,10 @@ public final class MessageBuffer {
      * @return List of decoded messages.
      */
     public List<Message> getMessages() {
-        return messages;
+        List<Message> result = new ArrayList<>();
+        result.addAll(messages);
+        messages.clear();
+        return result;
     }
 
     /**
