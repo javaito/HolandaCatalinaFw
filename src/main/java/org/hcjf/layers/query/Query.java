@@ -511,15 +511,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                 if (start < data.size()) {
                     for (O object : data) {
-                        add = true;
-                        for (Evaluator evaluator : getEvaluators()) {
-                            if (!isEvaluatorDone(evaluator)) {
-                                add = evaluator.evaluate(object, dataSource, consumer);
-                                if (!add) {
-                                    break;
-                                }
-                            }
-                        }
+                        add = verifyCondition(object, dataSource, consumer);
                         if (add) {
                             if (object instanceof Enlarged) {
                                 Enlarged originalObject = (Enlarged) object;
@@ -570,6 +562,37 @@ public class Query extends EvaluatorCollection implements Queryable {
             result = (Set<O>)Set.of(aggregateResult);
         }
 
+        return result;
+    }
+
+    /**
+     * This method verify if the conditions of the query are true or not.
+     * @param object Object to use as condition parameters.
+     * @return Returns if the evaluation of conditions are true or false in the otherwise.
+     */
+    public final boolean verifyCondition(Object object) {
+        Consumer consumer = new Queryable.IntrospectionConsumer<>();
+        Collection collection = List.of(object);
+        return verifyCondition(object, Q->collection, consumer);
+    }
+
+    /**
+     * This method verify if the conditions of the query are true or not.
+     * @param object Object to use as condition parameters.
+     * @param dataSource Data source.
+     * @param consumer Consumer.
+     * @return Returns if the evaluation of conditions are true or false in the otherwise.
+     */
+    private boolean verifyCondition(Object object, DataSource dataSource, Consumer consumer) {
+        Boolean result = true;
+        for (Evaluator evaluator : getEvaluators()) {
+            if (!isEvaluatorDone(evaluator)) {
+                result &= evaluator.evaluate(object, dataSource, consumer);
+                if (!result) {
+                    break;
+                }
+            }
+        }
         return result;
     }
 
