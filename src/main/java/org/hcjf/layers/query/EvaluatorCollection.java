@@ -165,102 +165,102 @@ public abstract class EvaluatorCollection {
     }
 
     /**
-     * Add a particular evaluator that implements 'distinct' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * Add a particular evaluator that implements the true or false evaluation.
+     * @param value Object to obtain the boolean value.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection distinct(String fieldName, Object value) {
-        return addEvaluator(new Distinct(fieldName, value));
+    public final EvaluatorCollection addBoolean(Object value) {
+        return addEvaluator(new BooleanEvaluator(value));
+    }
+
+    /**
+     * Add a particular evaluator that implements 'distinct' method.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
+     * @return Return the same instance of this class.
+     */
+    public final EvaluatorCollection distinct(Object leftValue, Object rightValue) {
+        return addEvaluator(new Distinct(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'equals' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection equals(String fieldName, Object value) {
-        return addEvaluator(new Equals(fieldName, value));
+    public final EvaluatorCollection equals(Object leftValue, Object rightValue) {
+        return addEvaluator(new Equals(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'greater than' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection greaterThan(String fieldName, Object value) {
-        return addEvaluator(new GreaterThan(fieldName, value));
+    public final EvaluatorCollection greaterThan(Object leftValue, Object rightValue) {
+        return addEvaluator(new GreaterThan(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'greater than or equals' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection greaterThanOrEquals(String fieldName, Object value) {
-        return addEvaluator(new GreaterThanOrEqual(fieldName, value));
+    public final EvaluatorCollection greaterThanOrEquals(Object leftValue, Object rightValue) {
+        return addEvaluator(new GreaterThanOrEqual(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'in' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection in(String fieldName, Object value) {
-        return addEvaluator(new In(fieldName, value));
+    public final EvaluatorCollection in(Object leftValue, Object rightValue) {
+        return addEvaluator(new In(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'not in' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection notIn(String fieldName, Object value) {
-        return addEvaluator(new NotIn(fieldName, value));
+    public final EvaluatorCollection notIn(Object leftValue, Object rightValue) {
+        return addEvaluator(new NotIn(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'smaller than' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection smallerThan(String fieldName, Object value) {
-        return addEvaluator(new SmallerThan(fieldName, value));
+    public final EvaluatorCollection smallerThan(Object leftValue, Object rightValue) {
+        return addEvaluator(new SmallerThan(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'smaller than or equals' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection smallerThanOrEqual(String fieldName, Object value) {
-        return addEvaluator(new SmallerThanOrEqual(fieldName, value));
+    public final EvaluatorCollection smallerThanOrEqual(Object leftValue, Object rightValue) {
+        return addEvaluator(new SmallerThanOrEqual(leftValue, rightValue));
     }
 
     /**
      * Add a particular evaluator that implements 'like' method.
-     * @param fieldName Name of the pair getter/setter to obtain the evaluable value
-     * for each of data collection's object.
-     * @param value Value to compare the field value of the instances.
+     * @param leftValue Left value of the operation.
+     * @param rightValue Right value of the operation.
      * @return Return the same instance of this class.
      */
-    public final EvaluatorCollection like(String fieldName, Object value) {
-        return addEvaluator(new Like(fieldName, value));
+    public final EvaluatorCollection like(Object leftValue, Object rightValue) {
+        return addEvaluator(new Like(leftValue, rightValue));
     }
 
     /**

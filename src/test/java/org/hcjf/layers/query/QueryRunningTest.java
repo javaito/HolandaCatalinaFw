@@ -250,7 +250,7 @@ public class QueryRunningTest {
             Assert.assertTrue((double)row.get("weight") > 40 && (double)row.get("weight") < 80);
         }
 
-        query = Query.compile("SELECT * FROM character WHERE weight >= ? AND weight <= ?");
+        query = Query.compile("SELECT * FROM character WHERE weight >= ? AND weight <= ? AND true");
         parameterizedQuery = query.getParameterizedQuery();
         resultSet = parameterizedQuery.add(40).add(108).evaluate(dataSource);
 

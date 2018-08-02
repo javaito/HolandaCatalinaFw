@@ -1343,46 +1343,44 @@ public class Query extends EvaluatorCollection implements Queryable {
             completeEvaluatorCollection(null, groups, richTexts, collection, index, placesIndex);
         } else {
             evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
-            if (evaluatorValues.length >= 3) {
-
-                boolean operatorDone = false;
-                firstArgument = Strings.EMPTY_STRING;
-                secondArgument = Strings.EMPTY_STRING;
-                operator = Strings.EMPTY_STRING;
-                for (String evaluatorValue : evaluatorValues) {
-                    evaluatorValue = evaluatorValue.trim();
-                    if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT))) {
-                        operator += evaluatorValue + Strings.WHITE_SPACE;
-                    } else if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_2))) {
-                        operator += evaluatorValue;
-                    } else if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT_2))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))
-                            || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
-                        operator += evaluatorValue;
-                        operatorDone = true;
-                    } else if (operatorDone) {
-                        secondArgument += evaluatorValue + Strings.WHITE_SPACE;
-                    } else {
-                        firstArgument += evaluatorValue + Strings.WHITE_SPACE;
-                    }
+            boolean operatorDone = false;
+            firstArgument = Strings.EMPTY_STRING;
+            secondArgument = Strings.EMPTY_STRING;
+            operator = Strings.EMPTY_STRING;
+            for (String evaluatorValue : evaluatorValues) {
+                evaluatorValue = evaluatorValue.trim();
+                if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT))) {
+                    operator += evaluatorValue + Strings.WHITE_SPACE;
+                } else if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_2))) {
+                    operator += evaluatorValue;
+                } else if (evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT_2))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.IN))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN))
+                        || evaluatorValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
+                    operator += evaluatorValue;
+                    operatorDone = true;
+                } else if (operatorDone) {
+                    secondArgument += evaluatorValue + Strings.WHITE_SPACE;
+                } else {
+                    firstArgument += evaluatorValue + Strings.WHITE_SPACE;
                 }
+            }
 
-                if (operator == null) {
-                    throw new IllegalArgumentException("Operator not found for expression: " + definition);
-                }
-
+            if (operator == null || operator.trim().isEmpty()) {
                 leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class);
-                if(leftValue instanceof String) {
+                evaluator = new BooleanEvaluator(leftValue);
+            } else {
+                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class);
+                if (leftValue instanceof String) {
                     leftValue = Strings.reverseGrouping((String) leftValue, groups);
                 }
                 rightValue = processStringValue(groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class);
-                if(rightValue instanceof String) {
+                if (rightValue instanceof String) {
                     rightValue = Strings.reverseGrouping((String) rightValue, groups);
                 }
                 operator = operator.trim();
@@ -1410,11 +1408,8 @@ public class Query extends EvaluatorCollection implements Queryable {
                 } else {
                     throw new IllegalArgumentException("Unsupported operator '" + operator + "'");
                 }
-
-                collection.addEvaluator(evaluator);
-            } else {
-                throw new IllegalArgumentException("Syntax error for expression: " + definition + ", expected {field} {operator} {value}");
             }
+            collection.addEvaluator(evaluator);
         }
     }
 
