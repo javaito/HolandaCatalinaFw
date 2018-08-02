@@ -1785,11 +1785,13 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         private QueryResource resource;
         private String fieldName;
+        private List<QueryField> path;
         private final String completeFieldName;
         private final String index;
 
         public QueryField(String field) {
             super(field);
+
             if(field.contains(Strings.CLASS_SEPARATOR)) {
                 resource = new QueryResource(field.substring(0, field.lastIndexOf(Strings.CLASS_SEPARATOR)));
                 this.fieldName = field.substring(field.lastIndexOf(Strings.CLASS_SEPARATOR) + 1).trim();
@@ -1806,6 +1808,15 @@ public class Query extends EvaluatorCollection implements Queryable {
             }
 
             completeFieldName = (resource == null ? "" : resource + Strings.CLASS_SEPARATOR) + fieldName;
+
+            path = new ArrayList<>();
+            if(field.contains(Strings.CLASS_SEPARATOR)) {
+                for (String pathPart : field.split(Strings.CLASS_SEPARATOR)) {
+                    path.add(new QueryField(pathPart));
+                }
+            } else {
+                path.add(this);
+            }
         }
 
         /**
@@ -1848,6 +1859,13 @@ public class Query extends EvaluatorCollection implements Queryable {
             return index;
         }
 
+        /**
+         * Returns the path of the field.
+         * @return Path of the field.
+         */
+        public List<QueryField> getPath() {
+            return path;
+        }
     }
 
     public interface QueryReturnParameter extends QueryComponent {
