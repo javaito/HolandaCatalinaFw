@@ -60,10 +60,14 @@ public abstract class FieldEvaluator extends BaseEvaluator {
             result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
         } else {
             Map<Evaluator, Object> cache = getLeftCache();
-            result = cache.get(this);
-            if (result == null) {
+            if(cache != null) {
+                result = cache.get(this);
+                if (result == null) {
+                    result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
+                    cache.put(this, result);
+                }
+            } else {
                 result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
-                cache.put(this, result);
             }
         }
         return result;
@@ -98,10 +102,14 @@ public abstract class FieldEvaluator extends BaseEvaluator {
             result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
         } else {
             Map<Evaluator, Object> cache = getRightCache();
-            result = cache.get(this);
-            if (result == null) {
+            if(cache != null) {
+                result = cache.get(this);
+                if (result == null) {
+                    result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
+                    cache.put(this, result);
+                }
+            } else {
                 result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
-                cache.put(this, result);
             }
         }
         return result;
