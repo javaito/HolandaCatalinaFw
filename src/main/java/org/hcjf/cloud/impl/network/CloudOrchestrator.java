@@ -441,7 +441,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     localLeaf = (LocalLeaf) entry.getValue();
                     path = entry.getPath();
                     if (localLeaf.getInstance() instanceof DistributedLayer) {
-                        publishLayerMessage = new PublishLayerMessage();
+                        publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
                         publishLayerMessage.setPath(path);
                         publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
                         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
@@ -684,9 +684,16 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             sendMessageToNode(session, responseMessage);
         } else if(message instanceof PublishLayerMessage) {
             PublishLayerMessage publishLayerMessage = (PublishLayerMessage) message;
-            DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
-            distributedLayer.addNode(publishLayerMessage.getNodeId());
-            distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
+            ResponseMessage responseMessage = new ResponseMessage(publishLayerMessage);
+            try {
+                DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
+                distributedLayer.addNode(publishLayerMessage.getNodeId());
+                distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
+                responseMessage.setValue(true);
+            } catch (Exception ex) {
+                responseMessage.setThrowable(ex);
+            }
+            sendMessageToNode(session, responseMessage);
         } else if(message instanceof LayerInvokeMessage) {
             LayerInvokeMessage layerInvokeMessage = (LayerInvokeMessage) message;
             Object result = null;
