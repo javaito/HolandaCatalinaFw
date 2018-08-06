@@ -2,12 +2,15 @@ package org.hcjf.layers;
 
 import org.hcjf.cloud.Cloud;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
+import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.distributed.DistributedLayer;
 import org.hcjf.layers.distributed.DistributedLayerInterface;
 import org.hcjf.layers.plugins.DeploymentService;
 import org.hcjf.layers.plugins.Plugin;
 import org.hcjf.layers.plugins.PluginClassLoader;
 import org.hcjf.layers.plugins.PluginLayer;
+import org.hcjf.layers.query.JoinableMap;
+import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
 import org.hcjf.log.Log;
@@ -49,6 +52,10 @@ public final class Layers {
 
     static {
         instance = new Layers();
+
+        //Publish a read rows layer implementation in order to publish a list af all the layer of the system.
+        Layers.publishLayer(SystemLayerReadableImplementation.class);
+        Layers.publishLayer(SystemResourceReadableImplementation.class);
     }
 
     private final Map<Class<? extends Layer>, Object> initialInstances;
@@ -566,6 +573,68 @@ public final class Layers {
     }
 
     /**
+     * Read all the metadata instance for each published layer.
+     * @return Collection with layer metadata.
+     */
+    private static Collection<JoinableMap> getLayers() {
+        Collection<JoinableMap> result = new ArrayList<>();
+        JoinableMap map;
+
+        Map<String,Class<? extends Layer>> implementationMap;
+        for(Class<? extends LayerInterface> layerInterface : instance.layerImplementations.keySet()) {
+            implementationMap = instance.layerImplementations.get(layerInterface);
+            for(String name : implementationMap.keySet()) {
+                map = new JoinableMap(new HashMap<>());
+                map.put("layerInterfaceName", layerInterface.getName());
+                map.put("layerImplementationName", implementationMap.get(name).getName());
+                map.put("layerName", name);
+                map.put("remote", false);
+                map.put("plugin", false);
+                result.add(map);
+            }
+        }
+
+
+        Map<String,String> pluginImplementation;
+        for(Class<? extends LayerInterface> layerInterface : instance.pluginLayerImplementations.keySet()) {
+            pluginImplementation = instance.pluginLayerImplementations.get(layerInterface);
+            for(String name : pluginImplementation.keySet()) {
+                map = new JoinableMap(new HashMap<>());
+                map.put("layerInterfaceName", layerInterface.getName());
+                map.put("layerImplementationName", instance.pluginWrapperCache.get(pluginImplementation.get(name)).getClass().getName());
+                map.put("layerName", name);
+                map.put("remote", false);
+                map.put("plugin", true);
+                result.add(map);
+            }
+        }
+
+        Map<String, LayerInterface> distributeImplementation;
+        for(Class<? extends LayerInterface> layerInterface : instance.distributedLayers.keySet()) {
+            distributeImplementation = instance.distributedLayers.get(layerInterface);
+            for(String name : distributeImplementation.keySet()) {
+                map = new JoinableMap(new HashMap<>());
+                map.put("layerInterfaceName", layerInterface.getName());
+                map.put("layerImplementationName", distributeImplementation.get(name).getClass().getName());
+                map.put("layerName", name);
+                map.put("remote", true);
+                map.put("plugin", false);
+                result.add(map);
+            }
+        }
+
+        return result;
+    }
+
+    private static Collection<JoinableMap> getReadableLayers() {
+        Collection<JoinableMap> result = new ArrayList<>();
+        for(ReadRowsLayerInterface layer : getAll(ReadRowsLayerInterface.class, (L)->true)) {
+            result.add(new JoinableMap(Map.of("name", layer.getImplName())));
+        }
+        return result;
+    }
+
+    /**
      * This interface verify if the layer instance match with some particular
      * filter or not.
      * @param <L> Kind of layer
@@ -577,4 +646,29 @@ public final class Layers {
     }
 
     public interface ResourcePredicate extends Predicate<Resource> {}
+
+    public static class SystemLayerReadableImplementation extends Layer implements ReadRowsLayerInterface {
+
+        public SystemLayerReadableImplementation() {
+            super(SystemProperties.get(SystemProperties.Layer.READABLE_ALL_LAYER_IMPLEMENTATION_NAME));
+        }
+
+        @Override
+        public Collection<JoinableMap> readRows(Queryable queryable) {
+            return queryable.evaluate(getLayers());
+        }
+
+    }
+
+    public static class SystemResourceReadableImplementation extends Layer implements ReadRowsLayerInterface {
+
+        public SystemResourceReadableImplementation() {
+            super(SystemProperties.get(SystemProperties.Layer.READABLE_LAYER_IMPLEMENTATION_NAME));
+        }
+
+        @Override
+        public Collection<JoinableMap> readRows(Queryable queryable) {
+            return queryable.evaluate(getReadableLayers());
+        }
+    }
 }

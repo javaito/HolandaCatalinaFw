@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.bson.BsonDocument;
+import org.hcjf.utils.bson.BsonParcelable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -9,6 +11,15 @@ import java.util.UUID;
  * @author javaito
  */
 public class QueryCompileTest {
+
+    public static void main(String[] args) {
+        Query q = Query.compile("SELECT * FROM bla");
+        System.out.println(q.toString());
+        BsonDocument qd = q.toBson();
+        Query q2 = BsonParcelable.Builder.create(qd);
+        System.out.println(q2.toString());
+        System.out.printf("");
+    }
 
     @Test()
     public void testCompile() {

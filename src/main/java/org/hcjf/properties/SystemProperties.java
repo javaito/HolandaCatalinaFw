@@ -45,6 +45,8 @@ public final class SystemProperties extends Properties {
 
     public static final class Layer {
         public static final String LOG_TAG = "hcjf.layers.log.tag";
+        public static final String READABLE_ALL_LAYER_IMPLEMENTATION_NAME = "hcjf.layers.readable.all.layer.implementation.name";
+        public static final String READABLE_LAYER_IMPLEMENTATION_NAME =  "hcjf.layers.readable.layer.implementation.name";
         public static final String PLUGIN_THREADING_GRANT = "hcjf.layers.plugin.threading.grant";
         public static final String PLUGIN_FILE_ACCESS_GRANT = "hcjf.layers.plugin.file.access.grant";
         public static final String DISTRIBUTED_LAYER_ENABLED = "hcjf.layers.distributed.layer.enabled";
@@ -364,6 +366,7 @@ public final class SystemProperties extends Properties {
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
 
             public static final class ThisNode {
+                public static final String READABLE_LAYER_IMPLEMENTATION_NAME = "hcjf.cloud.orchestrator.this.node.readable.layer.implementation.name";
                 public static final String ID = "hcjf.cloud.orchestrator.this.node.id";
                 public static final String NAME = "hcjf.cloud.orchestrator.this.node.name";
                 public static final String VERSION = "hcjf.cloud.orchestrator.this.node.version";
@@ -376,6 +379,7 @@ public final class SystemProperties extends Properties {
             }
 
             public static final class ThisServiceEndPoint {
+                public static final String READABLE_LAYER_IMPLEMENTATION_NAME = "hcjf.cloud.orchestrator.this.service.end.point.readable.layer.implementation.name";
                 public static final String ID = "hcjf.cloud.orchestrator.this.service.end.point.id";
                 public static final String NAME = "hcjf.cloud.orchestrator.this.service.end.point.name";
                 public static final String GATEWAY_ADDRESS = "hcjf.cloud.orchestrator.this.service.end.point.gateway.address";
@@ -452,6 +456,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Locale.LOG_TAG, "LOCALE");
 
         defaults.put(Layer.LOG_TAG, "LAYER");
+        defaults.put(Layer.READABLE_ALL_LAYER_IMPLEMENTATION_NAME, "system_layer");
+        defaults.put(Layer.READABLE_LAYER_IMPLEMENTATION_NAME, "system_readable_layer");
         defaults.put(Layer.DISTRIBUTED_LAYER_ENABLED, "false");
         defaults.put(Layer.Deployment.SERVICE_NAME, "DeploymentService");
         defaults.put(Layer.Deployment.SERVICE_PRIORITY, "0");
@@ -696,10 +702,12 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.SERVICE_END_POINTS, "[]");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
+        defaults.put(Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_node");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
         defaults.put(Cloud.Orchestrator.ThisNode.VERSION, "0");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "127.0.0.1");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "9090");
+        defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_service");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "20000");
         defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");

@@ -12,8 +12,13 @@ import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
 import org.hcjf.io.net.messages.Message;
 import org.hcjf.io.net.messages.ResponseMessage;
+import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.Joinable;
+import org.hcjf.layers.query.JoinableMap;
+import org.hcjf.layers.query.Queryable;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -38,6 +43,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     static {
         instance = new CloudOrchestrator();
+
+        Layers.publishLayer(SystemCloudNodeReadableImplementation.class);
+        Layers.publishLayer(SystemCloudServiceReadableImplementation.class);
     }
 
     private Node thisNode;
@@ -1293,6 +1301,32 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote leaf added: %s", Arrays.toString(path));
     }
 
+    private Collection<JoinableMap> getNodesAsJoinableMap() {
+        Collection<JoinableMap> result = new ArrayList<>();
+        for(Node node : nodes) {
+            result.add(new JoinableMap(Introspection.toMap(node)));
+//            map.put("id", node.getId());
+//            map.put("name", node.getName());
+//            map.put("lanAddress", node.getLanAddress());
+//            map.put("lanPort", node.getLanPort());
+//            map.put("wanAddress", node.getWanAddress());
+//            map.put("wanPort", node.getWanPort());
+//            map.put("clusterName", node.getClusterName());
+//            map.put("dataCenterName", node.getDataCenterName());
+//            map.put("status", node.getStatus());
+//            map.put("version", node.getVersion());
+        }
+        return result;
+    }
+
+    private Collection<JoinableMap> getServiceAsJoinableMap() {
+        Collection<JoinableMap> result = new ArrayList<>();
+        for(ServiceEndPoint serviceEndPoint : endPoints.values()) {
+            result.add(new JoinableMap(Introspection.toMap(serviceEndPoint)));
+        }
+        return result;
+    }
+
     private final class ResponseListener {
 
         private final Long timeout;
@@ -1375,5 +1409,29 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
         TIME
 
+    }
+
+    public static final class SystemCloudNodeReadableImplementation extends Layer implements ReadRowsLayerInterface {
+
+        public SystemCloudNodeReadableImplementation() {
+            super(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME));
+        }
+
+        @Override
+        public Collection<JoinableMap> readRows(Queryable queryable) {
+            return queryable.evaluate(getInstance().getNodesAsJoinableMap());
+        }
+    }
+
+    public static final class SystemCloudServiceReadableImplementation extends Layer implements ReadRowsLayerInterface {
+
+        public SystemCloudServiceReadableImplementation() {
+            super(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.READABLE_LAYER_IMPLEMENTATION_NAME));
+        }
+
+        @Override
+        public Collection<JoinableMap> readRows(Queryable queryable) {
+            return queryable.evaluate(getInstance().getServiceAsJoinableMap());
+        }
     }
 }

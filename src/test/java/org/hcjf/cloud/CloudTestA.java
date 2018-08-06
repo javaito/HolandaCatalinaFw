@@ -3,17 +3,20 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
 import org.hcjf.cloud.impl.network.Node;
 import org.hcjf.cloud.timer.CloudTimerTask;
+import org.hcjf.io.console.ConsoleServer;
+import org.hcjf.io.console.ServerMetadata;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.distributed.DistributedLayerInterface;
 import org.hcjf.layers.Layer;
+import org.hcjf.layers.query.JoinableMap;
+import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.Queryable;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.Cryptography;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -55,6 +58,36 @@ public class CloudTestA {
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");
 
         System.out.println("Load done!");
+
+        Cryptography cryptography = new Cryptography();
+        ConsoleServer consoleServer = new ConsoleServer(5900, cryptography) {
+
+            @Override
+            protected ServerMetadata getMetadata() {
+                ServerMetadata metadata = new ServerMetadata();
+                metadata.setInstanceId(SystemProperties.getUUID(SystemProperties.Cloud.Orchestrator.ThisNode.ID));
+                metadata.setClusterName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME));
+                metadata.setServerName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.NAME));
+                metadata.setServerVersion(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.VERSION));
+                metadata.setLoginRequired(true);
+                metadata.setLoginFields(List.of("user"));
+                metadata.setLoginSecretFields(List.of("password"));
+                return metadata;
+            }
+
+            @Override
+            protected ServiceSession login(Map<String, Object> parameters) {
+                ServiceSession serviceSession = new ServiceSession(ServiceSession.getGuestSession().getId());
+                serviceSession.setSessionName(parameters.get("user").toString());
+                return serviceSession;
+            }
+
+            @Override
+            protected Collection<JoinableMap> evaluate(Queryable queryable) {
+                return Query.evaluate(queryable);
+            }
+        };
+        consoleServer.start();
 
         Layers.publishLayer(LayerTestA.class);
         Map<String, String> testingMap = Cloud.getMap("testing-map");

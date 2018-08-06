@@ -2,6 +2,8 @@ package org.hcjf.cloud;
 
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.CreateLayerInterface;
+import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.distributed.DistributedLayerInterface;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -137,7 +139,11 @@ public class ServiceEndPointTest {
         }, ServiceSession.getSystemSession());
     }
 
-    public static class LayerTestE extends Layer implements DistributedLayerTest, DistributedLayerInterface {
+    public static class LayerTestE extends Layer implements
+            DistributedLayerTest,
+            CreateLayerInterface<Map>,
+            ReadRowsLayerInterface,
+            DistributedLayerInterface {
 
         public LayerTestE() {
             super("TestE");
