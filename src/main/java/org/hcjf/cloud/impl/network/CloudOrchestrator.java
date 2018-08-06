@@ -23,6 +23,7 @@ import org.hcjf.utils.Strings;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -694,6 +695,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 responseMessage.setThrowable(ex);
             }
             sendMessageToNode(session, responseMessage);
+        } else if(message instanceof PublishPluginMessage) {
+            PublishPluginMessage publishPluginMessage = (PublishPluginMessage) message;
+            Layers.publishPlugin(ByteBuffer.wrap(publishPluginMessage.getJarFile()));
         } else if(message instanceof LayerInvokeMessage) {
             LayerInvokeMessage layerInvokeMessage = (LayerInvokeMessage) message;
             Object result = null;
@@ -992,8 +996,16 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         for (CloudSession session : sessionByNode.values()) {
             sendMessageToNode(session, publishLayerMessage);
         }
+    }
 
-
+    public void publishPlugin(byte[] jarFile) {
+        PublishPluginMessage publishPluginMessage = new PublishPluginMessage();
+        publishPluginMessage.setJarFile(jarFile);
+        publishPluginMessage.setId(UUID.randomUUID());
+        publishPluginMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
+        for (CloudSession session : sessionByNode.values()) {
+            sendMessageToNode(session, publishPluginMessage);
+        }
     }
 
     public <O extends Object> O layerInvoke(Object[] parameters, Method method, Object... path) {

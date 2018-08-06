@@ -192,6 +192,14 @@ public final class Cloud extends Service<CloudConsumer> {
     }
 
     /**
+     * This method send the plugin for all the nodes into the cloud.
+     * @param jarFile Byte array that represents the jar file.
+     */
+    public static void publishPlugin(byte[] jarFile) {
+        getInstance().impl.publishPlugin(jarFile);
+    }
+
+    /**
      * This method verifies if the layer and name indicated are published into the cloud.
      * @param layerClass Layer class.
      * @param implName Layer implementation name.

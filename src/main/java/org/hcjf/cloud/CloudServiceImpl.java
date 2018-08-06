@@ -116,6 +116,12 @@ public interface CloudServiceImpl {
     void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName);
 
     /**
+     * This method send the plugin for all the nodes into the cloud.
+     * @param jarFile Byte array that represents the jar file.
+     */
+    void publishPlugin(byte[] jarFile);
+
+    /**
      * This method verifies if the layer and name indicated are published into the cloud.
      * @param layerClass Layer class.
      * @param implName Layer implementation name.
