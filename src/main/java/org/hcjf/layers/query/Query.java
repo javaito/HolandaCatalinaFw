@@ -925,8 +925,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     @Override
     public synchronized String toString() {
-        String result = stringRepresentation;
-        if(result == null) {
+        if(stringRepresentation == null) {
             Strings.Builder resultBuilder = new Strings.Builder();
 
             //Print select
@@ -1007,10 +1006,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                 resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
                 resultBuilder.append(Strings.WHITE_SPACE).append(getLimit());
             }
-            result = resultBuilder.toString();
+            stringRepresentation = resultBuilder.toString();
         }
 
-        return result;
+        return stringRepresentation;
     }
 
     /**
