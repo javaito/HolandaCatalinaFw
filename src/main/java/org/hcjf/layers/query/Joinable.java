@@ -11,7 +11,7 @@ public interface Joinable {
      * @param fieldName Field name.
      * @return Field value.
      */
-    public Object get(String fieldName);
+    Object get(String fieldName);
 
     /**
      * Join the data of this joinable instance with the data of the
@@ -19,6 +19,6 @@ public interface Joinable {
      * @param joinable Joinable parameter.
      * @return Return the current joinable instance.
      */
-    public Joinable join(Joinable joinable);
+    Joinable join(Joinable joinable);
 
 }

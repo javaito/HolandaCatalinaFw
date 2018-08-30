@@ -214,6 +214,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     public void unregisterConsumer(NetworkComponent networkComponent) {
     }
 
+    /**
+     * Returns a list with the nodes sorted by id, this list has the same
+     * order in all the nodes into the cluster.
+     * @return List with sorted nodes.
+     */
     private List<Node> getSortedNodes() {
         List < Node > nodes = new ArrayList<>();
         boolean insert = false;
@@ -290,9 +295,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     /**
-     *
-     * @param node
-     * @param session
+     * This method is called periodically or for some particular events like the connection or disconnection of a node,
+     * and verify the memory organization to fix it if necessary.
+     * @param node Node that produce the event.
+     * @param session Session that represents the node.
      */
     private synchronized void reorganize(Node node, CloudSession session, ReorganizationAction action) {
         long time = System.currentTimeMillis();
@@ -439,6 +445,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
     }
 
+    /**
+     * This method run continuously publishing all the distributed layers for all the registered services.
+     */
     private void initServicePublication() {
         while(!Thread.currentThread().isInterrupted()) {
 
@@ -659,7 +668,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     addObject(path.getValue(), path.getNodes(), List.of(),
                             publishObjectMessage.getTimestamp(), path.getPath());
                 } else {
-                    addObject(publishObjectMessage.getTimestamp(), List.of(),
+                    addObject(publishObjectMessage.getTimestamp(), path.getNodes(),
                             path.getNodes(), path.getPath());
                 }
             }

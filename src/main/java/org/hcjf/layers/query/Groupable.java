@@ -14,24 +14,24 @@ public interface Groupable {
      * @param fieldName Field name.
      * @return Field value.
      */
-    public Object get(String fieldName);
+    Object get(String fieldName);
 
     /**
      * Returns all the labels into the groupable instance.
      * @return Set with all the labels.
      */
-    public Set<String> keySet();
+    Set<String> keySet();
 
     /**
      * Group this instance with the parameter instance.
      * @param groupable Other instance to group.
      * @return Return this instance grouped.
      */
-    public Groupable group(Groupable groupable);
+    Groupable group(Groupable groupable);
 
     /**
      * Remove all the elements of the groupable object.
      */
-    public void clear();
+    void clear();
 
 }
