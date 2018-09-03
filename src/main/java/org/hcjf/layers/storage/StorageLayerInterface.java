@@ -14,6 +14,6 @@ public interface StorageLayerInterface<S extends StorageSession> extends LayerIn
      * Return a session with the storage implementation.
      * @return Storage implementation.
      */
-    public S begin();
+    S begin();
 
 }
