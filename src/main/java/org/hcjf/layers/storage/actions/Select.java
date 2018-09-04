@@ -57,7 +57,7 @@ public abstract class Select<S extends StorageSession, O extends Object> extends
         try {
             adaptedQueryable = adaptQuery(getQueryable());
         } catch (Exception ex) {
-            throw new RuntimeException(String.format(ADAPTING_STEP_EXCEPTION, getClass().getName(), getQueryable().toString()));
+            throw new RuntimeException(String.format(ADAPTING_STEP_EXCEPTION, getClass().getName(), getQueryable().toString()), ex);
         }
         Long adaptationTime = System.currentTimeMillis() - startTime;
 
@@ -65,7 +65,7 @@ public abstract class Select<S extends StorageSession, O extends Object> extends
         try {
             executionResult = executeQuery(adaptedQueryable);
         } catch (Exception ex) {
-            throw new RuntimeException(String.format(EXECUTING_STEP_EXCEPTION, getClass().getName(), getQueryable().toString()));
+            throw new RuntimeException(String.format(EXECUTING_STEP_EXCEPTION, getClass().getName(), getQueryable().toString()), ex);
         }
         Long executionTime = System.currentTimeMillis() - adaptationTime;
 
@@ -73,7 +73,7 @@ public abstract class Select<S extends StorageSession, O extends Object> extends
         try {
             collection = createResultSet(executionResult);
         } catch (Exception ex) {
-            throw new RuntimeException(String.format(PRESENTATION_STEP_EXCEPTION, getClass().getName(), getQueryable().toString()));
+            throw new RuntimeException(String.format(PRESENTATION_STEP_EXCEPTION, getClass().getName(), getQueryable().toString()), ex);
         }
         Long presentationTime = System.currentTimeMillis() - executionTime;
 
@@ -81,7 +81,7 @@ public abstract class Select<S extends StorageSession, O extends Object> extends
         try {
             collection = getQueryable().evaluate(collection);
         } catch (Exception ex) {
-            throw new RuntimeException(String.format(VALIDATING_INTEGRITY_EXCEPTION, getClass().getName(), getQueryable().toString()));
+            throw new RuntimeException(String.format(VALIDATING_INTEGRITY_EXCEPTION, getClass().getName(), getQueryable().toString()), ex);
         }
         Long validationIntegrityTime = System.currentTimeMillis() - presentationTime;
 
