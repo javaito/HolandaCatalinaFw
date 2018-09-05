@@ -171,6 +171,13 @@ public final class SystemProperties extends Properties {
             public static final String RECEIVER_BUFFER_SIZE = "hcjf.net.broadcast.receiver.buffer.size";
         }
 
+        public static final class KubernetesSpy {
+            public static final String SERVICE_NAME = "hcjf.net.kubernetes.service.name";
+            public static final String LOG_TAG = "hcjf.net.kubernetes.log.tag";
+            public static final String CLIENT_CONNECTION_TIMEOUT = "hcjf.net.kubernetes.client.connection.timeout";
+            public static final String TASK_SLEEP_TIME = "hcjf.net.kubernetes.task.sleep.time";
+        }
+
         public static final class Ssl {
             public static final String DEFAULT_PROTOCOL = "hcjf.net.ssl.default.protocol";
             public static final String IO_THREAD_NAME = "hcjf.net.ssl.io.thread.name";
@@ -549,6 +556,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Broadcast.SENDER_DELAY, "30000");
         defaults.put(Net.Broadcast.SIGNATURE_ALGORITHM, "SHA-1");
         defaults.put(Net.Broadcast.RECEIVER_BUFFER_SIZE, "1024");
+
+        defaults.put(Net.KubernetesSpy.SERVICE_NAME, "Kubernetes Spy Service");
+        defaults.put(Net.KubernetesSpy.LOG_TAG, "KUBERNETES_SPY");
+        defaults.put(Net.KubernetesSpy.CLIENT_CONNECTION_TIMEOUT, "10000");
+        defaults.put(Net.KubernetesSpy.TASK_SLEEP_TIME, "10000");
 
         defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
         defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
