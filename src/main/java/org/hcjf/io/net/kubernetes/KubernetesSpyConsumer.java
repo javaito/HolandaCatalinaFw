@@ -5,7 +5,6 @@ import org.hcjf.service.ServiceConsumer;
 
 /**
  * @author javaito
- * @email javaito@gmail.com
  */
 public abstract class KubernetesSpyConsumer implements ServiceConsumer {
 
