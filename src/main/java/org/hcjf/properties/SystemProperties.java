@@ -176,6 +176,12 @@ public final class SystemProperties extends Properties {
             public static final String LOG_TAG = "hcjf.net.kubernetes.log.tag";
             public static final String CLIENT_CONNECTION_TIMEOUT = "hcjf.net.kubernetes.client.connection.timeout";
             public static final String TASK_SLEEP_TIME = "hcjf.net.kubernetes.task.sleep.time";
+            public static final String TOKEN_FILE_PATH = "hcjf.net.kubernetes.token.file.path";
+            public static final String MASTER_NODE_HOST = "hcjf.net.kubernetes.master.node.host";
+            public static final String MASTER_NODE_PORT = "hcjf.net.kubernetes.master.node.port";
+            public static final String HOST_NAME = "hcjf.net.kubernetes.host.name";
+            public static final String REST_URL = "hcjf.net.kubernetes.rest.url";
+            public static final String AUTHORIZATION_HEADER = "hcjf.net.kubernetes.authorization.header";
         }
 
         public static final class Ssl {
@@ -561,6 +567,12 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.KubernetesSpy.LOG_TAG, "KUBERNETES_SPY");
         defaults.put(Net.KubernetesSpy.CLIENT_CONNECTION_TIMEOUT, "10000");
         defaults.put(Net.KubernetesSpy.TASK_SLEEP_TIME, "10000");
+        defaults.put(Net.KubernetesSpy.TOKEN_FILE_PATH, "/var/run/secrets/kubernetes.io/serviceaccount/token");
+        defaults.put(Net.KubernetesSpy.MASTER_NODE_HOST, "KUBERNETES_SERVICE_HOST");
+        defaults.put(Net.KubernetesSpy.MASTER_NODE_PORT, "KUBERNETES_PORT_443_TCP_PORT");
+        defaults.put(Net.KubernetesSpy.HOST_NAME, "HOSTNAME");
+        defaults.put(Net.KubernetesSpy.REST_URL, "https://%s:%s/api/v1/namespaces/default/pods/%s");
+        defaults.put(Net.KubernetesSpy.AUTHORIZATION_HEADER, "Bearer %s");
 
         defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
         defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
