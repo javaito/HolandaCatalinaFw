@@ -10,6 +10,8 @@ import org.hcjf.properties.SystemProperties;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.util.UUID;
@@ -36,6 +38,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     private Long readTimeout;
     private HttpSession session;
     private HttpPackage.HttpProtocol httpProtocol;
+    private Boolean httpsInsecureConnection;
 
     public HttpClient(URL url) {
         super(url.getHost(), url.getPort() != -1 ? url.getPort() :
@@ -51,6 +54,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         this.readTimeout = SystemProperties.getLong(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT);
         this.httpProtocol = url.getProtocol().equalsIgnoreCase(HttpPackage.HttpProtocol.HTTPS.toString()) ?
                 HttpPackage.HttpProtocol.HTTPS : HttpPackage.HttpProtocol.HTTP;
+        this.httpsInsecureConnection = false;
         init();
     }
 
@@ -175,13 +179,49 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     }
 
     /**
+     * Returns if the https connection is insecure or not.
+     * @return Secure https connection
+     */
+    public Boolean isHttpsInsecureConnection() {
+        return httpsInsecureConnection;
+    }
+
+    /**
+     * Set if the https connection is insecure of not.
+     * @param httpsInsecureConnection Secure https connection.
+     */
+    public void setHttpsInsecureConnection(Boolean httpsInsecureConnection) {
+        this.httpsInsecureConnection = httpsInsecureConnection;
+    }
+
+    /**
      * Creates the SSL engine.
      * @return SSL engine instance.
      */
     @Override
     protected SSLEngine getSSLEngine() {
         try {
-            SSLEngine engine = SSLContext.getDefault().createSSLEngine();
+            SSLEngine engine;
+            if(isHttpsInsecureConnection()) {
+                TrustManager[] trustAllCerts = new TrustManager[]{
+                        new X509TrustManager() {
+                            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                                return null;
+                            }
+                            public void checkClientTrusted(
+                                    java.security.cert.X509Certificate[] certs, String authType) {
+                            }
+                            public void checkServerTrusted(
+                                    java.security.cert.X509Certificate[] certs, String authType) {
+                            }
+                        }
+                };
+                SSLContext sslContext = SSLContext.getInstance("SSL");
+                sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+                engine = sslContext.createSSLEngine();
+            } else {
+                engine = SSLContext.getDefault().createSSLEngine();
+            }
             engine.setUseClientMode(true);
             engine.beginHandshake();
             return engine;

@@ -110,6 +110,7 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                 client = Config.defaultClient();
                 client.getHttpClient().setConnectTimeout(
                         SystemProperties.getLong(SystemProperties.Net.KubernetesSpy.CLIENT_CONNECTION_TIMEOUT), TimeUnit.MILLISECONDS);
+                client.setVerifyingSsl(false);
                 api = new CoreV1Api(client);
             } catch (Exception ex) {
                 Log.e(SystemProperties.get(SystemProperties.Net.KubernetesSpy.LOG_TAG), "Unable to start kubernetes spy", ex);
@@ -122,6 +123,7 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                         System.out.println("############URL: " + url);
 
                         HttpClient httpClient = new HttpClient(new URL(url));
+                        httpClient.setHttpsInsecureConnection(true);
                         httpClient.addHttpHeader(new HttpHeader(HttpHeader.AUTHORIZATION,
                                 String.format(SystemProperties.get(SystemProperties.Net.KubernetesSpy.AUTHORIZATION_HEADER), token)));
                         HttpResponse response = httpClient.request();
