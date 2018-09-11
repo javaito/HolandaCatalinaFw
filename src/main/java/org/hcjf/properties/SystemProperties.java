@@ -182,6 +182,7 @@ public final class SystemProperties extends Properties {
             public static final String HOST_NAME = "hcjf.net.kubernetes.host.name";
             public static final String REST_URL = "hcjf.net.kubernetes.rest.url";
             public static final String AUTHORIZATION_HEADER = "hcjf.net.kubernetes.authorization.header";
+            public static final String JSON_DATE_FORMAT = "hcjf.net.kubernetes.json.date.format";
         }
 
         public static final class Ssl {
@@ -573,6 +574,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.KubernetesSpy.HOST_NAME, "HOSTNAME");
         defaults.put(Net.KubernetesSpy.REST_URL, "https://%s:%s/api/v1/namespaces/default/pods/%s");
         defaults.put(Net.KubernetesSpy.AUTHORIZATION_HEADER, "Bearer %s");
+        defaults.put(Net.KubernetesSpy.JSON_DATE_FORMAT, "yyyy-mm-dd'T'HH:MM:SSZ");
 
         defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
         defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
