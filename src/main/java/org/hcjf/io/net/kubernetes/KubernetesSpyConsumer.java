@@ -1,6 +1,6 @@
 package org.hcjf.io.net.kubernetes;
 
-import io.kubernetes.client.models.V1Pod;
+import org.hcjf.io.net.kubernetes.beans.Pod;
 import org.hcjf.service.ServiceConsumer;
 
 /**
@@ -9,28 +9,32 @@ import org.hcjf.service.ServiceConsumer;
 public abstract class KubernetesSpyConsumer implements ServiceConsumer {
 
     private final Filter filter;
-    private final Long initTimestamp;
+    private Long lastUpdate;
 
     public KubernetesSpyConsumer(Filter filter) {
         this.filter = filter;
-        this.initTimestamp = System.currentTimeMillis();
+        this.lastUpdate = System.currentTimeMillis();
     }
 
     public Filter getFilter() {
         return filter;
     }
 
-    public final Long getInitTimestamp() {
-        return initTimestamp;
+    public final Long getLastUpdate() {
+        return lastUpdate;
     }
 
-    protected abstract void onDiscoveryPod(V1Pod pod);
+    public void setLastUpdate(Long lastUpdate) {
+        this.lastUpdate = lastUpdate;
+    }
 
-    protected abstract void onLostPod(V1Pod pod);
+    protected abstract void onDiscoveryPod(Pod pod);
+
+    protected abstract void onLostPod(Pod pod);
 
     public interface Filter {
 
-        boolean filter(V1Pod pod);
+        boolean filter(Pod pod);
 
     }
 }
