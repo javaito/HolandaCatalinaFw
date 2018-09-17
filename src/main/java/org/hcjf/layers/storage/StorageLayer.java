@@ -5,7 +5,6 @@ import org.hcjf.layers.Layer;
 /**
  * Base class to make a storage implementation.
  * @author javaito
- *
  */
 public abstract class StorageLayer<S extends StorageSession> extends Layer implements StorageLayerInterface<S> {
 
@@ -16,4 +15,5 @@ public abstract class StorageLayer<S extends StorageSession> extends Layer imple
     public StorageLayer(String implName) {
         super(implName);
     }
+
 }

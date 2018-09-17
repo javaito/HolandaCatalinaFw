@@ -574,7 +574,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.KubernetesSpy.HOST_NAME, "HOSTNAME");
         defaults.put(Net.KubernetesSpy.REST_URL, "https://%s:%s/api/v1/namespaces/default/pods/%s");
         defaults.put(Net.KubernetesSpy.AUTHORIZATION_HEADER, "Bearer %s");
-        defaults.put(Net.KubernetesSpy.JSON_DATE_FORMAT, "yyyy-mm-dd'T'HH:MM:SSZ");
+        defaults.put(Net.KubernetesSpy.JSON_DATE_FORMAT, "yyyy-MM-dd'T'HH:mm:ss'Z'");
 
         defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
         defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
