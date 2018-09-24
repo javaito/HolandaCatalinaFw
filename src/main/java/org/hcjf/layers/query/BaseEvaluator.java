@@ -10,6 +10,24 @@ import java.util.List;
  */
 public abstract class BaseEvaluator implements Evaluator {
 
+    private List<Query.QueryField> evaluatorFields;
+
+    /**
+     * This method returns the list of fields that are present into the evaluator.
+     * @return List of the fields present into the evaluator.
+     */
+    public final List<Query.QueryField> getEvaluatorFields() {
+        return evaluatorFields;
+    }
+
+    /**
+     * This method set the list of fields present into the evaluator.
+     * @param evaluatorFields List of fields present into the evaluator.
+     */
+    public final void setEvaluatorFields(List<Query.QueryField> evaluatorFields) {
+        this.evaluatorFields = evaluatorFields;
+    }
+
     /**
      * Return the value to compare with the field's object of the data collection's
      * instance.

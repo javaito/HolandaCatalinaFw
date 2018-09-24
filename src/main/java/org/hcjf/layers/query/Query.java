@@ -1034,10 +1034,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             } else if(evaluator instanceof And) {
                 result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND)).append(Strings.WHITE_SPACE);
-                if(collection instanceof Query) {
+                if (collection instanceof Query) {
                     toStringEvaluatorCollection(result, (And) evaluator);
                 } else {
-                    if(((And)evaluator).getEvaluators().size() == 1) {
+                    if (((And) evaluator).getEvaluators().size() == 1) {
                         toStringEvaluatorCollection(result, (And) evaluator);
                     } else {
                         result.append(Strings.START_GROUP);
@@ -1045,6 +1045,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                         result.append(Strings.END_GROUP);
                     }
                 }
+            } else if(evaluator instanceof BooleanEvaluator) {
+                result.append(separator);
+                BooleanEvaluator booleanEvaluator = (BooleanEvaluator) evaluator;
+                result = toStringFieldEvaluatorValue(booleanEvaluator.getValue(), booleanEvaluator.getClass(), result);
             } else if(evaluator instanceof FieldEvaluator) {
                 result.append(separator);
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
@@ -1214,7 +1218,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             for(String returnField : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                 query.addReturnField((QueryReturnParameter)
-                        processStringValue(groups, richTexts, returnField, null, QueryReturnParameter.class));
+                        processStringValue(groups, richTexts, returnField, null, QueryReturnParameter.class, new ArrayList<>()));
             }
 
             if(conditionalBody != null) {
@@ -1251,13 +1255,13 @@ public class Query extends EvaluatorCollection implements Queryable {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addOrderField((QueryOrderParameter)
-                                    processStringValue(groups, richTexts, orderField, null, QueryOrderParameter.class));
+                                    processStringValue(groups, richTexts, orderField, null, QueryOrderParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addGroupField((QueryReturnParameter)
-                                    processStringValue(groups, richTexts, orderField, null, QueryReturnParameter.class));
+                                    processStringValue(groups, richTexts, orderField, null, QueryReturnParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         query.setLimit(Integer.parseInt(elementValue));
@@ -1394,15 +1398,16 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             }
 
+            List<QueryField> presentFields = new ArrayList<>();
             if (operator == null || operator.trim().isEmpty()) {
-                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class);
+                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class, presentFields);
                 evaluator = new BooleanEvaluator(leftValue);
             } else {
-                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class);
+                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class, presentFields);
                 if (leftValue instanceof String) {
                     leftValue = Strings.reverseGrouping((String) leftValue, groups);
                 }
-                rightValue = processStringValue(groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class);
+                rightValue = processStringValue(groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class, presentFields);
                 if (rightValue instanceof String) {
                     rightValue = Strings.reverseGrouping((String) rightValue, groups);
                 }
@@ -1432,6 +1437,11 @@ public class Query extends EvaluatorCollection implements Queryable {
                     throw new IllegalArgumentException("Unsupported operator '" + operator + "'");
                 }
             }
+
+            if(evaluator instanceof BaseEvaluator) {
+                ((BaseEvaluator)evaluator).setEvaluatorFields(presentFields);
+            }
+
             collection.addEvaluator(evaluator);
         }
     }
@@ -1444,7 +1454,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param parameterClass Parameter class.
      * @return Return the specific implementation of the string representation.
      */
-    private static Object processStringValue(List<String> groups, List<String> richTexts, String stringValue, AtomicInteger placesIndex, Class parameterClass) {
+    private static Object processStringValue(List<String> groups, List<String> richTexts, String stringValue, AtomicInteger placesIndex, Class parameterClass, List<QueryField> presentFields) {
         Object result = null;
         String trimmedStringValue = stringValue.trim();
         if(trimmedStringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
@@ -1486,7 +1496,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 for (String subStringValue : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(groups, richTexts, subStringValue.trim(), placesIndex, parameterClass));
+                    collection.add(processStringValue(groups, richTexts, subStringValue.trim(), placesIndex, parameterClass, presentFields));
                 }
                 result = collection;
             }
@@ -1540,7 +1550,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     parameters.add(currentValue.trim());
                 } else {
                     //If the current value is not a math connector then this string is evaluated recursively.
-                    parameters.add(processStringValue(groups, richTexts, currentValue, placesIndex, QueryParameter.class));
+                    parameters.add(processStringValue(groups, richTexts, currentValue, placesIndex, QueryParameter.class, presentFields));
                 }
             }
 
@@ -1570,7 +1580,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 originalValue = trimmedStringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
                 functionParameters = new ArrayList<>();
                 for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    functionParameters.add(processStringValue(groups, richTexts, param, placesIndex, parameterClass));
+                    functionParameters.add(processStringValue(groups, richTexts, param, placesIndex, parameterClass, presentFields));
                 }
                 function = true;
             } else {
@@ -1616,6 +1626,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                     result = new QueryOrderField(originalValue, desc);
                 }
             }
+        }
+
+        if(result instanceof QueryField) {
+            presentFields.add((QueryField) result);
         }
 
         return result;
