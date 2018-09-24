@@ -53,6 +53,14 @@ public class ParameterizedQuery implements Queryable {
     }
 
     /**
+     * Returns a list of parameters into the queryable.
+     * @return Unmodifiable list of parameters.
+     */
+    public List<Object> getParameters() {
+        return Collections.unmodifiableList(parameters);
+    }
+
+    /**
      * Returns the query associated to the instance.
      * @return Query instance.
      */
@@ -142,6 +150,11 @@ public class ParameterizedQuery implements Queryable {
         Collection collection = fromBson(Object.class, document.get(PARAMS_BSON_FIELD_NAME).getAsArray());
         parameters.addAll(collection);
         return (P) this;
+    }
+
+    @Override
+    public String toString() {
+        return getQuery().toString();
     }
 
     /**

@@ -1,9 +1,7 @@
 package org.hcjf.layers.query;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author javaito
@@ -11,6 +9,23 @@ import java.util.List;
 public abstract class BaseEvaluator implements Evaluator {
 
     private List<Query.QueryField> evaluatorFields;
+    private boolean trueForced;
+
+    /**
+     * This method indicate that the evaluator is forced to returns true;
+     * @return True if the evaluator is forced and false in the otherwise.
+     */
+    public boolean isTrueForced() {
+        return trueForced;
+    }
+
+    /**
+     * Set if the evaluator id forced to return true or not.
+     * @param trueForced True id the evaluator id forced and false in the otherwise.
+     */
+    public void setTrueForced(boolean trueForced) {
+        this.trueForced = trueForced;
+    }
 
     /**
      * This method returns the list of fields that are present into the evaluator.

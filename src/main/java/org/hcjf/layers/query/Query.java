@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
  * This class contains all the parameter needed to create a query.
  * This kind of queries works over any data collection.
  * @author javaito
- *
  */
 public class Query extends EvaluatorCollection implements Queryable {
 
@@ -1048,39 +1047,48 @@ public class Query extends EvaluatorCollection implements Queryable {
             } else if(evaluator instanceof BooleanEvaluator) {
                 result.append(separator);
                 BooleanEvaluator booleanEvaluator = (BooleanEvaluator) evaluator;
-                result = toStringFieldEvaluatorValue(booleanEvaluator.getValue(), booleanEvaluator.getClass(), result);
+                if(booleanEvaluator.isTrueForced()) {
+                    result.append(Boolean.TRUE.toString());
+                } else {
+                    result = toStringFieldEvaluatorValue(booleanEvaluator.getValue(), booleanEvaluator.getClass(), result);
+                }
+                result.append(Strings.WHITE_SPACE);
             } else if(evaluator instanceof FieldEvaluator) {
                 result.append(separator);
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-                if(fieldEvaluator.getLeftValue() == null) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
+                if(fieldEvaluator.isTrueForced()) {
+                    result.append(Boolean.TRUE.toString());
                 } else {
-                    result = toStringFieldEvaluatorValue(fieldEvaluator.getLeftValue(), fieldEvaluator.getLeftValue().getClass(), result);
-                }
-                result.append(Strings.WHITE_SPACE);
-                if (fieldEvaluator instanceof Distinct) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof Equals) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof GreaterThanOrEqual) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof GreaterThan) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof NotIn) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof In) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.IN)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof Like) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof SmallerThanOrEqual) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
-                } else if (fieldEvaluator instanceof SmallerThan) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN)).append(Strings.WHITE_SPACE);
-                }
-                if(fieldEvaluator.getRightValue() == null) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
-                } else {
-                    result = toStringFieldEvaluatorValue(fieldEvaluator.getRightValue(), fieldEvaluator.getRightValue().getClass(), result);
+                    if (fieldEvaluator.getLeftValue() == null) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
+                    } else {
+                        result = toStringFieldEvaluatorValue(fieldEvaluator.getLeftValue(), fieldEvaluator.getLeftValue().getClass(), result);
+                    }
+                    result.append(Strings.WHITE_SPACE);
+                    if (fieldEvaluator instanceof Distinct) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISTINCT)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof Equals) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof GreaterThanOrEqual) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof GreaterThan) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GREATER_THAN)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof NotIn) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NOT_IN)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof In) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.IN)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof Like) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIKE)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof SmallerThanOrEqual) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS)).append(Strings.WHITE_SPACE);
+                    } else if (fieldEvaluator instanceof SmallerThan) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN)).append(Strings.WHITE_SPACE);
+                    }
+                    if (fieldEvaluator.getRightValue() == null) {
+                        result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL));
+                    } else {
+                        result = toStringFieldEvaluatorValue(fieldEvaluator.getRightValue(), fieldEvaluator.getRightValue().getClass(), result);
+                    }
                 }
                 result.append(Strings.WHITE_SPACE);
             }
