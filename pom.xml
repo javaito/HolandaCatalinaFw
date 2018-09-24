@@ -7,7 +7,7 @@
     <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>1.5.12</version>
+    <version>1.5.13</version>
     <packaging>jar</packaging>
     <description>Java framework to develop platforms based on distributed services</description>
     <url>https://github.com/javaito/HolandaCatalinaFw</url>
@@ -109,11 +109,6 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
-        </dependency>
-        <dependency>
-            <groupId>io.kubernetes</groupId>
-            <artifactId>client-java</artifactId>
-            <version>2.0.0</version>
         </dependency>
     </dependencies>
 
