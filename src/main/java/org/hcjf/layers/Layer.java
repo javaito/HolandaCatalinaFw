@@ -213,13 +213,15 @@ public abstract class Layer implements LayerInterface {
                 }
 
                 try {
-                    LayerProxy.ProxyInterceptor interceptor = getProxy().onBeforeInvoke(method, args);
+                    Object[] newArgs = AdaptableLayer.class.isAssignableFrom(getClass()) ?
+                            ((AdaptableLayer)this).adaptArguments(method, args) : args;
+                    LayerProxy.ProxyInterceptor interceptor = getProxy().onBeforeInvoke(method, newArgs);
                     if (interceptor == null || !interceptor.isCached()) {
-                        result = method.invoke(getTarget(), args);
+                        result = method.invoke(getTarget(), newArgs);
                     } else {
                         result = interceptor.getResult();
                     }
-                    getProxy().onAfterInvoke(method, result, args);
+                    getProxy().onAfterInvoke(method, result, newArgs);
                 } catch (Throwable throwable) {
                     //Add one to the error mean counter.
                     errorMean.add(1);
