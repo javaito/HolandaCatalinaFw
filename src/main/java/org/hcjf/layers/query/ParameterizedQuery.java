@@ -53,7 +53,16 @@ public class ParameterizedQuery implements Queryable {
      * @return Returns this instance.
      */
     public final ParameterizedQuery set(Integer place, Object parameter) {
-        parameters.set(place, parameter);
+        if(place == parameters.size()) {
+            add(parameter);
+        } else {
+            if (parameters.size() <= place) {
+                for (int i = parameters.size(); i <= place; i++) {
+                    parameters.add(null);
+                }
+            }
+            parameters.set(place, parameter);
+        }
         return this;
     }
 
