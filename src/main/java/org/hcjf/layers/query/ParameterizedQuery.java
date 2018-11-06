@@ -30,6 +30,11 @@ public class ParameterizedQuery implements Queryable {
         this.parameters = new ArrayList<>();
     }
 
+    @Override
+    public String getResourceName() {
+        return query.getResourceName();
+    }
+
     /**
      * Add new parameter into the next place.
      * @param parameter Parameter to add.
@@ -160,7 +165,7 @@ public class ParameterizedQuery implements Queryable {
     /**
      * This implementation use the parameters of the instance.
      */
-    private class ParameterizedConsumer extends Queryable.DefaultConsumer {
+    public class ParameterizedConsumer extends Queryable.DefaultConsumer {
 
         private final Consumer consumer;
 
@@ -193,6 +198,14 @@ public class ParameterizedQuery implements Queryable {
         @Override
         public Object getParameter(Integer place) {
             return parameters.get(place);
+        }
+
+        /**
+         * Returns a list with all the parameters.
+         * @return List with all the parameters.
+         */
+        public List<Object> getParameters() {
+            return Collections.unmodifiableList(parameters);
         }
 
     }

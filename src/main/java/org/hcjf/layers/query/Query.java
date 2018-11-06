@@ -468,7 +468,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                     //If the query has not joins then data source must return data from
                     //resource of the query.
-                    data = dataSource.getResourceData(resolveQuery);
+                    data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
                 }
 
                 if (!groupParameters.isEmpty()) {
@@ -562,6 +562,19 @@ public class Query extends EvaluatorCollection implements Queryable {
             result = (Set<O>)Set.of(aggregateResult);
         }
 
+        return result;
+    }
+
+    private Queryable verifyInstance(Query query, Consumer consumer) {
+        Queryable result = query;
+        if(consumer instanceof ParameterizedQuery.ParameterizedConsumer &&
+                ((ParameterizedQuery.ParameterizedConsumer)consumer).getParameters().size() > 0) {
+            ParameterizedQuery parameterizedQuery = query.getParameterizedQuery();
+            for(Object parameter : ((ParameterizedQuery.ParameterizedConsumer)consumer).getParameters()) {
+                parameterizedQuery.add(parameter);
+            }
+            result = parameterizedQuery;
+        }
         return result;
     }
 
@@ -695,8 +708,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         Query startQuery = joinQuery;
 
         //Put the first query in the list
-        List<Query> queries = new ArrayList<>();
-        queries.add(joinQuery);
+        List<Queryable> queries = new ArrayList<>();
+        queries.add(verifyInstance(joinQuery, consumer));
 
         //Build a query for each join and evaluate the better filter to start
         int queryStart = 0;
@@ -711,7 +724,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResource())) {
                 joinQuery.addEvaluator(evaluator);
             }
-            queries.add(joinQuery);
+            queries.add(verifyInstance(joinQuery, consumer));
 
             if(joinQuery.getEvaluators().size() > startQuery.getEvaluators().size()) {
                 startQuery = joinQuery;
@@ -727,13 +740,14 @@ public class Query extends EvaluatorCollection implements Queryable {
         Set<Object> keys;
         QueryField firstField;
         QueryField secondField;
+        Queryable currentQueryable;
 
         //Evaluate from the start query to right
         int j = joinStart;
         for (int i = queryStart; i < queries.size(); i++) {
-            joinQuery = queries.get(i);
+            currentQueryable = queries.get(i);
             if(leftJoinables.isEmpty()) {
-                leftJoinables.addAll(dataSource.getResourceData(joinQuery));
+                leftJoinables.addAll(dataSource.getResourceData(currentQueryable));
             } else {
                 queryJoin = joins.get(j);
 
@@ -752,8 +766,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                 indexedJoineables = index(leftJoinables, firstField, consumer, dataSource);
                 leftJoinables.clear();
                 keys = indexedJoineables.keySet();
-                joinQuery.addEvaluator(new In(secondField.toString(), keys));
-                rightJoinables.addAll(dataSource.getResourceData(joinQuery));
+                if(currentQueryable instanceof ParameterizedQuery) {
+                    ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField.toString(), keys));
+                } else {
+                    ((Query)currentQueryable).addEvaluator(new In(secondField.toString(), keys));
+                }
+                rightJoinables.addAll(dataSource.getResourceData(currentQueryable));
                 for (Joinable rightJoinable : rightJoinables) {
                     Set<Joinable> joinables = indexedJoineables.get(consumer.get(rightJoinable, secondField, dataSource));
                     if(joinables != null) {
@@ -772,7 +790,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         //Evaluate from the start query to left
         j = joinStart;
         for (int i = queryStart - 1; i >= 0; i--, j--) {
-            joinQuery = queries.get(i);
+            currentQueryable = queries.get(i);
             queryJoin = joins.get(j);
 
             if(queryJoin.getLeftField().getResource().equals(queryJoin.getResource())) {
@@ -790,8 +808,12 @@ public class Query extends EvaluatorCollection implements Queryable {
             indexedJoineables = index(rightJoinables, firstField, consumer, dataSource);
             rightJoinables.clear();
             keys = indexedJoineables.keySet();
-            joinQuery.addEvaluator(new In(secondField.toString(), keys));
-            leftJoinables.addAll(dataSource.getResourceData(joinQuery));
+            if(currentQueryable instanceof ParameterizedQuery) {
+                ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField.toString(), keys));
+            } else {
+                ((Query)currentQueryable).addEvaluator(new In(secondField.toString(), keys));
+            }
+            leftJoinables.addAll(dataSource.getResourceData(currentQueryable));
             for (Joinable leftJoinable : leftJoinables) {
                 Set<Joinable> joinables = indexedJoineables.get(consumer.get(leftJoinable, secondField, dataSource));
                 if(joinables != null) {

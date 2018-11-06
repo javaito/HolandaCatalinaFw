@@ -18,6 +18,12 @@ import java.util.*;
 public interface Queryable extends BsonParcelable {
 
     /**
+     * Return the resource name.
+     * @return Resource name.
+     */
+    String getResourceName();
+
+    /**
      * This method evaluate each object of the collection and sort filtered
      * object to create a result add with the object filtered and sorted.
      * If there are order fields added then the result implementation is a
@@ -117,10 +123,10 @@ public interface Queryable extends BsonParcelable {
 
         /**
          * This method musr return the data of diferents resources using some query.
-         * @param query Query object.
+         * @param queryable Query object.
          * @return Data collection from the resource.
          */
-        Collection<O> getResourceData(Query query);
+        Collection<O> getResourceData(Queryable queryable);
 
     }
 
@@ -239,12 +245,12 @@ public interface Queryable extends BsonParcelable {
 
         /**
          * Return the collection of data as query response.
-         * @param query Query object.
+         * @param queryable Query object.
          * @return Collection of data.
          */
         @Override
-        public Collection<JoinableMap> getResourceData(Query query) {
-            return Layers.get(ReadRowsLayerInterface.class, query.getResourceName()).readRows(query);
+        public Collection<JoinableMap> getResourceData(Queryable queryable) {
+            return Layers.get(ReadRowsLayerInterface.class, queryable.getResourceName()).readRows(queryable);
         }
 
     }
