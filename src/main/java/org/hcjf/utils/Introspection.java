@@ -173,10 +173,29 @@ public final class Introspection {
             throw new IllegalArgumentException("Default constructor not found", e);
         }
         Map<String, Setter> setters = getSetters(clazz);
+        Object currentValue;
+        Setter currentSetter;
         for(String name : setters.keySet()) {
             if(map.containsKey(name)) {
                 try {
-                    setters.get(name).set(result, map.get(name));
+                    currentSetter = setters.get(name);
+                    currentValue = map.get(name);
+                    if(currentValue instanceof Number) {
+                        if (Byte.class.isAssignableFrom(currentSetter.getParameterType())) {
+                            currentSetter.set(result, ((Number) map.get(name)).byteValue());
+                        } else if (Short.class.isAssignableFrom(currentSetter.getParameterType())) {
+                            currentSetter.set(result, ((Number) map.get(name)).shortValue());
+                        } else if (Integer.class.isAssignableFrom(currentSetter.getParameterType())) {
+                            currentSetter.set(result, ((Number) map.get(name)).intValue());
+                        } else if (Long.class.isAssignableFrom(currentSetter.getParameterType())) {
+                            currentSetter.set(result, ((Number) map.get(name)).longValue());
+                        }
+                    } else if(Map.class.isAssignableFrom(currentValue.getClass()) &&
+                            !Map.class.isAssignableFrom(currentSetter.getParameterType())) {
+                        currentSetter.set(result, toInstance((Map<String, Object>) currentValue, currentSetter.getParameterType()));
+                    } else {
+                        currentSetter.set(result, map.get(name));
+                    }
                 } catch (Exception ex){}
             }
         }
