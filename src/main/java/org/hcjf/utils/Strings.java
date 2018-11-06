@@ -1,5 +1,10 @@
 package org.hcjf.utils;
 
+import org.hcjf.layers.query.FieldEvaluator;
+import org.hcjf.layers.query.Query;
+import org.hcjf.properties.SystemProperties;
+
+import java.text.ParseException;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -526,6 +531,60 @@ public final class Strings {
      */
     public static UUID createUUIDFromStringHash(String value1, String value2) {
         return new UUID(value1 == null ? 0 : value1.hashCode(), value2.hashCode());
+    }
+
+    /**
+     * Returns the instance of the class that is deducted from the string value.
+     * @param value String value.
+     * @return Instance deducted.
+     */
+    public static Object deductInstance(String value) {
+        Object result;
+        String trimmedStringValue = value.trim();
+        if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL))) {
+            result = null;
+        } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.TRUE))) {
+            result = true;
+        } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FALSE))) {
+            result = false;
+        } else if(trimmedStringValue.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER)) &&
+                trimmedStringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
+            trimmedStringValue = trimmedStringValue.substring(1, trimmedStringValue.length() - 1);
+
+            try {
+                result = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).parse(trimmedStringValue);
+            } catch (Exception ex) {
+                result = trimmedStringValue;
+            }
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
+            result = UUID.fromString(trimmedStringValue);
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
+            long longValue = Long.parseLong(trimmedStringValue);
+            if(longValue == (byte)longValue) {
+                result = (byte)longValue;
+            } else if(longValue == (short)longValue) {
+                result = (short)longValue;
+            } else if(longValue == (int)longValue) {
+                result = (int)longValue;
+            } else {
+                result = longValue;
+            }
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
+            try {
+                result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX).parse(trimmedStringValue);
+            } catch (ParseException e) {
+                result = trimmedStringValue;
+            }
+        } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
+            try {
+                result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX).parse(trimmedStringValue);
+            } catch (ParseException e) {
+                result = trimmedStringValue;
+            }
+        } else {
+            result = trimmedStringValue;
+        }
+        return result;
     }
 
     /**
