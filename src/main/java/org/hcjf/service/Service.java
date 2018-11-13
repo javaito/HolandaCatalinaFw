@@ -61,7 +61,7 @@ public abstract class Service<C extends ServiceConsumer> {
      * @return Thread factory.
      */
     private ThreadFactory createThreadFactory() {
-        return r -> new ServiceThread(r, getServiceName() + UUID.randomUUID());
+        return r -> new ServiceThread(this, r, getServiceName() + UUID.randomUUID());
     }
 
     /**
@@ -83,14 +83,11 @@ public abstract class Service<C extends ServiceConsumer> {
     }
 
     /**
-     * This method execute any callable over service thread with a service session using an
-     * custom thread pool threadPoolExecutor. This thread pool threadPoolExecutor must create only Service thread implementations.
-     * @param callable Callable to execute.
-     * @param executor Custom thread pool threadPoolExecutor.
-     * @param <R> Expected return type.
-     * @return Callable's future.
+     * This method register a new thread pool executor into the service instance.
+     * @param executorName Executor name.
+     * @param executor Executor instance.
      */
-    protected final <R extends Object> Future<R> fork(Callable<R> callable, String executorName, ThreadPoolExecutor executor) {
+    private void registerExecutor(String executorName, ThreadPoolExecutor executor) {
         if(!executor.equals(serviceExecutor)) {
             if(executorName == null) {
                 throw new NullPointerException("Executor name is null");
@@ -103,6 +100,19 @@ public abstract class Service<C extends ServiceConsumer> {
                 }
             }
         }
+    }
+
+    /**
+     * This method execute any callable over service thread with a service session using an
+     * custom thread pool threadPoolExecutor. This thread pool threadPoolExecutor must create only Service thread implementations.
+     * @param callable Callable to execute.
+     * @param executorName Name of the executor.
+     * @param executor Custom thread pool threadPoolExecutor.
+     * @param <R> Expected return type.
+     * @return Callable's future.
+     */
+    protected final <R extends Object> Future<R> fork(Callable<R> callable, String executorName, ThreadPoolExecutor executor) {
+        registerExecutor(executorName, executor);
 
         ServiceSession session = ServiceSession.getGuestSession();
         Map<String, Object> invokerProperties = null;
@@ -126,22 +136,12 @@ public abstract class Service<C extends ServiceConsumer> {
      * This method execute any runnnable over service thread with a service session using an
      * custom thread pool threadPoolExecutor. This thread pool threadPoolExecutor must create only Service thread implementations.
      * @param runnable Runnable to execute.
+     * @param executorName Name of the executor.
      * @param executor Custom thread pool threadPoolExecutor.
      * @return Runnable's future.
      */
     protected final Future fork(Runnable runnable, String executorName, ThreadPoolExecutor executor) {
-        if(!executor.equals(serviceExecutor)) {
-            if(executorName == null) {
-                throw new NullPointerException("Executor name is null");
-            }
-            synchronized (this) {
-                if (!registeredExecutors.containsKey(executorName)) {
-                    registeredExecutors.put(executorName, executor);
-
-                    Agents.register(new ThreadPoolAgent(executorName, executor));
-                }
-            }
-        }
+        registerExecutor(executorName, executor);
 
         ServiceSession session = ServiceSession.getGuestSession();
         Map<String, Object> invokerProperties = null;
@@ -334,7 +334,7 @@ public abstract class Service<C extends ServiceConsumer> {
          */
         private SystemServices() {
             this.serviceExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(
-                    runnable -> new ServiceThread(runnable, SystemProperties.get(SystemProperties.Service.STATIC_THREAD_NAME)));
+                    runnable -> new StaticServiceThread(runnable, SystemProperties.get(SystemProperties.Service.STATIC_THREAD_NAME)));
             this.serviceExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.Service.STATIC_THREAD_POOL_CORE_SIZE));
             this.serviceExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.Service.STATIC_THREAD_POOL_MAX_SIZE));
             this.serviceExecutor.setKeepAliveTime(SystemProperties.getLong(SystemProperties.Service.STATIC_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
@@ -436,6 +436,12 @@ public abstract class Service<C extends ServiceConsumer> {
             Runtime.getRuntime().halt(errors);
         }
 
+    }
+
+    public final static class StaticServiceThread extends ServiceThread {
+        private StaticServiceThread(Runnable target, String name) {
+            super(target, name);
+        }
     }
 
     /**

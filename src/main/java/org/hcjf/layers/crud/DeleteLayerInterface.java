@@ -22,7 +22,7 @@ public interface DeleteLayerInterface<O extends Object> extends LayerInterface {
 
     /**
      * This method implements the delete operation over a add of the instances.
-     * This instances are selected using the query like a filter.
+     * This instances are selected using the query like a match.
      * @param queryable Instance that contains all the information to evaluate a query.
      * @return Return the instances deleted.
      */

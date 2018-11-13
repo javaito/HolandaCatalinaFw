@@ -46,6 +46,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         httpProtocol = sslProtocol ? HttpPackage.HttpProtocol.HTTPS : HttpPackage.HttpProtocol.HTTP;
     }
 
+    public static void create(Integer port, Context... contexts) {
+        HttpServer server = new HttpServer(port);
+        for(Context context : contexts) {
+            server.addContext(context);
+        }
+        server.start();
+    }
+
     /**
      * Return the instance of the session factory.
      * @return Session factory.

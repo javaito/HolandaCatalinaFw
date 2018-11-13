@@ -163,7 +163,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     /**
      * Returns the shutdown frame to send before the net service shutdown.
      * @param session Session to create the shutdown frame.
-     * @return
+     * @return Shutdown frame
      */
     public final byte[] getShutdownFrame(S session) {
         byte[] result = null;

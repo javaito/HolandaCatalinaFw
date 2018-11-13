@@ -212,6 +212,7 @@ public final class Cloud extends Service<CloudConsumer> {
     /**
      * Invokes the remote instance of a layer.
      * @param layerClass Layer interface class.
+     * @param implName Implementation name.
      * @param method Method to invoke.
      * @param parameters Parameters to invoke.
      * @param <O> Expected return data type.

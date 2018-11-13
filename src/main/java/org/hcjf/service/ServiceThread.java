@@ -18,18 +18,28 @@ public class ServiceThread extends Thread {
 
     private static final String NAME = "ServiceThread";
 
+    private final Service service;
     private ServiceSession session;
     private Long initialAllocatedMemory;
     private Long maxAllocatedMemory;
     private Long initialTime;
     private Long maxExecutionTime;
 
-    public ServiceThread(Runnable target) {
-        this(target, NAME + UUID.randomUUID().toString());
+    public ServiceThread(Service service, Runnable target, String name) {
+        super(ServiceThreadGroup.getInstance(), target, name);
+        this.service = service;
     }
 
     public ServiceThread(Runnable target, String name) {
-        super(ServiceThreadGroup.getInstance(), target, name);
+        this(null, target, name);
+    }
+
+    /**
+     * Returns the class of the service that creates this thread.
+     * @return Class of service.
+     */
+    public final Class<? extends Service> getServiceClass() {
+        return service == null ? null : service.getClass();
     }
 
     /**

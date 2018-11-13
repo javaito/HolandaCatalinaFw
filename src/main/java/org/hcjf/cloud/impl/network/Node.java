@@ -28,7 +28,7 @@ public class Node extends NetworkComponent {
 
     public synchronized String getLanId() {
         String result = null;
-        if(lanAddress != null) {
+        if(lanAddress != null && !lanAddress.isEmpty()) {
             result = createNodeHash(lanAddress, lanPort);
         }
         return result;
@@ -36,7 +36,7 @@ public class Node extends NetworkComponent {
 
     public synchronized String getWanId() {
         String result = null;
-        if(wanAddress != null) {
+        if(wanAddress != null && !wanAddress.isEmpty()) {
             result = createNodeHash(wanAddress, wanPort);
         }
         return result;

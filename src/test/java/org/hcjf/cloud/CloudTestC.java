@@ -18,7 +18,7 @@ import java.util.concurrent.locks.Lock;
 public class CloudTestC {
 
     public static void main(String[] args) {
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
@@ -30,14 +30,14 @@ public class CloudTestC {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc1");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME, "test-cluster");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-C");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "192.168.10.103");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6164");
         System.setProperty(SystemProperties.Cloud.Orchestrator.NODES,
                 "[" +
-                    "{lanAddress:172.16.102.45,lanPort:6162}," +
-                    "{lanAddress:172.16.102.45,lanPort:6163}," +
-                    "{lanAddress:172.16.102.45,lanPort:6164}," +
-                    "{lanAddress:172.16.102.45,lanPort:6165}" +
+                    "{lanAddress:192.168.10.103,lanPort:6162}," +
+                    "{lanAddress:192.168.10.103,lanPort:6163}," +
+                    "{lanAddress:192.168.10.103,lanPort:6164}," +
+                    "{lanAddress:192.168.10.103,lanPort:6165}" +
                 "]");
 
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");

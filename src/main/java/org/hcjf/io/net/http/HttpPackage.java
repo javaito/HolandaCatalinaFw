@@ -294,7 +294,7 @@ public abstract class HttpPackage {
                             }
 
                             HttpHeader transferEncodingHeader = getHeader(HttpHeader.TRANSFER_ENCODING);
-                            if(transferEncodingHeader != null) {
+                            if(transferEncodingHeader != null && transferDecodingLayer == null) {
                                 try {
                                     transferDecodingLayer = Layers.get(TransferDecodingLayerInterface.class, transferEncodingHeader.getHeaderValue());
                                 } catch (Exception ex) {

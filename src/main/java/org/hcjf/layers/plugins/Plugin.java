@@ -1,24 +1,27 @@
 package org.hcjf.layers.plugins;
 
+import org.hcjf.layers.Layer;
 import org.hcjf.utils.Version;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author javaito
  */
-public class Plugin {
+public final class Plugin {
 
     private final String groupName;
     private final String name;
     private final Version version;
-    private final ByteBuffer jarBuffer;
+    private final List<Class<? extends Layer>> layers;
 
-    public Plugin(String groupName, String name, Version version, ByteBuffer jarBuffer) {
+    public Plugin(String groupName, String name, Version version) {
         this.groupName = groupName;
         this.name = name;
         this.version = version;
-        this.jarBuffer = jarBuffer;
+        this.layers = new ArrayList<>();
     }
 
     /**
@@ -46,15 +49,32 @@ public class Plugin {
     }
 
     /**
-     * Return the in-memory jar file.
-     * @return In-memory jar file.
+     * Add a layer class into the plugin definition.
+     * @param layerClass Layer class.
      */
-    public ByteBuffer getJarBuffer() {
-        return jarBuffer;
+    public void addLayer(Class<? extends Layer> layerClass) {
+        layers.add(layerClass);
+    }
+
+    /**
+     * Returns a list of layer definition.
+     * @return Layers list.
+     */
+    public List<Class<? extends Layer>> getLayers() {
+        return layers;
     }
 
     @Override
     public String toString() {
         return groupName + ", " + name + ", " + version.toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        boolean result = false;
+        if(obj instanceof Plugin) {
+            result = groupName.equals(((Plugin)obj).groupName) && name.equals(((Plugin)obj).name);
+        }
+        return result;
     }
 }

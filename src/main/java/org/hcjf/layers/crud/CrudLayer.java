@@ -1,9 +1,12 @@
 package org.hcjf.layers.crud;
 
+import org.hcjf.layers.AdaptableLayer;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
+import org.hcjf.utils.Introspection;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
@@ -12,9 +15,7 @@ import java.util.Map;
 /**
  * @author javaito
  */
-public abstract class CrudLayer<O extends Object> extends Layer implements
-        CreateLayerInterface<O>, ReadLayerInterface<O>, ReadRowsLayerInterface,
-        UpdateLayerInterface<O>, DeleteLayerInterface<O> {
+public abstract class CrudLayer<O extends Object> extends Layer implements AdaptableLayer {
 
     private Class<O> resourceType;
 
@@ -40,7 +41,6 @@ public abstract class CrudLayer<O extends Object> extends Layer implements
             }
 
             if (genericSuperClass instanceof ParameterizedType) {
-
                 Type actualType = ((ParameterizedType) genericSuperClass).
                         getActualTypeArguments()[0];
                 if (actualType instanceof ParameterizedType) {
@@ -56,144 +56,32 @@ public abstract class CrudLayer<O extends Object> extends Layer implements
         return resourceType;
     }
 
-    protected final References getReferences(Map<String, Object> parameters) {
-        return (References) parameters.get(References.class.getName());
-    }
-
-    /**
-     * This method implements the creation of the resource.
-     * @param object Object to represents an instance of the resource.
-     * @return The instance of the resource.
-     */
     @Override
-    public O create(O object) {
-        throw new UnsupportedOperationException();
+    public Object[] adaptArguments(Method method, Object[] args) {
+        Object[] result = args;
+        if(!Map.class.isAssignableFrom(getResourceType())) {
+            if (method.getDeclaringClass().equals(CreateLayerInterface.class)) {
+                result[0] = adaptObject((Map<String, Object>) result[0]);
+            } else if (method.getDeclaringClass().equals(UpdateLayerInterface.class)) {
+                if(args.length == 1) {
+                    result[0] = adaptObject((Map<String, Object>) result[0]);
+                } else {
+                    result[1] = adaptObject((Map<String, Object>) result[1]);
+                }
+            }
+        }
+        return result;
     }
 
-    /**
-     * This method implements the read operation to find an instance of
-     * the resource using only it's id.
-     *
-     * @param id Id to found the instance.
-     * @return Return the instance founded or null if the instance is not found.
-     */
-    @Override
-    public O read(Object id) {
-        throw new UnsupportedOperationException();
+    private O adaptObject(Map<String, Object> parameter) {
+        O result = null;
+        if(parameter != null) {
+            try {
+                result = Introspection.toInstance(parameter, getResourceType());
+            } catch (Exception ex) {
+                throw new RuntimeException("Unable to adapt the call arguments", ex);
+            }
+        }
+        return result;
     }
-
-    /**
-     * This method implements the update of the resource.
-     * @param object Instance of the resource that gonna be updated.
-     *               This instance must have an id to identify the updatable data.
-     * @return The instance updated.
-     */
-    @Override
-    public O update(O object) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the delete operation over the resource.
-     *
-     * @param id Id of the instance that gonna be deleted.
-     * @return Instance of the resource that was deleted.
-     */
-    @Override
-    public O delete(Object id) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation without filters.
-     * @return List with all the instances of the resource.
-     */
-    public Collection<O> read()   {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query.
-     * @param query Query.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<O> read(Query query)  {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query.
-     * @param query Query.
-     * @param parameters Parameters to evaluate query.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<O> read(Query query, Object... parameters)  {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query.
-     * @param queryId Id of the query.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<O> read(Query.QueryId queryId)  {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query.
-     * @param queryId Id of the query.
-     * @param parameters Parameters to evaluate query.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<O> read(Query.QueryId queryId, Object... parameters)  {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query and return a collection of maps.
-     * @param query Query to read data.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<JoinableMap> readRows(Query query)  {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query and return a collection of maps.
-     * @param query Query to read data.
-     * @param parameters Parameters to evaluate query.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<JoinableMap> readRows(Query query, Object... parameters)  {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query and return a collection of maps.
-     * @param queryId Id of the query.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<JoinableMap> readRows(Query.QueryId queryId)  {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * This method implements the read operation using the filters
-     * specified in the query and return a collection of maps.
-     * @param queryId Id of the query.
-     * @param parameters Parameters to evaluate query.
-     * @return Return the list with the instances founded.
-     */
-    public Collection<JoinableMap> readRows(Query.QueryId queryId, Object... parameters)  {
-        throw new UnsupportedOperationException();
-    }
-
 }

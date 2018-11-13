@@ -35,7 +35,6 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
 
     public static final class Locale {
-
         public static final String LOG_TAG = "hcjf.locale.log.tag";
         public static final String DEFAULT_LOCALE = "hcjf.default.locale";
         public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION_CLASS_NAME = "hcjf.default.locale.layer.implementation.class.name";
@@ -50,16 +49,6 @@ public final class SystemProperties extends Properties {
         public static final String PLUGIN_THREADING_GRANT = "hcjf.layers.plugin.threading.grant";
         public static final String PLUGIN_FILE_ACCESS_GRANT = "hcjf.layers.plugin.file.access.grant";
         public static final String DISTRIBUTED_LAYER_ENABLED = "hcjf.layers.distributed.layer.enabled";
-
-        public static final class Deployment {
-            public static final String SERVICE_NAME = "hcjf.layers.deployment.service.name";
-            public static final String SERVICE_PRIORITY = "hcjf.layers.deployment.service.priority";
-            public static final String CLOUD_DEPLOYMENT_ENABLED = "hcjf.layers.plugin.cloud.deployment.enabled";
-            public static final String CLOUD_DEPLOYMENT_MAP_NAME = "hcjf.layers.plugin.cloud.deployment.map.name";
-            public static final String CLOUD_DEPLOYMENT_LOCK_NAME = "hcjf.layers.plugin.cloud.deployment.lock.name";
-            public static final String CLOUD_DEPLOYMENT_LOCK_CONDITION_NAME = "hcjf.layers.plugin.cloud.deployment.lock.condition.name";
-            public static final String CLOUD_DEPLOYMENT_FILTER = "hcjf.layers.plugin.cloud.deployment.filter";
-        }
     }
 
     public static final class Service {
@@ -176,13 +165,22 @@ public final class SystemProperties extends Properties {
             public static final String LOG_TAG = "hcjf.net.kubernetes.log.tag";
             public static final String CLIENT_CONNECTION_TIMEOUT = "hcjf.net.kubernetes.client.connection.timeout";
             public static final String TASK_SLEEP_TIME = "hcjf.net.kubernetes.task.sleep.time";
+            public static final String CURL_COMMAND = "hcjf.net.kubernetes.curl.command";
+            public static final String CURL_COMMAND_AUTHENTICATION_HEADER = "hcjf.net.kubernetes.curl.command.authentication.header";
+            public static final String CURL_COMMAND_CACERT_PARAMETER = "hcjf.net.kubernetes.curl.command.cacert.parameter";
+            public static final String CACERT_FILE_PATH = "hcjf.net.kubernetes.cacert.file.path";
             public static final String TOKEN_FILE_PATH = "hcjf.net.kubernetes.token.file.path";
+            public static final String NAMESPACE_FILE_PATH = "hcjf.net.kubernetes.namespace.file.path";
             public static final String MASTER_NODE_HOST = "hcjf.net.kubernetes.master.node.host";
             public static final String MASTER_NODE_PORT = "hcjf.net.kubernetes.master.node.port";
-            public static final String HOST_NAME = "hcjf.net.kubernetes.host.name";
-            public static final String REST_URL = "hcjf.net.kubernetes.rest.url";
             public static final String AUTHORIZATION_HEADER = "hcjf.net.kubernetes.authorization.header";
             public static final String JSON_DATE_FORMAT = "hcjf.net.kubernetes.json.date.format";
+
+            public static final class EndPoints {
+                public static final String LIST_PODS = "hcjf.net.kubernetes.end.points.list.pods";
+                public static final String LIST_SERVICES = "hcjf.net.kubernetes.end.points.list.services";
+                public static final String LIST_END_POINTS = "hcjf.net.kubernetes.end.points.list.end_points";
+            }
         }
 
         public static final class Ssl {
@@ -379,6 +377,13 @@ public final class SystemProperties extends Properties {
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
 
+            public static final class Kubernetes {
+                public static final String ENABLED = "hcjf.cloud.orchestrator.kubernetes.enabled";
+                public static final String POD_LABELS = "hcjf.cloud.orchestrator.kubernetes.pod.labels";
+                public static final String SERVICE_LABELS = "hcjf.cloud.orchestrator.kubernetes.service.labels";
+                public static final String SERVICE_PORT_NAME = "hcjf.cloud.orchestrator.kubernetes.service.port.name";
+            }
+
             public static final class ThisNode {
                 public static final String READABLE_LAYER_IMPLEMENTATION_NAME = "hcjf.cloud.orchestrator.this.node.readable.layer.implementation.name";
                 public static final String ID = "hcjf.cloud.orchestrator.this.node.id";
@@ -473,12 +478,6 @@ public final class SystemProperties extends Properties {
         defaults.put(Layer.READABLE_ALL_LAYER_IMPLEMENTATION_NAME, "system_layer");
         defaults.put(Layer.READABLE_LAYER_IMPLEMENTATION_NAME, "system_readable_layer");
         defaults.put(Layer.DISTRIBUTED_LAYER_ENABLED, "false");
-        defaults.put(Layer.Deployment.SERVICE_NAME, "DeploymentService");
-        defaults.put(Layer.Deployment.SERVICE_PRIORITY, "0");
-        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_ENABLED, "true");
-        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_MAP_NAME, "hcjf.layers.plugin.cloud.deployment.map");
-        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_LOCK_NAME, "hcjf.layers.plugin.cloud.deployment.lock");
-        defaults.put(Layer.Deployment.CLOUD_DEPLOYMENT_LOCK_CONDITION_NAME, "hcjf.layers.plugin.cloud.deployment.lock.condition.name");
 
         defaults.put(Service.STATIC_THREAD_NAME, "StaticServiceThread");
         defaults.put(Service.STATIC_THREAD_POOL_CORE_SIZE, "1");
@@ -567,12 +566,18 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.KubernetesSpy.SERVICE_NAME, "Kubernetes Spy Service");
         defaults.put(Net.KubernetesSpy.LOG_TAG, "KUBERNETES_SPY");
         defaults.put(Net.KubernetesSpy.CLIENT_CONNECTION_TIMEOUT, "10000");
-        defaults.put(Net.KubernetesSpy.TASK_SLEEP_TIME, "10000");
+        defaults.put(Net.KubernetesSpy.TASK_SLEEP_TIME, "5000");
+        defaults.put(Net.KubernetesSpy.CURL_COMMAND, "curl");
+        defaults.put(Net.KubernetesSpy.CURL_COMMAND_AUTHENTICATION_HEADER, "-H 'Authorization: Bearer %s'");
+        defaults.put(Net.KubernetesSpy.CURL_COMMAND_CACERT_PARAMETER, "--cacert %s");
+        defaults.put(Net.KubernetesSpy.CACERT_FILE_PATH, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt");
         defaults.put(Net.KubernetesSpy.TOKEN_FILE_PATH, "/var/run/secrets/kubernetes.io/serviceaccount/token");
-        defaults.put(Net.KubernetesSpy.MASTER_NODE_HOST, "KUBERNETES_SERVICE_HOST");
-        defaults.put(Net.KubernetesSpy.MASTER_NODE_PORT, "KUBERNETES_PORT_443_TCP_PORT");
-        defaults.put(Net.KubernetesSpy.HOST_NAME, "HOSTNAME");
-        defaults.put(Net.KubernetesSpy.REST_URL, "https://%s:%s/api/v1/namespaces/default/pods/%s");
+        defaults.put(Net.KubernetesSpy.NAMESPACE_FILE_PATH, "/var/run/secrets/kubernetes.io/serviceaccount/namespace");
+        defaults.put(Net.KubernetesSpy.MASTER_NODE_HOST, "KUBERNETES_PORT_443_TCP_ADDR");
+        defaults.put(Net.KubernetesSpy.MASTER_NODE_PORT, "KUBERNETES_SERVICE_PORT");
+        defaults.put(Net.KubernetesSpy.EndPoints.LIST_PODS, "https://%s:%s/api/v1/namespaces/%s/pods");
+        defaults.put(Net.KubernetesSpy.EndPoints.LIST_SERVICES, "https://%s:%s/api/v1/namespaces/%s/services");
+        defaults.put(Net.KubernetesSpy.EndPoints.LIST_END_POINTS, "https://%s:%s/api/v1/namespaces/%s/endpoints");
         defaults.put(Net.KubernetesSpy.AUTHORIZATION_HEADER, "Bearer %s");
         defaults.put(Net.KubernetesSpy.JSON_DATE_FORMAT, "yyyy-MM-dd'T'HH:mm:ss'Z'");
 
@@ -604,6 +609,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
         defaults.put(Net.Http.AUTOMATIC_CONTENT_LENGTH_SKIP_CODES, "[304]");
         defaults.put(Net.Http.MAX_PACKAGE_SIZE, Integer.toString(20 * 1024 * 1024));
+
+        defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
+        defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
 
         defaults.put(Net.Http.Http2Settings.HEADER_TABLE_SIZE, "4096");
         defaults.put(Net.Http.Http2Settings.ENABLE_PUSH, "true");
@@ -716,7 +724,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.AVAILABLE, "false");
         defaults.put(Cloud.Orchestrator.SERVICE_PRIORITY, "0");
         defaults.put(Cloud.Orchestrator.SERVER_LISTENER_PORT, "18080");
-        defaults.put(Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME, "10000");
+        defaults.put(Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME, "5000");
         defaults.put(Cloud.Orchestrator.NODE_LOST_TIMEOUT, "1800000");
         defaults.put(Cloud.Orchestrator.ACK_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.REORGANIZATION_TIMEOUT, "2000");
@@ -732,7 +740,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
         defaults.put(Cloud.Orchestrator.ThisNode.VERSION, "0");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "127.0.0.1");
-        defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "9090");
+        defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "18080");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_service");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "20000");
         defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
@@ -740,6 +748,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");
         defaults.put(Cloud.Orchestrator.Broadcast.INTERFACE_NAME, "eth0");
         defaults.put(Cloud.Orchestrator.Broadcast.PORT, "16000");
+        defaults.put(Cloud.Orchestrator.Kubernetes.ENABLED, "false");
+        defaults.put(Cloud.Orchestrator.Kubernetes.POD_LABELS, "[]");
+        defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_LABELS, "[]");
+        defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_PORT_NAME, "hcjf-k8s-port");
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "10000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");

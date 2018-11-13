@@ -23,9 +23,7 @@ public class Agents {
             ObjectName name = new ObjectName(String.format(OBJECT_NAME_TEMPLATE,
                     agent.getPackageName(), agent.getName()));
             mbs.registerMBean(agent, name);
-        } catch (Exception ex){
-            ex.printStackTrace();
-        }
+        } catch (Exception ex){}
     }
 
 }

@@ -1,5 +1,6 @@
 package org.hcjf.service.security;
 
+import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
@@ -42,14 +43,16 @@ public class ServiceSecurityManager extends SecurityManager {
     }
 
     @Override
-    public void checkAccess(Thread t) {
+    public void checkAccess(Thread thread) {
         if(Thread.currentThread() instanceof ServiceThread) {
             ServiceSession session = ServiceSession.getCurrentIdentity();
             if(session != null) {
                 ServiceSession.LayerStackElement element = session.getCurrentLayer();
                 if (element != null) {
                     if (element.isPlugin()) {
-                        throw new SecurityException("Unable to manipulate a thread into a plugin layer");
+                        if(!(thread instanceof Service.StaticServiceThread)) {
+                            throw new SecurityException("Unable to manipulate a thread into a plugin layer");
+                        }
                     }
                 }
             }

@@ -1,5 +1,8 @@
 package org.hcjf.cloud.impl.network;
 
+import io.kubernetes.client.models.V1Pod;
+import io.kubernetes.client.models.V1Service;
+import io.kubernetes.client.models.V1ServicePort;
 import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
@@ -10,13 +13,17 @@ import org.hcjf.events.RemoteEvent;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
+import org.hcjf.io.net.http.HttpClient;
+import org.hcjf.io.net.http.HttpResponse;
+import org.hcjf.io.net.kubernetes.KubernetesSpy;
+import org.hcjf.io.net.kubernetes.KubernetesSpyConsumer;
 import org.hcjf.io.net.messages.Message;
+import org.hcjf.io.net.messages.NetUtils;
 import org.hcjf.io.net.messages.ResponseMessage;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
-import org.hcjf.layers.query.Joinable;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.log.Log;
@@ -28,6 +35,7 @@ import org.hcjf.utils.Strings;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -163,6 +171,79 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             CloudBroadcastConsumer broadcastConsumer = new CloudBroadcastConsumer();
             BroadcastService.getInstance().registerConsumer(broadcastConsumer);
         }
+
+        if(SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.Kubernetes.ENABLED)) {
+            thisNode.setId(new UUID(NetUtils.getLocalIp().hashCode(), KubernetesSpy.getHostName().hashCode()));
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes id %s", thisNode.getId());
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local IP %s", NetUtils.getLocalIp());
+            thisNode.setLanAddress(NetUtils.getLocalIp());
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes consumer starting");
+
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes pod labels: %s",
+                    SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.POD_LABELS).toString());
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes service labels: %s",
+                    SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_LABELS).toString());
+            KubernetesSpy.getInstance().registerConsumer(new KubernetesSpyConsumer(
+                    pod -> {
+                        Map<String,String> expectedLabels = SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.POD_LABELS);
+                        boolean result = true;
+                        for(String labelKey : expectedLabels.keySet()) {
+                            if(!(pod.getMetadata().getLabels().containsKey(labelKey) &&
+                                    pod.getMetadata().getLabels().get(labelKey).equals(expectedLabels.get(labelKey)))) {
+                                result = false;
+                                break;
+                            }
+                        }
+                        return result;
+                    },
+                    service -> {
+                        Map<String,String> expectedLabels = SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_LABELS);
+                        boolean result = true;
+                        for(String labelKey : expectedLabels.keySet()) {
+                            if(!(service.getMetadata().getLabels().containsKey(labelKey) &&
+                                    service.getMetadata().getLabels().get(labelKey).equals(expectedLabels.get(labelKey)))) {
+                                result = false;
+                                break;
+                            }
+                        }
+                        return result;
+                    }) {
+
+                private final Map<String,Node> nodesByPodId = new HashMap<>();
+
+                @Override
+                protected void onPodDiscovery(V1Pod pod) {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes pod discovery: %s", pod.getMetadata().getUid());
+                    Node node = new Node();
+                    node.setLanAddress(pod.getStatus().getPodIP());
+                    //Use the same port because supposed that the node is a replica of this node.
+                    node.setLanPort(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT));
+                    registerConsumer(node);
+                    nodesByPodId.put(pod.getMetadata().getUid(),node);
+                }
+
+                @Override
+                protected void onPodLost(V1Pod pod) {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes pod lost: %s", pod.getMetadata().getUid());
+                    unregisterConsumer(nodesByPodId.remove(pod.getMetadata().getUid()));
+                }
+
+                @Override
+                protected void onServiceDiscovery(V1Service service) {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes service discovery: %s", service.getMetadata().getUid());
+                    ServiceEndPoint serviceEndPoint = new ServiceEndPoint();
+                    serviceEndPoint.setGatewayAddress(service.getMetadata().getName());
+                    for(V1ServicePort port : service.getSpec().getPorts()) {
+                        if(port.getName().equals(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_PORT_NAME))) {
+                            serviceEndPoint.setGatewayPort(port.getPort());
+                            break;
+                        }
+                    }
+                    registerConsumer(serviceEndPoint);
+                }
+            });
+        }
+
     }
 
     /**
@@ -212,6 +293,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     @Override
     public void unregisterConsumer(NetworkComponent networkComponent) {
+        if(networkComponent instanceof Node) {
+            Node node = (Node) networkComponent;
+            String lanId = node.getLanId();
+            String wanId = node.getWanId();
+            nodesByLanId.remove(lanId);
+            nodesByWanId.remove(wanId);
+            nodes.remove(node);
+        }
     }
 
     /**
@@ -507,7 +596,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending wagon");
                             Map<String,List<Message>> load = getWagonLoad();
                             wagonMessage.getMessages().putAll(load);
-                            wagonMessage.getNodes().addAll(nodes);
+//                            wagonMessage.getNodes().addAll(nodes);
                             sendMessageToNode(sessionByNode.get(nextDestination.getId()), wagonMessage);
                         }
                     } else {

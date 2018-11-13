@@ -148,10 +148,10 @@ public class QueryRunningTest {
     private static class TestDataSource implements Queryable.DataSource<JoinableMap> {
 
         @Override
-        public Collection<JoinableMap> getResourceData(Query query) {
+        public Collection<JoinableMap> getResourceData(Queryable queryable) {
             Collection<JoinableMap> result = new HashSet<>();
 
-            switch (query.getResourceName()) {
+            switch (queryable.getResourceName()) {
                 case CHARACTER: {
                     for(JoinableMap map : simpsonCharacters.values()) {
                         result.add(new JoinableMap(map));
@@ -165,7 +165,7 @@ public class QueryRunningTest {
                     break;
                 }
                 default:{
-                    throw new IllegalArgumentException("Resource not found " + query.getResourceName());
+                    throw new IllegalArgumentException("Resource not found " + queryable.getResourceName());
                 }
             }
 

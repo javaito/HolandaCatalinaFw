@@ -5,7 +5,6 @@ import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.distributed.DistributedLayer;
 import org.hcjf.layers.distributed.DistributedLayerInterface;
-import org.hcjf.layers.plugins.DeploymentService;
 import org.hcjf.layers.plugins.Plugin;
 import org.hcjf.layers.plugins.PluginClassLoader;
 import org.hcjf.layers.plugins.PluginLayer;
@@ -68,6 +67,7 @@ public final class Layers {
     private final Map<String, LayerInterface> pluginWrapperCache;
     private final Map<String, Layer> pluginCache;
     private final Set<Resource> resources;
+    private final List<Plugin> plugins;
 
     private Layers() {
         initialInstances = new HashMap<>();
@@ -80,6 +80,7 @@ public final class Layers {
         pluginWrapperCache = new HashMap<>();
         pluginCache = new HashMap<>();
         resources = new HashSet<>();
+        plugins = new ArrayList<>();
     }
 
     /**
@@ -305,6 +306,7 @@ public final class Layers {
      * This method publish the layers in order to be used by anyone
      * that has the credentials to use the layer.
      * @param layerInstance Layer instance.
+     * @param <L> Expected layer type.
      * @return Implementation name.
      * @throws IllegalArgumentException If the layer class is null.
      */
@@ -449,18 +451,9 @@ public final class Layers {
      * @return Plugin instance.
      */
     public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer) {
-        return publishPlugin(jarBuffer, DeploymentService.DeploymentConsumer.DEFAULT_FILTER);
-    }
-
-    /**
-     * This method publish all the layer into the plugin jar.
-     * @param jarBuffer Plugin jar.
-     * @param filter Deployment filter.
-     * @return Plugin instance.
-     */
-    public static synchronized Plugin publishPlugin(ByteBuffer jarBuffer, DeploymentService.DeploymentConsumer.DeploymentFilter filter) {
         String pluginGroupName = Strings.EMPTY_STRING;
         String pluginName = Strings.EMPTY_STRING;
+        Version pluginVersion = null;
         Plugin result = null;
         try {
             File tempFile = File.createTempFile("."+UUID.randomUUID().toString(), "tmp");
@@ -483,12 +476,32 @@ public final class Layers {
                 throw new IllegalArgumentException("Plugin name is not specified into the manifest file (Plugin-Name)");
             }
 
-            Version pluginVersion = Version.build(pluginAttributes.getValue(PLUGIN_VERSION));
+            pluginVersion = Version.build(pluginAttributes.getValue(PLUGIN_VERSION));
 
-            result = new Plugin(pluginGroupName, pluginName, pluginVersion, jarBuffer);
-            if(filter.matchPlugin(pluginGroupName, pluginName, pluginVersion)) {
+            result = new Plugin(pluginGroupName, pluginName, pluginVersion);
+
+            boolean deployPlugin = false;
+            if(instance.plugins.contains(result)) {
+                int currentIndex = instance.plugins.indexOf(result);
+                if(!instance.plugins.get(currentIndex).getVersion().equals(result.getVersion())) {
+                    Plugin currentPlugin = instance.plugins.remove(currentIndex);
+                    if(currentPlugin.getVersion().compareTo(result.getVersion()) > 0) {
+                        Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Downgrade plugin version %s.%s:%s -> %s",
+                                pluginGroupName, pluginName, currentPlugin.getVersion().toString(), pluginVersion.toString());
+                    } else {
+                        Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Upgrade plugin version %s.%s:%s -> %s",
+                                pluginGroupName, pluginName, currentPlugin.getVersion().toString(), pluginVersion.toString());
+                    }
+                    deployPlugin = true;
+                }
+            } else {
+                deployPlugin = true;
+            }
+
+            if(deployPlugin) {
+                instance.plugins.add(result);
                 String[] layers = pluginAttributes.getValue(LAYERS).split(CLASS_SEPARATOR);
-                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Deploying plugin %s", pluginName);
+                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Deploying plugin %s.%s:%s", pluginGroupName, pluginName, pluginVersion.toString());
                 URLClassLoader pluginClassLoader = new PluginClassLoader(result, new URL[]{tempFile.toURI().toURL()},
                         instance.getClass().getClassLoader());
 
@@ -498,7 +511,7 @@ public final class Layers {
                 for (String layerClassName : layers) {
                     Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Loading layer %s", layerClassName);
                     layerClass = (Class<? extends Layer>) Class.forName(layerClassName, true, pluginClassLoader);
-                    getLayerInterfaceClass(layerClass);
+                    result.addLayer(layerClass);
                     layer = layerClass.getConstructor().newInstance();
                     toDeployLayers.add(layer);
                     Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Layer %s loaded", layer.getImplName());
@@ -508,7 +521,7 @@ public final class Layers {
                     instance.pluginCache.remove(layerInstance.getClass().getName());
                     instance.pluginCache.put(layerInstance.getClass().getName(), layerInstance);
 
-                    for(Class<? extends LayerInterface> layerInterfaceClass : getLayerInterfaceClass(layerInstance.getClass())) {
+                    for (Class<? extends LayerInterface> layerInterfaceClass : getLayerInterfaceClass(layerInstance.getClass())) {
                         if (!instance.pluginLayerImplementations.containsKey(layerInterfaceClass)) {
                             instance.pluginLayerImplementations.put(layerInterfaceClass, new HashMap<>());
                         }
@@ -517,13 +530,11 @@ public final class Layers {
                         }
                     }
                 }
-
-
             } else {
-                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Plugin refused (%s:%s)", pluginGroupName, pluginName);
+                Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Exists a plugin deployment in the same group with the same name and version: %s.%s:%s", pluginGroupName, pluginName, pluginVersion.toString());
             }
         } catch (Exception ex) {
-            Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Plugin deployment fail (%s:%s)", ex, pluginGroupName, pluginName);
+            Log.d(SystemProperties.get(SystemProperties.Layer.LOG_TAG), "Plugin deployment fail %s.%s", ex, pluginGroupName, pluginName);
         }
 
         return result;
@@ -636,7 +647,7 @@ public final class Layers {
 
     /**
      * This interface verify if the layer instance match with some particular
-     * filter or not.
+     * match or not.
      * @param <L> Kind of layer
      */
     public interface LayerMatcher<L extends LayerInterface> {

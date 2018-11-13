@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.hcjf.service.ServiceConsumer;
 import org.hcjf.utils.bson.BsonParcelable;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -14,6 +15,7 @@ public class NetworkComponent implements ServiceConsumer, BsonParcelable {
 
     private UUID id;
     private String name;
+    private Map<String,Object> kubernetesMetadata;
 
     private static final Gson gson;
 
@@ -35,6 +37,14 @@ public class NetworkComponent implements ServiceConsumer, BsonParcelable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Map<String, Object> getKubernetesMetadata() {
+        return kubernetesMetadata;
+    }
+
+    public void setKubernetesMetadata(Map<String, Object> kubernetesMetadata) {
+        this.kubernetesMetadata = kubernetesMetadata;
     }
 
     @Override

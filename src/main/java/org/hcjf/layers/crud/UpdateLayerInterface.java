@@ -24,7 +24,7 @@ public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
 
     /**
      * This method implements the update operation over a add of the instances,
-     * this instances are selected using the query like a filter.
+     * this instances are selected using the query like a match.
      * @param queryable Instance that contains all the information to evaluate a query.
      * @param object Contains the values for all the instances that found the query evaluation.
      * @return Return the instances updated.

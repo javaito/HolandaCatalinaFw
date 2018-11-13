@@ -16,6 +16,8 @@ public class HttpResponse extends HttpPackage {
     private String reasonPhrase;
 
     public HttpResponse() {
+        this.responseCode = HttpResponseCode.OK;
+        this.reasonPhrase = HttpResponseCode.DefaultPhrase.getDefaultPhrase(HttpResponseCode.OK);
     }
 
     protected HttpResponse(HttpResponse httpResponse) {

@@ -711,7 +711,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         List<Queryable> queries = new ArrayList<>();
         queries.add(verifyInstance(joinQuery, consumer));
 
-        //Build a query for each join and evaluate the better filter to start
+        //Build a query for each join and evaluate the better match to start
         int queryStart = 0;
         int joinStart = 0;
         for (int i = 0; i < joins.size(); i++) {

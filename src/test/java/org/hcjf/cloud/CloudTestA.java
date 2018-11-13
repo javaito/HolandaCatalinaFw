@@ -38,17 +38,17 @@ public class CloudTestA {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc1");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME, "test-cluster");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-A");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "192.168.10.103");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6162");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.ID, "00000000-0000-0000-0000-000000000001");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS, "172.16.102.45");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS, "192.168.10.103");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_PORT, "6162");
         System.setProperty(SystemProperties.Cloud.Orchestrator.NODES,
                 "[" +
-                        "{lanAddress:172.16.102.45,lanPort:6162}," +
-                        "{lanAddress:172.16.102.45,lanPort:6163}," +
-                        "{lanAddress:172.16.102.45,lanPort:6164}," +
-                        "{lanAddress:172.16.102.45,lanPort:6165}" +
+                        "{lanAddress:192.168.10.103,lanPort:6162}," +
+                        "{lanAddress:192.168.10.103,lanPort:6163}," +
+                        "{lanAddress:192.168.10.103,lanPort:6164}," +
+                        "{lanAddress:192.168.10.103,lanPort:6165}" +
                 "]");
         System.setProperty(SystemProperties.Cloud.Orchestrator.SERVICE_END_POINTS,
                 "[" +
