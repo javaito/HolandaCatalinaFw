@@ -12,12 +12,15 @@ import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.regex.Matcher;
 
 /**
  * Implementation of the net service that provides the http protocol server.
@@ -25,10 +28,11 @@ import java.util.*;
  */
 public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
-    private Map<NetSession, HttpRequest> requestBuffers;
-    private List<Context> contexts;
+    private final Map<NetSession, HttpRequest> requestBuffers;
+    private final List<Context> contexts;
     private HttpSessionManager sessionManager;
     private HttpPackage.HttpProtocol httpProtocol;
+    private final Map<String,AccessControl> accessControlMap;
 
     public HttpServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_SERVER_PORT));
@@ -43,6 +47,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 NetService.TransportLayerProtocol.TCP, false, true);
         requestBuffers = new HashMap<>();
         contexts = new ArrayList<>();
+        accessControlMap = new HashMap<>();
         httpProtocol = sslProtocol ? HttpPackage.HttpProtocol.HTTPS : HttpPackage.HttpProtocol.HTTP;
     }
 
@@ -52,6 +57,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             server.addContext(context);
         }
         server.start();
+    }
+
+    /**
+     * Adda new access control into the server.
+     * @param accessControl Access control instance.
+     */
+    public final void addAccessControl(AccessControl accessControl) {
+        accessControlMap.put(accessControl.getDomain(), accessControl);
     }
 
     /**
@@ -184,12 +197,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @param contextName Request's context name.
      * @return Founded context.
      */
-    protected Context findContext(String contextName) {
-        Context result = null;
+    protected ContextMatcher findContext(String contextName) {
+        ContextMatcher result = null;
+        Matcher matcher;
 
         for(Context context : contexts) {
-            if(contextName.matches(context.getContextRegex())) {
-                result = context;
+            matcher = context.getPattern().matcher(contextName);
+            if(matcher.matches()) {
+                result = new ContextMatcher(context, matcher);
                 break;
             }
         }
@@ -232,7 +247,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
             HttpResponse response = null;
             HttpRequest request = (HttpRequest) payLoad;
-            Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
+            //Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
             try {
                 if(netPackage.getSession().isChecked()) {
                     HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
@@ -249,14 +264,28 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
                         }
                     } else {
-                        Context context = findContext(request.getContext());
-                        if (context != null) {
-                            boolean originHeaderPresent = request.containsHeader(HttpHeader.ORIGIN);
+                        ContextMatcher contextMatcher = findContext(request.getContext());
+                        if (contextMatcher != null) {
+                            Context context = contextMatcher.getContext();
+                            HttpHeader originHeader = request.getHeader(HttpHeader.ORIGIN);
                             try {
-                                Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
-                                if (originHeaderPresent && request.getMethod().equals(HttpMethod.OPTIONS)) {
-                                    //If there's a Cross-Origin-Resource-Sharing preflight request returns a empty response
+                                request.setMatcher(contextMatcher.getMatcher());
+                                //Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
+                                if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
+                                    URL url = new URL(originHeader.getHeaderValue());
                                     response = new HttpResponse();
+                                    if(accessControlMap.containsKey(url.getHost())) {
+                                        AccessControl accessControl = accessControlMap.get(url.getHost());
+                                        response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.maxAge.toString()));
+                                        if(!accessControl.getAllowMethods().isEmpty()) {
+                                            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
+                                                    Strings.join(accessControl.getAllowMethods(), Strings.ARGUMENT_SEPARATOR)));
+                                        }
+                                        if(!accessControl.getAllowHeaders().isEmpty()) {
+                                            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS,
+                                                    Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
+                                        }
+                                    }
                                 } else {
                                     if (context.getTimeout() > 0) {
                                         response = Service.call(() -> context.onContext(request),
@@ -271,17 +300,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                         connectionKeepAlive = true;
                                     }
                                 }
+                                if(originHeader != null) {
+                                    response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN, originHeader.getHeaderValue()));
+                                }
                             } catch (Throwable throwable) {
                                 Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
                                 response = context.onError(request, throwable);
                                 if (response == null) {
                                     response = createDefaultErrorResponse(throwable);
-                                }
-                            } finally {
-                                if (originHeaderPresent) {
-                                    for (HttpHeader header : context.getCrossOriginHeaders(request)) {
-                                        response.addHeader(header);
-                                    }
                                 }
                             }
                         } else {
@@ -333,8 +359,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     write(session, response, false);
                 }
 
-                Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
-                        (System.currentTimeMillis() - time), response.toString());
+                //Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
+                //        (System.currentTimeMillis() - time), response.toString());
             } catch (Throwable throwable) {
                 Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
                 connectionKeepAlive = false;
@@ -385,8 +411,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected void onCheckSessionError(HttpSession session, HttpPackage requestPayLoad, NetPackage netPackage, Throwable exception) {
         HttpRequest request = (HttpRequest)requestPayLoad;
-        Context context = findContext(request.getContext());
-        HttpResponse response = context.onError(request, exception);
+        ContextMatcher contextMatcher = findContext(request.getContext());
+        HttpResponse response = contextMatcher.getContext().onError(request, exception);
         String logTag = SystemProperties.get(SystemProperties.Net.Http.LOG_TAG);
         try {
             write(session, response, false);
@@ -502,4 +528,72 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server stopped.");
     }
 
+    public static class ContextMatcher {
+
+        private final Context context;
+        private final Matcher matcher;
+
+        public ContextMatcher(Context context, Matcher matcher) {
+            this.context = context;
+            this.matcher = matcher;
+        }
+
+        public Context getContext() {
+            return context;
+        }
+
+        public Matcher getMatcher() {
+            return matcher;
+        }
+    }
+
+    public static class AccessControl {
+
+        private static Integer MAX_AGE = 86400;
+
+        private final String domain;
+        private final Integer maxAge;
+        private final List<String> allowMethods;
+        private final List<String> allowHeaders;
+
+        public AccessControl(String domain, Integer maxAge) {
+            this.domain = domain;
+            this.maxAge = maxAge <= 0 || maxAge > MAX_AGE ? MAX_AGE : maxAge;
+            this.allowMethods = new ArrayList<>();
+            this.allowHeaders = new ArrayList<>();
+        }
+
+        public AccessControl(String domain) {
+            this(domain, MAX_AGE);
+        }
+
+        public String getDomain() {
+            return domain;
+        }
+
+        public Integer getMaxAge() {
+            return maxAge;
+        }
+
+        public List<String> getAllowMethods() {
+            return Collections.unmodifiableList(allowMethods);
+        }
+
+        public List<String> getAllowHeaders() {
+            return Collections.unmodifiableList(allowHeaders);
+        }
+
+        public void addAllowMethod(String... methods) {
+            for(String method : methods) {
+                allowMethods.add(method);
+            }
+        }
+
+        public void addAllowHeader(String... headers) {
+            for(String header : headers) {
+                allowHeaders.add(header);
+            }
+        }
+
+    }
 }

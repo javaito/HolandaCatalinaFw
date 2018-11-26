@@ -9,6 +9,7 @@ import org.hcjf.utils.Strings;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.*;
+import java.util.regex.Matcher;
 
 /**
  * This particular kind of package contains the request information.
@@ -25,6 +26,7 @@ public class HttpRequest extends HttpPackage {
     private HttpMethod method;
     private final Map<String, Object> parameters;
     private final List<String> pathParts;
+    private Matcher matcher;
 
     static {
         Layers.publishLayer(FormUrlEncodedDecoder.class);
@@ -55,7 +57,7 @@ public class HttpRequest extends HttpPackage {
      * Return the request path
      * @return Request path.
      */
-    public String getPath() {
+    public final String getPath() {
         return path;
     }
 
@@ -63,7 +65,7 @@ public class HttpRequest extends HttpPackage {
      * Set the request path.
      * @param path Request path.
      */
-    public void setPath(String path) {
+    public final void setPath(String path) {
         this.path = path;
     }
 
@@ -71,7 +73,7 @@ public class HttpRequest extends HttpPackage {
      * Return the request context.
      * @return Request context.
      */
-    public String getContext() {
+    public final String getContext() {
         return context;
     }
 
@@ -79,7 +81,7 @@ public class HttpRequest extends HttpPackage {
      * Set the request context.
      * @param context Request context.
      */
-    public void setContext(String context) {
+    public final void setContext(String context) {
         this.context = context;
         this.path = context;
     }
@@ -88,7 +90,7 @@ public class HttpRequest extends HttpPackage {
      * Return the request method.
      * @return Request method.
      */
-    public HttpMethod getMethod() {
+    public final HttpMethod getMethod() {
         return method;
     }
 
@@ -96,7 +98,7 @@ public class HttpRequest extends HttpPackage {
      * Set the request method.
      * @param method Request method.
      */
-    public void setMethod(HttpMethod method) {
+    public final void setMethod(HttpMethod method) {
         this.method = method;
     }
 
@@ -105,7 +107,7 @@ public class HttpRequest extends HttpPackage {
      * @param name Name of the parameter.
      * @return True if the parameter is present and false in the otherwise.
      */
-    public boolean hasParameter(String name) {
+    public final boolean hasParameter(String name) {
         return parameters.containsKey(name);
     }
 
@@ -113,7 +115,7 @@ public class HttpRequest extends HttpPackage {
      * Return the request parameters.
      * @return Request parameters.
      */
-    public Map<String, Object> getParameters() {
+    public final Map<String, Object> getParameters() {
         return Collections.unmodifiableMap(parameters);
     }
 
@@ -123,8 +125,25 @@ public class HttpRequest extends HttpPackage {
      * @param <O> Expected response type
      * @return Return the parameter.
      */
-    public <O extends Object> O getParameter(String parameterName) {
+    public final <O extends Object> O getParameter(String parameterName) {
         return (O) parameters.get(parameterName);
+    }
+
+    /**
+     * Returns the value that corresponds with the place named with the name indicated.
+     * @param placeName Name of the place.
+     * @return Value replaced into the place.
+     */
+    public final String getReplaceableValue(String placeName) {
+        return matcher == null ? null : matcher.group(placeName);
+    }
+
+    /**
+     * This method set the matche that results of the match between the context regex and the url invoked with the request.
+     * @param matcher Matcher instance.
+     */
+    public final void setMatcher(Matcher matcher) {
+        this.matcher = matcher;
     }
 
     /**
@@ -132,7 +151,7 @@ public class HttpRequest extends HttpPackage {
      * @param parameterName Parameter name.
      * @param parameterValue Parameter value.
      */
-    public void addHttpParameter(String parameterName, String parameterValue) {
+    public final void addHttpParameter(String parameterName, String parameterValue) {
         parameters.put(parameterName, parameterValue);
     }
 
@@ -142,7 +161,7 @@ public class HttpRequest extends HttpPackage {
      * a list ad [path1,path2,pathN]
      * @return List with all the parts of the request path.
      */
-    public List<String> getPathParts() {
+    public final List<String> getPathParts() {
         return pathParts;
     }
 

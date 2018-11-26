@@ -544,8 +544,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
         defaults.put(Net.WRITE_TIMEOUT, "100");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
-        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "200");
-        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "100");
+        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "400");
+        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "200");
         defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");

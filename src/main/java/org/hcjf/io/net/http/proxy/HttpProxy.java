@@ -77,8 +77,8 @@ public class HttpProxy extends HttpServer {
      * @return Always returns the unique internal context
      */
     @Override
-    protected final Context findContext(String contextName) {
-        return defaultContext;
+    protected final ContextMatcher findContext(String contextName) {
+        return new ContextMatcher(defaultContext, null);
     }
 
 }

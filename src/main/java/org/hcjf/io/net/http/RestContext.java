@@ -31,6 +31,7 @@ public class RestContext extends Context {
         private static final String VALUE_FIELD = "value";
         private static final String PARAMS_FIELD = "params";
         private static final String QUERIES_FIELD = "queries";
+        private static final String ID_URL_FIELD = "id";
         private static class Throwable {
             private static final String MESSAGE = "message";
             private static final String EXCEPTION = "exception";
@@ -38,11 +39,11 @@ public class RestContext extends Context {
         }
     }
 
-    private static final String REGEX_TEMPLATE = "/%s.*";
+    private static final String REGEX_TEMPLATE = "\\/%s(\\/(?<id>[A-Za-z0-9\\-]{0,}))?(\\/.*)?(\\?.*)?";
     private static final String DEFAULT_QUERY_PARAMETER = "q";
 
     public RestContext(String baseContext) {
-        super(String.format(REGEX_TEMPLATE, baseContext));
+        super(String.format(REGEX_TEMPLATE, Strings.trim(baseContext, Strings.SLASH)));
     }
 
     /**
@@ -61,11 +62,12 @@ public class RestContext extends Context {
 
         if(method.equals(HttpMethod.GET)) {
             //If the method is get then compile the query into the 'q' parameter.
+            String id = request.getReplaceableValue(Fields.ID_URL_FIELD);
             if(request.hasParameter(DEFAULT_QUERY_PARAMETER)) {
                 Queryable queryable = Query.compile(request.getParameter(DEFAULT_QUERY_PARAMETER));
                 jsonElement = gson.toJsonTree(Query.evaluate(queryable));
             } else {
-                throw new UnsupportedOperationException("Expected http parameter 'q'");
+                throw new UnsupportedOperationException("Expected http parameter 'q' or id context");
             }
         } else if(method.equals(HttpMethod.POST)) {
             RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));

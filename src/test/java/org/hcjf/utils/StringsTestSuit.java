@@ -99,4 +99,23 @@ public class StringsTestSuit {
         value = Strings.joinWords(value, "-");
         Assert.assertEquals(value, "HelloWorld");
     }
+
+    @Test
+    public void testTrim() {
+        String value = "%hello world%";
+        value = Strings.trim(value, "%");
+        Assert.assertEquals(value, "hello world");
+
+        value = "%hello world&";
+        value = Strings.trim(value, "%", "&");
+        Assert.assertEquals(value, "hello world");
+
+        value = "%";
+        value = Strings.trim(value, "%");
+        Assert.assertEquals(value, "");
+
+        value = "hello world";
+        value = Strings.trim(value, "%", "&");
+        Assert.assertEquals(value, "hello world");
+    }
 }

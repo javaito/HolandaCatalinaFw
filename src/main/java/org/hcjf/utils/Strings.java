@@ -1,7 +1,5 @@
 package org.hcjf.utils;
 
-import org.hcjf.layers.query.FieldEvaluator;
-import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 
 import java.text.ParseException;
@@ -115,8 +113,49 @@ public final class Strings {
     public static final String CARRIAGE_RETURN = "\r";
     public static final String LINE_SEPARATOR = "\n";
     public static final String TAB = "\t";
+    public static final String SLASH = "/";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
+
+    /**
+     * This method trim the first and the last value if this values are equals that the parameter.
+     * @param value Value to trim.
+     * @param limitStrings Value to compare with the start and end of the value.
+     * @return Returns the value trimmed
+     */
+    public static String trim(String value, String limitStrings) {
+        return trim(value, limitStrings, limitStrings);
+    }
+
+    /**
+     * This method trim the first and the last value if this values are equals that the parameters.
+     * @param value Value to trim.
+     * @param startingString Value to compare with the start of the value.
+     * @param endingString Value to compare with the end of the value.
+     * @return Returns the value trimmed.
+     */
+    public static String trim(String value, String startingString, String endingString) {
+        String result = value;
+        boolean trim = false;
+        int start = 0;
+        int end = value.length();
+        if(value.startsWith(startingString)) {
+            start = startingString.length();
+            trim = true;
+        }
+        if(value.endsWith(endingString)) {
+            end = end - endingString.length();
+            trim = true;
+        }
+        if(trim) {
+            if (start < end) {
+                result = value.substring(start, end);
+            } else {
+                result = EMPTY_STRING;
+            }
+        }
+        return result;
+    }
 
     /**
      * This method replace the combination of character \r\n and the character \n for
