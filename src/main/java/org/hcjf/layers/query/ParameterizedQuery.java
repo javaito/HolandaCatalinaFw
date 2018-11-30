@@ -94,7 +94,7 @@ public class ParameterizedQuery implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource) {
+    public final <O extends Object> Collection<O> evaluate(Collection<O> dataSource) {
         return evaluate((query) -> dataSource, new Queryable.IntrospectionConsumer<>());
     }
 
@@ -111,7 +111,7 @@ public class ParameterizedQuery implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Queryable.Consumer<O> consumer) {
+    public final <O extends Object> Collection<O> evaluate(Collection<O> dataSource, Queryable.Consumer<O> consumer) {
         return evaluate((query) -> dataSource, consumer);
     }
 
@@ -127,7 +127,7 @@ public class ParameterizedQuery implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Queryable.DataSource<O> dataSource) {
+    public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource) {
         return evaluate(dataSource, new Queryable.IntrospectionConsumer<>());
     }
 
@@ -144,8 +144,8 @@ public class ParameterizedQuery implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
-        Set<O> result = query.evaluate(dataSource, new ParameterizedConsumer(consumer));
+    public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
+        Collection<O> result = query.evaluate(dataSource, new ParameterizedConsumer(consumer));
         parameters.clear();
         return result;
     }

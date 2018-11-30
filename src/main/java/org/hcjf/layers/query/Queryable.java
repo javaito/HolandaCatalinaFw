@@ -34,7 +34,7 @@ public interface Queryable extends BsonParcelable {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    <O extends Object> Set<O> evaluate(Collection<O> dataSource);
+    <O extends Object> Collection<O> evaluate(Collection<O> dataSource);
 
     /**
      * This method evaluate each object of the collection and sort filtered
@@ -48,7 +48,7 @@ public interface Queryable extends BsonParcelable {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    <O extends Object> Set<O> evaluate(Collection<O> dataSource, Consumer<O> consumer);
+    <O extends Object> Collection<O> evaluate(Collection<O> dataSource, Consumer<O> consumer);
 
     /**
      * This method evaluate each object of the collection and sort filtered
@@ -61,7 +61,7 @@ public interface Queryable extends BsonParcelable {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    <O extends Object> Set<O> evaluate(DataSource<O> dataSource);
+    <O extends Object> Collection<O> evaluate(DataSource<O> dataSource);
 
     /**
      * This method evaluate each object of the collection and sort filtered
@@ -75,7 +75,7 @@ public interface Queryable extends BsonParcelable {
      * @param <O> Kind of instances of the data collection.
      * @return Result add filtered and sorted.
      */
-    <O extends Object> Set<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer);
+    <O extends Object> Collection<O> evaluate(DataSource<O> dataSource, Consumer<O> consumer);
 
     /**
      * This class provides an interface to consume a
@@ -170,7 +170,7 @@ public interface Queryable extends BsonParcelable {
             if(function instanceof Query.QueryReturnFunction && ((Query.QueryReturnFunction)function).isAggregate()) {
                 QueryAggregateFunctionLayerInterface queryAggregateFunctionLayerInterface = Layers.get(QueryAggregateFunctionLayerInterface.class,
                         SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-                result = (R) queryAggregateFunctionLayerInterface.evaluate((Set) instance);
+                result = (R) queryAggregateFunctionLayerInterface.evaluate((Collection) instance);
             } else {
                 QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
                         SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());

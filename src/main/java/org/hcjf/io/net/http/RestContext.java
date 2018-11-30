@@ -5,6 +5,7 @@ import org.hcjf.encoding.MimeType;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CreateLayerInterface;
 import org.hcjf.layers.crud.DeleteLayerInterface;
+import org.hcjf.layers.crud.ReadLayerInterface;
 import org.hcjf.layers.crud.UpdateLayerInterface;
 import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
@@ -31,6 +32,7 @@ public class RestContext extends Context {
         private static final String VALUE_FIELD = "value";
         private static final String PARAMS_FIELD = "params";
         private static final String QUERIES_FIELD = "queries";
+        private static final String RESOURCE_URL_FIELD = "resource";
         private static final String ID_URL_FIELD = "id";
         private static class Throwable {
             private static final String MESSAGE = "message";
@@ -39,7 +41,7 @@ public class RestContext extends Context {
         }
     }
 
-    private static final String REGEX_TEMPLATE = "\\/%s(\\/(?<id>[A-Za-z0-9\\-]{0,}))?(\\/.*)?(\\?.*)?";
+    private static final String REGEX_TEMPLATE = "\\/%s(\\/(?<resource>[A-Za-z0-9\\-]{0,}))?(\\/(?<id>[A-Za-z0-9\\-]{0,}))?(\\/.*)?(\\?.*)?";
     private static final String DEFAULT_QUERY_PARAMETER = "q";
 
     public RestContext(String baseContext) {
@@ -58,16 +60,20 @@ public class RestContext extends Context {
         JsonParser jsonParser = new JsonParser();
         Gson gson = new GsonBuilder().create();
         JsonElement jsonElement;
-        String resourceName = request.getPathParts().get(request.getPathParts().size() - 1);
+        String resourceName = request.getReplaceableValue(Fields.RESOURCE_URL_FIELD);
+        Object id = Strings.deductInstance(request.getReplaceableValue(Fields.ID_URL_FIELD));
 
         if(method.equals(HttpMethod.GET)) {
-            //If the method is get then compile the query into the 'q' parameter.
-            String id = request.getReplaceableValue(Fields.ID_URL_FIELD);
-            if(request.hasParameter(DEFAULT_QUERY_PARAMETER)) {
-                Queryable queryable = Query.compile(request.getParameter(DEFAULT_QUERY_PARAMETER));
-                jsonElement = gson.toJsonTree(Query.evaluate(queryable));
+            if(id == null) {
+                if (request.hasParameter(DEFAULT_QUERY_PARAMETER)) {
+                    Queryable queryable = Query.compile(request.getParameter(DEFAULT_QUERY_PARAMETER));
+                    jsonElement = gson.toJsonTree(Query.evaluate(queryable));
+                } else {
+                    throw new UnsupportedOperationException("Expected http parameter 'q' or id context");
+                }
             } else {
-                throw new UnsupportedOperationException("Expected http parameter 'q' or id context");
+                ReadLayerInterface readLayerInterface = Layers.get(ReadLayerInterface.class, resourceName);
+                jsonElement = gson.toJsonTree(readLayerInterface.read(id));
             }
         } else if(method.equals(HttpMethod.POST)) {
             RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));

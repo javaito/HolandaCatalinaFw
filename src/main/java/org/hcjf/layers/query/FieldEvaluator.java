@@ -3,9 +3,8 @@ package org.hcjf.layers.query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Map;
 
 /**
  * This abstract class define the structure of the evaluating. The evaluator

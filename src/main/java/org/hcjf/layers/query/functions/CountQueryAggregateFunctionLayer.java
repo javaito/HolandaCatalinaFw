@@ -1,6 +1,6 @@
 package org.hcjf.layers.query.functions;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * @author javaito
@@ -14,7 +14,7 @@ public class CountQueryAggregateFunctionLayer extends BaseQueryAggregateFunction
     }
 
     @Override
-    public Object evaluate(Set resultSet, Object... parameters) {
+    public Object evaluate(Collection resultSet, Object... parameters) {
         return resultSet.size();
     }
 }

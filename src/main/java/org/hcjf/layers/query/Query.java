@@ -333,7 +333,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource) {
+    public final <O extends Object> Collection<O> evaluate(Collection<O> dataSource) {
         return evaluate((query) -> dataSource, new Queryable.IntrospectionConsumer<>());
     }
 
@@ -350,7 +350,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Collection<O> dataSource, Queryable.Consumer<O> consumer) {
+    public final <O extends Object> Collection<O> evaluate(Collection<O> dataSource, Queryable.Consumer<O> consumer) {
         return evaluate((query) -> dataSource, consumer);
     }
 
@@ -366,7 +366,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Queryable.DataSource<O> dataSource) {
+    public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource) {
         return evaluate(dataSource, new Queryable.IntrospectionConsumer<>());
     }
 
@@ -383,8 +383,8 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Result add filtered and sorted.
      */
     @Override
-    public final <O extends Object> Set<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
-        Set<O> result;
+    public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
+        Collection<O> result;
         List<QueryReturnFunction> aggregateFunctions = new ArrayList<>();
         if(!(Thread.currentThread() instanceof ServiceThread)) {
             //If the current thread is not a service thread then we call this
@@ -440,7 +440,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             } else {
                 //If the query has not order fields then creates a linked hash set to
                 //maintain the natural order of the data.
-                result = new LinkedHashSet<>();
+                result = new ArrayList<>();
             }
 
             //Getting data from data source.
@@ -453,49 +453,17 @@ public class Query extends EvaluatorCollection implements Queryable {
                 } else {
                     //Creates the first query for the original resource.
                     Query resolveQuery = new Query(getResourceName());
-                    resolveQuery.returnAll = this.returnAll;
+                    resolveQuery.returnAll = true;
                     if (getStart() != null) {
                         resolveQuery.setLimit(getLimit() + getStart());
                     } else {
                         resolveQuery.setLimit(getLimit());
-                    }
-                    for (QueryReturnParameter queryReturnParameter : this.returnParameters) {
-                        if (queryReturnParameter instanceof QueryReturnField) {
-                            resolveQuery.returnParameters.add(new QueryReturnField(((QueryReturnField) queryReturnParameter).getFieldName()));
-                        }
                     }
                     copyEvaluators(resolveQuery, this);
 
                     //If the query has not joins then data source must return data from
                     //resource of the query.
                     data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
-                }
-
-                if (!groupParameters.isEmpty()) {
-                    StringBuilder hashCode;
-
-                    Groupable groupable;
-                    Map<String, Groupable> groupables = new HashMap<>();
-                    for (O object : data) {
-                        if (object instanceof Groupable) {
-                            groupable = (Groupable) object;
-                            hashCode = new StringBuilder();
-                            for (QueryReturnParameter returnParameter : groupParameters) {
-                                if (returnParameter instanceof QueryReturnField) {
-                                    hashCode.append(consumer.get(object, ((QueryReturnField) returnParameter), dataSource).hashCode());
-                                } else {
-                                    hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource).hashCode());
-                                }
-                            }
-                            if (groupables.containsKey(hashCode.toString())) {
-                                groupables.get(hashCode.toString()).group(groupable);
-                            } else {
-                                groupables.put(hashCode.toString(), groupable);
-                            }
-                        }
-                    }
-
-                    data = (Collection<O>) groupables.values();
                 }
 
                 //Filtering data
@@ -510,42 +478,77 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
 
                 if (start < data.size()) {
+
+                    StringBuilder hashCode;
+                    Groupable groupable;
+                    Map<String, Groupable> groupables = null;
+                    Integer count = -1;
+                    if (!groupParameters.isEmpty()) {
+                        groupables = new HashMap<>();
+                    }
+
                     for (O object : data) {
                         add = verifyCondition(object, dataSource, consumer);
                         if (add) {
+                            count++;
+                            if(start > count) {
+                                continue;
+                            }
                             if (object instanceof Enlarged) {
                                 Enlarged originalObject = (Enlarged) object;
-                                Enlarged enlargedObject = (Enlarged) object;
-                                if (!returnAll && aggregateFunctions.size() == 0) {
-                                    //Clone the object and set the new result instance.
-                                    enlargedObject = enlargedObject.cloneEmpty();
-                                    object = (O) enlargedObject;
+                                Enlarged enlargedObject;
+                                if(returnAll || !aggregateFunctions.isEmpty()) {
+                                    enlargedObject = originalObject;
+                                } else {
+                                    enlargedObject = originalObject.cloneEmpty();
                                 }
+                                object = (O) enlargedObject;
+                                String name;
+                                Object value;
                                 for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                                    name = null;
+                                    value = null;
                                     if (returnParameter instanceof QueryReturnField) {
                                         QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                        if (returnField.getAlias() != null) {
-                                            enlargedObject.put(returnField.getAlias(), originalObject.get(returnField.getFieldName()));
-                                        } else {
-                                            enlargedObject.put(returnField.getFieldName(), originalObject.get(returnField.getFieldName()));
-                                        }
+                                        name = returnField.getAlias() != null ? returnField.getAlias() : returnField.getFieldName();
+                                        value = originalObject.get(returnField.getFieldName());
                                     } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                        enlargedObject.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                                                consumer.resolveFunction(function, originalObject, dataSource));
+                                        name = function.getAlias() == null ? function.toString() : function.getAlias();
+                                        value = consumer.resolveFunction(function, originalObject, dataSource);
+                                    }
+                                    if(name != null && value != null) {
+                                        enlargedObject.put(name, value);
                                     }
                                 }
                             }
 
-                            result.add(object);
+                            if (!groupParameters.isEmpty() && object instanceof Groupable) {
+                                groupable = (Groupable) object;
+                                hashCode = new StringBuilder();
+                                for (QueryReturnParameter returnParameter : groupParameters) {
+                                    if (returnParameter instanceof QueryReturnField) {
+                                        hashCode.append(consumer.get(object, ((QueryReturnField) returnParameter), dataSource).hashCode());
+                                    } else {
+                                        hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource).hashCode());
+                                    }
+                                }
+                                if (groupables.containsKey(hashCode.toString())) {
+                                    groupables.get(hashCode.toString()).group(groupable);
+                                } else {
+                                    groupables.put(hashCode.toString(), groupable);
+                                }
+                            } else {
+                                result.add(object);
+                            }
                         }
                         if (getLimit() != null && result.size() == (start + getLimit())) {
                             break;
                         }
                     }
 
-                    if (start > 0) {
-                        result = result.stream().skip(start).collect(Collectors.toSet());
+                    if(groupables != null) {
+                        result.addAll((Collection<? extends O>) groupables.values());
                     }
                 }
             } finally {

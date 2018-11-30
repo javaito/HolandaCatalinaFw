@@ -2,7 +2,7 @@ package org.hcjf.layers.query.functions;
 
 import org.hcjf.layers.LayerInterface;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * @author javaito
@@ -15,6 +15,6 @@ public interface QueryAggregateFunctionLayerInterface extends LayerInterface {
      * @param parameters Function's parameters.
      * @return Function result.
      */
-    Object evaluate(Set resultSet, Object... parameters);
+    Object evaluate(Collection resultSet, Object... parameters);
 
 }

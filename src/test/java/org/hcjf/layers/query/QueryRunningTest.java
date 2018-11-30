@@ -179,7 +179,7 @@ public class QueryRunningTest {
         SystemProperties.get(SystemProperties.Service.SYSTEM_SESSION_NAME);
 
         Query query = Query.compile("SELECT * FROM character");
-        Set<JoinableMap> resultSet = query.evaluate(dataSource);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
         query = Query.compile("SELECT * FROM credentials WHERE methodName = 'user-password' AND get(fields, 'javaito') = '1234'");
@@ -216,16 +216,16 @@ public class QueryRunningTest {
         query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
         resultSet = query.evaluate(dataSource);
 
-        query = Query.compile("SELECT name, nickname FROM character");
+        query = Query.compile("SELECT name FROM character");
         resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.iterator().next().size(), 2);
+        Assert.assertEquals(resultSet.iterator().next().size(), 1);
 
         query = Query.compile("SELECT *, name as nombre FROM character");
         resultSet = query.evaluate(dataSource);
         JoinableMap first = resultSet.iterator().next();
         Assert.assertEquals(first.get("nombre"), first.get("name"));
 
-        query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight) FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+        query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonAddresses.size());
 
