@@ -346,10 +346,11 @@ public final class SystemProperties extends Properties {
             public static final String MATH_SUBTRACTION = "hcjf.query.function.math.subtraction";
             public static final String MATH_MULTIPLICATION = "hcjf.query.function.math.multiplication";
             public static final String MATH_DIVISION = "hcjf.query.function.math.division";
+            public static final String MATH_MODULUS = "hcjf.query.function.math.modulus";
             public static final String REFERENCE_FUNCTION_NAME = "hcjf.query.function.reference.name";
             public static final String BSON_FUNCTION_NAME = "hcjf.query.function.bson.name";
             public static final String COLLECTION_FUNCTION_NAME = "hcjf.query.function.collection.name";
-
+            public static final String OBJECT_FUNCTION_NAME = "hcjf.query.function.object.name";
         }
     }
 
@@ -465,9 +466,9 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_INTEGER_NUMBER_REGEX, "^[-]?[0-9]{1,}$");
         defaults.put(HCJF_DECIMAL_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
         defaults.put(HCJF_SCIENTIFIC_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}E[-]?[0-9]{1,}$");
-        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([-+/*\\^]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
-        defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/].*");
-        defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/))|(?=(\\+|\\-|\\*|/))");
+        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([-+/*\\^%]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
+        defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/%].*");
+        defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/|%))|(?=(\\+|\\-|\\*|/|%))");
 
         defaults.put(Locale.DEFAULT_LOCALE, java.util.Locale.getDefault().toLanguageTag());
         defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, DefaultLocaleLayer.class.getName());
@@ -646,13 +647,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9,.~+-/*\\$& ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.~+-/* ?%\\$&<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(select[  ]{1,}[a-zA-Z_0-9',.~+-/*%\\$& ]{1,})([  ]?from[  ]{1,}[a-zA-Z_0-9.]{1,}[  ]?)([a-zA-Z_0-9'=,.~+-/* ?%\\$&<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )?join )| where | limit | start | order by | group by )))|(?=(^((inner |left |right )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right )?join )| where | limit | start | order by | group by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)( on )");
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
-        defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)(.* desc)");
+        defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)((?<=( desc| asc))|(?=( desc| asc)))");
         defaults.put(Query.SELECT_GROUP_INDEX, "1");
         defaults.put(Query.FROM_GROUP_INDEX, "2");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "3");
@@ -712,9 +713,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.Function.MATH_SUBTRACTION, "-");
         defaults.put(Query.Function.MATH_MULTIPLICATION, "*");
         defaults.put(Query.Function.MATH_DIVISION, "/");
+        defaults.put(Query.Function.MATH_MODULUS, "%");
         defaults.put(Query.Function.REFERENCE_FUNCTION_NAME, "reference");
         defaults.put(Query.Function.BSON_FUNCTION_NAME, "bson");
         defaults.put(Query.Function.COLLECTION_FUNCTION_NAME, "collection");
+        defaults.put(Query.Function.OBJECT_FUNCTION_NAME, "object");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");

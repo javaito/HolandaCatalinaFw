@@ -51,6 +51,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(ReferenceFunctionLayer.class);
         Layers.publishLayer(BsonQueryFunctionLayer.class);
         Layers.publishLayer(CollectionQueryFunction.class);
+        Layers.publishLayer(ObjectQueryFunction.class);
 
         //Publishing default aggregate function layers...
         Layers.publishLayer(CountQueryAggregateFunctionLayer.class);
@@ -495,7 +496,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                 continue;
                             }
                             if (object instanceof Enlarged) {
-                                Enlarged originalObject = (Enlarged) object;
+                                Enlarged originalObject = ((Enlarged) object).clone();
                                 Enlarged enlargedObject;
                                 if(returnAll || !aggregateFunctions.isEmpty()) {
                                     enlargedObject = originalObject;
@@ -518,6 +519,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                         value = consumer.resolveFunction(function, originalObject, dataSource);
                                     }
                                     if(name != null && value != null) {
+                                        originalObject.put(name, value);
                                         enlargedObject.put(name, value);
                                     }
                                 }
@@ -1551,11 +1553,17 @@ public class Query extends EvaluatorCollection implements Queryable {
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
+            String alias = null;
+            String[] asParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
+            if(asParts.length == 3) {
+                trimmedStringValue = asParts[0].trim();
+                alias = asParts[2].trim();
+            }
+
             //If the string matchs with a math expression then creates a function that resolves this math expression.
             String[] mathExpressionParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.HCJF_MATH_SPLITTER_REGULAR_EXPRESSION));
             List<Object> parameters = new ArrayList<>();
             String currentValue;
-            String alias = null;
             boolean desc = false;
             for (int i = 0; i < mathExpressionParts.length; i++) {
                 currentValue = mathExpressionParts[i];
@@ -1564,16 +1572,18 @@ public class Query extends EvaluatorCollection implements Queryable {
                     if(parameterClass.equals(QueryReturnParameter.class)) {
                         //Check if the last part contains the 'AS' word
                         String[] parts = currentValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
-                        if (parts.length == 3) {
+                        if (parts.length == 2) {
                             currentValue = parts[0].trim();
-                            alias = parts[2].trim();
+                            alias = parts[1].trim();
                         }
                     } else if(parameterClass.equals(QueryOrderParameter.class)) {
                         //Check if the last part contains the 'DESC' word
-                        if(currentValue.matches(SystemProperties.get(SystemProperties.Query.DESC_REGULAR_EXPRESSION))) {
-                            currentValue = currentValue.substring(0, currentValue.indexOf(SystemProperties.get(
-                                    SystemProperties.Query.ReservedWord.DESC))).trim();
-                            desc = true;
+                        String[] parts = currentValue.split(SystemProperties.get(SystemProperties.Query.DESC_REGULAR_EXPRESSION));
+                        if(parts.length == 3) {
+                            currentValue = parts[0].trim();
+                            if(parts[2].trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
+                                desc = true;
+                            }
                         }
                     }
                 }
@@ -1647,10 +1657,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                 //If the parameter class is the QueryOrderParameter.class then the result will be a
                 //QueryOrderFunction.class instance or QueryOrderField.class instance.
                 boolean desc = false;
-                if(originalValue.matches(SystemProperties.get(SystemProperties.Query.DESC_REGULAR_EXPRESSION))) {
-                    originalValue = originalValue.substring(0, originalValue.indexOf(SystemProperties.get(
-                            SystemProperties.Query.ReservedWord.DESC))).trim();
-                    desc = true;
+                String[] parts = originalValue.split(SystemProperties.get(SystemProperties.Query.DESC_REGULAR_EXPRESSION));
+                if(parts.length == 2) {
+                    originalValue = parts[0].trim();
+                    if(parts[1].trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
+                        desc = true;
+                    }
                 }
 
                 if(function) {

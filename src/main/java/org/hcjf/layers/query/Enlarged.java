@@ -23,6 +23,12 @@ public interface Enlarged {
     Object put(String key, Object value);
 
     /**
+     * Clone th enlarged object.
+     * @return Enlarged clone.
+     */
+    Enlarged clone();
+
+    /**
      * Clone the enlarged object without domain information.
      * @return Enlarged clone.
      */
