@@ -173,10 +173,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
 
         if(SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.Kubernetes.ENABLED)) {
-            thisNode.setId(new UUID(NetUtils.getLocalIp().hashCode(), KubernetesSpy.getHostName().hashCode()));
-            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes id %s", thisNode.getId());
+            thisNode.setId(new UUID((NetUtils.getLocalIp() + Node.class.getName()).hashCode(), KubernetesSpy.getHostName().hashCode()));
+            thisServiceEndPoint.setId(new UUID(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE).hashCode(),
+                    SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_NAME).hashCode()));
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes service id %s", thisServiceEndPoint.getId());
+            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes node id %s", thisNode.getId());
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local IP %s", NetUtils.getLocalIp());
             thisNode.setLanAddress(NetUtils.getLocalIp());
+            thisServiceEndPoint.setGatewayAddress(NetUtils.getLocalIp());
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes consumer starting");
 
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes pod labels: %s",
@@ -186,27 +190,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             KubernetesSpy.getInstance().registerConsumer(new KubernetesSpyConsumer(
                     pod -> {
                         Map<String,String> expectedLabels = SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.POD_LABELS);
-                        boolean result = true;
-                        for(String labelKey : expectedLabels.keySet()) {
-                            if(!(pod.getMetadata().getLabels().containsKey(labelKey) &&
-                                    pod.getMetadata().getLabels().get(labelKey).equals(expectedLabels.get(labelKey)))) {
-                                result = false;
-                                break;
-                            }
-                        }
-                        return result;
+                        Map<String,String> labels = pod.getMetadata().getLabels();
+                        return verifyLabels(expectedLabels, labels);
                     },
                     service -> {
                         Map<String,String> expectedLabels = SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_LABELS);
-                        boolean result = true;
-                        for(String labelKey : expectedLabels.keySet()) {
-                            if(!(service.getMetadata().getLabels().containsKey(labelKey) &&
-                                    service.getMetadata().getLabels().get(labelKey).equals(expectedLabels.get(labelKey)))) {
-                                result = false;
-                                break;
-                            }
-                        }
-                        return result;
+                        Map<String,String> labels = service.getMetadata().getLabels();
+                        return verifyLabels(expectedLabels, labels);
                     }) {
 
                 private final Map<String,Node> nodesByPodId = new HashMap<>();
@@ -232,6 +222,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 protected void onServiceDiscovery(V1Service service) {
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes service discovery: %s", service.getMetadata().getUid());
                     ServiceEndPoint serviceEndPoint = new ServiceEndPoint();
+                    serviceEndPoint.setId(new UUID(service.getMetadata().getNamespace().hashCode(), service.getMetadata().getName().hashCode()));
                     serviceEndPoint.setGatewayAddress(service.getMetadata().getName());
                     for(V1ServicePort port : service.getSpec().getPorts()) {
                         if(port.getName().equals(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_PORT_NAME))) {
@@ -243,7 +234,17 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 }
             });
         }
+    }
 
+    public boolean verifyLabels(Map<String,String> expectedLabels, Map<String,String> labels) {
+        boolean result = true;
+        for(String labelKey : expectedLabels.keySet()) {
+            if(!(labels.containsKey(labelKey) && labels.get(labelKey).equals(expectedLabels.get(labelKey)))) {
+                result = false;
+                break;
+            }
+        }
+        return result;
     }
 
     /**
@@ -258,25 +259,27 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             Node node = (Node) networkComponent;
             String lanId = node.getLanId();
             String wanId = node.getWanId();
-            boolean add = true;
-            if (lanId != null && (thisNode.getLanId().equalsIgnoreCase(lanId) || nodesByLanId.containsKey(lanId))) {
-                add = false;
-            }
-            if (wanId != null && (thisNode.getWanId().equalsIgnoreCase(wanId) || nodesByWanId.containsKey(wanId))) {
-                add = false;
-            }
-            if (add) {
-                node.setStatus(Node.Status.DISCONNECTED);
-                if (lanId != null) {
-                    nodesByLanId.put(lanId, node);
+            if(lanId != null || wanId != null) {
+                boolean add = true;
+                if (lanId != null && (thisNode.getLanId().equalsIgnoreCase(lanId) || nodesByLanId.containsKey(lanId))) {
+                    add = false;
                 }
-
-                if (wanId != null) {
-                    nodesByWanId.put(wanId, node);
+                if (wanId != null && (thisNode.getWanId().equalsIgnoreCase(wanId) || nodesByWanId.containsKey(wanId))) {
+                    add = false;
                 }
+                if (add) {
+                    node.setStatus(Node.Status.DISCONNECTED);
+                    if (lanId != null) {
+                        nodesByLanId.put(lanId, node);
+                    }
 
-                nodes.add(node);
-                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "New node registered: %s", node);
+                    if (wanId != null) {
+                        nodesByWanId.put(wanId, node);
+                    }
+
+                    nodes.add(node);
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "New node registered: %s", node);
+                }
             }
         } else if(networkComponent instanceof ServiceEndPoint) {
             ServiceEndPoint endPoint = (ServiceEndPoint) networkComponent;

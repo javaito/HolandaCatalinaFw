@@ -381,6 +381,8 @@ public final class SystemProperties extends Properties {
             public static final class Kubernetes {
                 public static final String ENABLED = "hcjf.cloud.orchestrator.kubernetes.enabled";
                 public static final String POD_LABELS = "hcjf.cloud.orchestrator.kubernetes.pod.labels";
+                public static final String NAMESPACE = "hcjf.cloud.orchestrator.kubernetes.namespace";
+                public static final String SERVICE_NAME = "hcjf.cloud.orchestrator.kubernetes.service.name";
                 public static final String SERVICE_LABELS = "hcjf.cloud.orchestrator.kubernetes.service.labels";
                 public static final String SERVICE_PORT_NAME = "hcjf.cloud.orchestrator.kubernetes.service.port.name";
             }
