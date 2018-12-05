@@ -555,12 +555,16 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         publishLayerMessage.setPath(path);
                         publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
                         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-                            invokeService(serviceEndPoint.getId(), publishLayerMessage);
+                            try {
+                                invokeService(serviceEndPoint.getId(), publishLayerMessage);
+                            } catch (Exception ex){
+                                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
+                            }
                         }
                     }
                 }
             } catch (Exception ex){
-                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service", ex);
+                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish any service", ex);
             }
 
             try {
