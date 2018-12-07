@@ -3,6 +3,7 @@ package org.hcjf.utils;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
+import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
 import org.hcjf.utils.bson.BsonParcelable;
@@ -135,6 +136,19 @@ public class BsonParcelableTest {
 
 
         System.out.println();
+    }
+
+    @Test
+    public void testJoinableMap() {
+        JoinableMap joinableMap = new JoinableMap("resource");
+        joinableMap.put("fieldString", "fieldString");
+        joinableMap.put("fieldDate", new Date());
+
+        BsonDocument document = joinableMap.toBson();
+        JoinableMap joinableMap1 = BsonParcelable.Builder.create(document);
+
+        Assert.assertEquals(joinableMap1.get("fieldString"), joinableMap.get("fieldString"));
+        Assert.assertEquals(joinableMap1.get("fieldDate"), joinableMap.get("fieldDate"));
     }
 
     public static class TestByteArray implements BsonParcelable {

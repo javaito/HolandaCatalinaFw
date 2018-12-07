@@ -1,6 +1,9 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.bson.BsonArray;
+import org.hcjf.bson.BsonDocument;
 import org.hcjf.utils.Strings;
+import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -12,10 +15,18 @@ import java.util.function.Function;
  * @author javaito
  *
  */
-public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, Object> {
+public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelable, Map<String, Object> {
+
+    private static final String RESOURCES_FIELD = "__resources__";
+    private static final String MAP_INSTANCE_FIELD = "__map_instance__";
 
     private final Set<String> resources;
     private final Map<String, Object> mapInstance;
+
+    public JoinableMap() {
+        this.resources = new TreeSet<>();
+        this.mapInstance = new HashMap<>();
+    }
 
     public JoinableMap(String resourceName) {
         this.resources = new TreeSet<>();
@@ -32,6 +43,34 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, Map<String, O
             }
             this.put(key, mapInstance.get(key));
         }
+    }
+
+    /**
+     * Creates a bson document from the JoinableMap instance.
+     * @return Bson document instance.
+     */
+    @Override
+    public BsonDocument toBson() {
+        BsonDocument bsonDocument = BsonParcelable.super.toBson();
+        bsonDocument.put(BsonParcelable.super.toBson(MAP_INSTANCE_FIELD, mapInstance));
+        bsonDocument.put(BsonParcelable.super.toBson(RESOURCES_FIELD, resources));
+        return bsonDocument;
+    }
+
+    /**
+     * This method populate the joinable map with the informaiton into the bson document.
+     * @param document Bson document to populate the parcelable.
+     * @param <P> Expected BsonParcelable data type.
+     * @return Returns the bson parcelable instance.
+     */
+    @Override
+    public <P extends BsonParcelable> P populate(BsonDocument document) {
+        BsonParcelable.super.populate(document);
+        BsonDocument bsonDocument = document.get(MAP_INSTANCE_FIELD).getAsDocument();
+        this.mapInstance.putAll(fromBson(String.class, Object.class, bsonDocument));
+        BsonArray bsonArray = document.get(RESOURCES_FIELD).getAsArray();
+        this.resources.addAll(fromBson(Object.class, bsonArray));
+        return (P) this;
     }
 
     /**

@@ -804,6 +804,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 distributedLayer.addNode(publishLayerMessage.getNodeId());
                 distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
                 responseMessage.setValue(true);
+
+                Layers.get(distributedLayer.getLayerInterface(), distributedLayer.getLayerName());
             } catch (Exception ex) {
                 responseMessage.setThrowable(ex);
             }
