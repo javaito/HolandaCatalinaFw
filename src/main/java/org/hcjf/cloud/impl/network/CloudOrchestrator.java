@@ -232,6 +232,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     }
                     registerConsumer(serviceEndPoint);
                 }
+
+                @Override
+                protected void onServiceLost(V1Service service) {
+                    ServiceEndPoint serviceEndPoint = new ServiceEndPoint();
+                    serviceEndPoint.setId(new UUID(service.getMetadata().getNamespace().hashCode(), service.getMetadata().getName().hashCode()));
+                    unregisterConsumer(serviceEndPoint);
+                }
             });
         }
     }
@@ -1410,16 +1417,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         Collection<JoinableMap> result = new ArrayList<>();
         for(Node node : nodes) {
             result.add(new JoinableMap(Introspection.toMap(node)));
-//            map.put("id", node.getId());
-//            map.put("name", node.getName());
-//            map.put("lanAddress", node.getLanAddress());
-//            map.put("lanPort", node.getLanPort());
-//            map.put("wanAddress", node.getWanAddress());
-//            map.put("wanPort", node.getWanPort());
-//            map.put("clusterName", node.getClusterName());
-//            map.put("dataCenterName", node.getDataCenterName());
-//            map.put("status", node.getStatus());
-//            map.put("version", node.getVersion());
         }
         return result;
     }
