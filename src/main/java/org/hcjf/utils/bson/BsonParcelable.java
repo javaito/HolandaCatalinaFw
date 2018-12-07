@@ -92,14 +92,14 @@ public interface BsonParcelable {
      */
     default BsonElement toBson(String name, Object value) {
         BsonElement result;
-        if(Collection.class.isAssignableFrom(value.getClass())) {
-            result = toBson(name, (Collection)value);
-        } else if(Map.class.isAssignableFrom(value.getClass())) {
-            result = toBson(name, (Map)value);
-        } else if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
+         if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
             BsonDocument document = ((BsonParcelable) value).toBson();
             document.setName(name);
             result = document;
+        } else if(Collection.class.isAssignableFrom(value.getClass())) {
+            result = toBson(name, (Collection)value);
+        } else if(Map.class.isAssignableFrom(value.getClass())) {
+            result = toBson(name, (Map)value);
         } else if(byte[].class.equals(value.getClass())) {
             result = new BsonPrimitive(name, value);
         } else if(value.getClass().isArray()) {
