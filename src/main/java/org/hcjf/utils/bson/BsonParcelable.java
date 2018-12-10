@@ -166,18 +166,24 @@ public interface BsonParcelable {
      */
     default Map fromBson(Class expectedKeyType, Class expectedValueType, BsonDocument document) {
         Map result = new HashMap<>();
-        BsonArray keys = document.get(MAP_KEYS_FIELD_NAME).getAsArray();
-        BsonArray values = document.get(MAP_VALUES_FIELD_NAME).getAsArray();
+        if(document.hasElement(MAP_KEYS_FIELD_NAME)) {
+            BsonArray keys = document.get(MAP_KEYS_FIELD_NAME).getAsArray();
+            BsonArray values = document.get(MAP_VALUES_FIELD_NAME).getAsArray();
 
-        Object key;
-        Object value;
+            Object key;
+            Object value;
 
-        for (int i = 0; i < keys.size(); i++) {
-            key = fromBson(expectedKeyType,
-                    null, null, keys.get(i));
-            value = fromBson(expectedValueType,
-                    null, null, values.get(i));
-            result.put(key, value);
+            for (int i = 0; i < keys.size(); i++) {
+                key = fromBson(expectedKeyType,
+                        null, null, keys.get(i));
+                value = fromBson(expectedValueType,
+                        null, null, values.get(i));
+                result.put(key, value);
+            }
+        } else {
+            for(String key : document) {
+                result.put(key, document.get(key).getValue());
+            }
         }
 
         return result;
