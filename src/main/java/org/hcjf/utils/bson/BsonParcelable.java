@@ -182,7 +182,8 @@ public interface BsonParcelable {
             }
         } else {
             for(String key : document) {
-                result.put(key, document.get(key).getValue());
+                result.put(key, fromBson(null,
+                        null, null, document.get(key)));
             }
         }
 
