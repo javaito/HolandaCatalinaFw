@@ -92,7 +92,7 @@ public interface BsonParcelable {
      */
     default BsonElement toBson(String name, Object value) {
         BsonElement result;
-         if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
+        if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
             BsonDocument document = ((BsonParcelable) value).toBson();
             document.setName(name);
             result = document;
@@ -212,7 +212,9 @@ public interface BsonParcelable {
         //Verify data type.
         expectedDataType = typeFromBson(expectedDataType, element);
 
-        if (Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
+        if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
+            result = Builder.create((BsonDocument)element);
+        } else if (Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
             result = fromBson(collectionDataType, (BsonArray) element);
         } else if (expectedDataType.isArray() && element instanceof BsonArray) {
             Collection collection = fromBson(expectedDataType.getComponentType(), (BsonArray) element);
@@ -220,8 +222,6 @@ public interface BsonParcelable {
                     expectedDataType.getComponentType(), collection.size()));
         } else if (Map.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
             result = fromBson(keyType, collectionDataType, (BsonDocument) element);
-        } else if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
-            result = Builder.create((BsonDocument)element);
         } else if (expectedDataType.isEnum() && element instanceof BsonPrimitive) {
             result = Enum.valueOf(expectedDataType, element.getAsString());
         } else if (expectedDataType.equals(Class.class) && element instanceof BsonPrimitive) {

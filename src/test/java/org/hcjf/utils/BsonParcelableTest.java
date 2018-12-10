@@ -3,6 +3,8 @@ package org.hcjf.utils;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
+import org.hcjf.cloud.impl.messages.LayerInvokeMessage;
+import org.hcjf.io.net.messages.ResponseMessage;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
@@ -149,6 +151,15 @@ public class BsonParcelableTest {
 
         Assert.assertEquals(joinableMap1.get("fieldString"), joinableMap.get("fieldString"));
         Assert.assertEquals(joinableMap1.get("fieldDate"), joinableMap.get("fieldDate"));
+
+        Collection<JoinableMap> maps = List.of(joinableMap1);
+        LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage(UUID.randomUUID());
+        ResponseMessage message = new ResponseMessage(layerInvokeMessage);
+        message.setValue(maps);
+
+        BsonDocument document1 = message.toBson();
+        ResponseMessage responseMessage = BsonParcelable.Builder.create(document1);
+        System.out.println();
     }
 
     public static class TestByteArray implements BsonParcelable {
