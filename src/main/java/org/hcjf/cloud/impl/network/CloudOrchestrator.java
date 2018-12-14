@@ -905,24 +905,30 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
         ServiceEndPoint serviceEndPoint = endPoints.get(serviceEndPointId);
         if(serviceEndPoint != null) {
+            CloudClient client;
             try {
-                CloudClient client = new CloudClient(serviceEndPoint.getGatewayAddress(), serviceEndPoint.getGatewayPort());
+                client = new CloudClient(serviceEndPoint.getGatewayAddress(), serviceEndPoint.getGatewayPort());
                 NetService.getInstance().registerConsumer(client);
+            } catch (Exception ex) {
+                throw new RuntimeException("Unable to connect with service: " + serviceEndPoint.getName(), ex);
+            }
+            try {
                 if (client.waitForConnect()) {
                     ResponseListener responseListener = new ResponseListener(timeout);
                     responseListeners.put(message.getId(), responseListener);
                     try {
                         client.send(message);
                     } catch (Exception ex) {
-                        ex.printStackTrace();
+                        throw new RuntimeException("Unable to send message, ex");
                     }
                     result = responseListener.getResponse(message);
-                    client.disconnect();
                 } else {
                     throw new RuntimeException("Connection timeout with service: " + serviceEndPoint.getName());
                 }
-            } catch (Exception ex) {
-                throw new RuntimeException("Unable to connect with service: " + serviceEndPoint.getName(), ex);
+            } finally {
+                try {
+                    client.disconnect();
+                } catch (Exception ex){}
             }
         } else {
             throw new RuntimeException("Service end point not found (" + serviceEndPoint.getId() + ")");
@@ -1453,7 +1459,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
             if(responseMessage != null) {
                 if(responseMessage.getThrowable() != null) {
-                    throw new RuntimeException(responseMessage.getThrowable());
+                    throw new RuntimeException("Remote exception", responseMessage.getThrowable());
                 } else {
                     result = responseMessage.getValue();
                 }

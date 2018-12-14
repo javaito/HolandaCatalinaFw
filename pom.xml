@@ -7,7 +7,7 @@
     <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>1.6.10</version>
+    <version>1.6.11</version>
     <packaging>jar</packaging>
     <description>Java framework to develop platforms based on distributed services</description>
     <url>https://github.com/javaito/HolandaCatalinaFw</url>
@@ -98,7 +98,7 @@
         <dependency>
             <groupId>com.github.javaito</groupId>
             <artifactId>hcjf-bson</artifactId>
-            <version>1.0.6</version>
+            <version>1.0.7</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
