@@ -196,6 +196,22 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.iterator().next().get("size"), simpsonCharacters.size());
 
+        query = Query.compile("SELECT count('weight') AS size FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+
+        query = Query.compile("SELECT aggregateSum('weight') AS sum FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+
+        query = Query.compile("SELECT aggregateProduct('weight') AS product FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+
+        query = Query.compile("SELECT aggregateMean('weight') AS mean FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+
         query = Query.compile("SELECT now(), getYear(birthday), periodInDays(birthday), getMonth(birthday) FROM character");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
@@ -265,6 +281,14 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT name, customFunction(integerValue(weight)) FROM character");
         resultSet = query.evaluate(dataSource);
+
+        query = Query.compile("SELECT dateFormat(birthday, 'YYYY--MM--dd HH::mm::ss') as year FROM character");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertTrue(resultSet.iterator().next().get("year") instanceof String);
+
+        query = Query.compile("SELECT addressId, sum(weight) AS sum FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {

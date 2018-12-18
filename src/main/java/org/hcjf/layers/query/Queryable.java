@@ -170,7 +170,8 @@ public interface Queryable extends BsonParcelable {
             if(function instanceof Query.QueryReturnFunction && ((Query.QueryReturnFunction)function).isAggregate()) {
                 QueryAggregateFunctionLayerInterface queryAggregateFunctionLayerInterface = Layers.get(QueryAggregateFunctionLayerInterface.class,
                         SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-                result = (R) queryAggregateFunctionLayerInterface.evaluate((Collection) instance);
+                String alias = ((Query.QueryReturnFunction) function).getAlias() == null ? function.toString() : ((Query.QueryReturnFunction) function).getAlias();
+                result = (R) queryAggregateFunctionLayerInterface.evaluate(alias, (Collection) instance, parameterValues.toArray());
             } else {
                 QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
                         SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());

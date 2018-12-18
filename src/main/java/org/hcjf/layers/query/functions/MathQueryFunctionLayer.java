@@ -3,13 +3,15 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.MathIntrospection;
 
+import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.function.BiFunction;
 
 /**
  * This layer implements all the math functions to invoke from the query scope.
  * @author javaito
  */
-public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
+public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements NumberSetFunction {
 
     private static final String SUM = "sum";
     private static final String PRODUCT = "product";
@@ -50,31 +52,13 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         Object result;
         switch (functionName) {
             case SUM: {
-                Number accumulator = 0;
-                for(Object numericParameter : parameters) {
-                    if(numericParameter instanceof Collection) {
-                        for(Number collectionNumber : ((Collection<Number>)numericParameter)) {
-                            accumulator = accumulator.doubleValue() + collectionNumber.doubleValue();
-                        }
-                    } else {
-                        accumulator = accumulator.doubleValue() + ((Number) numericParameter).doubleValue();
-                    }
-                }
-                result = accumulator;
+                Number[] accumulator = accumulateFunction(0, parameters, BigDecimal::add);
+                result = accumulator[1];
                 break;
             }
             case PRODUCT: {
-                Number accumulator = 1;
-                for(Object numericParameter : parameters) {
-                    if(numericParameter instanceof Collection) {
-                        for(Number collectionNumber : ((Collection<Number>)numericParameter)) {
-                            accumulator = accumulator.doubleValue() * collectionNumber.doubleValue();
-                        }
-                    } else {
-                        accumulator = accumulator.doubleValue() * ((Number) numericParameter).doubleValue();
-                    }
-                }
-                result = accumulator;
+                Number[] accumulator = accumulateFunction(1, parameters, BigDecimal::add);
+                result = accumulator[1];
                 break;
             }
             case BYTE_VALUE: result = ((Number)checkSize(1, parameters)[0]).byteValue(); break;
@@ -94,118 +78,4 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         return result;
     }
 
-    /**
-     * This method iterate all the parameter to evaluate math expression. Each parameter contains
-     * a number value or operator.
-     * @param parameters Math expression parameters.
-     * @return Returns the number that results of evaluate the math expression.
-     */
-    private Number evalExpression(Object... parameters) {
-        Number result = 0;
-        Number secondParameter;
-        Class biggerClass;
-        String currentOperation = SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION);
-        for(Object parameter : parameters) {
-            if(parameter instanceof String) {
-                currentOperation = (String) parameter;
-            } else if(parameter instanceof Number) {
-                secondParameter = (Number) parameter;
-                biggerClass = getBiggerClass(result, secondParameter);
-                if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION))) {
-                    if(biggerClass.equals(Byte.class)) {
-                        result = result.byteValue() + secondParameter.byteValue();
-                    } else if(biggerClass.equals(Short.class)) {
-                        result = result.shortValue() + secondParameter.shortValue();
-                    } else if(biggerClass.equals(Integer.class)) {
-                        result = result.intValue() + secondParameter.intValue();
-                    } else if(biggerClass.equals(Long.class)) {
-                        result = result.longValue() + secondParameter.longValue();
-                    } else if(biggerClass.equals(Float.class)) {
-                        result = result.floatValue() + secondParameter.floatValue();
-                    } else if(biggerClass.equals(Double.class)) {
-                        result = result.doubleValue() + secondParameter.doubleValue();
-                    }
-                } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_SUBTRACTION))) {
-                    if(biggerClass.equals(Byte.class)) {
-                        result = result.byteValue() - secondParameter.byteValue();
-                    } else if(biggerClass.equals(Short.class)) {
-                        result = result.shortValue() - secondParameter.shortValue();
-                    } else if(biggerClass.equals(Integer.class)) {
-                        result = result.intValue() - secondParameter.intValue();
-                    } else if(biggerClass.equals(Long.class)) {
-                        result = result.longValue() - secondParameter.longValue();
-                    } else if(biggerClass.equals(Float.class)) {
-                        result = result.floatValue() - secondParameter.floatValue();
-                    } else if(biggerClass.equals(Double.class)) {
-                        result = result.doubleValue() - secondParameter.doubleValue();
-                    }
-                } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_MULTIPLICATION))) {
-                    if(biggerClass.equals(Byte.class)) {
-                        result = result.byteValue() * secondParameter.byteValue();
-                    } else if(biggerClass.equals(Short.class)) {
-                        result = result.shortValue() * secondParameter.shortValue();
-                    } else if(biggerClass.equals(Integer.class)) {
-                        result = result.intValue() * secondParameter.intValue();
-                    } else if(biggerClass.equals(Long.class)) {
-                        result = result.longValue() * secondParameter.longValue();
-                    } else if(biggerClass.equals(Float.class)) {
-                        result = result.floatValue() * secondParameter.floatValue();
-                    } else if(biggerClass.equals(Double.class)) {
-                        result = result.doubleValue() * secondParameter.doubleValue();
-                    }
-                } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DIVISION))) {
-                    if(biggerClass.equals(Byte.class)) {
-                        result = result.byteValue() / secondParameter.byteValue();
-                    } else if(biggerClass.equals(Short.class)) {
-                        result = result.shortValue() / secondParameter.shortValue();
-                    } else if(biggerClass.equals(Integer.class)) {
-                        result = result.intValue() / secondParameter.intValue();
-                    } else if(biggerClass.equals(Long.class)) {
-                        result = result.longValue() / secondParameter.longValue();
-                    } else if(biggerClass.equals(Float.class)) {
-                        result = result.floatValue() / secondParameter.floatValue();
-                    } else if(biggerClass.equals(Double.class)) {
-                        result = result.doubleValue() / secondParameter.doubleValue();
-                    }
-                } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_MODULUS))) {
-                    if(biggerClass.equals(Byte.class)) {
-                        result = result.byteValue() % secondParameter.byteValue();
-                    } else if(biggerClass.equals(Short.class)) {
-                        result = result.shortValue() % secondParameter.shortValue();
-                    } else if(biggerClass.equals(Integer.class)) {
-                        result = result.intValue() % secondParameter.intValue();
-                    } else if(biggerClass.equals(Long.class)) {
-                        result = result.longValue() % secondParameter.longValue();
-                    } else if(biggerClass.equals(Float.class)) {
-                        result = result.floatValue() % secondParameter.floatValue();
-                    } else if(biggerClass.equals(Double.class)) {
-                        result = result.doubleValue() % secondParameter.doubleValue();
-                    }
-                }
-            } else {
-                throw new IllegalArgumentException();
-            }
-        }
-        return result;
-    }
-
-    private Class getBiggerClass(Number number1, Number number2) {
-        Class result;
-        if(number1 instanceof Double || number2 instanceof Double) {
-            result = Double.class;
-        } else if(number1 instanceof Float || number2 instanceof Float) {
-            result = Float.class;
-        } else if(number1 instanceof Long || number2 instanceof Long) {
-            result = Long.class;
-        } else if(number1 instanceof Integer || number2 instanceof Integer) {
-            result = Integer.class;
-        } else if(number1 instanceof Short || number2 instanceof Short) {
-            result = Short.class;
-        } else if(number1 instanceof Byte || number2 instanceof Byte) {
-            result = Byte.class;
-        } else {
-            result = Double.class;
-        }
-        return result;
-    }
 }

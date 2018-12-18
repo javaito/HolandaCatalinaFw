@@ -52,12 +52,13 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(BsonQueryFunctionLayer.class);
         Layers.publishLayer(CollectionQueryFunction.class);
         Layers.publishLayer(ObjectQueryFunction.class);
+        Layers.publishLayer(QueryBsonBuilderLayer.class);
 
         //Publishing default aggregate function layers...
         Layers.publishLayer(CountQueryAggregateFunctionLayer.class);
-
-        //Publishing bson parcelable builder layer...
-        Layers.publishLayer(QueryBsonBuilderLayer.class);
+        Layers.publishLayer(SumAggregateFunctionLayer.class);
+        Layers.publishLayer(ProductAggregateFunctionLayer.class);
+        Layers.publishLayer(MeanAggregateFunctionLayer.class);
     }
 
     public Query(String resource, QueryId id) {
@@ -386,6 +387,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     @Override
     public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
         Collection<O> result;
+        Map<String, Groupable> groupables = null;
         List<QueryReturnFunction> aggregateFunctions = new ArrayList<>();
         if(!(Thread.currentThread() instanceof ServiceThread)) {
             //If the current thread is not a service thread then we call this
@@ -482,7 +484,6 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                     StringBuilder hashCode;
                     Groupable groupable;
-                    Map<String, Groupable> groupables = null;
                     Integer count = -1;
                     if (!groupParameters.isEmpty()) {
                         groupables = new HashMap<>();
@@ -559,12 +560,9 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
 
         if(aggregateFunctions.size() > 0) {
-            JoinableMap aggregateResult = new JoinableMap(new HashMap<>());
             for (QueryReturnFunction function : aggregateFunctions) {
-                aggregateResult.put(function.getAlias() == null ? function.toString() : function.getAlias(),
-                        consumer.resolveFunction(function, result, dataSource));
+                result = consumer.resolveFunction(function, result, dataSource);
             }
-            result = (Set<O>)Set.of(aggregateResult);
         }
 
         return result;

@@ -3,6 +3,7 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.layers.LayerInterface;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * @author javaito
@@ -15,6 +16,6 @@ public interface QueryAggregateFunctionLayerInterface extends LayerInterface {
      * @param parameters Function's parameters.
      * @return Function result.
      */
-    Object evaluate(Collection resultSet, Object... parameters);
+    Collection evaluate(String alias, Collection resultSet, Object... parameters);
 
 }

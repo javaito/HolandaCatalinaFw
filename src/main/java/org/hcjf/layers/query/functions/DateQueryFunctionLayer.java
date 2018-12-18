@@ -2,10 +2,8 @@ package org.hcjf.layers.query.functions;
 
 import org.hcjf.properties.SystemProperties;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 /**
@@ -42,6 +40,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String PERIOD_IN_MINUTES = "periodInMinutes";
     private static final String PERIOD_IN_HOURS = "periodInHours";
     private static final String PERIOD_IN_DAYS = "periodInDays";
+    private static final String DATE_FORMAT = "dateFormat";
 
     public DateQueryFunctionLayer() {
         super(SystemProperties.get(SystemProperties.Query.Function.DATE_FUNCTION_NAME));
@@ -75,6 +74,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         addFunctionName(PERIOD_IN_MINUTES);
         addFunctionName(PERIOD_IN_HOURS);
         addFunctionName(PERIOD_IN_DAYS);
+        addFunctionName(DATE_FORMAT);
     }
 
     @Override
@@ -120,6 +120,16 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             case PERIOD_IN_MINUTES: result = getDuration(parameters).toMinutes(); break;
             case PERIOD_IN_HOURS: result = getDuration(parameters).toHours(); break;
             case PERIOD_IN_DAYS: result = getDuration(parameters).toDays(); break;
+            case DATE_FORMAT: {
+                if(parameters.length >= 2) {
+                    String pattern = (String) parameters[parameters.length-1];
+                    ZonedDateTime zonedDateTime = getZonedDateTimeFromDate(1, parameters);
+                    result = DateTimeFormatter.ofPattern(pattern).format(zonedDateTime);
+                } else {
+                    throw new IllegalArgumentException();
+                }
+                break;
+            }
             default: throw new IllegalArgumentException("Date function not found: " + functionName);
         }
         return result;
