@@ -36,14 +36,14 @@ public class ServiceEndPointTest {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc2");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME, "test-cluster");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "service-end-point");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "192.168.10.103");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "192.168.1.15");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "7070");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.ID, "00000000-0000-0000-0000-000000000000");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS, "192.168.10.103");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS, "192.168.1.15");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_PORT, "7070");
         System.setProperty(SystemProperties.Cloud.Orchestrator.SERVICE_END_POINTS,
                 "[" +
-                        "{id:00000000-0000-0000-0000-000000000001,gatewayAddress:192.168.10.103,gatewayPort:6162}" +
+                        "{id:00000000-0000-0000-0000-000000000001,gatewayAddress:192.168.1.15,gatewayPort:6162}" +
                 "]");
 
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");

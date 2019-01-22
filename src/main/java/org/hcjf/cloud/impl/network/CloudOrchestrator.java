@@ -18,6 +18,7 @@ import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.io.net.kubernetes.KubernetesSpy;
 import org.hcjf.io.net.kubernetes.KubernetesSpyConsumer;
 import org.hcjf.io.net.messages.Message;
+import org.hcjf.io.net.messages.MessageCollection;
 import org.hcjf.io.net.messages.NetUtils;
 import org.hcjf.io.net.messages.ResponseMessage;
 import org.hcjf.layers.Layer;
@@ -549,10 +550,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
      */
     private void initServicePublication() {
         while(!Thread.currentThread().isInterrupted()) {
-
             try {
                 LocalLeaf localLeaf;
                 Object[] path;
+                Collection<Message> messages = new ArrayList<>();
                 PublishLayerMessage publishLayerMessage;
                 for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
                     localLeaf = (LocalLeaf) entry.getValue();
@@ -561,13 +562,18 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
                         publishLayerMessage.setPath(path);
                         publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
-                        for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-                            try {
-                                invokeService(serviceEndPoint.getId(), publishLayerMessage);
-                            } catch (Exception ex){
-                                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
-                            }
-                        }
+                        messages.add(publishLayerMessage);
+                    }
+                }
+
+                MessageCollection messageCollection = new MessageCollection();
+                messageCollection.setId(UUID.randomUUID());
+                messageCollection.setMessages(messages);
+                for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
+                    try {
+                        invokeService(serviceEndPoint.getId(), messageCollection);
+                    } catch (Exception ex){
+                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
                     }
                 }
             } catch (Exception ex){
@@ -673,9 +679,24 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return result;
     }
 
-    void incomingMessage(CloudSession session, Message message) {
+    public void incomingMessage(CloudSession session, Message message) {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Incoming '%s' message: %s", message.getClass(), message.getId());
+        if(message instanceof MessageCollection) {
+            MessageCollection collection = (MessageCollection) message;
+            for(Message innerMessage : collection.getMessages()) {
+                processMessage(session, message);
+            }
+        } else {
+            Message responseMessage = processMessage(session, message);
+            if(responseMessage != null) {
+                sendMessageToNode(session, responseMessage);
+            }
+        }
+    }
+
+    private Message processMessage(CloudSession session, Message message) {
+        Message responseMessage = null;
         if(message instanceof NodeIdentificationMessage) {
             NodeIdentificationMessage nodeIdentificationMessage = (NodeIdentificationMessage) message;
             Node node = nodesByLanId.get(nodeIdentificationMessage.getNode().getLanId());
@@ -706,7 +727,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         nodeConnected(node, session);
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
                                 node.getLanAddress(), node.getLanPort());
-                        sendMessageToNode(session, new AckMessage(message));
+                        responseMessage = new AckMessage(message);
                     }
                 } else if (session.getConsumer() instanceof CloudServer) {
                     if (connecting(node)) {
@@ -716,7 +737,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                                 node.getLanAddress(), node.getLanPort());
                         NodeIdentificationMessage returnNodeIdentificationMessage = new NodeIdentificationMessage(thisNode);
                         waitingAck.put(returnNodeIdentificationMessage.getId(), node);
-                        sendMessageToNode(session, returnNodeIdentificationMessage);
+                        responseMessage = returnNodeIdentificationMessage;
                     } else {
                         try {
                             ((CloudServer) session.getConsumer()).send(session, new BusyNodeMessage(thisNode));
@@ -745,7 +766,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon crash");
                 }
                 wagonMessage = (CloudWagonMessage) message;
-                sendMessageToNode(session, new AckMessage(message));
+                responseMessage = new AckMessage(message);
 
                 List<Message> wagonMessages = wagonMessage.getMessages().remove(thisNode.getId().toString());
                 if(wagonMessages != null) {
@@ -778,16 +799,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         } else if(message instanceof InvokeMessage) {
             InvokeMessage invokeMessage = (InvokeMessage) message;
 
-            ResponseMessage responseMessage = new ResponseMessage(invokeMessage);
+            responseMessage = new ResponseMessage(invokeMessage);
             Object object = sharedStore.getInstance(invokeMessage.getPath());
-            responseMessage.setValue(object);
-            sendMessageToNode(session, responseMessage);
+            ((ResponseMessage)responseMessage).setValue(object);
         } else if(message instanceof LockMessage) {
             LockMessage lockMessage = (LockMessage) message;
-            ResponseMessage responseMessage = new ResponseMessage(lockMessage);
-            responseMessage.setValue(distributedLock(lockMessage.getTimestamp(),
+            responseMessage = new ResponseMessage(lockMessage);
+            ((ResponseMessage)responseMessage).setValue(distributedLock(lockMessage.getTimestamp(),
                     lockMessage.getNanos(), lockMessage.getPath()));
-            sendMessageToNode(session, responseMessage);
         } else if(message instanceof UnlockMessage) {
             UnlockMessage unlockMessage = (UnlockMessage) message;
             distributedUnlock(unlockMessage.getPath());
@@ -800,21 +819,19 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         } else if(message instanceof EventMessage) {
             EventMessage eventMessage = (EventMessage) message;
             distributedDispatchEvent(eventMessage.getEvent());
-            ResponseMessage responseMessage = new ResponseMessage();
-            responseMessage.setValue(true);
-            sendMessageToNode(session, responseMessage);
+            responseMessage = new ResponseMessage();
+            ((ResponseMessage)responseMessage).setValue(true);
         } else if(message instanceof PublishLayerMessage) {
             PublishLayerMessage publishLayerMessage = (PublishLayerMessage) message;
-            ResponseMessage responseMessage = new ResponseMessage(publishLayerMessage);
+            responseMessage = new ResponseMessage(publishLayerMessage);
             try {
                 DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
                 distributedLayer.addNode(publishLayerMessage.getNodeId());
                 distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
-                responseMessage.setValue(true);
+                ((ResponseMessage)responseMessage).setValue(true);
             } catch (Exception ex) {
-                responseMessage.setThrowable(ex);
+                ((ResponseMessage)responseMessage).setThrowable(ex);
             }
-            sendMessageToNode(session, responseMessage);
         } else if(message instanceof PublishPluginMessage) {
             PublishPluginMessage publishPluginMessage = (PublishPluginMessage) message;
             Layers.publishPlugin(ByteBuffer.wrap(publishPluginMessage.getJarFile()));
@@ -829,14 +846,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             } catch (Throwable t) {
                 throwable = t;
             }
-            ResponseMessage responseMessage = new ResponseMessage(message);
-            responseMessage.setValue(result);
-            responseMessage.setThrowable(throwable);
+            responseMessage = new ResponseMessage(message);
+            ((ResponseMessage)responseMessage).setValue(result);
+            ((ResponseMessage)responseMessage).setThrowable(throwable);
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                     "Sending response message: %s", message.getId());
-            sendMessageToNode(session, responseMessage);
         } else if(message instanceof TestNodeMessage) {
-            sendMessageToNode(session, new ResponseMessage(message));
+            responseMessage = new ResponseMessage(message);
         } else if(message instanceof ResponseMessage) {
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {
@@ -864,6 +880,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 }
             }
         }
+        return responseMessage;
     }
 
     private void sendMessageToNode(CloudSession session, Message message) {

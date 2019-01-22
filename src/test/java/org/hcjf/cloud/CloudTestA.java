@@ -28,7 +28,7 @@ import java.util.concurrent.locks.Lock;
 public class CloudTestA {
 
     public static void main(String[] args) {
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
         System.setProperty(SystemProperties.Net.Http.DEFAULT_CLIENT_READ_TIMEOUT, "60000");
         System.setProperty(SystemProperties.Service.THREAD_POOL_CORE_SIZE, "100");
@@ -38,21 +38,21 @@ public class CloudTestA {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc1");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME, "test-cluster");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-A");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "192.168.10.103");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "192.168.1.15");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6162");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.ID, "00000000-0000-0000-0000-000000000001");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS, "192.168.10.103");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS, "192.168.1.15");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_PORT, "6162");
         System.setProperty(SystemProperties.Cloud.Orchestrator.NODES,
                 "[" +
-                        "{lanAddress:192.168.10.103,lanPort:6162}," +
-                        "{lanAddress:192.168.10.103,lanPort:6163}," +
-                        "{lanAddress:192.168.10.103,lanPort:6164}," +
-                        "{lanAddress:192.168.10.103,lanPort:6165}" +
+                        "{lanAddress:192.168.1.15,lanPort:6162}," +
+                        "{lanAddress:192.168.1.15,lanPort:6163}," +
+                        "{lanAddress:192.168.1.15,lanPort:6164}," +
+                        "{lanAddress:192.168.1.15,lanPort:6165}" +
                 "]");
         System.setProperty(SystemProperties.Cloud.Orchestrator.SERVICE_END_POINTS,
                 "[" +
-                        "{id:00000000-0000-0000-0000-000000000000,gatewayAddress:172.16.102.45,gatewayPort:7070}" +
+                        "{id:00000000-0000-0000-0000-000000000000,gatewayAddress:192.168.1.15,gatewayPort:7070}" +
                 "]");
 
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");

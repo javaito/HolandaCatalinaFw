@@ -483,11 +483,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Layer.DISTRIBUTED_LAYER_ENABLED, "false");
 
         defaults.put(Service.STATIC_THREAD_NAME, "StaticServiceThread");
-        defaults.put(Service.STATIC_THREAD_POOL_CORE_SIZE, "1");
+        defaults.put(Service.STATIC_THREAD_POOL_CORE_SIZE, "2");
         defaults.put(Service.STATIC_THREAD_POOL_MAX_SIZE, "200");
         defaults.put(Service.STATIC_THREAD_POOL_KEEP_ALIVE_TIME, "10");
-        defaults.put(Service.THREAD_POOL_CORE_SIZE, "100");
-        defaults.put(Service.THREAD_POOL_MAX_SIZE, "2000");
+        defaults.put(Service.THREAD_POOL_CORE_SIZE, "10");
+        defaults.put(Service.THREAD_POOL_MAX_SIZE, "100");
         defaults.put(Service.THREAD_POOL_KEEP_ALIVE_TIME, "10");
         defaults.put(Service.GUEST_SESSION_NAME, "Guest");
         defaults.put(Service.SYSTEM_SESSION_NAME, "System");
@@ -547,8 +547,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
         defaults.put(Net.WRITE_TIMEOUT, "100");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
-        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "400");
-        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "200");
+        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "4");
+        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "8");
         defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");

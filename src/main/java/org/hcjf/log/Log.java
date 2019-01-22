@@ -11,6 +11,7 @@ import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -373,18 +374,22 @@ public final class Log extends Service<LogPrinter> {
 
                 if (SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED)) {
                     if (SystemProperties.getBoolean(SystemProperties.Log.JAVA_STANDARD_LOGGER_ENABLED)) {
+                        Supplier<String> message = () -> String.format(record.getOriginalMessage(), record.getParams());
                         if (record.getThrowable() != null) {
                             Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
-                                    record.getClassName(), record.getMethodName(), record.getThrowable(),
-                                    () -> String.format(record.getOriginalMessage(), record.getParams()));
+                                    record.getClassName(), record.getMethodName(), record.getThrowable(), message);
                         } else {
                             Logger.getGlobal().logp(record.getGroup().getStandardLevel(),
-                                    record.getClassName(), record.getMethodName(),
-                                    () -> String.format(record.getOriginalMessage(), record.getParams()));
+                                    record.getClassName(), record.getMethodName(), message);
                         }
                     } else {
-                        System.out.println(record.toString());
-                        System.out.flush();
+                        if(record.getThrowable() != null) {
+                            System.err.println(record.toString());
+                            System.err.flush();
+                        } else {
+                            System.out.println(record.toString());
+                            System.out.flush();
+                        }
                     }
                 }
             } finally {
