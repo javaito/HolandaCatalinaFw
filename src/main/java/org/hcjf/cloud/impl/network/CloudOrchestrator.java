@@ -689,7 +689,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
             for(Message innerMessage : collection.getMessages()) {
-                processMessage(session, message);
+                processMessage(session, innerMessage);
             }
         } else {
             Message responseMessage = processMessage(session, message);
