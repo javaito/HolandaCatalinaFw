@@ -592,7 +592,26 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 if (keyChannel != null && key.channel().isOpen()) {
                                     if (key.isValid()) {
                                         try {
-                                            fork(() ->  processKey(key, keyChannel, consumer), consumer.getName(), consumer.getIoExecutor());
+                                            fork(() -> {
+                                                synchronized (keyChannel) {
+                                                    try {
+                                                        if (key.isValid()) {
+                                                            if (key.isReadable()) {
+                                                                read(keyChannel, consumer);
+                                                            } else if (key.isWritable()) {
+                                                                write(keyChannel, consumer);
+                                                                if (consumer instanceof NetClient) {
+                                                                    read(keyChannel, consumer);
+                                                                }
+                                                            }
+                                                        }
+                                                    } catch (Exception ex) {
+                                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception", ex);
+                                                    } finally {
+                                                        ((ServiceThread) Thread.currentThread()).setSession(null);
+                                                    }
+                                                }
+                                            }, consumer.getName(), consumer.getIoExecutor());
                                         } catch (RejectedExecutionException ex) {
                                             //Update the flag in order to process the key again
                                             if (key.isValid() && sessionsByChannel.containsKey(keyChannel)) {
@@ -637,25 +656,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service stopped");
-    }
-
-    private void processKey(SelectionKey key, SelectableChannel keyChannel, NetServiceConsumer consumer) {
-        synchronized (keyChannel) {
-            try {
-                if (key.isReadable()) {
-                    read(keyChannel, consumer);
-                } else if (key.isWritable()) {
-                    write(keyChannel, consumer);
-                    if (consumer instanceof NetClient) {
-                        read(keyChannel, consumer);
-                    }
-                }
-            } catch (Exception ex) {
-                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception", ex);
-            } finally {
-                ((ServiceThread) Thread.currentThread()).setSession(null);
-            }
-        }
     }
 
     /**
