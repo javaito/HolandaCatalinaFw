@@ -551,30 +551,34 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private void initServicePublication() {
         while(!Thread.currentThread().isInterrupted()) {
             try {
-                LocalLeaf localLeaf;
-                Object[] path;
-                Collection<Message> messages = new ArrayList<>();
-                PublishLayerMessage publishLayerMessage;
-                for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
-                    localLeaf = (LocalLeaf) entry.getValue();
-                    path = entry.getPath();
-                    if (localLeaf.getInstance() instanceof DistributedLayer) {
-                        publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
-                        publishLayerMessage.setPath(path);
-                        publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
-                        messages.add(publishLayerMessage);
+                if(thisNode.getId().equals(sortedNodes.iterator().next().getId())) {
+                    LocalLeaf localLeaf;
+                    Object[] path;
+                    Collection<Message> messages = new ArrayList<>();
+                    PublishLayerMessage publishLayerMessage;
+                    for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
+                        localLeaf = (LocalLeaf) entry.getValue();
+                        path = entry.getPath();
+                        if (localLeaf.getInstance() instanceof DistributedLayer) {
+                            publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
+                            publishLayerMessage.setPath(path);
+                            publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
+                            messages.add(publishLayerMessage);
+                        }
                     }
-                }
 
-                MessageCollection messageCollection = new MessageCollection();
-                messageCollection.setId(UUID.randomUUID());
-                messageCollection.setMessages(messages);
-                for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-                    try {
-                        invokeService(serviceEndPoint.getId(), messageCollection);
-                    } catch (Exception ex){
-                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
+                    MessageCollection messageCollection = new MessageCollection();
+                    messageCollection.setId(UUID.randomUUID());
+                    messageCollection.setMessages(messages);
+                    for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
+                        try {
+                            invokeService(serviceEndPoint.getId(), messageCollection);
+                        } catch (Exception ex) {
+                            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
+                        }
                     }
+                } else {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Skipping service publication");
                 }
             } catch (Exception ex){
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish any service", ex);
