@@ -900,18 +900,28 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
     }
 
-    private Object invokeNode(CloudSession session, Message message, Long timeout) {
-        ResponseListener responseListener = new ResponseListener(timeout);
-        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                "Sending invokeNode message: %s", message.getId().toString());
-        responseListeners.put(message.getId(), responseListener);
-        sendMessageToNode(session, message);
-        return responseListener.getResponse(message);
+    private void registerListener(Message message, ResponseListener listener) {
+        synchronized (responseListeners) {
+            while (responseListeners.containsKey(message.getId())) {
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Message id crash!! %s", message.getId());
+                message.setId(UUID.randomUUID());
+            }
+            responseListeners.put(message.getId(), listener);
+        }
     }
 
     private Object invokeNode(CloudSession session, Message message) {
         return invokeNode(session, message,
                 SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
+    }
+
+    private Object invokeNode(CloudSession session, Message message, Long timeout) {
+        ResponseListener responseListener = new ResponseListener(timeout);
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                "Sending invokeNode message: %s", message.getId().toString());
+        registerListener(message, responseListener);
+        sendMessageToNode(session, message);
+        return responseListener.getResponse(message);
     }
 
     private Object invokeService(UUID serviceEndPointId, Message message) {
@@ -936,7 +946,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             try {
                 if (client.waitForConnect()) {
                     ResponseListener responseListener = new ResponseListener(timeout);
-                    responseListeners.put(message.getId(), responseListener);
+                    registerListener(message, responseListener);
                     try {
                         client.send(message);
                     } catch (Exception ex) {
