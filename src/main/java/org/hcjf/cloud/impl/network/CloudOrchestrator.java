@@ -694,6 +694,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         } else {
             Message responseMessage = processMessage(session, message);
             if(responseMessage != null) {
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "Sending response message: %s", message.getId());
                 sendMessageToNode(session, responseMessage);
             }
         }
@@ -853,14 +855,15 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             responseMessage = new ResponseMessage(message);
             ((ResponseMessage)responseMessage).setValue(result);
             ((ResponseMessage)responseMessage).setThrowable(throwable);
-            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                    "Sending response message: %s", message.getId());
         } else if(message instanceof TestNodeMessage) {
             responseMessage = new ResponseMessage(message);
         } else if(message instanceof ResponseMessage) {
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {
                 responseListener.setMessage((ResponseMessage) message);
+            } else {
+                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "Response message not found: %s", message.getId());
             }
         } else if(message instanceof AckMessage) {
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
@@ -1495,7 +1498,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     result = responseMessage.getValue();
                 }
             } else {
-                throw new RuntimeException("Remote invocation timeout");
+                throw new RuntimeException("Remote invocation timeout, message id: " + message.getId().toString());
             }
             responseListeners.remove(message.getId());
             return result;
