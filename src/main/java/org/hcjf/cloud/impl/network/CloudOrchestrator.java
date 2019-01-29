@@ -686,19 +686,20 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     public void incomingMessage(CloudSession session, Message message) {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Incoming '%s' message: %s", message.getClass(), message.getId());
-        Message responseMessage;
+        Message responseMessage = null;
         if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
-            responseMessage = new ResponseMessage(message);
             for(Message innerMessage : collection.getMessages()) {
                 processMessage(session, innerMessage);
             }
         } else {
             responseMessage = processMessage(session, message);
-            if(responseMessage != null) {
-                responseMessage = new ResponseMessage(message);
-            }
         }
+
+        if(responseMessage == null) {
+            responseMessage = new ResponseMessage(message);
+        }
+
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Sending response message: %s", message.getId());
         sendMessageToNode(session, responseMessage);
