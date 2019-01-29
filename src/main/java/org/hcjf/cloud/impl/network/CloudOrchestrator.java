@@ -686,19 +686,22 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     public void incomingMessage(CloudSession session, Message message) {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Incoming '%s' message: %s", message.getClass(), message.getId());
+        Message responseMessage;
         if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
+            responseMessage = new ResponseMessage(message);
             for(Message innerMessage : collection.getMessages()) {
                 processMessage(session, innerMessage);
             }
         } else {
-            Message responseMessage = processMessage(session, message);
+            responseMessage = processMessage(session, message);
             if(responseMessage != null) {
-                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                        "Sending response message: %s", message.getId());
-                sendMessageToNode(session, responseMessage);
+                responseMessage = new ResponseMessage(message);
             }
         }
+        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                "Sending response message: %s", message.getId());
+        sendMessageToNode(session, responseMessage);
     }
 
     private Message processMessage(CloudSession session, Message message) {
@@ -862,8 +865,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             if(responseListener != null) {
                 responseListener.setMessage((ResponseMessage) message);
             } else {
-                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                        "Response message not found: %s", message.getId());
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "Response listener not found: %s", message.getId());
             }
         } else if(message instanceof AckMessage) {
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Incoming ack from %s:%d",
@@ -953,7 +956,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     try {
                         client.send(message);
                     } catch (Exception ex) {
-                        throw new RuntimeException("Unable to send message, ex");
+                        throw new RuntimeException("Unable to send message", ex);
                     }
                     result = responseListener.getResponse(message);
                 } else {
