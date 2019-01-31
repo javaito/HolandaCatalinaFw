@@ -28,14 +28,6 @@ public class PublishLayerMessage extends Message {
         this.path = path;
     }
 
-    public UUID getNodeId() {
-        return nodeId;
-    }
-
-    public void setNodeId(UUID nodeId) {
-        this.nodeId = nodeId;
-    }
-
     public UUID getServiceEndPointId() {
         return serviceEndPointId;
     }

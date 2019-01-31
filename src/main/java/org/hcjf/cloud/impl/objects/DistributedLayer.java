@@ -9,14 +9,12 @@ public class DistributedLayer {
 
     private final Class layerInterface;
     private final String layerName;
-    private final List<UUID> nodes;
     private final List<UUID> serviceEndPoints;
     private final Map<UUID,ResponseAverage> invocationCounter;
 
     public DistributedLayer(Class layerInterface, String layerName) {
         this.layerInterface = layerInterface;
         this.layerName = layerName;
-        this.nodes = new ArrayList<>();
         this.serviceEndPoints = new ArrayList<>();
         this.invocationCounter = new HashMap<>();
     }
@@ -27,25 +25,6 @@ public class DistributedLayer {
 
     public String getLayerName() {
         return layerName;
-    }
-
-    public synchronized UUID getNodeToInvoke() {
-        UUID result = null;
-        if(nodes.size() > 0) {
-            result = nodes.remove(0);
-            nodes.add(result);
-        }
-        return result;
-    }
-
-    public synchronized void addNode(UUID nodeId) {
-        nodes.add(nodeId);
-        invocationCounter.put(nodeId, new ResponseAverage());
-    }
-
-    public synchronized void removeNode(UUID nodeId) {
-        nodes.remove(nodeId);
-        invocationCounter.remove(nodeId);
     }
 
     public synchronized UUID getServiceToInvoke() {
@@ -65,14 +44,6 @@ public class DistributedLayer {
     public synchronized void removeServiceEndPoint(UUID serviceEndPointId) {
         serviceEndPoints.remove(serviceEndPointId);
         invocationCounter.remove(serviceEndPointId);
-    }
-
-    public synchronized void addResponseTime(UUID nodeId, Long responseTime) {
-        if(invocationCounter.containsKey(nodeId)) {
-            invocationCounter.get(nodeId).add(responseTime);
-            nodes.sort((L, R) ->
-                    (int) (invocationCounter.get(L).get() - invocationCounter.get(R).get()));
-        }
     }
 
     private class ResponseAverage {

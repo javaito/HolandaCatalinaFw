@@ -13,8 +13,6 @@ import org.hcjf.events.RemoteEvent;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
-import org.hcjf.io.net.http.HttpClient;
-import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.io.net.kubernetes.KubernetesSpy;
 import org.hcjf.io.net.kubernetes.KubernetesSpyConsumer;
 import org.hcjf.io.net.messages.Message;
@@ -36,7 +34,6 @@ import org.hcjf.utils.Strings;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -147,7 +144,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
         fork(this::maintainConnections);
         fork(this::initServicePublication);
-        fork(this::initWagon);
+        fork(this::initWagonEngine);
         fork(this::initReorganizationTimer);
         server = new CloudServer();
         server.start();
@@ -413,14 +410,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
                     localLeaf = (LocalLeaf) entry.getValue();
                     path = entry.getPath();
-                    if (localLeaf.getInstance() instanceof DistributedLayer) {
-                        if(localLeaf.getNodes().contains(thisNode.getId())) {
-                            PublishLayerMessage publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
-                            publishLayerMessage.setPath(path);
-                            publishLayerMessage.setNodeId(thisNode.getId());
-                            sendMessageToNode(session, publishLayerMessage);
-                        }
-                    } else if (localLeaf.getInstance() instanceof DistributedLock) {
+                    if (localLeaf.getInstance() instanceof DistributedLock) {
                         //Mmmm!!!!
                     } else {
                         paths.add(new PublishObjectMessage.Path(path, nodes));
@@ -438,9 +428,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class, RemoteLeaf.class)) {
                     distributedLeaf = (DistributedLeaf) entry.getValue();
                     distributedLeaf.getNodes().remove(node.getId());
-                    if(distributedLeaf.getInstance() instanceof DistributedLayer) {
-                        ((DistributedLayer)distributedLeaf.getInstance()).removeNode(node.getId());
-                    }
                 }
                 break;
             }
@@ -594,9 +581,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     /**
-     *
+     * This method run continuously sending a wagon message to synchronize all the nodes.
      */
-    private void initWagon() {
+    private void initWagonEngine() {
         while(!Thread.currentThread().isInterrupted()) {
             try {
                 Thread.sleep(SystemProperties.getLong(
@@ -620,7 +607,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                             Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending wagon");
                             Map<String,List<Message>> load = getWagonLoad();
                             wagonMessage.getMessages().putAll(load);
-//                            wagonMessage.getNodes().addAll(nodes);
                             sendMessageToNode(sessionByNode.get(nextDestination.getId()), wagonMessage);
                         }
                     } else {
@@ -636,6 +622,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 break;
             }
         }
+        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon engine ends");
     }
 
 
@@ -835,7 +822,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             responseMessage = new ResponseMessage(publishLayerMessage);
             try {
                 DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
-                distributedLayer.addNode(publishLayerMessage.getNodeId());
                 distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
                 ((ResponseMessage)responseMessage).setValue(true);
             } catch (Exception ex) {
@@ -954,6 +940,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     ResponseListener responseListener = new ResponseListener(timeout);
                     registerListener(message, responseListener);
                     try {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                "Sending invoke service message: '%s' %s", message.getClass().getName(), message.getId().toString());
                         client.send(message);
                     } catch (Exception ex) {
                         throw new RuntimeException("Unable to send message", ex);
@@ -1152,13 +1140,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     public void publishDistributedLayer(Object... path) {
         getDistributedLayer(true, path);
-        PublishLayerMessage publishLayerMessage = new PublishLayerMessage();
-        publishLayerMessage.setPath(path);
-        publishLayerMessage.setNodeId(thisNode.getId());
-        publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
-        for (CloudSession session : sessionByNode.values()) {
-            sendMessageToNode(session, publishLayerMessage);
-        }
     }
 
     public void publishPlugin(byte[] jarFile) {
@@ -1182,44 +1163,25 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         layerInvokeMessage.setParameters(parameters);
         layerInvokeMessage.setPath(path);
 
-        UUID nodeId = distributedLayer.getNodeToInvoke();
-        CloudSession session = null;
-        long startTime;
-        while (nodeId != null) {
-            session = sessionByNode.get(nodeId);
-            startTime = System.currentTimeMillis();
-            if(session != null && testNode(session)) {
-                distributedLayer.addResponseTime(nodeId, (System.currentTimeMillis() - startTime));
-                break;
-            } else {
-                distributedLayer.addResponseTime(nodeId, (System.currentTimeMillis() - startTime));
-                nodeId = distributedLayer.getNodeToInvoke();
-            }
+        UUID serviceEndPointId = distributedLayer.getServiceToInvoke();
+        if(serviceEndPointId != null) {
+                result = (O) invokeService(serviceEndPointId, layerInvokeMessage);
+        } else {
+            throw new RuntimeException("Route not found to the layer: " + distributedLayer.getLayerInterface().getName() + "@" + distributedLayer.getLayerName());
         }
 
-        if(session != null) {
-            startTime = System.currentTimeMillis();
-            try {
-                result = (O) invokeNode(session, layerInvokeMessage);
-            } finally {
-                distributedLayer.addResponseTime(nodeId, (System.currentTimeMillis() - startTime));
-            }
-        } else {
-            UUID serviceEndPointId = distributedLayer.getServiceToInvoke();
-            if(serviceEndPointId != null) {
-                startTime = System.currentTimeMillis();
-                try {
-                    result = (O) invokeService(serviceEndPointId, layerInvokeMessage);
-                } finally {
-                    distributedLayer.addResponseTime(nodeId, (System.currentTimeMillis() - startTime));
-                }
-            } else {
-                throw new RuntimeException("Route not found to the layer: " + distributedLayer.getLayerInterface().getName() + "@" + distributedLayer.getLayerName());
-            }
-        }
         return result;
     }
 
+    /**
+     * This method is called when a layer invoke message incoming.
+     * @param sessionId Is of the session that invoke the remote layer.
+     * @param parameterTypes Array with all the parameter types.
+     * @param parameters Array with all the parameter instances.
+     * @param methodName Name of the method.
+     * @param path Path to found the layer implementation.
+     * @return Return value of the layer invoke.
+     */
     private Object distributedLayerInvoke(
             UUID sessionId, Class[] parameterTypes,
             Object[] parameters, String methodName, Object... path) {
