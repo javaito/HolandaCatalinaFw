@@ -410,9 +410,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
                     localLeaf = (LocalLeaf) entry.getValue();
                     path = entry.getPath();
-                    if (localLeaf.getInstance() instanceof DistributedLock) {
-                        //Mmmm!!!!
-                    } else {
+                    if (!(localLeaf.getInstance() instanceof DistributedLayer) &&
+                            !(localLeaf.getInstance() instanceof DistributedLock)) {
                         paths.add(new PublishObjectMessage.Path(path, nodes));
                     }
                 }
