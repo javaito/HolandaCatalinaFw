@@ -69,7 +69,7 @@ public abstract class MessagesNode<S extends NetSession> extends NetClient<S, Me
     /**
      * Send a message to the server.
      * @param message Message instance.
-     * @throws IOException
+     * @throws IOException Io Exception
      */
     public final void send(Message message) throws IOException {
         MessageBuffer buffer = new MessageBuffer();

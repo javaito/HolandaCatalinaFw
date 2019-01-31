@@ -82,7 +82,7 @@ public abstract class MessagesServer<S extends NetSession> extends NetServer<S, 
      * Send message to the net using the buffer.
      * @param session Session that indicate the remote host.
      * @param message Message to transfer.
-     * @throws IOException
+     * @throws IOException Io Exception
      */
     public final void send(S session, Message message) throws IOException {
         MessageBuffer buffer = new MessageBuffer();

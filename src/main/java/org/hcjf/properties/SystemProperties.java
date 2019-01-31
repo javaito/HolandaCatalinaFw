@@ -795,13 +795,13 @@ public final class SystemProperties extends Properties {
     }
 
     /**
-     * Calls the <tt>Hashtable</tt> method {@code put}. Provided for
-     * parallelism with the <tt>getProperty</tt> method. Enforces use of
+     * Calls the Hashtable method {@code put}. Provided for
+     * parallelism with the getProperty method. Enforces use of
      * strings for property keys and values. The value returned is the
-     * result of the <tt>Hashtable</tt> call to {@code put}.
+     * result of the Hashtable call to {@code put}.
      *
      * @param key   the key to be placed into this property list.
-     * @param value the value corresponding to <tt>key</tt>.
+     * @param value the value corresponding to key.
      * @return the previous value of the specified key in this property
      * list, or {@code null} if it did not have one.
      * @see #getProperty

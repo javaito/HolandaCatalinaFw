@@ -49,6 +49,7 @@ public abstract class BaseEvaluator implements Evaluator {
      * @param currentResultSetElement Is the result set element to evaluate.
      * @param dataSource Query associated data source.
      * @param consumer Query associated data consumer.
+     * @param rawValue Raw value
      * @return Object value.
      */
     protected final Object getProcessedValue(Object currentResultSetElement, Object rawValue, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
