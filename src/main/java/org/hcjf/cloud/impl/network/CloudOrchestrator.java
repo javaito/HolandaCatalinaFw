@@ -465,7 +465,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         publishObjectMessage.setTimestamp(System.currentTimeMillis());
                         sendMessageToNode(sessionByNode.get(nodeId), publishObjectMessage);
                         for(PublishObjectMessage.Path path : paths) {
-                            addObject(path.getValue(), path.getNodes(), List.of(), 0L, path.getPath());
+                            addLocalObject(path.getValue(), path.getNodes(), List.of(), 0L, path.getPath());
                         }
                     }
                 }
@@ -557,6 +557,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     messageCollection.setId(UUID.randomUUID());
                     messageCollection.setMessages(messages);
                     for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
                         try {
                             invokeService(serviceEndPoint.getId(), messageCollection);
                         } catch (Exception ex) {
@@ -787,11 +788,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             PublishObjectMessage publishObjectMessage = (PublishObjectMessage) message;
             for(PublishObjectMessage.Path path : publishObjectMessage.getPaths()) {
                 if(path.getValue() != null) {
-                    addObject(path.getValue(), path.getNodes(), List.of(),
+                    addLocalObject(path.getValue(), path.getNodes(), List.of(),
                             publishObjectMessage.getTimestamp(), path.getPath());
                 } else {
-                    addObject(publishObjectMessage.getTimestamp(), path.getNodes(),
-                            path.getNodes(), path.getPath());
+                    addRemoteObject(null, path.getNodes(),
+                            path.getNodes(), publishObjectMessage.getTimestamp(), path.getPath());
                 }
             }
         } else if(message instanceof InvokeMessage) {
@@ -822,9 +823,24 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         } else if(message instanceof PublishLayerMessage) {
             PublishLayerMessage publishLayerMessage = (PublishLayerMessage) message;
             responseMessage = new ResponseMessage(publishLayerMessage);
+
             try {
-                DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
-                distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
+                boolean localImpl = false;
+                Object[] path = publishLayerMessage.getPath();
+                Class<? extends LayerInterface> layerInterfaceClass = (Class<? extends LayerInterface>) Class.forName((String)path[path.length - 2]);
+                String implName = (String)path[path.length - 1];
+
+                try {
+                    Layers.get(layerInterfaceClass, implName);
+                    localImpl = true;
+                } catch (Exception ex) {}
+
+                if(!localImpl) {
+                    DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
+                    distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote %s layer founded %s in %s",
+                            layerInterfaceClass.getName(), implName, endPoints.get(publishLayerMessage.getServiceEndPointId()).getGatewayAddress());
+                }
                 ((ResponseMessage)responseMessage).setValue(true);
             } catch (Exception ex) {
                 ((ResponseMessage)responseMessage).setThrowable(ex);
@@ -983,7 +999,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             if (distributedLock == null) {
                 distributedLock = new DistributedLock();
                 distributedLock.setStatus(DistributedLock.Status.UNLOCKED);
-                addObject(distributedLock, List.of(thisNode.getId()), List.of(), System.currentTimeMillis(), path);
+                addLocalObject(distributedLock, List.of(thisNode.getId()), List.of(), System.currentTimeMillis(), path);
             }
         }
         return distributedLock;
@@ -1123,10 +1139,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     distributedLayer = new DistributedLayer(Class.forName((String)path[path.length - 2]),
                             (String)path[path.length - 1]);
                     if(local) {
-                        addObject(distributedLayer, List.of(thisNode.getId()), List.of(thisServiceEndPoint.getId()),
+                        addLocalObject(distributedLayer, List.of(thisNode.getId()), List.of(thisServiceEndPoint.getId()),
                                 System.currentTimeMillis(), path);
                     } else {
-                        addObject(distributedLayer, List.of(), List.of(), System.currentTimeMillis(), path);
+                        addRemoteObject(distributedLayer, List.of(), List.of(), System.currentTimeMillis(), path);
                     }
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException();
@@ -1342,7 +1358,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             nodeIds.add(nodes.get(i).getId());
         }
 
-        addObject(object, nodeIds, List.of(), timestamp, path);
+        addLocalObject(object, nodeIds, List.of(), timestamp, path);
 
         PublishObjectMessage.Path pathObject = new PublishObjectMessage.Path(path, nodeIds);
         fork(() -> {
@@ -1410,13 +1426,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return result;
     }
 
-    private void addObject(Object object, List<UUID> nodes, List<UUID> serviceEndPoints, Long timestamp, Object... path) {
-        sharedStore.add(object, nodes, serviceEndPoints, timestamp, path);
+    private void addLocalObject(Object object, List<UUID> nodes, List<UUID> serviceEndPoints, Long timestamp, Object... path) {
+        sharedStore.addLocalObject(object, nodes, serviceEndPoints, timestamp, path);
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local leaf added: %s", Arrays.toString(path));
     }
 
-    private void addObject(Long timestamp, List<UUID> nodes, List<UUID> serviceEndPoints, Object... path) {
-        sharedStore.add(timestamp, nodes, serviceEndPoints, path);
+    private void addRemoteObject(Object object, List<UUID> nodes, List<UUID> serviceEndPoints, Long timestamp, Object... path) {
+        sharedStore.addRemoteObject(object, nodes, serviceEndPoints, timestamp, path);
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote leaf added: %s", Arrays.toString(path));
     }
 

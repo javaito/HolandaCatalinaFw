@@ -75,7 +75,7 @@ public class DistributedTree implements DistributedObject {
         return branches.keySet();
     }
 
-    public final synchronized LocalLeaf add(Object object, List<UUID> nodes, List<UUID> serviceEndPoints, Long timestamp, Object... path) {
+    public final synchronized LocalLeaf addLocalObject(Object object, List<UUID> nodes, List<UUID> serviceEndPoints, Long timestamp, Object... path) {
         Objects.requireNonNull(object, "Null distributed object");
         LocalLeaf result;
         createPath(0, path.length - 1, path);
@@ -116,7 +116,7 @@ public class DistributedTree implements DistributedObject {
         return result;
     }
 
-    public final synchronized RemoteLeaf add(Long timestamp, List<UUID> nodes, List<UUID> serviceEndPoints, Object... path) {
+    public final synchronized RemoteLeaf addRemoteObject(Object object, List<UUID> nodes, List<UUID> serviceEndPoints, Long timestamp, Object... path) {
         RemoteLeaf result;
         createPath(0, path.length - 1, path);
         Object instance = getInstance(0, path.length - 1, path);
@@ -124,6 +124,7 @@ public class DistributedTree implements DistributedObject {
             Object key = path[path.length-1];
             result = new RemoteLeaf(key);
             result.setLastUpdate(lastUpdate);
+            result.setInstance(object);
             result.getNodes().addAll(nodes);
             result.getServiceEndPoints().addAll(serviceEndPoints);
 
@@ -135,6 +136,7 @@ public class DistributedTree implements DistributedObject {
                         result.setLastUpdate(timestamp);
                         result.getNodes().addAll(nodes);
                         result.getServiceEndPoints().addAll(serviceEndPoints);
+                        result.setInstance(object);
                     } else {
                         ((DistributedTree) instance).branches.put(key, result);
                     }
