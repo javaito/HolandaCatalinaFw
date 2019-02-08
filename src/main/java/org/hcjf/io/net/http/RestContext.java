@@ -10,6 +10,7 @@ import org.hcjf.layers.crud.UpdateLayerInterface;
 import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
+import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
@@ -102,9 +103,14 @@ public class RestContext extends Context {
             }
         } else if(method.equals(HttpMethod.PUT)) {
             // This method call to update layer interface implementation.
-            RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
             UpdateLayerInterface updateLayerInterface = Layers.get(UpdateLayerInterface.class, resourceName);
-            jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));
+            RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
+            if(id != null) {
+                requestModel.getBody().put(Fields.ID_URL_FIELD, id);
+                jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
+            } else {
+                jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));
+            }
         } else if(method.equals(HttpMethod.DELETE)) {
             // This method call to delete layer interface implementation.
             RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
