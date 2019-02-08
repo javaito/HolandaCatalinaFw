@@ -1048,7 +1048,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 SystemProperties.get(SystemProperties.Query.ReservedWord.AND);
         for(Evaluator evaluator : collection.getEvaluators()) {
             if(evaluator instanceof Or) {
-                result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.OR)).append(Strings.WHITE_SPACE);
+                result.append(Strings.WHITE_SPACE);
                 if(((Or)evaluator).getEvaluators().size() == 1) {
                     toStringEvaluatorCollection(result, (Or) evaluator);
                 } else {

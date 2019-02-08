@@ -271,6 +271,7 @@ public class QueryRunningTest {
         resultSet = parameterizedQuery.add(40).add(108).evaluate(dataSource);
 
         query = Query.compile("SELECT * FROM character WHERE weight < ? OR weight > ?");
+        query.toString();
         parameterizedQuery = query.getParameterizedQuery();
         resultSet = parameterizedQuery.add(40).add(100).evaluate(dataSource);
         for(JoinableMap row : resultSet){
