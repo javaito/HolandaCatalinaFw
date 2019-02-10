@@ -39,6 +39,7 @@ public class RestContext extends Context {
             private static final String MESSAGE = "message";
             private static final String EXCEPTION = "exception";
             private static final String BODY = "body";
+            private static final String TAGS = "tags";
         }
     }
 
@@ -157,12 +158,34 @@ public class RestContext extends Context {
         if(throwable.getMessage() != null) {
             jsonObject.addProperty(Fields.Throwable.MESSAGE, throwable.getMessage());
         }
+        Map<String,String> tags = getTags(throwable, new HashMap<>());
+        if(!tags.isEmpty()) {
+            JsonObject jsonTags = new JsonObject();
+            for(String tag : tags.keySet()) {
+                jsonTags.addProperty(tag, tags.get(tag));
+            }
+            jsonObject.add(Fields.Throwable.TAGS, jsonTags);
+        }
         jsonObject.addProperty(Fields.Throwable.EXCEPTION, throwable.getClass().getName());
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream(byteArrayOutputStream);
         throwable.printStackTrace(printStream);
         jsonObject.addProperty(Fields.Throwable.BODY, byteArrayOutputStream.toString());
         return jsonObject;
+    }
+
+    /**
+     * Find all the tags into the throwable instances and his causes.
+     * @param throwable Throwable instance.
+     * @param tag Map to store the tags founded.
+     * @return Return the same map sending as parameter.
+     */
+    private Map<String,String> getTags(Throwable throwable, Map<String,String> tag) {
+        tag.putAll(Strings.getTagsFromMessage(throwable.getMessage()));
+        if(throwable.getCause() != null) {
+            tag = getTags(throwable.getCause(), tag);
+        }
+        return tag;
     }
 
     /**

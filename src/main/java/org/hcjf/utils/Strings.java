@@ -90,6 +90,11 @@ public final class Strings {
         public static final String WHITE_BACKGROUND_BRIGHT = "\033[0;107m";   // WHITE
     }
 
+    public static final class TaggedMessages {
+        public static final String START_TAGGED_MESSAGE = "$@{";
+        public static final String TAGGED_MESSAGE_PATTERN = "$@{%s}%s";
+    }
+
     public static final String DEFAULT_PADDING_VALUE = " ";
     public static final String START_GROUP = "(";
     public static final String END_GROUP = ")";
@@ -623,6 +628,48 @@ public final class Strings {
                 }
             } else {
                 result = trimmedStringValue;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * This method create a tagged message with the format $@{tag,tag,tag...}message
+     * @param message Message to tag.
+     * @param tags Array of tags.
+     * @return Returns the tagged message.
+     */
+    public static final String createTaggedMessage(String message, String... tags) {
+        String result;
+        if(tags == null || tags.length == 0) {
+            throw new IllegalArgumentException("Unable to create a tagged message without tags");
+        } else {
+            Builder builder = new Builder();
+            for(String tag : tags) {
+                if(!tag.contains(START_OBJECT) && !tag.contains(END_OBJECT) && !tag.contains(ARGUMENT_SEPARATOR)) {
+                    builder.append(tag, ARGUMENT_SEPARATOR);
+                } else {
+                    throw new IllegalArgumentException("The tags can't contains the special characters '{', '}', ','");
+                }
+            }
+            result = String.format(TaggedMessages.TAGGED_MESSAGE_PATTERN, builder.toString(), message);
+        }
+        return result;
+    }
+
+    /**
+     * This method create a hash map indexing the same message with the different tags.
+     * @param taggedMessage Tagged message.
+     * @return Hash map with the tags.
+     */
+    public static final Map<String,String> getTagsFromMessage(String taggedMessage) {
+        Map<String,String> result = new HashMap<>();
+        if(taggedMessage.startsWith(TaggedMessages.START_TAGGED_MESSAGE)) {
+            String tags = taggedMessage.substring(taggedMessage.indexOf(TaggedMessages.START_TAGGED_MESSAGE) +
+                    TaggedMessages.START_TAGGED_MESSAGE.length(), taggedMessage.indexOf(END_OBJECT));
+            String message = taggedMessage.substring(taggedMessage.indexOf(END_OBJECT) + END_OBJECT.length());
+            for(String tag : tags.split(ARGUMENT_SEPARATOR)) {
+                result.put(tag.trim(), message);
             }
         }
         return result;

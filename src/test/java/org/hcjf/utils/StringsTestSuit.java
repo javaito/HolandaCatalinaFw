@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author javaito
@@ -117,5 +118,16 @@ public class StringsTestSuit {
         value = "hello world";
         value = Strings.trim(value, "%", "&");
         Assert.assertEquals(value, "hello world");
+    }
+
+    @Test
+    public void testTaggedMessages() {
+        String message = "Hello world!!";
+
+        String taggedMessage = Strings.createTaggedMessage(message, "tag1", "tag2");
+        Map<String,String> tags = Strings.getTagsFromMessage(taggedMessage);
+
+        Assert.assertEquals(tags.get("tag1"), message);
+        Assert.assertEquals(tags.get("tag2"), message);
     }
 }
