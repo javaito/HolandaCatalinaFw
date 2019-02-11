@@ -14,6 +14,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String NOW = "now";
     private static final String GET_YEAR = "getYear";
     private static final String GET_MONTH = "getMonth";
+    private static final String GET_MONTH_NUMBER = "getMonthNumber";
     private static final String GET_DAY_OF_MONTH = "getDayOfMonth";
     private static final String GET_DAY_OF_WEEK = "getDayOfWeek";
     private static final String GET_DAY_OF_YEAR = "getDayOfYear";
@@ -48,6 +49,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         addFunctionName(NOW);
         addFunctionName(GET_YEAR);
         addFunctionName(GET_MONTH);
+        addFunctionName(GET_MONTH_NUMBER);
         addFunctionName(GET_DAY_OF_MONTH);
         addFunctionName(GET_DAY_OF_WEEK);
         addFunctionName(GET_DAY_OF_YEAR);
@@ -94,6 +96,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             }
             case GET_YEAR: result = getZonedDateTimeFromDate(parameters).getYear(); break;
             case GET_MONTH: result = getZonedDateTimeFromDate(parameters).getMonth(); break;
+            case GET_MONTH_NUMBER: result = result = getZonedDateTimeFromDate(parameters).getMonthValue(); break;
             case GET_DAY_OF_MONTH: result = getZonedDateTimeFromDate(parameters).getDayOfMonth(); break;
             case GET_DAY_OF_WEEK: result = getZonedDateTimeFromDate(parameters).getDayOfWeek(); break;
             case GET_DAY_OF_YEAR: result = getZonedDateTimeFromDate(parameters).getDayOfYear(); break;
