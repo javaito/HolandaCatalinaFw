@@ -181,7 +181,9 @@ public class RestContext extends Context {
      * @return Return the same map sending as parameter.
      */
     private Map<String,String> getTags(Throwable throwable, Map<String,String> tag) {
-        tag.putAll(Strings.getTagsFromMessage(throwable.getMessage()));
+        if(throwable.getMessage() != null) {
+            tag.putAll(Strings.getTagsFromMessage(throwable.getMessage()));
+        }
         if(throwable.getCause() != null) {
             tag = getTags(throwable.getCause(), tag);
         }
