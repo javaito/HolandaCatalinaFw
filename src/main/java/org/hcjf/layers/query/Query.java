@@ -1048,6 +1048,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                 SystemProperties.get(SystemProperties.Query.ReservedWord.AND);
         for(Evaluator evaluator : collection.getEvaluators()) {
             if(evaluator instanceof Or) {
+                if(!separator.isEmpty()) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.OR));
+                }
                 result.append(Strings.WHITE_SPACE);
                 if(((Or)evaluator).getEvaluators().size() == 1) {
                     toStringEvaluatorCollection(result, (Or) evaluator);
@@ -1056,8 +1059,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                     toStringEvaluatorCollection(result, (Or) evaluator);
                     result.append(Strings.END_GROUP);
                 }
+                result.append(Strings.WHITE_SPACE);
             } else if(evaluator instanceof And) {
-                result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND)).append(Strings.WHITE_SPACE);
+                if(!separator.isEmpty()) {
+                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND));
+                }
+                result.append(Strings.WHITE_SPACE);
                 if (collection instanceof Query) {
                     toStringEvaluatorCollection(result, (And) evaluator);
                 } else {
@@ -1069,6 +1076,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                         result.append(Strings.END_GROUP);
                     }
                 }
+                result.append(Strings.WHITE_SPACE);
             } else if(evaluator instanceof BooleanEvaluator) {
                 result.append(separator);
                 BooleanEvaluator booleanEvaluator = (BooleanEvaluator) evaluator;
