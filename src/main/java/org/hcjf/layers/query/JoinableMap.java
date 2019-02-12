@@ -22,6 +22,8 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
 
     private final Set<String> resources;
     private final Map<String, Object> mapInstance;
+    private Set<String> staticFields;
+    private Map<String, Object> staticFieldsMap;
 
     public JoinableMap() {
         this.resources = new TreeSet<>();
@@ -34,9 +36,13 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
         this.mapInstance = new HashMap<>();
     }
 
-    public JoinableMap(Map<String, Object> mapInstance) {
+    public JoinableMap(Map<String, Object> mapInstance, String... fields) {
         this.resources = new TreeSet<>();
         this.mapInstance = new HashMap<>();
+        if(fields != null && fields.length > 0) {
+            staticFields = Set.of(fields);
+            staticFieldsMap = new HashMap<>();
+        }
         for(String key : mapInstance.keySet()) {
             if(key.contains(Strings.CLASS_SEPARATOR)) {
                 resources.add(key.substring(0, key.lastIndexOf(Strings.CLASS_SEPARATOR)));
@@ -51,6 +57,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
      */
     @Override
     public BsonDocument toBson() {
+        purge();
         BsonDocument bsonDocument = BsonParcelable.super.toBson();
         bsonDocument.put(BsonParcelable.super.toBson(MAP_INSTANCE_FIELD, mapInstance));
         bsonDocument.put(BsonParcelable.super.toBson(RESOURCES_FIELD, resources));
@@ -58,7 +65,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     }
 
     /**
-     * This method populate the joinable map with the informaiton into the bson document.
+     * This method populate the joinable map with the information into the bson document.
      * @param document Bson document to populate the parcelable.
      * @param <P> Expected BsonParcelable data type.
      * @return Returns the bson parcelable instance.
@@ -74,12 +81,25 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     }
 
     /**
+     * This method remove all the fields that it's not static
+     */
+    @Override
+    public void purge() {
+        if(staticFields != null) {
+            mapInstance.clear();
+            mapInstance.putAll(staticFieldsMap);
+            staticFieldsMap = null;
+            staticFields = null;
+        }
+    }
+
+    /**
      * Clone the joinable map instance.
      * @return Joinalbe map clone.
      */
     @Override
-    public Enlarged clone() {
-        return new JoinableMap(this);
+    public Enlarged clone(String... fields) {
+        return new JoinableMap(this, fields);
     }
 
     /**
@@ -233,6 +253,9 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     public Object put(String key, Object value) {
         if(key.contains(Strings.CLASS_SEPARATOR)) {
             resources.add(key.substring(0, key.lastIndexOf(Strings.CLASS_SEPARATOR)));
+        }
+        if(staticFields != null && staticFields.contains(key)) {
+            staticFieldsMap.put(key, value);
         }
         return mapInstance.put(key, value);
     }

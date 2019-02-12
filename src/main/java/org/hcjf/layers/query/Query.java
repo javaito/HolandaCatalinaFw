@@ -474,10 +474,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                 int start = getStart() == null ? 0 : getStart();
 
                 //Collect all the aggregate functions into the array list.
+                List<String> returnParametersAsArray = new ArrayList<>();
                 for (QueryReturnParameter returnParameter : getReturnParameters()) {
                     if(returnParameter instanceof QueryReturnFunction && ((QueryReturnFunction)returnParameter).isAggregate()) {
                         aggregateFunctions.add((QueryReturnFunction) returnParameter);
                     }
+                    returnParametersAsArray.add(returnParameter.getAlias());
                 }
 
                 if (start < data.size()) {
@@ -497,12 +499,11 @@ public class Query extends EvaluatorCollection implements Queryable {
                                 continue;
                             }
                             if (object instanceof Enlarged) {
-                                Enlarged originalObject = ((Enlarged) object).clone();
                                 Enlarged enlargedObject;
-                                if(returnAll || !aggregateFunctions.isEmpty()) {
-                                    enlargedObject = originalObject;
+                                if(returnAll) {
+                                    enlargedObject = ((Enlarged) object).clone();
                                 } else {
-                                    enlargedObject = originalObject.cloneEmpty();
+                                    enlargedObject = ((Enlarged) object).clone(returnParametersAsArray.toArray(new String[]{}));
                                 }
                                 object = (O) enlargedObject;
                                 String name;
@@ -512,15 +513,14 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     value = null;
                                     if (returnParameter instanceof QueryReturnField) {
                                         QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                        name = returnField.getAlias() != null ? returnField.getAlias() : returnField.getFieldName();
-                                        value = originalObject.get(returnField.getFieldName());
+                                        name = returnField.getAlias();
+                                        value = enlargedObject.get(returnField.getFieldName());
                                     } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                        name = function.getAlias() == null ? function.toString() : function.getAlias();
-                                        value = consumer.resolveFunction(function, originalObject, dataSource);
+                                        name = function.getAlias();
+                                        value = consumer.resolveFunction(function, enlargedObject, dataSource);
                                     }
                                     if(name != null && value != null) {
-                                        originalObject.put(name, value);
                                         enlargedObject.put(name, value);
                                     }
                                 }
@@ -563,6 +563,10 @@ public class Query extends EvaluatorCollection implements Queryable {
             for (QueryReturnFunction function : aggregateFunctions) {
                 result = consumer.resolveFunction(function, result, dataSource);
             }
+        }
+
+        if(result.size() > 0 && result.iterator().next() instanceof Enlarged && !returnAll) {
+            result.forEach(O -> ((Enlarged)O).purge());
         }
 
         return result;
@@ -1951,12 +1955,16 @@ public class Query extends EvaluatorCollection implements Queryable {
         private final String alias;
 
         public QueryReturnField(String field) {
-            this(field, null);
+            this(field, field);
         }
 
         public QueryReturnField(String field, String alias) {
             super(field);
-            this.alias = alias;
+            if(alias == null) {
+                this.alias = field;
+            } else {
+                this.alias = alias;
+            }
         }
 
         /**
@@ -1985,7 +1993,11 @@ public class Query extends EvaluatorCollection implements Queryable {
                 aggregate = aggregateFunctionLayerInterface != null;
             } catch (Exception ex){}
 
-            this.alias = alias;
+            if(alias != null) {
+                this.alias = alias;
+            } else {
+                this.alias = originalFunction;
+            }
         }
 
         /**

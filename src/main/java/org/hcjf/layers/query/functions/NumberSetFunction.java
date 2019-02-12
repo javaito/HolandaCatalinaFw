@@ -57,30 +57,68 @@ public interface NumberSetFunction {
      * @param parameters Math expression parameters.
      * @return Returns the number that results of evaluate the math expression.
      */
-    default Number evalExpression(Object... parameters) {
-        Number result = 0;
+    default Object evalExpression(Object... parameters) {
+        Object result;
+        Number evalResult = 0;
         Number secondParameter;
+        Number firstValue = null;
+        String comparator = null;
         String currentOperation = SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION);
         for(Object parameter : parameters) {
             if(parameter instanceof String) {
                 currentOperation = (String) parameter;
+                if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_EQUALS)) ||
+                        currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DISTINCT)) ||
+                        currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DISTINCT_2)) ||
+                        currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_GREATER_THAN)) ||
+                        currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_GREATER_THAN_OR_EQUALS)) ||
+                        currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_LESS_THAN)) ||
+                        currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_LESS_THAN_OR_EQUALS))) {
+                    comparator = currentOperation;
+                    currentOperation = SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION);
+                    firstValue = evalResult;
+                    evalResult = 0;
+                }
             } else if(parameter instanceof Number) {
                 secondParameter = (Number) parameter;
                 if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_ADDITION))) {
-                    result = applyFunction(result, secondParameter, BigDecimal::add);
+                    evalResult = applyFunction(evalResult, secondParameter, BigDecimal::add);
                 } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_SUBTRACTION))) {
-                    result = applyFunction(result, secondParameter, BigDecimal::subtract);
+                    evalResult = applyFunction(evalResult, secondParameter, BigDecimal::subtract);
                 } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_MULTIPLICATION))) {
-                    result = applyFunction(result, secondParameter, BigDecimal::multiply);
+                    evalResult = applyFunction(evalResult, secondParameter, BigDecimal::multiply);
                 } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DIVISION))) {
-                    result = applyFunction(result, secondParameter, BigDecimal::divide);
+                    evalResult = applyFunction(evalResult, secondParameter, BigDecimal::divide);
                 } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_MODULUS))) {
-                    result = applyFunction(result, secondParameter, BigDecimal::remainder);
+                    evalResult = applyFunction(evalResult, secondParameter, BigDecimal::remainder);
                 }
             } else {
                 throw new IllegalArgumentException();
             }
         }
+
+        if(comparator != null) {
+            if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_EQUALS))) {
+                result = firstValue.equals(evalResult);
+            } else if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DISTINCT))) {
+                result = !firstValue.equals(evalResult);
+            } else if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DISTINCT_2))) {
+                result = !firstValue.equals(evalResult);
+            } else if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_GREATER_THAN))) {
+                result = firstValue.doubleValue() > evalResult.doubleValue();
+            } else if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_GREATER_THAN_OR_EQUALS))) {
+                result = firstValue.doubleValue() >= evalResult.doubleValue();
+            } else if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_LESS_THAN))) {
+                result = firstValue.doubleValue() < evalResult.doubleValue();
+            } else if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_LESS_THAN_OR_EQUALS))) {
+                result = firstValue.doubleValue() <= evalResult.doubleValue();
+            } else {
+                throw new IllegalArgumentException();
+            }
+        } else {
+            result = evalResult;
+        }
+
         return result;
     }
 

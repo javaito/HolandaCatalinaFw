@@ -24,13 +24,19 @@ public interface Enlarged {
 
     /**
      * Clone th enlarged object.
+     * @param fields Array of static fields
      * @return Enlarged clone.
      */
-    Enlarged clone();
+    Enlarged clone(String... fields);
 
     /**
      * Clone the enlarged object without domain information.
      * @return Enlarged clone.
      */
     Enlarged cloneEmpty();
+
+    /**
+     * This method remove all the fields that it's not static
+     */
+    void purge();
 }

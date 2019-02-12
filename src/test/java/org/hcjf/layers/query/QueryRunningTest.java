@@ -287,7 +287,10 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertTrue(resultSet.iterator().next().get("year") instanceof String);
 
-        query = Query.compile("SELECT addressId, sum(weight) AS sum FROM character GROUP BY addressId");
+        query = Query.compile("SELECT addressId, aggregateSum('weight') AS sum FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+
+        query = Query.compile("SELECT if(weight + 10 > 100, 'gordo', 'flaco') AS es FROM character");
         resultSet = query.evaluate(dataSource);
         System.out.println();
     }
