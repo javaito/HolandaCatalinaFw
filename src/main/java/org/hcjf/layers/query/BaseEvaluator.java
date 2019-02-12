@@ -112,6 +112,15 @@ public abstract class BaseEvaluator implements Evaluator {
         public Object process(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
             return consumer.getParameter(place);
         }
+
+        /**
+         * Returns the place into the array of parameter to obtain the value.
+         * @return Value to replace the holder.
+         */
+        public final Integer getPlace() {
+            return place;
+        }
+
     }
 
     /**
