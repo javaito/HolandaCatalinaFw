@@ -1120,8 +1120,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     public void dispatchEvent(DistributedEvent event) {
         EventMessage eventMessage = new EventMessage(UUID.randomUUID());
         eventMessage.setEvent(event);
-        for (CloudSession session : sessionByNode.values()) {
-            sendMessageToNode(session, eventMessage);
+        for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
+            invokeService(serviceEndPoint.getId(), eventMessage);
         }
     }
 
