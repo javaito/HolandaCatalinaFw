@@ -321,29 +321,25 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             }
 
             try {
-                if(thisNode.getId().equals(sortedNodes.iterator().next().getId())) {
-                    Collection<Message> messages = createServicePublicationCollection();
-                    ServiceDefinitionMessage serviceDefinitionMessage = new ServiceDefinitionMessage();
-                    serviceDefinitionMessage.setId(UUID.randomUUID());
-                    serviceDefinitionMessage.setMessages(messages);
-                    serviceDefinitionMessage.setServiceId(thisServiceEndPoint.getId());
-                    serviceDefinitionMessage.setServiceName(thisServiceEndPoint.getName());
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
+                Collection<Message> messages = createServicePublicationCollection();
+                ServiceDefinitionMessage serviceDefinitionMessage = new ServiceDefinitionMessage();
+                serviceDefinitionMessage.setId(UUID.randomUUID());
+                serviceDefinitionMessage.setMessages(messages);
+                serviceDefinitionMessage.setServiceId(thisServiceEndPoint.getId());
+                serviceDefinitionMessage.setServiceName(thisServiceEndPoint.getName());
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
+                try {
+                    invokeService(serviceEndPoint.getId(), serviceDefinitionMessage);
+                    break;
+                } catch (Exception ex) {
+                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
                     try {
-                        invokeService(serviceEndPoint.getId(), serviceDefinitionMessage);
+                        Thread.sleep(SystemProperties.getLong(
+                                SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT));
+                    } catch (InterruptedException e) {
                         break;
-                    } catch (Exception ex) {
-                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
-                        try {
-                            Thread.sleep(SystemProperties.getLong(
-                                    SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT));
-                        } catch (InterruptedException e) {
-                            break;
-                        }
-                        continue;
                     }
-                } else {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Skipping service publication");
+                    continue;
                 }
             } catch (Exception ex){
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Fail to trying publish the service", ex);
