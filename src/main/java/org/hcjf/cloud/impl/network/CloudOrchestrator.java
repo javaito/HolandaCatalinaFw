@@ -66,6 +66,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private ServiceEndPoint thisServiceEndPoint;
     private Map<UUID, ServiceEndPoint> endPoints;
     private Map<String,ServiceEndPoint> endPointsByGatewayId;
+    private Object publishMeMonitor;
+    private Boolean publishMeFlag;
 
     private CloudWagonMessage wagonMessage;
     private Object wagonMonitor;
@@ -134,6 +136,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         endPoints = new HashMap<>();
         endPointsByGatewayId = new HashMap<>();
 
+        publishMeMonitor = new Object();
+        publishMeFlag = false;
+
         wagonMonitor = new Object();
         lastVisit = System.currentTimeMillis();
         lastServicePublication = System.currentTimeMillis() - SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT);
@@ -143,7 +148,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         sharedStore = new DistributedTree(Strings.EMPTY_STRING);
 
         fork(this::maintainConnections);
-        fork(this::initServicePublication);
         fork(this::initWagonEngine);
         fork(this::initReorganizationTimer);
         server = new CloudServer();
@@ -294,8 +298,63 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     endPoints.put(endPoint.getId(), endPoint);
                     endPointsByGatewayId.put(endPoint.getGatewayId(), endPoint);
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "New service end point registered: %s", endPoint);
+
+                    fork(() -> initServicePublication(endPoint));
                 }
             }
+        }
+    }
+
+    /**
+     * This method run continuously publishing all the distributed layers for all the registered services.
+     */
+    private void initServicePublication(ServiceEndPoint serviceEndPoint) {
+        while(!Thread.currentThread().isInterrupted()) {
+
+            synchronized (publishMeMonitor) {
+                if(!publishMeFlag) {
+                    try {
+                        publishMeMonitor.wait();
+                    } catch (InterruptedException e) { }
+                    continue;
+                }
+            }
+
+            try {
+                if(thisNode.getId().equals(sortedNodes.iterator().next().getId())) {
+                    Collection<Message> messages = createServicePublicationCollection();
+                    ServiceDefinitionMessage serviceDefinitionMessage = new ServiceDefinitionMessage();
+                    serviceDefinitionMessage.setId(UUID.randomUUID());
+                    serviceDefinitionMessage.setMessages(messages);
+                    serviceDefinitionMessage.setServiceId(thisServiceEndPoint.getId());
+                    serviceDefinitionMessage.setServiceName(thisServiceEndPoint.getName());
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
+                    try {
+                        invokeService(serviceEndPoint.getId(), serviceDefinitionMessage);
+                        break;
+                    } catch (Exception ex) {
+                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
+                        try {
+                            Thread.sleep(SystemProperties.getLong(
+                                    SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT));
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                        continue;
+                    }
+                } else {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Skipping service publication");
+                }
+            } catch (Exception ex){
+                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Fail to trying publish the service", ex);
+            }
+        }
+    }
+
+    public final void publishMe() {
+        synchronized (publishMeMonitor) {
+            publishMeFlag = true;
+            publishMeMonitor.notifyAll();
         }
     }
 
@@ -532,52 +591,25 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     /**
-     * This method run continuously publishing all the distributed layers for all the registered services.
+     * Creates all the message needed to publish the service.
+     * @return Collection of messages.
      */
-    private void initServicePublication() {
-        while(!Thread.currentThread().isInterrupted()) {
-            try {
-                if(thisNode.getId().equals(sortedNodes.iterator().next().getId())) {
-                    LocalLeaf localLeaf;
-                    Object[] path;
-                    Collection<Message> messages = new ArrayList<>();
-                    PublishLayerMessage publishLayerMessage;
-                    for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
-                        localLeaf = (LocalLeaf) entry.getValue();
-                        path = entry.getPath();
-                        if (localLeaf.getInstance() instanceof DistributedLayer) {
-                            publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
-                            publishLayerMessage.setPath(path);
-                            publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
-                            messages.add(publishLayerMessage);
-                        }
-                    }
-
-                    MessageCollection messageCollection = new MessageCollection();
-                    messageCollection.setId(UUID.randomUUID());
-                    messageCollection.setMessages(messages);
-                    for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
-                        try {
-                            invokeService(serviceEndPoint.getId(), messageCollection);
-                        } catch (Exception ex) {
-                            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
-                        }
-                    }
-                } else {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Skipping service publication");
-                }
-            } catch (Exception ex){
-                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish any service", ex);
-            }
-
-            try {
-                Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT));
-            } catch (InterruptedException e) {
-                break;
+    private Collection<Message> createServicePublicationCollection() {
+        LocalLeaf localLeaf;
+        Object[] path;
+        Collection<Message> messages = new ArrayList<>();
+        PublishLayerMessage publishLayerMessage;
+        for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
+            localLeaf = (LocalLeaf) entry.getValue();
+            path = entry.getPath();
+            if (localLeaf.getInstance() instanceof DistributedLayer) {
+                publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
+                publishLayerMessage.setPath(path);
+                publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
+                messages.add(publishLayerMessage);
             }
         }
+        return messages;
     }
 
     /**
@@ -674,7 +706,18 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Incoming '%s' message: %s", message.getClass(), message.getId());
         Message responseMessage = null;
-        if(message instanceof MessageCollection) {
+        if(message instanceof ServiceDefinitionMessage) {
+            ServiceDefinitionMessage serviceDefinitionMessage = (ServiceDefinitionMessage) message;
+            if(serviceDefinitionMessage.getMessages() != null) {
+                for(Message innerMessage : serviceDefinitionMessage.getMessages()) {
+                    processMessage(session, innerMessage);
+                }
+            }
+            endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setName(
+                    ((ServiceDefinitionMessage) message).getServiceName());
+            responseMessage = new ServiceDefinitionResponseMessage(message);
+            ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
+        } else if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
             for(Message innerMessage : collection.getMessages()) {
                 processMessage(session, innerMessage);
@@ -868,6 +911,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {
                 responseListener.setMessage((ResponseMessage) message);
+                if(message instanceof ServiceDefinitionResponseMessage) {
+                    for(Message innerMessage : ((ServiceDefinitionResponseMessage)message).getMessages()) {
+                        processMessage(session, innerMessage);
+                    }
+                }
             } else {
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                         "Response listener not found: %s", message.getId());

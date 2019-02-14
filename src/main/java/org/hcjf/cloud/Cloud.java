@@ -222,6 +222,13 @@ public final class Cloud extends Service<CloudConsumer> {
         return getInstance().impl.layerInvoke(layerClass, implName, method, parameters);
     }
 
+    /**
+     * This method must start the process of interaction with other services.
+     */
+    public static void publishMe() {
+        getInstance().impl.publishMe();
+    }
+
     @Override
     protected void shutdown(ShutdownStage stage) {
         impl.shutdown();

@@ -761,7 +761,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "127.0.0.1");
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "18080");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_service");
-        defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "20000");
+        defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "3600000");
         defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");

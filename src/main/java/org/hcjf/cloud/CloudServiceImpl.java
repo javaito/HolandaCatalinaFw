@@ -141,6 +141,11 @@ public interface CloudServiceImpl {
     <O extends Object> O layerInvoke(Class<? extends LayerInterface> layerClass, String implName, Method method, Object... parameters);
 
     /**
+     * This method must start the process of interaction with other services.
+     */
+    void publishMe();
+
+    /**
      * Shutdown hook
      */
     void shutdown();

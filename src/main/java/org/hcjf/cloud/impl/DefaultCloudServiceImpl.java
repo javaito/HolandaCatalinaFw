@@ -118,18 +118,23 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     }
 
     @Override
-    public void publishPlugin(byte[] jarFile) {
-        CloudOrchestrator.getInstance().publishPlugin(jarFile);
-    }
-
-    @Override
     public boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName) {
         return CloudOrchestrator.getInstance().isDistributedLayerPublished(Layer.class.getName(), layerClass.getName(), implName);
     }
 
     @Override
+    public void publishPlugin(byte[] jarFile) {
+        CloudOrchestrator.getInstance().publishPlugin(jarFile);
+    }
+
+    @Override
     public <O> O layerInvoke(Class<? extends LayerInterface> layerClass, String implName, Method method, Object... parameters) {
         return CloudOrchestrator.getInstance().layerInvoke(parameters, method, Layer.class.getName(), layerClass.getName(), implName);
+    }
+
+    @Override
+    public void publishMe() {
+        CloudOrchestrator.getInstance().publishMe();
     }
 
     @Override
