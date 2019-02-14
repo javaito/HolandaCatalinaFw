@@ -1509,10 +1509,18 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
         private final String name;
         private final Class[] parameterTypes;
+        private String hash;
 
         public DistributedLayerInvokerFilter(String name, Class[] parameterTypes) {
             this.name = name;
             this.parameterTypes = parameterTypes;
+
+            hash = name;
+            if(parameterTypes != null) {
+                for (Class type : parameterTypes) {
+                    hash += type.getName();
+                }
+            }
         }
 
         @Override
@@ -1523,6 +1531,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         new CloudOrchestrator.DistributedLayerInvoker(method.getDeclaringClass(), method));
             }
             return result;
+        }
+
+        @Override
+        public String getName() {
+            return hash;
         }
     }
 

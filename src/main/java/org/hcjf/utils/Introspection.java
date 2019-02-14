@@ -248,7 +248,7 @@ public final class Introspection {
      * @return Filter key.
      */
     private static String getInvokerKey(Class clazz, InvokerFilter filter) {
-        return clazz.getName() + filter.getClass().getName();
+        return clazz.getName() + filter.getName();
     }
 
     /**
@@ -863,6 +863,13 @@ public final class Introspection {
          */
         public InvokerEntry<I> filter(Method method);
 
+        /**
+         * Returns the name of the invoker to create the invoker key.
+         * @return Name of the invoker.
+         */
+        default String getName() {
+            return getClass().getName();
+        }
     }
 
     /**
