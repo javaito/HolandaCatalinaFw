@@ -857,7 +857,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         } else if(message instanceof EventMessage) {
             EventMessage eventMessage = (EventMessage) message;
             distributedDispatchEvent(eventMessage.getEvent());
-            responseMessage = new ResponseMessage();
+            responseMessage = new ResponseMessage(eventMessage);
             ((ResponseMessage)responseMessage).setValue(true);
         } else if(message instanceof PublishLayerMessage) {
             PublishLayerMessage publishLayerMessage = (PublishLayerMessage) message;
