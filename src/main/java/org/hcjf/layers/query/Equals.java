@@ -32,7 +32,11 @@ public class Equals extends FieldEvaluator {
             Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
             Object rightValue = getProcessedRightValue(object, dataSource, consumer);
 
-            if(leftValue instanceof Number) {
+            if(leftValue == null) {
+                result = rightValue == null;
+            } else if(rightValue == null) {
+                result = false;
+            } else if(leftValue instanceof Number) {
                 result = numberEquals((Number) leftValue, rightValue);
             } else if(leftValue.getClass().isEnum() && rightValue.getClass().equals(String.class)) {
                 result = leftValue.toString().equals(rightValue);

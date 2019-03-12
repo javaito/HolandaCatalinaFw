@@ -25,7 +25,10 @@ public class Like extends FieldEvaluator {
         try {
             Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
             Object rightValue = getProcessedRightValue(object, dataSource, consumer);
-            if(leftValue instanceof String) {
+
+            if(leftValue == null) {
+                result = false;
+            } else if(leftValue instanceof String) {
                 if(rightValue instanceof Pattern) {
                     result = ((Pattern)rightValue).matcher((String)leftValue).matches();
                 } else if(rightValue instanceof String) {

@@ -10,7 +10,7 @@ import org.hcjf.layers.crud.UpdateLayerInterface;
 import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
-import org.hcjf.utils.Introspection;
+import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
@@ -60,7 +60,7 @@ public class RestContext extends Context {
     public HttpResponse onContext(HttpRequest request) {
         HttpMethod method = request.getMethod();
         JsonParser jsonParser = new JsonParser();
-        Gson gson = new GsonBuilder().create();
+        Gson gson = new GsonBuilder().setDateFormat(SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
         JsonElement jsonElement;
         String resourceName = request.getReplaceableValue(Fields.RESOURCE_URL_FIELD);
         Object id = Strings.deductInstance(request.getReplaceableValue(Fields.ID_URL_FIELD));
@@ -81,14 +81,14 @@ public class RestContext extends Context {
             RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
             if(requestModel.getBody() == null) {
                 // If the method is post and the body object is null then the request attempt to create a parameterized
-                // query instance or a group of queriable instances.
+                // query instance or a group of queryable instances.
                 if(requestModel.getQueryable() != null) {
                     jsonElement = gson.toJsonTree(Query.evaluate(requestModel.getQueryable()));
-                } else if(requestModel.getQueriables() != null){
+                } else if(requestModel.getQueryables() != null){
                     JsonObject queriesResult = new JsonObject();
-                    for(String key : requestModel.getQueriables().keySet()) {
+                    for(String key : requestModel.getQueryables().keySet()) {
                         try {
-                            queriesResult.add(key, gson.toJsonTree(Query.evaluate(requestModel.getQueriables().get(key))));
+                            queriesResult.add(key, gson.toJsonTree(Query.evaluate(requestModel.getQueryables().get(key))));
                         } catch (Throwable throwable){
                             queriesResult.add(key, createJsonFromThrowable(throwable));
                         }
@@ -198,7 +198,7 @@ public class RestContext extends Context {
 
         private Map<String,Object> body;
         private Queryable queryable;
-        private Map<String,Queryable> queriables;
+        private Map<String,Queryable> queryables;
 
         public RequestModel(JsonObject jsonObject) {
             if(jsonObject.has(Fields.BODY_FIELD)) {
@@ -210,10 +210,10 @@ public class RestContext extends Context {
             }
 
             if(jsonObject.has(Fields.QUERIES_FIELD)) {
-                queriables = new HashMap<>();
+                queryables = new HashMap<>();
                 JsonObject queryablesObject = jsonObject.getAsJsonObject(Fields.QUERIES_FIELD);
                 for(String key : queryablesObject.keySet()) {
-                    queriables.put(key, createQuery(queryablesObject.get(key)));
+                    queryables.put(key, createQuery(queryablesObject.get(key)));
                 }
             }
         }
@@ -303,8 +303,8 @@ public class RestContext extends Context {
          * Returns a map of the queryable instances of the request.
          * @return Queryable instances of the request.
          */
-        public Map<String, Queryable> getQueriables() {
-            return queriables;
+        public Map<String, Queryable> getQueryables() {
+            return queryables;
         }
     }
 }
