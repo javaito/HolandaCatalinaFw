@@ -2,6 +2,7 @@ package org.hcjf.service;
 
 import com.sun.management.ThreadMXBean;
 import org.hcjf.layers.Layer;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
 import java.lang.management.ManagementFactory;
@@ -237,7 +238,11 @@ public class ServiceThread extends Thread {
             serviceThread.setInitialAllocatedMemory(((ThreadMXBean)ManagementFactory.getThreadMXBean()).
                     getThreadAllocatedBytes(Thread.currentThread().getId()));
 
-            throw new RuntimeException("Max memory allocated for thread exceeded");
+            if(SystemProperties.getBoolean(SystemProperties.Service.MAX_ALLOCATED_MEMORY_EXCEEDED_THROWS_EXCEPTION)) {
+                throw new RuntimeException("Max memory allocated for thread exceeded");
+            } else {
+                Log.w(SystemProperties.get("SERVICE_THREAD"), "Max memory allocated for thread exceeded");
+            }
         }
     }
 
