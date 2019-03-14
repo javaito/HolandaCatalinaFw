@@ -5,6 +5,7 @@ import org.hcjf.properties.SystemProperties;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * This class contains utils methods to work with strings.
@@ -180,8 +181,19 @@ public final class Strings {
      * @return Result of the join operation.
      */
     public static String join(Collection<String> values, String separator) {
+        return join(values.stream(), separator);
+    }
+
+    /**
+     * Return the string that result of join all the values separated by the
+     * separated value specified.
+     * @param values Values to join.
+     * @param separator Separator value.
+     * @return Result of the join operation.
+     */
+    public static String join(Stream<String> values, String separator) {
         Builder builder = new Builder();
-        values.stream().filter(S -> !S.isEmpty()).forEach(S -> builder.append(S, separator));
+        values.filter(S -> !S.isEmpty()).forEach(S -> builder.append(S, separator));
         return builder.toString();
     }
 
@@ -195,8 +207,21 @@ public final class Strings {
      * @return Result of the join operation.
      */
     public static String join(Collection<String> values, String startValue, String endValue, String separator) {
+        return join(values.stream(), startValue, endValue, separator);
+    }
+
+    /**
+     * Return the string that result of join all the values separated by the
+     * separated value specified and wrapped by the start and and value.
+     * @param values Values to join.
+     * @param startValue Wrapped start value.
+     * @param endValue Wrapped end value.
+     * @param separator Separator value.
+     * @return Result of the join operation.
+     */
+    public static String join(Stream<String> values, String startValue, String endValue, String separator) {
         Builder builder = new Builder();
-        values.stream().filter(S -> !S.isEmpty()).forEach(S -> builder.append(startValue).append(S).append(endValue, separator));
+        values.filter(S -> !S.isEmpty()).forEach(S -> builder.append(startValue).append(S).append(endValue, separator));
         return builder.toString();
     }
 

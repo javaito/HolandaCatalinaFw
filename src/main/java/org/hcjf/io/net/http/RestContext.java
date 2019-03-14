@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * This class provides an abstraction to implements a simple rest end point that
@@ -43,11 +44,18 @@ public class RestContext extends Context {
         }
     }
 
-    private static final String REGEX_TEMPLATE = "\\/%s(\\/(?<resource>[A-Za-z0-9\\-]{0,}))?(\\/(?<id>[A-Za-z0-9\\-]{0,}))?(\\/.*)?(\\?.*)?";
+    private static final String REGEX_TEMPLATE = "\\/%s(\\/(?<resource>[A-Za-z0-9\\-]{0,})){0,}";
     private static final String DEFAULT_QUERY_PARAMETER = "q";
 
+    private final List<Pattern> idRegexList;
+
     public RestContext(String baseContext) {
+        this(baseContext, List.of(SystemProperties.getPattern(SystemProperties.HCJF_UUID_REGEX)));
+    }
+
+    public RestContext(String baseContext, List<Pattern> idRegexList) {
         super(String.format(REGEX_TEMPLATE, Strings.trim(baseContext, Strings.SLASH)));
+        this.idRegexList = idRegexList;
     }
 
     /**
@@ -62,8 +70,16 @@ public class RestContext extends Context {
         JsonParser jsonParser = new JsonParser();
         Gson gson = new GsonBuilder().setDateFormat(SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
         JsonElement jsonElement;
-        String resourceName = request.getReplaceableValue(Fields.RESOURCE_URL_FIELD);
-        Object id = Strings.deductInstance(request.getReplaceableValue(Fields.ID_URL_FIELD));
+
+        String lastPart = request.getPathParts().get(request.getPathParts().size() -1);
+        Object id = null;
+        for(Pattern idRegex : idRegexList) {
+            if(idRegex.matcher(lastPart).matches()) {
+                id = lastPart;
+            }
+        }
+        String resourceName = Strings.join(request.getPathParts().stream().skip(1).limit(request.getPathParts().size() -
+                (id == null ? 0 : 2)), Strings.CLASS_SEPARATOR);
 
         if(method.equals(HttpMethod.GET)) {
             if(id == null) {
