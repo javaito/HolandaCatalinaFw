@@ -116,7 +116,11 @@ public class RestContext extends Context {
             // This method call to delete layer interface implementation.
             RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
             DeleteLayerInterface deleteLayerInterface = Layers.get(DeleteLayerInterface.class, resourceName);
-            jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
+            if(id != null) {
+                jsonElement = gson.toJsonTree(deleteLayerInterface.delete(id));
+            } else {
+                jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
+            }
         } else {
             throw new UnsupportedOperationException("Unsupported http method: " + method.toString());
         }
