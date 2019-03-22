@@ -37,7 +37,7 @@ public final class Introspection {
      * @param path Path to navigate the instance.
      * @return Returns the value that point the path.
      */
-    public static Object resolve(Object instance, String path) {
+    public static <O extends Object> O resolve(Object instance, String path) {
         Object result = instance;
         String[] pathElements = path.split(PATH_SEPARATOR);
         for(String element : pathElements) {
@@ -76,7 +76,7 @@ public final class Introspection {
                 }
             }
         }
-        return result;
+        return (O) result;
     }
 
     /**
