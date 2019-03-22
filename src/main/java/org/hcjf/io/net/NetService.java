@@ -635,6 +635,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         selectedKeys.remove();
                     }
                 }
+                selector.selectNow();
             }
 
             try {
@@ -659,6 +660,21 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
+     * Set the socket options into the specific socket channel.
+     * @param socketChannel Socket channel instance.
+     * @param consumer Consumer to obtain the options.
+     * @throws IOException IO Exception.
+     */
+    private void setSocketOptions(SocketChannel socketChannel, NetServiceConsumer consumer) throws IOException {
+        Map<SocketOption, Object> socketOptions = consumer.getSocketOptions();
+        if (socketOptions != null) {
+            for (SocketOption socketOption : socketOptions.keySet()) {
+                socketChannel.setOption(socketOption, socketOptions.get(socketOption));
+            }
+        }
+    }
+
+    /**
      * This method finalize the connection process when start a client connection.
      *
      * @param keyChannel Key associated to the connection channel.
@@ -672,12 +688,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 channel.socket().setKeepAlive(true);
                 channel.socket().setSoTimeout(100);
                 channel.finishConnect();
-                Map<SocketOption, Object> socketOptions = client.getSocketOptions();
-                if (socketOptions != null) {
-                    for (SocketOption socketOption : socketOptions.keySet()) {
-                        channel.setOption(socketOption, socketOptions.get(socketOption));
-                    }
-                }
+                setSocketOptions(channel, client);
 
                 NetSession session = getSession(client,
                         createPackage(channel, null, NetPackage.ActionEvent.CONNECT),
@@ -724,13 +735,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                 SocketChannel socketChannel = serverSocketChannel.accept();
                 socketChannel.configureBlocking(false);
-
-                Map<SocketOption, Object> socketOptions = server.getSocketOptions();
-                if (socketOptions != null) {
-                    for (SocketOption socketOption : socketOptions.keySet()) {
-                        socketChannel.setOption(socketOption, socketOptions.get(socketOption));
-                    }
-                }
+                setSocketOptions(socketChannel, server);
 
                 NetSession session = getSession(server,
                         createPackage(socketChannel, null, NetPackage.ActionEvent.CONNECT),
