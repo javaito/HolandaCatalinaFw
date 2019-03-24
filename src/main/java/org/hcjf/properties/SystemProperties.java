@@ -33,6 +33,7 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_MATH_REGULAR_EXPRESSION = "hcjf.math.regular.expression";
     public static final String HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION = "hcjf.math.connector.regular.expression";
     public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
+    public static final String HCJF_DEFAULT_LRU_MAP_SIZE = "hcjf.default.lru.map.size";
 
     public static final class Locale {
         public static final String LOG_TAG = "hcjf.locale.log.tag";
@@ -295,6 +296,7 @@ public final class SystemProperties extends Properties {
         public static final String EVALUATORS_CACHE_NAME = "hcjf.query.evaluators.cache";
         public static final String EVALUATOR_LEFT_VALUES_CACHE_NAME = "hcjf.query.evaluator.left.values.cache";
         public static final String EVALUATOR_RIGHT_VALUES_CACHE_NAME = "hcjf.query.evaluator.right.values.cache";
+        public static final String COMPILER_CACHE_SIZE = "hcjf.query.compiler.cache.size";
 
         public static final class ReservedWord {
             public static final String SELECT = "hcjf.query.select.reserved.word";
@@ -479,6 +481,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([-+/*\\^%=<>!]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
         defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/%=<>!].*");
         defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))|(?=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))");
+        defaults.put(HCJF_DEFAULT_LRU_MAP_SIZE, "1000");
 
         defaults.put(Locale.DEFAULT_LOCALE, java.util.Locale.getDefault().toLanguageTag());
         defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, DefaultLocaleLayer.class.getName());
@@ -678,6 +681,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.EVALUATORS_CACHE_NAME, "__evaluators__cache__");
         defaults.put(Query.EVALUATOR_LEFT_VALUES_CACHE_NAME, "__evaluator__left__values__cache__");
         defaults.put(Query.EVALUATOR_RIGHT_VALUES_CACHE_NAME, "__evaluator__right__values__cache__");
+        defaults.put(Query.COMPILER_CACHE_SIZE, "1000");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");

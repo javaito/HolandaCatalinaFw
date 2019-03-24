@@ -25,6 +25,14 @@ public class QueryCompileTest {
     public void testCompile() {
 
         try {
+            Query query = Query.compile("SELECT 2+2*field1 as suma FROM namespace.resource WHERE resource.field != log(5)+2 AND resource.field = '2017-07-07 22:15:32'");
+            query = Query.compile(query.toString());
+            Assert.assertNotNull(query);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
             Query query = Query.compile("SELECT 2+2*field1 as suma FROM resource WHERE resource.field != log(5)+2 AND resource.field = '2017-07-07 22:15:32'");
             query = Query.compile(query.toString());
             Assert.assertNotNull(query);
@@ -228,6 +236,22 @@ public class QueryCompileTest {
         } catch (Exception ex) {
             Assert.fail("Unable to decode UUID data type");
         }
+    }
+
+    @Test
+    public void testCompileCache() {
+        long startTime = System.currentTimeMillis();
+        Query query1 = Query.compile("SELECT * FROM resource");
+        long firstTime = System.currentTimeMillis() - startTime;
+
+        startTime = System.currentTimeMillis();
+        Query query2 = Query.compile("SELECT * FROM resource");
+        long secondTime = System.currentTimeMillis() - startTime;
+
+        System.out.printf("First time: %d \r\n", firstTime);
+        System.out.printf("Second time: %d \r\n", secondTime);
+        Assert.assertTrue(query1 == query2);
+        Assert.assertTrue(firstTime > secondTime);
     }
 
 }

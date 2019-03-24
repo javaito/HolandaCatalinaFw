@@ -10,6 +10,7 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
+import org.hcjf.utils.LruMap;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonCustomBuilderLayer;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class Query extends EvaluatorCollection implements Queryable {
 
     private static final String QUERY_BSON_FIELD_NAME = "__query__";
+    private static final LruMap<String,Query> cache;
 
     private final QueryId id;
     private final QueryResource resource;
@@ -44,6 +46,9 @@ public class Query extends EvaluatorCollection implements Queryable {
     private String stringRepresentation;
 
     static {
+        //Init query compiler cache
+        cache = new LruMap<>(SystemProperties.getInteger(SystemProperties.Query.COMPILER_CACHE_SIZE));
+
         //Publishing default function layers...
         Layers.publishLayer(MathQueryFunctionLayer.class);
         Layers.publishLayer(StringQueryFunctionLayer.class);
@@ -1232,9 +1237,14 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Query instance.
      */
     public static Query compile(String sql) {
-        List<String> richTexts = Strings.groupRichText(sql);
-        List<String> groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() -1)));
-        return compile(groups, richTexts, groups.size() -1);
+        Query result = cache.get(sql);
+        if(result == null) {
+            List<String> richTexts = Strings.groupRichText(sql);
+            List<String> groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() - 1)));
+            result = compile(groups, richTexts, groups.size() - 1);
+            cache.put(sql,result);
+        }
+        return result;
     }
 
     /**
@@ -2085,6 +2095,10 @@ public class Query extends EvaluatorCollection implements Queryable {
         public Query create(BsonDocument document) {
             return Query.compile(document.get(QUERY_BSON_FIELD_NAME).getAsString());
         }
+
+    }
+
+    private static final class QueryCache {
 
     }
 

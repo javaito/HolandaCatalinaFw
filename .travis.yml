@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - oraclejdk9
+  - oraclejdk11
 install:
   - mvn --settings .travis/settings.xml install -DskipTests=true -Dgpg.skip -Dmaven.javadoc.skip=true -B -V
 before_install:
@@ -14,4 +14,4 @@ deploy:
     on:
       repo: javaito/HolandaCatalinaFw
       tags: true
-      jdk: oraclejdk9
+      jdk: oraclejdk11
