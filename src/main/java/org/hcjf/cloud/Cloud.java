@@ -229,14 +229,34 @@ public final class Cloud extends Service<CloudConsumer> {
         getInstance().impl.publishMe();
     }
 
+    /**
+     * This method start a worker over the cloud implementation to make a task and finish.
+     * @param workerConfig Map with all the parameters to configure a worker instance.
+     */
+    public static void forkWorker(Map<String,Object> workerConfig) {
+        getInstance().impl.forkWorker(workerConfig);
+    }
+
+    /**
+     * This method is listening the shutdown signal and must start the shutdown process of the cloud implementation.
+     * @param stage Shutdown stage.
+     */
     @Override
     protected void shutdown(ShutdownStage stage) {
         impl.shutdown();
     }
 
+    /**
+     * Register some consumer to use the cloud service.
+     * @param consumer Object with the logic to consume the service.
+     */
     @Override
     public void registerConsumer(CloudConsumer consumer) { }
 
+    /**
+     * Unregister consumer.
+     * @param consumer Consumer to unregister.
+     */
     @Override
     public void unregisterConsumer(CloudConsumer consumer) { }
 }

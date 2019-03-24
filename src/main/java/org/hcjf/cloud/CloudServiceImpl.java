@@ -146,6 +146,12 @@ public interface CloudServiceImpl {
     void publishMe();
 
     /**
+     * This method start a worker over the cloud implementation to make a task and finish.
+     * @param workerConfig Map with all the parameters to configure a worker instance.
+     */
+    void forkWorker(Map<String,Object> workerConfig);
+
+    /**
      * Shutdown hook
      */
     void shutdown();

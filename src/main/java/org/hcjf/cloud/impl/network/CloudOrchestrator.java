@@ -69,7 +69,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private Object publishMeMonitor;
     private Boolean publishMeFlag;
 
-    private CloudWagonMessage wagonMessage;
     private Object wagonMonitor;
     private Long lastVisit;
     private Long lastServicePublication;
@@ -148,7 +147,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         sharedStore = new DistributedTree(Strings.EMPTY_STRING);
 
         fork(this::maintainConnections);
-        fork(this::initWagonEngine);
         fork(this::initReorganizationTimer);
         server = new CloudServer();
         server.start();
@@ -608,51 +606,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return messages;
     }
 
-    /**
-     * This method run continuously sending a wagon message to synchronize all the nodes.
-     */
-    private void initWagonEngine() {
-        while(!Thread.currentThread().isInterrupted()) {
-            try {
-                Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.Cloud.Orchestrator.WAGON_TIMEOUT)
-                        + (long)(random.nextDouble() * 1000));
-
-                synchronized (wagonMonitor) {
-                    if(wagonMessage != null) {
-                        Node nextDestination = null;
-                        Iterator<Node> nodesIterator = sortedNodes.iterator();
-                        while(nodesIterator.hasNext()) {
-                            if(nodesIterator.next().equals(thisNode)) {
-                                if(nodesIterator.hasNext()) {
-                                    nextDestination = nodesIterator.next();
-                                } else if(sortedNodes.size() > 1) {
-                                    nextDestination = sortedNodes.iterator().next();
-                                }
-                            }
-                        }
-                        if(nextDestination != null) {
-                            Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending wagon");
-                            Map<String,List<Message>> load = getWagonLoad();
-                            wagonMessage.getMessages().putAll(load);
-                            sendMessageToNode(sessionByNode.get(nextDestination.getId()), wagonMessage);
-                        }
-                    } else {
-                        if(System.currentTimeMillis() - lastVisit > SystemProperties.getLong(
-                                SystemProperties.Cloud.Orchestrator.WAGON_TIMEOUT) * sortedNodes.size()) {
-                            if(thisNode.equals(sortedNodes.iterator().next())) {
-                                wagonMessage = new CloudWagonMessage(UUID.randomUUID());
-                            }
-                        }
-                    }
-                }
-            } catch (InterruptedException e) {
-                break;
-            }
-        }
-        Log.i(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon engine ends");
-    }
-
 
     private void initReorganizationTimer() {
         while(!Thread.currentThread().isInterrupted()) {
@@ -678,24 +631,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 nodeDisconnected(session.getNode());
             }
         }
-    }
-
-    private void putWagonLoad(Node node, Message message) {
-        synchronized (wagonLoad) {
-            if(!wagonLoad.containsKey(node.getId().toString())) {
-                wagonLoad.put(node.getId().toString(), new ArrayList<>());
-            }
-            wagonLoad.get(node.getId().toString()).add(message);
-        }
-    }
-
-    private Map<String,List<Message>> getWagonLoad() {
-        Map<String,List<Message>> result = new HashMap<>();
-        synchronized (wagonLoad) {
-            result.putAll(wagonLoad);
-            wagonLoad.clear();
-        }
-        return result;
     }
 
     public void incomingMessage(CloudSession session, Message message) {
@@ -796,28 +731,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             if(session.getConsumer() instanceof CloudClient) {
                 disconnected(node);
                 ((CloudClient)session.getConsumer()).disconnect();
-            }
-        } else if(message instanceof CloudWagonMessage) {
-            synchronized (wagonMonitor) {
-                lastVisit = System.currentTimeMillis();
-                if(wagonMessage != null) {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon crash");
-                }
-                wagonMessage = (CloudWagonMessage) message;
-                responseMessage = new AckMessage(message);
-
-                List<Message> wagonMessages = wagonMessage.getMessages().remove(thisNode.getId().toString());
-                if(wagonMessages != null) {
-                    for (Message messageOfWagon : wagonMessages) {
-                        incomingMessage(session, messageOfWagon);
-                    }
-                }
-
-                for(Node wagonNode : wagonMessage.getNodes()) {
-                    if(!nodesByLanId.containsKey(wagonNode.getLanId()) && !nodesByWanId.containsKey(wagonNode.getWanId())) {
-                        registerConsumer(wagonNode);
-                    }
-                }
             }
         } else if(message instanceof HidePathMessage) {
             removePath(((HidePathMessage)message).getPath());
@@ -925,15 +838,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     if(connected(node)) {
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as server %s", node);
                         nodeConnected(node, session);
-                    }
-                }
-            }
-
-            synchronized (wagonMonitor) {
-                if (wagonMessage != null) {
-                    if (message.getId().equals(wagonMessage.getId())) {
-                        wagonMessage = null;
-                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Wagon gone");
                     }
                 }
             }

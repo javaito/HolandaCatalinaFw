@@ -6,6 +6,7 @@ import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -17,7 +18,15 @@ public class SimpleRestEndPoint {
         Layers.publishLayer(Bag.class);
         HttpResponse response = new HttpResponse();
         response.setBody("Hello world".getBytes());
-        HttpServer.create(9090, new RestContext("base"));
+
+        HttpServer.create(9090, new Context(".*") {
+            @Override
+            public HttpResponse onContext(HttpRequest request) {
+                return response;
+            }
+        });
+        //HttpServer.create(9090, new RestContext(".*"));
+        //HttpServer.create(9090, new FolderContext(".*", Paths.get("/home/javaito/www"), "index.html"));
     }
 
     public static class Bag extends Layer implements ReadRowsLayerInterface {
