@@ -29,12 +29,8 @@ import java.util.regex.Pattern;
 public class RestContext extends Context {
 
     private static class Fields {
-        private static final String BODY_FIELD = "body";
-        private static final String QUERY_FIELD = "query";
         private static final String VALUE_FIELD = "value";
         private static final String PARAMS_FIELD = "params";
-        private static final String QUERIES_FIELD = "queries";
-        private static final String RESOURCE_URL_FIELD = "resource";
         private static final String ID_URL_FIELD = "id";
         private static class Throwable {
             private static final String MESSAGE = "message";
@@ -222,19 +218,25 @@ public class RestContext extends Context {
         private Map<String,Queryable> queryables;
 
         public RequestModel(JsonObject jsonObject) {
-            if(jsonObject.has(Fields.BODY_FIELD)) {
-                body = createBody(jsonObject.getAsJsonObject(Fields.BODY_FIELD));
-            }
+            if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&
+                    !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)) &&
+                    !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD))) {
+                body = createBody(jsonObject);
+            } else {
+                if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD))) {
+                    body = createBody(jsonObject.getAsJsonObject(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)));
+                }
 
-            if(jsonObject.has(Fields.QUERY_FIELD)) {
-                queryable = createQuery(jsonObject.get(Fields.QUERY_FIELD));
-            }
+                if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD))) {
+                    queryable = createQuery(jsonObject.get(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)));
+                }
 
-            if(jsonObject.has(Fields.QUERIES_FIELD)) {
-                queryables = new HashMap<>();
-                JsonObject queryablesObject = jsonObject.getAsJsonObject(Fields.QUERIES_FIELD);
-                for(String key : queryablesObject.keySet()) {
-                    queryables.put(key, createQuery(queryablesObject.get(key)));
+                if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD))) {
+                    queryables = new HashMap<>();
+                    JsonObject queryablesObject = jsonObject.getAsJsonObject(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD));
+                    for (String key : queryablesObject.keySet()) {
+                        queryables.put(key, createQuery(queryablesObject.get(key)));
+                    }
                 }
             }
         }

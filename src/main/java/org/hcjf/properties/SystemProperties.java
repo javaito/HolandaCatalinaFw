@@ -261,6 +261,9 @@ public final class SystemProperties extends Properties {
             public static final String DEFAULT_ENCODING_IMPL = "hcjf.rest.default.encoding.impl";
             public static final String QUERY_PATH = "hcjf.rest.query.path";
             public static final String QUERY_PARAMETER = "hcjf.rest.query.parameter.path";
+            public static final String BODY_FIELD = "hcjf.net.http.rest.body.field";
+            public static final String QUERY_FIELD = "hcjf.net.http.rest.query.field";
+            public static final String QUERIES_FIELD = "hcjf.net.http.rest.queries.field";
         }
 
     }
@@ -652,6 +655,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");
         defaults.put(Net.Rest.QUERY_PATH, "query");
         defaults.put(Net.Rest.QUERY_PARAMETER, "q");
+        defaults.put(Net.Rest.BODY_FIELD, "_body");
+        defaults.put(Net.Rest.QUERY_FIELD, "_query");
+        defaults.put(Net.Rest.QUERIES_FIELD, "_queries");
 
         defaults.put(ProcessDiscovery.LOG_TAG, "PROCESS_DISCOVERY");
         defaults.put(ProcessDiscovery.SERVICE_NAME, "Process Discovery Service");
