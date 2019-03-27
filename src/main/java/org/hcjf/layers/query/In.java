@@ -39,7 +39,7 @@ public class In extends FieldEvaluator {
 
             if(leftValue instanceof Number) {
                 for(Object collectionItem : collection) {
-                    result = numberEquals((Number) leftValue, object);
+                    result = numberEquals((Number) leftValue, collectionItem);
                     if(result) {
                         break;
                     }
