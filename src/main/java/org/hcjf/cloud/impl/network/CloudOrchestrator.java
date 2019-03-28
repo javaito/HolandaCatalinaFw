@@ -87,10 +87,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return instance;
     }
 
-    /**
-     * Init all the collections of the service, a thread for maintain the connections and
-     * other thread to move the cloud wagon instance.
-     */
     @Override
     protected void init() {
         nodes = new HashSet<>();

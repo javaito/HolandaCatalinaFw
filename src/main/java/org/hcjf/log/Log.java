@@ -40,9 +40,9 @@ public final class Log extends Service<LogPrinter> {
         instance = new Log();
     }
 
-    private final List<LogPrinter> printers;
-    private final Queue<LogRecord> queue;
-    private final Object logMonitor;
+    private List<LogPrinter> printers;
+    private Queue<LogRecord> queue;
+    private Object logMonitor;
     private Boolean shuttingDown;
 
     /**
@@ -51,12 +51,6 @@ public final class Log extends Service<LogPrinter> {
     private Log() {
         super(SystemProperties.get(SystemProperties.Log.SERVICE_NAME),
                 SystemProperties.getInteger(SystemProperties.Log.SERVICE_PRIORITY));
-        this.printers = new ArrayList<>();
-        this.queue = new PriorityBlockingQueue<>(
-                SystemProperties.getInteger(SystemProperties.Log.QUEUE_INITIAL_SIZE),
-                (o1, o2) -> (int)(o1.getDate().getTime() - o2.getDate().getTime()));
-        this.logMonitor = new Object();
-        this.shuttingDown = false;
     }
 
     /**
@@ -64,6 +58,12 @@ public final class Log extends Service<LogPrinter> {
      */
     @Override
     protected void init() {
+        this.printers = new ArrayList<>();
+        this.queue = new PriorityBlockingQueue<>(
+                SystemProperties.getInteger(SystemProperties.Log.QUEUE_INITIAL_SIZE),
+                (o1, o2) -> (int)(o1.getDate().getTime() - o2.getDate().getTime()));
+        this.logMonitor = new Object();
+        this.shuttingDown = false;
         for (int i = 0; i < SystemProperties.getInteger(SystemProperties.Log.LOG_CONSUMERS_SIZE); i++) {
             fork(new LogRunnable());
         }
