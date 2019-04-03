@@ -239,6 +239,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
     }
 
+    /**
+     *
+     * @param expectedLabels
+     * @param labels
+     * @return
+     */
     public boolean verifyLabels(Map<String,String> expectedLabels, Map<String,String> labels) {
         boolean result = true;
         for(String labelKey : expectedLabels.keySet()) {
@@ -321,6 +327,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 serviceDefinitionMessage.setMessages(messages);
                 serviceDefinitionMessage.setServiceId(thisServiceEndPoint.getId());
                 serviceDefinitionMessage.setServiceName(thisServiceEndPoint.getName());
+                serviceDefinitionMessage.setBroadcasting(true);
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
                 try {
                     invokeService(serviceEndPoint.getId(), serviceDefinitionMessage);
@@ -602,7 +609,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return messages;
     }
 
-
     private void initReorganizationTimer() {
         while(!Thread.currentThread().isInterrupted()) {
             try {
@@ -634,6 +640,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 "Incoming '%s' message: %s", message.getClass(), message.getId());
         Message responseMessage = null;
         if(message instanceof ServiceDefinitionMessage) {
+
+            //This king of messages contains all the information about a service.
             ServiceDefinitionMessage serviceDefinitionMessage = (ServiceDefinitionMessage) message;
             if(serviceDefinitionMessage.getMessages() != null) {
                 for(Message innerMessage : serviceDefinitionMessage.getMessages()) {
@@ -644,6 +652,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     ((ServiceDefinitionMessage) message).getServiceName());
             responseMessage = new ServiceDefinitionResponseMessage(message);
             ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
+
+            //Sent the message for all the replicas
+//            if(serviceDefinitionMessage.getBroadcasting()) {
+//                serviceDefinitionMessage.setBroadcasting(false);
+//                for (Node node : nodes) {
+//                    sendMessageToNode(sessionByNode.get(node.getId()), serviceDefinitionMessage);
+//                }
+//            }
         } else if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
             for(Message innerMessage : collection.getMessages()) {
@@ -985,7 +1001,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 distributedLock.setStatus(DistributedLock.Status.WAITING);
                 try {
                     synchronized (distributedLock) {
-                        distributedLock.wait(1000);
+                        distributedLock.wait(10);
                     }
                 } catch (InterruptedException e) { }
             }

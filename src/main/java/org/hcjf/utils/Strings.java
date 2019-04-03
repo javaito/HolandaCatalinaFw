@@ -647,12 +647,17 @@ public final class Strings {
                 }
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
                 try {
-                    result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX).parse(trimmedStringValue);
+                    result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT).parse(trimmedStringValue);
                 } catch (ParseException e) {
                     result = trimmedStringValue;
                 }
             } else {
-                result = trimmedStringValue;
+                try {
+                    //Verify again if the string is not a date
+                    result = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).parse(trimmedStringValue);
+                } catch (Exception ex) {
+                    result = trimmedStringValue;
+                }
             }
         }
         return result;

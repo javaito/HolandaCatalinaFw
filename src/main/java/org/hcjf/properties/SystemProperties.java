@@ -22,6 +22,7 @@ public final class SystemProperties extends Properties {
 
     public static final String HCJF_DEFAULT_DATE_FORMAT = "hcjf.default.date.format";
     public static final String HCJF_DEFAULT_NUMBER_FORMAT = "hcjf.default.number.format";
+    public static final String HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT = "hcjf.default.scientific.number.format";
     public static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
     public static final String HCJF_DEFAULT_GROUPING_SEPARATOR = "hcjf.default.grouping.separator";
     public static final String HCJF_DEFAULT_PROPERTIES_FILE_PATH = "hcjf.default.properties.file.path";
@@ -474,6 +475,7 @@ public final class SystemProperties extends Properties {
 
         defaults.put(HCJF_DEFAULT_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
         defaults.put(HCJF_DEFAULT_NUMBER_FORMAT, "0.000");
+        defaults.put(HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT, "0.00E00");
         defaults.put(HCJF_DEFAULT_DECIMAL_SEPARATOR, ".");
         defaults.put(HCJF_DEFAULT_GROUPING_SEPARATOR, ",");
         defaults.put(HCJF_DEFAULT_PROPERTIES_FILE_XML, "false");

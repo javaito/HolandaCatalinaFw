@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -129,5 +130,34 @@ public class StringsTestSuit {
 
         Assert.assertEquals(tags.get("tag1"), message);
         Assert.assertEquals(tags.get("tag2"), message);
+    }
+
+    @Test
+    public void testDeductBoolean() {
+        String value = "true";
+        Object deductedValue = Strings.deductInstance(value);
+        Assert.assertEquals(deductedValue.getClass(), Boolean.class);
+
+        value = "false";
+        deductedValue = Strings.deductInstance(value);
+        Assert.assertEquals(deductedValue.getClass(), Boolean.class);
+    }
+
+    @Test
+    public void testDeductDate() {
+        String value = "2030-02-19 00:00:00";
+        Object deductedValue = Strings.deductInstance(value);
+        Assert.assertEquals(deductedValue.getClass(), Date.class);
+
+        value = "'2030-02-19 00:00:00'";
+        deductedValue = Strings.deductInstance(value);
+        Assert.assertEquals(deductedValue.getClass(), Date.class);
+    }
+
+    @Test
+    public void testDeductDouble() {
+        String value = "2.0000000020559128E-6";
+        Object deductedValue = Strings.deductInstance(value);
+        Assert.assertEquals(deductedValue.getClass(), Double.class);
     }
 }

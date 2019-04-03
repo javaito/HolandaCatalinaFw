@@ -32,6 +32,8 @@ public class RestContext extends Context {
         private static final String VALUE_FIELD = "value";
         private static final String PARAMS_FIELD = "params";
         private static final String ID_URL_FIELD = "id";
+        private static final String REQUEST_CONFIG = "__request_config";
+        private static final String DATE_FORMAT_CONFIG = "dateFormat";
         private static class Throwable {
             private static final String MESSAGE = "message";
             private static final String EXCEPTION = "exception";
@@ -216,6 +218,7 @@ public class RestContext extends Context {
         private Map<String,Object> body;
         private Queryable queryable;
         private Map<String,Queryable> queryables;
+        private Map<String,Object> requestConfig;
 
         public RequestModel(JsonObject jsonObject) {
             if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&

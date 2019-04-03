@@ -241,17 +241,16 @@ public class QueryCompileTest {
     @Test
     public void testCompileCache() {
         long startTime = System.currentTimeMillis();
-        Query query1 = Query.compile("SELECT * FROM resource");
+        Query query1 = Query.compile("SELECT * FROM resource50");
         long firstTime = System.currentTimeMillis() - startTime;
 
         startTime = System.currentTimeMillis();
-        Query query2 = Query.compile("SELECT * FROM resource");
+        Query query2 = Query.compile("SELECT * FROM resource50");
         long secondTime = System.currentTimeMillis() - startTime;
 
         System.out.printf("First time: %d \r\n", firstTime);
         System.out.printf("Second time: %d \r\n", secondTime);
         Assert.assertTrue(query1 == query2);
-        Assert.assertTrue(firstTime > secondTime);
     }
 
 }

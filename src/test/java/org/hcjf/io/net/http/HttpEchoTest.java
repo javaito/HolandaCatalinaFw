@@ -5,6 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.net.ssl.SSLParameters;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,15 @@ public class HttpEchoTest {
             } catch (InterruptedException e) {
             }
         });
+    }
+
+    public static void main(String[] args) throws Exception {
+        HttpClient httpClient = new HttpClient(new URL("http://beta.sitrack.io/edna?q=SELECT * FROM lipigas.Order"));
+        httpClient.setHttpMethod(HttpMethod.GET);
+        httpClient.setHttpsInsecureConnection(true);
+        HttpResponse response = httpClient.request();
+
+        System.out.println(response);
     }
 
     private static class TestThread extends Thread {
