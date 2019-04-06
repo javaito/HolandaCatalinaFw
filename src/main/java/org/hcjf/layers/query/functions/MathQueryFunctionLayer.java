@@ -5,6 +5,7 @@ import org.hcjf.utils.MathIntrospection;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.BiFunction;
 
 /**
@@ -12,6 +13,10 @@ import java.util.function.BiFunction;
  * @author javaito
  */
 public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements NumberSetFunction {
+
+    private static final String ARITHMETIC = "arithmetic";
+    private static final String GEOMETRIC = "geometric";
+    private static final String HARMONIC = "harmonic";
 
     private static final String SUM = "sum";
     private static final String PRODUCT = "product";
@@ -21,6 +26,7 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
     private static final String LONG_VALUE = "longValue";
     private static final String FLOAT_VALUE = "floatValue";
     private static final String DOUBLE_VALUE = "doubleValue";
+    private static final String MEAN = "mean";
     private static final String EVAL_EXPRESSION = SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME);
 
     public MathQueryFunctionLayer() {
@@ -59,6 +65,23 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
             case PRODUCT: {
                 Number[] accumulator = accumulateFunction(1, parameters, BigDecimal::add);
                 result = accumulator[1];
+                break;
+            }
+            case MEAN: {
+                Number accumulatedValue = 0;
+                Number[] functionResult;
+                String function = parameters.length == 1 ? ARITHMETIC : (String) parameters[1];
+                if(function.equals(GEOMETRIC)) {
+                    functionResult = accumulateFunction(accumulatedValue, new Object[]{parameters[0]}, (A, V)->A.multiply(V));
+                    functionResult[1] = Math.pow(functionResult[1].doubleValue(),  1 / functionResult[0].doubleValue());
+                } else if(function.equals(HARMONIC)) {
+                    functionResult = accumulateFunction(accumulatedValue, new Object[]{parameters[0]}, (A, V)->A.add(V.pow(-1)));
+                    functionResult[1] = functionResult[0].doubleValue() / functionResult[1].doubleValue();
+                } else {
+                    functionResult = accumulateFunction(accumulatedValue, new Object[]{parameters[0]}, (A, V)->A.add(V));
+                    functionResult[1] = functionResult[1].doubleValue() / functionResult[0].doubleValue();
+                }
+                result = functionResult[1];
                 break;
             }
             case BYTE_VALUE: result = ((Number)checkSize(1, parameters)[0]).byteValue(); break;

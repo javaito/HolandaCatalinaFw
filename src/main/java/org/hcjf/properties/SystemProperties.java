@@ -365,6 +365,7 @@ public final class SystemProperties extends Properties {
             public static final String BSON_FUNCTION_NAME = "hcjf.query.function.bson.name";
             public static final String COLLECTION_FUNCTION_NAME = "hcjf.query.function.collection.name";
             public static final String OBJECT_FUNCTION_NAME = "hcjf.query.function.object.name";
+            public static final String BIG_DECIMAL_DIVIDE_SCALE = "hcjf.query.function.big.decimal.divide.scale";
         }
     }
 
@@ -748,6 +749,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.Function.BSON_FUNCTION_NAME, "bson");
         defaults.put(Query.Function.COLLECTION_FUNCTION_NAME, "collection");
         defaults.put(Query.Function.OBJECT_FUNCTION_NAME, "object");
+        defaults.put(Query.Function.BIG_DECIMAL_DIVIDE_SCALE, "8");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");

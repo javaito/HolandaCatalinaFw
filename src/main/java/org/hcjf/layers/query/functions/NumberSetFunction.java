@@ -3,6 +3,7 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.properties.SystemProperties;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.function.BiFunction;
 
@@ -88,7 +89,8 @@ public interface NumberSetFunction {
                 } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_MULTIPLICATION))) {
                     evalResult = applyFunction(evalResult, secondParameter, BigDecimal::multiply);
                 } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_DIVISION))) {
-                    evalResult = applyFunction(evalResult, secondParameter, BigDecimal::divide);
+                    evalResult = applyFunction(evalResult, secondParameter, (bigDecimal, bigDecimal2) -> bigDecimal.divide(
+                            bigDecimal2, SystemProperties.getInteger(SystemProperties.Query.Function.BIG_DECIMAL_DIVIDE_SCALE), RoundingMode.HALF_EVEN));
                 } else if(currentOperation.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_MODULUS))) {
                     evalResult = applyFunction(evalResult, secondParameter, BigDecimal::remainder);
                 }

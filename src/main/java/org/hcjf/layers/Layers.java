@@ -203,6 +203,11 @@ public final class Layers {
                 String className = instance.pluginLayerImplementations.get(layerClass).get(implName);
                 if (className != null) {
                     result = getPluginImplementationInstance(layerClass, className);
+
+                    //Register the implementation name into the named uuid singleton
+                    if(result instanceof IdentifiableLayerInterface) {
+                        NamedUuid.registerName(result.getImplName());
+                    }
                 }
             }
         }

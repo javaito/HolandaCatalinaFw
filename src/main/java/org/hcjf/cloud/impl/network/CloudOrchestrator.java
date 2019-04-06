@@ -654,12 +654,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
 
             //Sent the message for all the replicas
-//            if(serviceDefinitionMessage.getBroadcasting()) {
-//                serviceDefinitionMessage.setBroadcasting(false);
-//                for (Node node : nodes) {
-//                    sendMessageToNode(sessionByNode.get(node.getId()), serviceDefinitionMessage);
-//                }
-//            }
+            if(serviceDefinitionMessage.getBroadcasting()) {
+                serviceDefinitionMessage.setBroadcasting(false);
+                for (Node node : nodes) {
+                    sendMessageToNode(sessionByNode.get(node.getId()), serviceDefinitionMessage);
+                }
+            }
         } else if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
             for(Message innerMessage : collection.getMessages()) {
@@ -806,6 +806,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                             layerInterfaceClass.getName(), implName, endPoints.get(publishLayerMessage.getServiceEndPointId()).getGatewayAddress());
                 }
                 ((ResponseMessage)responseMessage).setValue(true);
+
+                //Get the instance first time in order to crete the cache.
+                try {
+                    Layers.get(layerInterfaceClass, implName);
+                } catch (Exception ex) {}
             } catch (Exception ex) {
                 ((ResponseMessage)responseMessage).setThrowable(ex);
             }
