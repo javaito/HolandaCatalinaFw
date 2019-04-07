@@ -3,8 +3,11 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.MathIntrospection;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -17,6 +20,7 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
     private static final String ARITHMETIC = "arithmetic";
     private static final String GEOMETRIC = "geometric";
     private static final String HARMONIC = "harmonic";
+    private static final String MEDIAN = "median";
 
     private static final String SUM = "sum";
     private static final String PRODUCT = "product";
@@ -44,6 +48,7 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
         addFunctionName(LONG_VALUE);
         addFunctionName(FLOAT_VALUE);
         addFunctionName(DOUBLE_VALUE);
+        addFunctionName(MEAN);
         addFunctionName(EVAL_EXPRESSION);
     }
 
@@ -73,15 +78,28 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
                 String function = parameters.length == 1 ? ARITHMETIC : (String) parameters[1];
                 if(function.equals(GEOMETRIC)) {
                     functionResult = accumulateFunction(accumulatedValue, new Object[]{parameters[0]}, (A, V)->A.multiply(V));
-                    functionResult[1] = Math.pow(functionResult[1].doubleValue(),  1 / functionResult[0].doubleValue());
+                    result = Math.pow(functionResult[1].doubleValue(),  1 / functionResult[0].doubleValue());
                 } else if(function.equals(HARMONIC)) {
                     functionResult = accumulateFunction(accumulatedValue, new Object[]{parameters[0]}, (A, V)->A.add(V.pow(-1)));
-                    functionResult[1] = functionResult[0].doubleValue() / functionResult[1].doubleValue();
+                    result = functionResult[0].doubleValue() / functionResult[1].doubleValue();
+                } else if(function.equals(MEDIAN)) {
+                    if(parameters[0] instanceof Collection || parameters[0].getClass().isArray()) {
+                        Collection collection = parameters[0] instanceof Collection ? (Collection) parameters[0] : Arrays.asList(parameters[0]);
+                        if(collection.isEmpty()) {
+                            result = 0;
+                        } else if(collection.size() == 1) {
+                            result = collection.stream().iterator().next();
+                        } else {
+                            int size = collection.size();
+                            result = collection.stream().sorted().skip(size / 2).findFirst().get();
+                        }
+                    } else {
+                        result = parameters[0];
+                    }
                 } else {
                     functionResult = accumulateFunction(accumulatedValue, new Object[]{parameters[0]}, (A, V)->A.add(V));
-                    functionResult[1] = functionResult[1].doubleValue() / functionResult[0].doubleValue();
+                    result = functionResult[1].doubleValue() / functionResult[0].doubleValue();
                 }
-                result = functionResult[1];
                 break;
             }
             case BYTE_VALUE: result = ((Number)checkSize(1, parameters)[0]).byteValue(); break;

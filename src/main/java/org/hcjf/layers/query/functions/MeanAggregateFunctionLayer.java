@@ -1,7 +1,10 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.Map;
 
@@ -33,7 +36,8 @@ public class MeanAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer 
                             break;
                         }
                         case HARMONIC: {
-                            functionResult = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(fieldName)}, (A, V)->A.add(V.pow(-1)));
+                            functionResult = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(fieldName)}, (A, V)->A.add(new BigDecimal(1).
+                                    divide(V, SystemProperties.getInteger(SystemProperties.Query.Function.BIG_DECIMAL_DIVIDE_SCALE), RoundingMode.HALF_EVEN)));
                             functionResult[1] = functionResult[0].doubleValue() / functionResult[1].doubleValue();
                             break;
                         }

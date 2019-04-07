@@ -64,6 +64,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(SumAggregateFunctionLayer.class);
         Layers.publishLayer(ProductAggregateFunctionLayer.class);
         Layers.publishLayer(MeanAggregateFunctionLayer.class);
+        Layers.publishLayer(MaxAggregateFunctionLayer.class);
+        Layers.publishLayer(MinAggregateFunctionLayer.class);
     }
 
     public Query(String resource, QueryId id) {
