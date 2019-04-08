@@ -98,7 +98,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             }
             case GET_YEAR: result = getZonedDateTimeFromDate(parameters).getYear(); break;
             case GET_MONTH: result = getZonedDateTimeFromDate(parameters).getMonth(); break;
-            case GET_MONTH_NUMBER: result = result = getZonedDateTimeFromDate(parameters).getMonthValue(); break;
+            case GET_MONTH_NUMBER: result = getZonedDateTimeFromDate(parameters).getMonthValue(); break;
             case GET_DAY_OF_MONTH: result = getZonedDateTimeFromDate(parameters).getDayOfMonth(); break;
             case GET_DAY_OF_WEEK: result = getZonedDateTimeFromDate(parameters).getDayOfWeek(); break;
             case GET_DAY_OF_YEAR: result = getZonedDateTimeFromDate(parameters).getDayOfYear(); break;
