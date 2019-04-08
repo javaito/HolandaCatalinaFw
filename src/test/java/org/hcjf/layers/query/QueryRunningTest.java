@@ -2,7 +2,9 @@ package org.hcjf.layers.query;
 
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
+import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.properties.SystemProperties;
@@ -135,6 +137,9 @@ public class QueryRunningTest {
             map.put(ADDRESS_ID, addressId);
             simpsonCharacters.put((UUID) map.get(ID), map);
         } catch (Exception ex){}
+
+        Layers.publishLayer(CharacterResource.class);
+        Layers.publishLayer(AddressResource.class);
     }
 
     public enum Gender {
@@ -297,6 +302,10 @@ public class QueryRunningTest {
         query = Query.compile("SELECT lastName, count('weight') as size, aggregateMin('weight') as min, aggregateMax('weight') as max, aggregateSum('weight') as sum, aggregateMean('weight') as arithmeticMean, aggregateMean('weight', 'harmonic') as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        query = Query.compile("SELECT *, reference('address', 'addressId', addressId) as address FROM character");
+        resultSet = Query.evaluate(query);
+        System.out.println();
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
@@ -308,6 +317,32 @@ public class QueryRunningTest {
         @Override
         public Object evaluate(String functionName, Object... parameters) {
             return ((Integer)parameters[0]) % 2 == 0 ? "P" : "I";
+        }
+    }
+
+    public static class CharacterResource extends Layer implements ReadRowsLayerInterface {
+
+        @Override
+        public String getImplName() {
+            return "character";
+        }
+
+        @Override
+        public Collection<JoinableMap> readRows(Queryable queryable) {
+            return queryable.evaluate(simpsonCharacters.values());
+        }
+    }
+
+    public static class AddressResource extends Layer implements ReadRowsLayerInterface {
+
+        @Override
+        public String getImplName() {
+            return "address";
+        }
+
+        @Override
+        public Collection<JoinableMap> readRows(Queryable queryable) {
+            return queryable.evaluate(simpsonAddresses.values());
         }
     }
 }
