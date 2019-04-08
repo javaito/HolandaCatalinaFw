@@ -42,6 +42,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String PERIOD_IN_HOURS = "periodInHours";
     private static final String PERIOD_IN_DAYS = "periodInDays";
     private static final String DATE_FORMAT = "dateFormat";
+    private static final String TO_DATE = "toDate";
 
     public DateQueryFunctionLayer() {
         super(SystemProperties.get(SystemProperties.Query.Function.DATE_FUNCTION_NAME));
@@ -77,6 +78,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         addFunctionName(PERIOD_IN_HOURS);
         addFunctionName(PERIOD_IN_DAYS);
         addFunctionName(DATE_FORMAT);
+        addFunctionName(TO_DATE);
     }
 
     @Override
@@ -123,6 +125,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             case PERIOD_IN_MINUTES: result = getDuration(parameters).toMinutes(); break;
             case PERIOD_IN_HOURS: result = getDuration(parameters).toHours(); break;
             case PERIOD_IN_DAYS: result = getDuration(parameters).toDays(); break;
+            case TO_DATE: result = new Date(((Number)parameters[0]).longValue()); break;
             case DATE_FORMAT: {
                 if(parameters.length >= 2) {
                     String pattern = (String) parameters[parameters.length-1];

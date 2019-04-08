@@ -1,6 +1,9 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.layers.Layers;
+import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
+import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
@@ -17,6 +20,8 @@ import java.util.UUID;
  */
 public class ReferenceFunctionLayer extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
+    private static final String QUERY = "SELECT * FROM %s WHERE id IN (?)";
+
     public ReferenceFunctionLayer() {
         super(SystemProperties.get(SystemProperties.Query.Function.REFERENCE_FUNCTION_NAME));
     }
@@ -30,22 +35,22 @@ public class ReferenceFunctionLayer extends BaseQueryFunctionLayer implements Qu
      */
     @Override
     public Object evaluate(String functionName, Object... parameters) {
-        Object result = 0;
-        if(parameters.length > 0) {
-            if (checkSize(1, parameters)[0] instanceof UUID) {
-                UUID uuid = (UUID) parameters[0];
-                result = new JoinableMap(Introspection.toMap(Query.evaluate(uuid)));
-            } else if (parameters[0] instanceof List) {
-                Collection<JoinableMap> collection = new ArrayList<>();
-                List<UUID> ids = (List<UUID>) parameters[0];
-                for (UUID uuid : ids) {
-                    collection.add(new JoinableMap(Introspection.toMap(Query.evaluate(uuid))));
-                }
-                result = collection;
-            } else {
-                throw new IllegalArgumentException("Reference function supports only uuid or list of uuid as parameter");
-            }
+        Object result;
+        String resourceName;
+        try{
+            resourceName = (String)checkSize(2, parameters)[0];
+        } catch (Exception ex){
+            throw new IllegalArgumentException("Unrecognized resource name");
         }
+
+        ParameterizedQuery parameterizedQuery = Query.compile(String.format(QUERY, resourceName)).getParameterizedQuery();
+        Object param = parameters[1];
+        if(param instanceof Collection) {
+            parameterizedQuery.add(param);
+        } else {
+            parameterizedQuery.add(List.of(param));
+        }
+        result = Query.evaluate(parameterizedQuery);
         return result;
     }
 }
