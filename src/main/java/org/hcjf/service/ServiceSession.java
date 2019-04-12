@@ -316,6 +316,22 @@ public class ServiceSession implements Comparable {
     }
 
     /**
+     *
+     * @param overhead
+     * @param payload
+     */
+    public void addIngressPackage(long overhead, long payload) {
+    }
+
+    /**
+     *
+     * @param overhead
+     * @param payload
+     */
+    public void addEgressPackage(long overhead, long payload) {
+    }
+
+    /**
      * Add a grant into the session.
      * @param grant Grant instance.
      */

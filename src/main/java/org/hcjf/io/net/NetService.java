@@ -1009,6 +1009,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         consumer.onDisconnect(netPackage);
                         break;
                     case READ:
+
                         consumer.onRead(netPackage);
                         break;
                     case WRITE:

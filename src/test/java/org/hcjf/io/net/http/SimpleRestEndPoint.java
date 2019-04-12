@@ -19,7 +19,7 @@ public class SimpleRestEndPoint {
         HttpResponse response = new HttpResponse();
         response.setBody("Hello world".getBytes());
 
-        HttpServer.create(9090, new Context(".*") {
+        HttpServer.create(18080, new Context(".*") {
             @Override
             public HttpResponse onContext(HttpRequest request) {
                 return response;

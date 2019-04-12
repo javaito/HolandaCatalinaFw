@@ -303,7 +303,7 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         System.out.println();
 
-        query = Query.compile("SELECT *, reference('address', 'addressId', addressId) as address FROM character");
+        query = Query.compile("SELECT *, reference('lipigas.Order', 'addressId', addressId) as address FROM character");
         resultSet = Query.evaluate(query);
         System.out.println();
     }
