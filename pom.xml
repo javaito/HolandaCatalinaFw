@@ -7,7 +7,7 @@
     <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>1.7.9</version>
+    <version>1.8.0</version>
     <packaging>jar</packaging>
     <description>Java framework to develop platforms based on distributed services</description>
     <url>https://github.com/javaito/HolandaCatalinaFw</url>

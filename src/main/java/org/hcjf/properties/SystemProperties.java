@@ -141,8 +141,9 @@ public final class SystemProperties extends Properties {
         public static final String CONNECTION_TIMEOUT_AVAILABLE = "hcjf.net.connection.timeout.available";
         public static final String CONNECTION_TIMEOUT = "hcjf.net.connection.timeout";
         public static final String WRITE_TIMEOUT = "hcjf.net.write.timeout";
+        public static final String IO_QUEUE_SIZE = "hcjf.net.io.queue.size";
         public static final String IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
-        public static final String IO_THREAD_POOL_MAX_SIZE = "hcjf.net.io.thread.pool.max.size";
+        public static final String IO_THREAD_POOL_NAME = "hcjf.net.io.thread.pool.name";
         public static final String IO_THREAD_POOL_CORE_SIZE = "hcjf.net.io.thread.pool.core.size";
         public static final String DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
         public static final String DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
@@ -564,9 +565,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.CONNECTION_TIMEOUT, "30000");
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
         defaults.put(Net.WRITE_TIMEOUT, "100");
+        defaults.put(Net.IO_QUEUE_SIZE, "1000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
-        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "4");
-        defaults.put(Net.IO_THREAD_POOL_MAX_SIZE, "8");
+        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "8");
+        defaults.put(Net.IO_THREAD_POOL_NAME, "IoThreadPool");
         defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");

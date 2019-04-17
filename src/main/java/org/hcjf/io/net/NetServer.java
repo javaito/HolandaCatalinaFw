@@ -69,4 +69,12 @@ public abstract class NetServer<S extends NetSession, D extends Object> extends 
      */
     protected void onStop(){}
 
+    /**
+     * Verify if the specific implementation of net server need to start a connection timeout.
+     * @return Connection timeout available.
+     */
+    public boolean isCreationTimeoutAvailable() {
+        return true;
+    }
+
 }

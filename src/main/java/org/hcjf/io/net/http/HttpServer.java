@@ -430,23 +430,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @return Http response package.
      */
     private HttpResponse createDefaultErrorResponse(Throwable throwable) {
-        HttpResponse response = new HttpResponse();
-        response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
-
-        byte[] body;
-        if(SystemProperties.getBoolean(SystemProperties.Net.Http.DEFAULT_ERROR_FORMAT_SHOW_STACK)) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            PrintStream printer = new PrintStream(out);
-            throwable.printStackTrace(printer);
-            body = out.toByteArray();
-        } else {
-            body = throwable.getMessage().getBytes();
-        }
-
-        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Long.toString(body.length)));
-        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
-        response.setBody(body);
-        return response;
+        return Context.createDefaultErrorResponse(throwable);
     }
 
     /**
@@ -458,11 +442,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         HttpResponse response = new HttpResponse();
         String body = "Context not found: " + request.getContext();
         response.setResponseCode(HttpResponseCode.NOT_FOUND);
-        response.setBody(body.getBytes());
-        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
-        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
-        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
-        return  response;
+        return  Context.addDefaultResponseHeaders(response, body.getBytes());
     }
 
     /**
@@ -474,11 +454,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         HttpResponse response = new HttpResponse();
         String body = "Context unresponsive: " + request.getContext();
         response.setResponseCode(HttpResponseCode.NO_CONTENT);
-        response.setBody(body.getBytes());
-        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
-        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
-        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.getBytes().length)));
-        return response;
+        return  Context.addDefaultResponseHeaders(response, body.getBytes());
     }
 
     /**
@@ -518,6 +494,15 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected void onStart() {
         Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server started, listening on port %d", getPort());
+    }
+
+    /**
+     * For http implementation the connection timeout is not available.
+     * @return Connection timeout available.
+     */
+    @Override
+    public boolean isCreationTimeoutAvailable() {
+        return false;
     }
 
     /**

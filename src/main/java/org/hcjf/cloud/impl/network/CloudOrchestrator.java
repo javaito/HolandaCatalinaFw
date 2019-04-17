@@ -654,12 +654,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
 
             //Sent the message for all the replicas
-            if(serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
-                serviceDefinitionMessage.setBroadcasting(false);
-                for (Node node : nodes) {
-                    sendMessageToNode(sessionByNode.get(node.getId()), serviceDefinitionMessage);
-                }
-            }
+//            if(serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
+//                serviceDefinitionMessage.setBroadcasting(false);
+//                for (Node node : nodes) {
+//                    sendMessageToNode(sessionByNode.get(node.getId()), serviceDefinitionMessage);
+//                }
+//            }
         } else if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
             for(Message innerMessage : collection.getMessages()) {

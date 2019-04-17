@@ -103,6 +103,31 @@ public abstract class Service<C extends ServiceConsumer> {
     }
 
     /**
+     * Returns the service session instance. If the current thread is not a service thread instance then the session
+     * instance is the guest session instance.
+     * @return Service session instance.
+     */
+    private ServiceSession getSession() {
+        ServiceSession session = ServiceSession.getGuestSession();
+        if(Thread.currentThread() instanceof ServiceThread) {
+            session = ((ServiceThread) Thread.currentThread()).getSession();
+        }
+        return session;
+    }
+
+    /**
+     * Returns the invoker properties.
+     * @return Invoker properties.
+     */
+    private Map<String,Object> getInvokerProperties() {
+        Map<String,Object> result = null;
+        if(Thread.currentThread() instanceof ServiceThread) {
+            result = getSession().getProperties();
+        }
+        return result;
+    }
+
+    /**
      * This method execute any callable over service thread with a service session using an
      * custom thread pool threadPoolExecutor. This thread pool threadPoolExecutor must create only Service thread implementations.
      * @param callable Callable to execute.
@@ -113,14 +138,7 @@ public abstract class Service<C extends ServiceConsumer> {
      */
     protected final <R extends Object> Future<R> fork(Callable<R> callable, String executorName, ThreadPoolExecutor executor) {
         registerExecutor(executorName, executor);
-
-        ServiceSession session = ServiceSession.getGuestSession();
-        Map<String, Object> invokerProperties = null;
-        if(Thread.currentThread() instanceof ServiceThread) {
-            session = ((ServiceThread) Thread.currentThread()).getSession();
-            invokerProperties = session.getProperties();
-        }
-        return executor.submit(new CallableWrapper<>(callable, session, invokerProperties));
+        return executor.submit(new CallableWrapper<>(callable, getSession(), getInvokerProperties()));
     }
 
     /**
@@ -142,14 +160,7 @@ public abstract class Service<C extends ServiceConsumer> {
      */
     protected final Future fork(Runnable runnable, String executorName, ThreadPoolExecutor executor) {
         registerExecutor(executorName, executor);
-
-        ServiceSession session = ServiceSession.getGuestSession();
-        Map<String, Object> invokerProperties = null;
-        if(Thread.currentThread() instanceof ServiceThread) {
-            session = ((ServiceThread) Thread.currentThread()).getSession();
-            invokerProperties = session.getProperties();
-        }
-        return executor.submit(new RunnableWrapper(runnable, session, invokerProperties));
+        return executor.submit(new RunnableWrapper(runnable, getSession(), getInvokerProperties()));
     }
 
     /**
@@ -341,12 +352,7 @@ public abstract class Service<C extends ServiceConsumer> {
             services = new HashMap<>();
 
             //Adding service shutdown hook
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    shutdown();
-                }
-            });
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown()));
         }
 
         /**

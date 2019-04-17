@@ -6,6 +6,10 @@ import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,7 +18,12 @@ import java.util.Map;
 
 public class SimpleRestEndPoint {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws MalformedURLException {
+
+
+//        HttpClient client = new HttpClient(new URL("http://beta.sitrack.io/edna?q=" + URLEncoder.encode("SELECT * FROM Account")));
+//        System.out.println(client.request());
+
         Layers.publishLayer(Bag.class);
         HttpResponse response = new HttpResponse();
         response.setBody("Hello world".getBytes());

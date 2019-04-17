@@ -316,19 +316,17 @@ public class ServiceSession implements Comparable {
     }
 
     /**
-     *
-     * @param overhead
-     * @param payload
+     * Adds the amount of bytes ingress for this session
+     * @param size Amount of bytes.
      */
-    public void addIngressPackage(long overhead, long payload) {
+    public void addIngressPackage(long size) {
     }
 
     /**
-     *
-     * @param overhead
-     * @param payload
+     * Adds the amount of bytes egress for this session
+     * @param size Amount of bytes.
      */
-    public void addEgressPackage(long overhead, long payload) {
+    public void addEgressPackage(long size) {
     }
 
     /**

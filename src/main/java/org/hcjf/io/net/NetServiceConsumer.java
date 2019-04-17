@@ -28,25 +28,12 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     private final Integer port;
     private final NetService.TransportLayerProtocol protocol;
     private NetService service;
-    private final ThreadPoolExecutor ioExecutor;
-    private int inputBufferSize;
-    private int outputBufferSize;
     private long writeWaitForTimeout;
     private final Map<S, Thread> waitForMap;
 
     public NetServiceConsumer(Integer port, NetService.TransportLayerProtocol protocol) {
         this.port = port;
         this.protocol = protocol;
-        ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
-        ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
-        if(this instanceof NetClient) {
-            ioExecutor.setMaximumPoolSize(1);
-        } else {
-            ioExecutor.setCorePoolSize(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE));
-            ioExecutor.setMaximumPoolSize(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_MAX_SIZE));
-        }
-        inputBufferSize = SystemProperties.getInteger(SystemProperties.Net.DEFAULT_INPUT_BUFFER_SIZE);
-        outputBufferSize = SystemProperties.getInteger(SystemProperties.Net.DEFAULT_OUTPUT_BUFFER_SIZE);
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.Net.WRITE_TIMEOUT);
         waitForMap = new HashMap<>();
         name = String.format(NAME_TEMPLATE, getClass().getName(), protocol.toString(), port);
@@ -74,30 +61,6 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      */
     public void setWriteWaitForTimeout(long writeWaitForTimeout) {
         this.writeWaitForTimeout = writeWaitForTimeout;
-    }
-
-    /**
-     * Return the size of the internal buffer used to read input data.
-     * @return Size of the internal input buffer.
-     */
-    public int getInputBufferSize() {
-        return inputBufferSize;
-    }
-
-    /**
-     * Return the size of the internal buffer used to write output data.
-     * @return Size of the internal output buffer.
-     */
-    public int getOutputBufferSize() {
-        return outputBufferSize;
-    }
-
-    /**
-     * Thread pool exclusively for handling I/O operations server
-     * @return Thread pool.
-     */
-    public ThreadPoolExecutor getIoExecutor() {
-        return ioExecutor;
     }
 
     /**
@@ -369,52 +332,4 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         return null;
     }
 
-    /**
-     * This factory create the net io threads.
-     */
-    private class NetIOThreadFactory implements ThreadFactory {
-
-        @Override
-        public Thread newThread(Runnable runnable) {
-            return new NetIOThread(runnable);
-        }
-
-    }
-
-    /**
-     * Net IO thread.
-     */
-    public class NetIOThread extends ServiceThread {
-
-        private final ByteBuffer inputBuffer;
-        private final ByteBuffer outputBuffer;
-
-        public NetIOThread(Runnable target) {
-            super(target, "Net IO");
-            if(SystemProperties.getBoolean(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
-                inputBuffer = ByteBuffer.allocateDirect(getInputBufferSize());
-                outputBuffer = ByteBuffer.allocateDirect(getOutputBufferSize());
-            } else {
-                inputBuffer = ByteBuffer.allocate(getInputBufferSize());
-                outputBuffer = ByteBuffer.allocate(getOutputBufferSize());
-            }
-        }
-
-        /**
-         * Return the input buffer of the thread.
-         * @return Input buffer.
-         */
-        public final ByteBuffer getInputBuffer() {
-            return inputBuffer;
-        }
-
-        /**
-         * Return the output buffer of the thread.
-         * @return Output buffer.
-         */
-        public final ByteBuffer getOutputBuffer() {
-            return outputBuffer;
-        }
-
-    }
 }

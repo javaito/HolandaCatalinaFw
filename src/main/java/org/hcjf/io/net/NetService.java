@@ -58,6 +58,10 @@ public final class NetService extends Service<NetServiceConsumer> {
     private Future mainTaskFuture;
     private boolean shuttingDown;
 
+    private Queue<SelectionKey> readableKeys;
+    private Queue<SelectionKey> writableKeys;
+    private ThreadPoolExecutor ioExecutor;
+
     private NetService(String serviceName) {
         super(serviceName, 2);
 
@@ -149,7 +153,6 @@ public final class NetService extends Service<NetServiceConsumer> {
      */
     @Override
     public final void registerConsumer(NetServiceConsumer consumer) {
-
         if (consumer == null) {
             throw new NullPointerException("Net consumer null");
         }
@@ -550,6 +553,94 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
+     * This class is a runnable that consume the readable keys queue and call the read method.
+     */
+    private class Reader implements Runnable {
+
+        @Override
+        public void run() {
+            while(!Thread.currentThread().isInterrupted()) {
+                SelectionKey key;
+                synchronized (readableKeys) {
+                    key = readableKeys.poll();
+                }
+                if (key != null) {
+                    try {
+                        NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
+                        SelectableChannel keyChannel = key.channel();
+                        if (keyChannel != null && key.channel().isOpen()) {
+                            synchronized (keyChannel) {
+                                try {
+                                    if (key.isValid()) {
+                                        read(keyChannel, consumer);
+                                    }
+                                } catch (Exception ex) {
+                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal read exception", ex);
+                                } finally {
+                                    ((ServiceThread) Thread.currentThread()).setSession(null);
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception, before to read process", ex);
+                    }
+                } else {
+                    try {
+                        synchronized (readableKeys) {
+                            readableKeys.wait();
+                        }
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * This class is a runnable that consume the writable keys queue and call the read method.
+     */
+    private class Writer implements Runnable {
+
+        @Override
+        public void run() {
+            while(!Thread.currentThread().isInterrupted()) {
+                SelectionKey key;
+                synchronized (writableKeys) {
+                    key = writableKeys.poll();
+                }
+                if (key != null) {
+                    try {
+                        NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
+                        SelectableChannel keyChannel = key.channel();
+                        if (keyChannel != null && key.channel().isOpen()) {
+                            synchronized (keyChannel) {
+                                try {
+                                    if (key.isValid()) {
+                                        write(keyChannel, consumer);
+                                    }
+                                } catch (Exception ex) {
+                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal write exception", ex);
+                                } finally {
+                                    ((ServiceThread) Thread.currentThread()).setSession(null);
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception, before to write process", ex);
+                    }
+                } else {
+                    try {
+                        synchronized (writableKeys) {
+                            writableKeys.wait();
+                        }
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * This method is the body of the net service.
      */
     public final void runNetService() {
@@ -560,7 +651,32 @@ public final class NetService extends Service<NetServiceConsumer> {
             } catch (SecurityException ex) {
             }
 
-            boolean removeKey;
+            readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+            writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+
+            ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
+            ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+            int corePoolSize = SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE);
+            if(corePoolSize < 8) {
+                corePoolSize = 8;
+            }
+            ioExecutor.setCorePoolSize(corePoolSize);
+            ioExecutor.setMaximumPoolSize(corePoolSize);
+
+            int count = 0;
+            while(true) {
+                count++;
+                fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
+                if(count >= ioExecutor.getCorePoolSize()) {
+                    break;
+                }
+                count++;
+                fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
+                if(count >= ioExecutor.getCorePoolSize()) {
+                    break;
+                }
+            }
+
             while (!Thread.currentThread().isInterrupted()) {
                 //Select the next schedule key or sleep if the aren't any key
                 //to select.
@@ -572,70 +688,49 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
                 while (selectedKeys.hasNext()) {
                     final SelectionKey key = (SelectionKey) selectedKeys.next();
-
-                    //This flag is to indicate whether the key has to be removed once processed
-                    removeKey = true;
+                    selectedKeys.remove();
 
                     if (key.isValid()) {
-
                         try {
-                            final NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
-                            //If the kind of key is acceptable or connectable then
-                            //the processing do over this thread in the other case
-                            //the processing is delegated to the thread pool
-                            if (key.isAcceptable()) {
-                                accept(key.channel(), (NetServer) consumer);
-                            } else if (key.isConnectable()) {
-                                connect(key.channel(), (NetClient) consumer);
-                            } else {
-                                final SelectableChannel keyChannel = key.channel();
-                                if (keyChannel != null && key.channel().isOpen()) {
-                                    if (key.isValid()) {
-                                        try {
-                                            fork(() -> {
-                                                synchronized (keyChannel) {
-                                                    try {
-                                                        if (key.isValid()) {
-                                                            if (key.isReadable()) {
-                                                                read(keyChannel, consumer);
-                                                            } else if (key.isWritable()) {
-                                                                write(keyChannel, consumer);
-                                                                if (consumer instanceof NetClient) {
-                                                                    read(keyChannel, consumer);
-                                                                }
-                                                            }
-                                                        }
-                                                    } catch (Exception ex) {
-                                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception", ex);
-                                                    } finally {
-                                                        ((ServiceThread) Thread.currentThread()).setSession(null);
-                                                    }
-                                                }
-                                            }, consumer.getName(), consumer.getIoExecutor());
-                                        } catch (RejectedExecutionException ex) {
-                                            //Update the flag in order to process the key again
-                                            if (key.isValid() && sessionsByChannel.containsKey(keyChannel)) {
-                                                removeKey = false;
+                            final SelectableChannel keyChannel = key.channel();
+                            if (keyChannel != null && key.channel().isOpen() && key.isValid()) {
+                                final NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
+                                //If the kind of key is acceptable or connectable then
+                                //the processing do over this thread in the other case
+                                //the processing is delegated to the thread pool
+                                if (key.isAcceptable()) {
+                                    accept(key.channel(), (NetServer) consumer);
+                                } else if (key.isConnectable()) {
+                                    connect(key.channel(), (NetClient) consumer);
+                                } else if(key.isReadable()) {
+                                    synchronized (readableKeys) {
+                                        if(key.isValid() && !readableKeys.contains(key)) {
+                                            if(!readableKeys.offer(key)) {
+                                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),"Unable to add readable key!!!!");
                                             }
-                                        } catch (Exception ex) {
-                                            key.cancel();
-                                            Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to for key");
                                         }
-                                    } else {
-                                        key.cancel();
+                                        readableKeys.notifyAll();
+                                    }
+                                } else if(key.isWritable()) {
+                                    synchronized (writableKeys) {
+                                        if(key.isValid() && !writableKeys.contains(key)) {
+                                            if(!writableKeys.offer(key)) {
+                                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),"Unable to add writable key!!!!");
+                                            }
+                                        }
+                                        writableKeys.notifyAll();
                                     }
                                 }
+                            } else {
+                                key.cancel();
                             }
                         } catch (CancelledKeyException ex) {
                             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
+                        } catch (Exception ex) {
+                            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service main thread exception", ex);
                         }
                     }
-
-                    if (removeKey) {
-                        selectedKeys.remove();
-                    }
                 }
-                selector.selectNow();
             }
 
             try {
@@ -758,7 +853,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     //A new readable key is created associated to the channel.
                     socketChannel.register(getSelector(), SelectionKey.OP_READ, server);
 
-                    if (isCreationTimeoutAvailable()) {
+                    if (isCreationTimeoutAvailable() && server.isCreationTimeoutAvailable()) {
                         getTimer().schedule(new ConnectionTimeout(socketChannel), getCreationTimeout());
                     }
                 } else {
@@ -783,7 +878,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 SocketChannel channel = (SocketChannel) keyChannel;
 
                 //Ger the instance of the current IO thread.
-                NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
+                NetIOThread ioThread = (NetIOThread) Thread.currentThread();
 
                 try  {
                     int readSize;
@@ -829,7 +924,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 DatagramChannel channel = (DatagramChannel) keyChannel;
 
                 //Ger the instance of the current IO thread.
-                NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
+                NetIOThread ioThread = (NetIOThread) Thread.currentThread();
 
                 try {
                     ByteArrayOutputStream readData = new ByteArrayOutputStream();
@@ -883,7 +978,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param consumer Net service consumer.
      */
     private void write(SelectableChannel channel, NetServiceConsumer consumer) {
-        NetServiceConsumer.NetIOThread ioThread = (NetServiceConsumer.NetIOThread) Thread.currentThread();
+        NetIOThread ioThread = (NetIOThread) Thread.currentThread();
         try {
             Queue<NetPackage> queue = outputQueue.get(channel);
 
@@ -912,8 +1007,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Empty write data");
                                         }
                                         int begin = 0;
-                                        int length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
-                                                session.getConsumer().getOutputBufferSize() : byteData.length - begin;
+                                        int length = (byteData.length - begin) > ioThread.getOutputBufferSize() ?
+                                                ioThread.getOutputBufferSize() : byteData.length - begin;
 
                                         while (begin < byteData.length) {
                                             ioThread.getOutputBuffer().limit(length);
@@ -934,8 +1029,8 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                                             ioThread.getOutputBuffer().rewind();
                                             begin += length;
-                                            length = (byteData.length - begin) > session.getConsumer().getOutputBufferSize() ?
-                                                    session.getConsumer().getOutputBufferSize() : byteData.length - begin;
+                                            length = (byteData.length - begin) > ioThread.getOutputBufferSize() ?
+                                                    ioThread.getOutputBufferSize() : byteData.length - begin;
                                         }
                                     }
                                 }
@@ -1019,6 +1114,74 @@ public final class NetService extends Service<NetServiceConsumer> {
             } catch (Exception ex) {
                 Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Action consumer exception", ex);
             }
+        }
+    }
+
+    /**
+     * This factory create the net io threads.
+     */
+    private class NetIOThreadFactory implements ThreadFactory {
+
+        @Override
+        public Thread newThread(Runnable runnable) {
+            return new NetIOThread(runnable);
+        }
+
+    }
+
+    /**
+     * Net IO thread.
+     */
+    public class NetIOThread extends ServiceThread {
+
+        private final ByteBuffer inputBuffer;
+        private final ByteBuffer outputBuffer;
+        private int inputBufferSize;
+        private int outputBufferSize;
+
+        public NetIOThread(Runnable target) {
+            super(target, "Net IO");
+            inputBufferSize = SystemProperties.getInteger(SystemProperties.Net.DEFAULT_INPUT_BUFFER_SIZE);
+            outputBufferSize = SystemProperties.getInteger(SystemProperties.Net.DEFAULT_OUTPUT_BUFFER_SIZE);
+            if(SystemProperties.getBoolean(SystemProperties.Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY)) {
+                inputBuffer = ByteBuffer.allocateDirect(getInputBufferSize());
+                outputBuffer = ByteBuffer.allocateDirect(getOutputBufferSize());
+            } else {
+                inputBuffer = ByteBuffer.allocate(getInputBufferSize());
+                outputBuffer = ByteBuffer.allocate(getOutputBufferSize());
+            }
+        }
+
+        /**
+         * Return the input buffer of the thread.
+         * @return Input buffer.
+         */
+        public final ByteBuffer getInputBuffer() {
+            return inputBuffer;
+        }
+
+        /**
+         * Return the output buffer of the thread.
+         * @return Output buffer.
+         */
+        public final ByteBuffer getOutputBuffer() {
+            return outputBuffer;
+        }
+
+        /**
+         * Return the size of the internal buffer used to read input data.
+         * @return Size of the internal input buffer.
+         */
+        public int getInputBufferSize() {
+            return inputBufferSize;
+        }
+
+        /**
+         * Return the size of the internal buffer used to write output data.
+         * @return Size of the internal output buffer.
+         */
+        public int getOutputBufferSize() {
+            return outputBufferSize;
         }
     }
 

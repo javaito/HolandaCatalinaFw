@@ -82,6 +82,15 @@ public abstract class Context {
      * @return Return an object with all the response information.
      */
     protected HttpResponse onError(HttpRequest request, Throwable throwable) {
+        return createDefaultErrorResponse(throwable);
+    }
+
+    /**
+     * Utils method in order to reuse the creation of error response package.
+     * @param throwable Throwable instance.
+     * @return Http response instance.
+     */
+    public static HttpResponse createDefaultErrorResponse(Throwable throwable) {
         HttpResponse response = new HttpResponse();
         response.setResponseCode(HttpResponseCode.INTERNAL_SERVER_ERROR);
 
@@ -98,6 +107,20 @@ public abstract class Context {
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
         response.setBody(body);
 
+        return response;
+    }
+
+    /**
+     * Utils method in order to add a default headers into the default response package.
+     * @param response Response package.
+     * @param body Body object.
+     * @return Returns the same response instance with the headers added.
+     */
+    public static HttpResponse addDefaultResponseHeaders(HttpResponse response, byte[] body) {
+        response.setBody(body);
+        response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.CLOSED));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.TEXT_PLAIN.toString()));
+        response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
         return response;
     }
 }

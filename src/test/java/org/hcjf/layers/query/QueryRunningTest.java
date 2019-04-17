@@ -302,10 +302,6 @@ public class QueryRunningTest {
         query = Query.compile("SELECT lastName, count('weight') as size, aggregateMin('weight') as min, aggregateMax('weight') as max, aggregateSum('weight') as sum, aggregateMean('weight') as arithmeticMean, aggregateMean('weight', 'harmonic') as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);
         System.out.println();
-
-        query = Query.compile("SELECT *, reference('lipigas.Order', 'addressId', addressId) as address FROM character");
-        resultSet = Query.evaluate(query);
-        System.out.println();
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
