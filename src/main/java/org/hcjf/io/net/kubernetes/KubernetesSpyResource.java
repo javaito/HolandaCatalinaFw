@@ -1,16 +1,19 @@
 package org.hcjf.io.net.kubernetes;
 
+import com.google.gson.JsonObject;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.Configuration;
 import io.kubernetes.client.apis.CoreV1Api;
-import io.kubernetes.client.models.V1ConfigMap;
-import io.kubernetes.client.models.V1EndpointSubset;
-import io.kubernetes.client.models.V1Endpoints;
+import io.kubernetes.client.models.*;
 import io.kubernetes.client.util.Config;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
+import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -76,33 +79,118 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
     public Collection<JoinableMap> readRows(Queryable queryable) {
         Collection<JoinableMap> result = new ArrayList<>();
         try {
-            JoinableMap joinableMap;
             switch (queryable.getResourceName()) {
                 case CONFIG_MAP: {
-                    for(V1ConfigMap configMap : api.listConfigMapForAllNamespaces(null, null, null, null, null, null, null, null, null).getItems()) {
-                        joinableMap = new JoinableMap(queryable.getResourceName());
-                        joinableMap.putAll(configMap.getData());
-                        result.add(joinableMap);
+                    for(V1ConfigMap configMap : api.listNamespacedConfigMap(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null, null, null, null, null, null, null, null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(configMap)));
                     }
                     break;
                 }
                 case END_POINT: {
-                    for(V1Endpoints endpoints : api.listEndpointsForAllNamespaces(null, null,null,null,null,null,null,null,null).getItems()) {
-                        for(V1EndpointSubset endpointSubset : endpoints.getSubsets()) {
-                            joinableMap = new JoinableMap(queryable.getResourceName());
-//                            joinableMap.putAll(endpointSubset.get);
-                            result.add(joinableMap);
-                        }
+                    for(V1Endpoints endpoints : api.listNamespacedEndpoints(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(endpoints)));
+                    }
+                    break;
+                }
+                case EVENT: {
+                    for(V1Event event : api.listNamespacedEvent(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(event)));
+                    }
+                    break;
+                }
+                case LIMIT_RANGE: {
+                    for(V1LimitRange limitRange : api.listNamespacedLimitRange(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(limitRange)));
+                    }
+                    break;
+                }
+                case NAMESPACE: {
+                    for(V1Namespace namespace : api.listNamespace(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(namespace)));
+                    }
+                    break;
+                }
+                case NODE: {
+                    for(V1Node node : api.listNode(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(node)));
+                    }
+                    break;
+                }
+                case PERSISTENT_VOLUME: {
+                    for(V1PersistentVolume persistentVolume : api.listPersistentVolume(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(persistentVolume)));
+                    }
+                    break;
+                }
+                case PERSISTENT_VOLUME_CLAIM: {
+                    for(V1PersistentVolumeClaim persistentVolumeClaim : api.listNamespacedPersistentVolumeClaim(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(persistentVolumeClaim)));
+                    }
+                    break;
+                }
+                case POD: {
+                    for(V1Pod pod : api.listNamespacedPod(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(pod)));
+                    }
+                    break;
+                }
+                case POD_TEMPLATE: {
+                    for(V1PodTemplate podTemplate : api.listNamespacedPodTemplate(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(podTemplate)));
+                    }
+                    break;
+                }
+                case REPLICATION_CONTROLLER: {
+                    for(V1ReplicationController replicationController : api.listNamespacedReplicationController(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(replicationController)));
+                    }
+                    break;
+                }
+                case RESOURCE_QUOTA: {
+                    for(V1ResourceQuota resourceQuota : api.listNamespacedResourceQuota(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(resourceQuota)));
+                    }
+                    break;
+                }
+                case SECRET: {
+                    for(V1Secret secret : api.listNamespacedSecret(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(secret)));
+                    }
+                    break;
+                }
+                case SERVICE_ACCOUNT: {
+                    for(V1ServiceAccount serviceAccount : api.listNamespacedServiceAccount(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(serviceAccount)));
+                    }
+                    break;
+                }
+                case SERVICE: {
+                    for(V1Service service : api.listNamespacedService(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(service)));
                     }
                     break;
                 }
             }
         }catch (Exception ex){
-
+            throw new RuntimeException("Kubernetes resource error", ex);
         }
 
-
-        return null;
+        return result;
     }
 
 
