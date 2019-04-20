@@ -101,12 +101,47 @@ public final class NetService extends Service<NetServiceConsumer> {
     @Override
     protected void init() {
         try {
-            setSelector(SelectorProvider.provider().openSelector());
-
+            createSelector();
             mainTaskFuture = fork(() -> runNetService());
         } catch (IOException ex) {
-            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to init net service $1", ex, this);
+            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to init net service %s", ex, this);
         }
+    }
+
+    /**
+     * Creates a new instance of a selector, if there are a previous instance then the previous keys are registered into
+     * the new selector instance.
+     * @return Returns the new instance of a selector
+     * @throws IOException
+     */
+    private void createSelector() throws IOException {
+        Selector newSelector = Selector.open();
+        Selector selector = getSelector();
+
+        if(selector != null) {
+            //This loop is to register all the channels of the previous keys into the new selector.
+            for (SelectionKey key : selector.keys()) {
+                try {
+                    SelectableChannel ch = key.channel();
+                    int ops = key.interestOps();
+                    Object att = key.attachment();
+                    // Cancel the old key
+                    key.cancel();
+
+                    // Register the channel with the new selector
+                    ch.register(newSelector, ops, att);
+                } catch (Exception ex){}
+            }
+            try {
+                selector.close();
+                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Previous selector closed");
+            } catch (Throwable ex) {
+                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Fail to close the old selector", ex);
+            }
+        }
+
+        setSelector(newSelector);
+        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "New selector created");
     }
 
     /**
@@ -677,57 +712,80 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
             }
 
+            int minWaitTime = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
+            int minWaitCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
+            long selectionProcessStart;
+            long selectionProcessPeriod;
+            int minWaitCounter = 0;
+            int selectionSize;
+
+            Iterator selectedKeys;
+            SelectionKey key;
+
             while (!Thread.currentThread().isInterrupted()) {
-                //Select the next schedule key or sleep if the aren't any key
-                //to select.
-                getSelector().select();
+                selectionProcessStart = System.currentTimeMillis();
+                //Select the next schedule key or sleep if the aren't any key to select.
+                selectionSize = getSelector().select();
 
-                Iterator selectedKeys;
-                synchronized (selectorMonitor) {
-                    selectedKeys = getSelector().selectedKeys().iterator();
-                }
-                while (selectedKeys.hasNext()) {
-                    final SelectionKey key = (SelectionKey) selectedKeys.next();
-                    selectedKeys.remove();
-
-                    if (key.isValid()) {
-                        try {
-                            final SelectableChannel keyChannel = key.channel();
-                            if (keyChannel != null && key.channel().isOpen() && key.isValid()) {
-                                final NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
-                                //If the kind of key is acceptable or connectable then
-                                //the processing do over this thread in the other case
-                                //the processing is delegated to the thread pool
-                                if (key.isAcceptable()) {
-                                    accept(key.channel(), (NetServer) consumer);
-                                } else if (key.isConnectable()) {
-                                    connect(key.channel(), (NetClient) consumer);
-                                } else if(key.isReadable()) {
-                                    synchronized (readableKeys) {
-                                        if(key.isValid() && !readableKeys.contains(key)) {
-                                            if(!readableKeys.offer(key)) {
-                                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),"Unable to add readable key!!!!");
-                                            }
-                                        }
-                                        readableKeys.notifyAll();
-                                    }
-                                } else if(key.isWritable()) {
-                                    synchronized (writableKeys) {
-                                        if(key.isValid() && !writableKeys.contains(key)) {
-                                            if(!writableKeys.offer(key)) {
-                                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),"Unable to add writable key!!!!");
-                                            }
-                                        }
-                                        writableKeys.notifyAll();
-                                    }
-                                }
-                            } else {
-                                key.cancel();
+                if(selectionSize == 0 && readableKeys.isEmpty() && writableKeys.isEmpty()) {
+                    selectionProcessPeriod = System.currentTimeMillis() - selectionProcessStart;
+                    if(selectionProcessPeriod < minWaitTime) {
+                        minWaitCounter++;
+                        if(minWaitCounter >= minWaitCounterLimit) {
+                            synchronized (selectorMonitor) {
+                                createSelector();
                             }
-                        } catch (CancelledKeyException ex) {
-                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
-                        } catch (Exception ex) {
-                            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service main thread exception", ex);
+                            minWaitCounter = 0;
+                        }
+                    }
+                } else {
+                    minWaitCounter = 0;
+                    synchronized (selectorMonitor) {
+                        selectedKeys = getSelector().selectedKeys().iterator();
+                    }
+                    while (selectedKeys.hasNext()) {
+                        key = (SelectionKey) selectedKeys.next();
+                        selectedKeys.remove();
+
+                        if (key.isValid()) {
+                            try {
+                                final SelectableChannel keyChannel = key.channel();
+                                if (keyChannel != null && key.channel().isOpen() && key.isValid()) {
+                                    final NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
+                                    //If the kind of key is acceptable or connectable then
+                                    //the processing do over this thread in the other case
+                                    //the processing is delegated to the thread pool
+                                    if (key.isAcceptable()) {
+                                        accept(key.channel(), (NetServer) consumer);
+                                    } else if (key.isConnectable()) {
+                                        connect(key.channel(), (NetClient) consumer);
+                                    } else if (key.isReadable()) {
+                                        synchronized (readableKeys) {
+                                            if (key.isValid() && !readableKeys.contains(key)) {
+                                                if (!readableKeys.offer(key)) {
+                                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add readable key!!!!");
+                                                }
+                                            }
+                                            readableKeys.notifyAll();
+                                        }
+                                    } else if (key.isWritable()) {
+                                        synchronized (writableKeys) {
+                                            if (key.isValid() && !writableKeys.contains(key)) {
+                                                if (!writableKeys.offer(key)) {
+                                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
+                                                }
+                                            }
+                                            writableKeys.notifyAll();
+                                        }
+                                    }
+                                } else {
+                                    key.cancel();
+                                }
+                            } catch (CancelledKeyException ex) {
+                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
+                            } catch (Exception ex) {
+                                Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service main thread exception", ex);
+                            }
                         }
                     }
                 }

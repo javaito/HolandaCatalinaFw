@@ -153,6 +153,8 @@ public final class SystemProperties extends Properties {
         public static final String PORT_PROBE_CONNECTION_TIMEOUT = "hcjf.net.port.probe.connection.timeout";
         public static final String REMOTE_ADDRESS_INTO_NET_PACKAGE = "hcjf.net.remote.address.into.net.package";
         public static final String REMOTE_ADDRESS_INTO_NET_SESSION = "hcjf.net.remote.address.into.net.session";
+        public static final String NIO_SELECTOR_MIN_WAIT_TIME = "hcjf.net.nio.selector.min.wait.time";
+        public static final String NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT = "hcjf.net.nio.selector.min.wait.counter.limit";
 
         public static final class Broadcast {
             public static final String SERVICE_NAME = "hcjf.net.broadcast.service.name";
@@ -577,6 +579,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.PORT_PROBE_CONNECTION_TIMEOUT, "1000");
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_PACKAGE, "false");
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_SESSION, "false");
+        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_TIME, "10");
+        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT, "50");
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
