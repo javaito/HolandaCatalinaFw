@@ -50,6 +50,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     private Selector selector;
     private final Object selectorMonitor;
+    private Boolean selectorBlocking;
 
     private final Timer timer;
     private boolean creationTimeoutAvailable;
@@ -67,6 +68,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         this.timer = new Timer();
         this.selectorMonitor = new Object();
+        this.selectorBlocking = false;
 
         this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.Net.CONNECTION_TIMEOUT_AVAILABLE);
         this.creationTimeout = SystemProperties.getLong(SystemProperties.Net.CONNECTION_TIMEOUT);
@@ -162,7 +164,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         //This exception is totally ignored because the shutdown procedure must be go on
                     }
                 }
-                getSelector().wakeup();
+                wakeup();
                 break;
             }
             case END: {
@@ -171,7 +173,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
 
                 mainTaskFuture.cancel(true);
-                getSelector().wakeup();
+                wakeup();
                 break;
             }
         }
@@ -382,7 +384,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      */
     private void registerChannel(SelectableChannel channel, int operation, Object attach) throws ClosedChannelException {
         synchronized (selectorMonitor) {
-            getSelector().wakeup();
+            wakeup();
             channel.register(getSelector(), operation, attach);
         }
     }
@@ -442,7 +444,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             netPackage.setSession(session);
             outputQueue.get(channel).add(netPackage);
             channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
-            getSelector().wakeup();
+            wakeup();
         } else {
             throw new IOException("Unknown session");
         }
@@ -465,7 +467,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     netPackage.setSession(session);
                     outputQueue.get(channel).add(netPackage);
                     channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
-                    getSelector().wakeup();
+                    wakeup();
                 }
             }
         }
@@ -676,6 +678,39 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
+     * This method performs a non blocking select operation over the selector and check if the number of available
+     * keys is bigger than zero. If the available keys are zero then the thread are waiting until some operation invoke
+     * the wakeup method.
+     * @return Returns the number of available keys into the selector.
+     * @throws IOException
+     */
+    private int select() throws IOException {
+        int result;
+        synchronized (selectorMonitor) {
+            selectorBlocking = true;
+        }
+        result = getSelector().select();
+        synchronized (selectorMonitor) {
+            selectorBlocking = false;
+        }
+        return result;
+    }
+
+    /**
+     * This method wakeup the main thread in order to verify if there are some available keys into selector. All the
+     * times verify if the selector is blocking into the select method, because only invoke the method wakeup of the
+     * selector if it is blocking in the select method.
+     */
+    private void wakeup() {
+        synchronized (selectorMonitor) {
+            if(selectorBlocking) {
+                getSelector().wakeup();
+                selectorBlocking = false;
+            }
+        }
+    }
+
+    /**
      * This method is the body of the net service.
      */
     public final void runNetService() {
@@ -712,37 +747,18 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
             }
 
-            int minWaitTime = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
-            int minWaitCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
-            long selectionProcessStart;
-            long selectionProcessPeriod;
-            int minWaitCounter = 0;
             int selectionSize;
-
             Iterator selectedKeys;
             SelectionKey key;
 
             while (!Thread.currentThread().isInterrupted()) {
-                selectionProcessStart = System.currentTimeMillis();
                 //Select the next schedule key or sleep if the aren't any key to select.
-                selectionSize = getSelector().select();
+                selectionSize = select();
 
-                if(selectionSize == 0 && readableKeys.isEmpty() && writableKeys.isEmpty()) {
-                    selectionProcessPeriod = System.currentTimeMillis() - selectionProcessStart;
-                    if(selectionProcessPeriod < minWaitTime) {
-                        minWaitCounter++;
-                        if(minWaitCounter >= minWaitCounterLimit) {
-                            synchronized (selectorMonitor) {
-                                createSelector();
-                            }
-                            minWaitCounter = 0;
-                        }
-                    }
+                if(selectionSize == 0) {
+                    continue;
                 } else {
-                    minWaitCounter = 0;
-                    synchronized (selectorMonitor) {
-                        selectedKeys = getSelector().selectedKeys().iterator();
-                    }
+                    selectedKeys = getSelector().selectedKeys().iterator();
                     while (selectedKeys.hasNext()) {
                         key = (SelectionKey) selectedKeys.next();
                         selectedKeys.remove();
