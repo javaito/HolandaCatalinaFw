@@ -18,6 +18,7 @@ import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class implements a service that provide an
@@ -747,15 +748,23 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
             }
 
+            long selectorMinWaitTime = SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
+            long selectionStartPeriod;
+            long selectionPeriod;
             int selectionSize;
             Iterator selectedKeys;
             SelectionKey key;
 
             while (!Thread.currentThread().isInterrupted()) {
                 //Select the next schedule key or sleep if the aren't any key to select.
+                selectionStartPeriod = System.currentTimeMillis();
                 selectionSize = select();
 
                 if(selectionSize == 0) {
+                    selectionPeriod = System.currentTimeMillis() - selectionStartPeriod;
+                    if(selectionPeriod < selectorMinWaitTime) {
+
+                    }
                     continue;
                 } else {
                     selectedKeys = getSelector().selectedKeys().iterator();

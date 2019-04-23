@@ -822,7 +822,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             Object result = null;
             Throwable throwable = null;
             try {
-                result = distributedLayerInvoke(layerInvokeMessage.getSessionId(),
+                result = distributedLayerInvoke(layerInvokeMessage.getSessionId(), layerInvokeMessage.getSessionBean(),
                         layerInvokeMessage.getParameterTypes(), layerInvokeMessage.getParameters(),
                         layerInvokeMessage.getMethodName(), layerInvokeMessage.getPath());
             } catch (Throwable t) {
@@ -1143,6 +1143,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         layerInvokeMessage.setMethodName(method.getName());
         layerInvokeMessage.setParameterTypes(method.getParameterTypes());
         layerInvokeMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
+        layerInvokeMessage.setSessionBean(ServiceSession.getCurrentIdentity().getBody());
         layerInvokeMessage.setParameters(parameters);
         layerInvokeMessage.setPath(path);
 
@@ -1159,6 +1160,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     /**
      * This method is called when a layer invoke message incoming.
      * @param sessionId Is of the session that invoke the remote layer.
+     * @param sessionBean Serialized session instance.
      * @param parameterTypes Array with all the parameter types.
      * @param parameters Array with all the parameter instances.
      * @param methodName Name of the method.
@@ -1166,7 +1168,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
      * @return Return value of the layer invoke.
      */
     private Object distributedLayerInvoke(
-            UUID sessionId, Class[] parameterTypes,
+            UUID sessionId, Map<String,Object> sessionBean, Class[] parameterTypes,
             Object[] parameters, String methodName, Object... path) {
         Object result;
         DistributedLayer distributedLayer = getDistributedLayer(true, path);
@@ -1176,7 +1178,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(invokers.size() == 1) {
             LayerInterface layer = Layers.get(layerInterface, distributedLayer.getLayerName());
             try {
-                ServiceSession.getCurrentSession().addIdentity(ServiceSession.findSession(sessionId));
+                if(sessionBean != null && !sessionBean.isEmpty()) {
+                    ServiceSession.getCurrentSession().addIdentity(ServiceSession.findSession(sessionBean));
+                } else {
+                    ServiceSession.getCurrentSession().addIdentity(ServiceSession.findSession(sessionId));
+                }
                 result = invokers.values().iterator().next().invoke(layer, parameters);
             } catch (Exception e) {
                 throw new RuntimeException(e);

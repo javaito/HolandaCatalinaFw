@@ -437,9 +437,26 @@ public class ServiceSession implements Comparable {
         } else {
             for (ServiceSessionSource source : sources) {
                 result = source.findSession(sessionId);
-                if (source != null) {
+                if (result != null) {
                     break;
                 }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the service session instance rebuilding using the bean as parameter.
+     * @param sessionBean Session bean instance.
+     * @param <S> Expected session kind.
+     * @return Service session instance.
+     */
+    public static <S extends ServiceSession> S findSession(Map<String,Object> sessionBean) {
+        S result = null;
+        for (ServiceSessionSource source : sources) {
+            result = source.findSession(sessionBean);
+            if (result != null) {
+                break;
             }
         }
         return result;
@@ -515,6 +532,14 @@ public class ServiceSession implements Comparable {
 
     }
 
+    /**
+     * Returns the serializable body of the session instance.
+     * @return Serializable instance.
+     */
+    public Map<String,Object> getBody() {
+        return Map.of();
+    }
+
     public static final class LayerStackElement {
 
         private final Class<? extends Layer> layerClass;
@@ -575,5 +600,12 @@ public class ServiceSession implements Comparable {
          */
         <S extends ServiceSession> S findSession(UUID sessionId);
 
+        /**
+         * Returns the service session instance rebuilding using the bean as parameter.
+         * @param sessionBean Session bean instance.
+         * @param <S> Expected session kind.
+         * @return Service session instance.
+         */
+        <S extends ServiceSession> S findSession(Map<String,Object> sessionBean);
     }
 }

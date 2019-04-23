@@ -2,6 +2,7 @@ package org.hcjf.io.net.messages;
 
 import org.hcjf.utils.bson.BsonParcelable;
 
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -12,6 +13,7 @@ public abstract class Message implements BsonParcelable {
     private UUID id;
     private Long timestamp;
     private UUID sessionId;
+    private Map<String,Object> sessionBean;
 
     public Message() {
     }
@@ -67,5 +69,21 @@ public abstract class Message implements BsonParcelable {
      */
     public final void setSessionId(UUID sessionId) {
         this.sessionId = sessionId;
+    }
+
+    /**
+     * Returns the serialized session instance.
+     * @return Serialized session instance.
+     */
+    public Map<String, Object> getSessionBean() {
+        return sessionBean;
+    }
+
+    /**
+     * Set the serialized session instance.
+     * @param sessionBean Serialized session instance.
+     */
+    public void setSessionBean(Map<String, Object> sessionBean) {
+        this.sessionBean = sessionBean;
     }
 }
