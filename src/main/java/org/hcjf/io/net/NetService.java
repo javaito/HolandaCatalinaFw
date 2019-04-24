@@ -35,25 +35,25 @@ public final class NetService extends Service<NetServiceConsumer> {
         instance = new NetService(SystemProperties.get(SystemProperties.Net.SERVICE_NAME));
     }
 
-    private final List<ServerSocketChannel> tcpServers;
-    private final Map<NetSession, SelectableChannel> channels;
-    private final Map<SelectableChannel, NetSession> sessionsByChannel;
+    private List<ServerSocketChannel> tcpServers;
+    private Map<NetSession, SelectableChannel> channels;
+    private Map<SelectableChannel, NetSession> sessionsByChannel;
 
     private DatagramChannel udpServer;
-    private final Map<NetSession, SocketAddress> addresses;
-    private final Map<SocketAddress, NetSession> sessionsByAddress;
+    private Map<NetSession, SocketAddress> addresses;
+    private Map<SocketAddress, NetSession> sessionsByAddress;
 
-    private final Map<SelectableChannel, Long> lastWrite;
-    private final Map<SelectableChannel, Queue<NetPackage>> outputQueue;
+    private Map<SelectableChannel, Long> lastWrite;
+    private Map<SelectableChannel, Queue<NetPackage>> outputQueue;
 
-    private final Set<NetSession> sessions;
-    private final Map<NetSession, SSLHelper> sslHelpers;
+    private Set<NetSession> sessions;
+    private Map<NetSession, SSLHelper> sslHelpers;
 
     private Selector selector;
-    private final Object selectorMonitor;
+    private Object selectorMonitor;
     private Boolean selectorBlocking;
 
-    private final Timer timer;
+    private Timer timer;
     private boolean creationTimeoutAvailable;
     private long creationTimeout;
 
@@ -66,26 +66,6 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     private NetService(String serviceName) {
         super(serviceName, 2);
-
-        this.timer = new Timer();
-        this.selectorMonitor = new Object();
-        this.selectorBlocking = false;
-
-        this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.Net.CONNECTION_TIMEOUT_AVAILABLE);
-        this.creationTimeout = SystemProperties.getLong(SystemProperties.Net.CONNECTION_TIMEOUT);
-        if (creationTimeoutAvailable && creationTimeout <= 0) {
-            throw new IllegalArgumentException("Illegal creation timeout value: " + creationTimeout);
-        }
-
-        lastWrite = Collections.synchronizedMap(new HashMap<>());
-        outputQueue = Collections.synchronizedMap(new HashMap<>());
-        tcpServers = Collections.synchronizedList(new ArrayList<>());
-        channels = Collections.synchronizedMap(new TreeMap<>());
-        sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
-        sessionsByAddress = Collections.synchronizedMap(new HashMap<>());
-        sessions = Collections.synchronizedSet(new TreeSet<>());
-        sslHelpers = Collections.synchronizedMap(new HashMap<>());
-        addresses = Collections.synchronizedMap(new HashMap<>());
     }
 
     /**
@@ -105,6 +85,53 @@ public final class NetService extends Service<NetServiceConsumer> {
     protected void init() {
         try {
             createSelector();
+
+            this.timer = new Timer();
+            this.selectorMonitor = new Object();
+            this.selectorBlocking = false;
+
+            this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.Net.CONNECTION_TIMEOUT_AVAILABLE);
+            this.creationTimeout = SystemProperties.getLong(SystemProperties.Net.CONNECTION_TIMEOUT);
+            if (creationTimeoutAvailable && creationTimeout <= 0) {
+                throw new IllegalArgumentException("Illegal creation timeout value: " + creationTimeout);
+            }
+
+            lastWrite = Collections.synchronizedMap(new HashMap<>());
+            outputQueue = Collections.synchronizedMap(new HashMap<>());
+            tcpServers = Collections.synchronizedList(new ArrayList<>());
+            channels = Collections.synchronizedMap(new TreeMap<>());
+            sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
+            sessionsByAddress = Collections.synchronizedMap(new HashMap<>());
+            sessions = Collections.synchronizedSet(new TreeSet<>());
+            sslHelpers = Collections.synchronizedMap(new HashMap<>());
+            addresses = Collections.synchronizedMap(new HashMap<>());
+
+            readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+            writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+
+            ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
+            ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+            int corePoolSize = SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE);
+            if(corePoolSize < 8) {
+                corePoolSize = 8;
+            }
+            ioExecutor.setCorePoolSize(corePoolSize);
+            ioExecutor.setMaximumPoolSize(corePoolSize);
+
+            int count = 0;
+            while(true) {
+                count++;
+                fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
+                if(count >= ioExecutor.getCorePoolSize()) {
+                    break;
+                }
+                count++;
+                fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
+                if(count >= ioExecutor.getCorePoolSize()) {
+                    break;
+                }
+            }
+
             mainTaskFuture = fork(() -> runNetService());
         } catch (IOException ex) {
             Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to init net service %s", ex, this);
@@ -722,37 +749,13 @@ public final class NetService extends Service<NetServiceConsumer> {
             } catch (SecurityException ex) {
             }
 
-            readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
-            writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
-
-            ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
-            ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
-            int corePoolSize = SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE);
-            if(corePoolSize < 8) {
-                corePoolSize = 8;
-            }
-            ioExecutor.setCorePoolSize(corePoolSize);
-            ioExecutor.setMaximumPoolSize(corePoolSize);
-
-            int count = 0;
-            while(true) {
-                count++;
-                fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
-                if(count >= ioExecutor.getCorePoolSize()) {
-                    break;
-                }
-                count++;
-                fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
-                if(count >= ioExecutor.getCorePoolSize()) {
-                    break;
-                }
-            }
-
             long selectorMinWaitTime = SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
+            int selectorCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
+            int selectorCounter = 0;
             long selectionStartPeriod;
             long selectionPeriod;
             int selectionSize;
-            Iterator selectedKeys;
+            Iterator<SelectionKey> selectedKeys;
             SelectionKey key;
 
             while (!Thread.currentThread().isInterrupted()) {
@@ -763,13 +766,19 @@ public final class NetService extends Service<NetServiceConsumer> {
                 if(selectionSize == 0) {
                     selectionPeriod = System.currentTimeMillis() - selectionStartPeriod;
                     if(selectionPeriod < selectorMinWaitTime) {
-
+                        selectorCounter++;
+                        if(selectorCounter > selectorCounterLimit) {
+                            createSelector();
+                            selectorCounter = 0;
+                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector recreated!!!");
+                        }
                     }
                     continue;
                 } else {
+                    selectorCounter = 0;
                     selectedKeys = getSelector().selectedKeys().iterator();
                     while (selectedKeys.hasNext()) {
-                        key = (SelectionKey) selectedKeys.next();
+                        key = selectedKeys.next();
                         selectedKeys.remove();
 
                         if (key.isValid()) {

@@ -580,7 +580,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_PACKAGE, "false");
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_SESSION, "false");
         defaults.put(Net.NIO_SELECTOR_MIN_WAIT_TIME, "10");
-        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT, "50");
+        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT, "1000");
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
