@@ -783,13 +783,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                     if(selectionPeriod < selectorMinWaitTime) {
                         selectorCounter++;
                         if(selectorCounter > selectorCounterLimit) {
-                            createSelector();
                             selectorCounter = 0;
                             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector recreated!!!");
-                            System.out.println("Selector recreated!!!!");
                         }
                     }
-                    System.out.println("Empty selection");
                     continue;
                 } else {
                     selectorCounter = 0;
