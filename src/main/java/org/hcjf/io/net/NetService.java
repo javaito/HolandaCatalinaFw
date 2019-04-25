@@ -457,6 +457,25 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
+     * This method notify to all the writer and put into the output buffer some package.
+     * @param channel Channel to write the package.
+     * @param netPackage Package.
+     */
+    private void writeWakeup(SelectableChannel channel, NetPackage netPackage) {
+        outputQueue.get(channel).add(netPackage);
+
+        SelectionKey key = channel.keyFor(getSelector());
+        synchronized (writableKeys) {
+            if (key.isValid() && !writableKeys.contains(key)) {
+                if (!writableKeys.offer(key)) {
+                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
+                }
+            }
+            writableKeys.notifyAll();
+        }
+    }
+
+    /**
      * This method put a net package on the output queue of the session.
      *
      * @param session Net session.
@@ -470,9 +489,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         if (channel != null) {
             netPackage = createPackage(channel, data, NetPackage.ActionEvent.WRITE);
             netPackage.setSession(session);
-            outputQueue.get(channel).add(netPackage);
-            channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
-            wakeup();
+            writeWakeup(channel, netPackage);
         } else {
             throw new IOException("Unknown session");
         }
@@ -493,9 +510,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 if (channels.containsKey(session)) {
                     NetPackage netPackage = createPackage(channel, message.getBytes(), NetPackage.ActionEvent.DISCONNECT);
                     netPackage.setSession(session);
-                    outputQueue.get(channel).add(netPackage);
-                    channel.keyFor(getSelector()).interestOps(SelectionKey.OP_WRITE);
-                    wakeup();
+                    writeWakeup(channel, netPackage);
                 }
             }
         }
@@ -771,8 +786,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                             createSelector();
                             selectorCounter = 0;
                             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector recreated!!!");
+                            System.out.println("Selector recreated!!!!");
                         }
                     }
+                    System.out.println("Empty selection");
                     continue;
                 } else {
                     selectorCounter = 0;

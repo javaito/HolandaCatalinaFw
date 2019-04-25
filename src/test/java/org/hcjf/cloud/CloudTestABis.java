@@ -29,14 +29,14 @@ public class CloudTestABis {
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.DATA_CENTER_NAME, "dc1");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.CLUSTER_NAME, "test-cluster");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.NAME, "test-ABis");
-        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "172.16.102.45");
+        System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_ADDRESS, "localhost");
         System.setProperty(SystemProperties.Cloud.Orchestrator.ThisNode.LAN_PORT, "6165");
         System.setProperty(SystemProperties.Cloud.Orchestrator.NODES,
                 "[" +
-                        "{lanAddress:172.16.102.45,lanPort:6162}," +
-                        "{lanAddress:172.16.102.45,lanPort:6163}," +
-                        "{lanAddress:172.16.102.45,lanPort:6164}," +
-                        "{lanAddress:172.16.102.45,lanPort:6165}" +
+                        "{lanAddress:localhost,lanPort:6162}," +
+                        "{lanAddress:localhost,lanPort:6163}," +
+                        "{lanAddress:localhost,lanPort:6164}," +
+                        "{lanAddress:localhost,lanPort:6165}" +
                 "]");
 
         System.setProperty(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED, "true");
