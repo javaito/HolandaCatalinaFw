@@ -5,7 +5,7 @@ import java.util.Date;
 /**
  * @author javaito
  */
-public class Node extends NetworkComponent {
+public class Node extends NetworkComponent implements Comparable<Node> {
 
     private String version;
     private String clusterName;
@@ -137,6 +137,11 @@ public class Node extends NetworkComponent {
 
     public static String createNodeHash(String remoteHost, Integer port) {
         return remoteHost + ":" + port;
+    }
+
+    @Override
+    public int compareTo(Node node) {
+        return getLanId().compareTo(node.getLanId());
     }
 
     public enum Status {

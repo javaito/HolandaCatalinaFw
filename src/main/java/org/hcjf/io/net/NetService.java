@@ -412,8 +412,8 @@ public final class NetService extends Service<NetServiceConsumer> {
      */
     private void registerChannel(SelectableChannel channel, int operation, Object attach) throws ClosedChannelException {
         synchronized (selectorMonitor) {
-            wakeup();
             channel.register(getSelector(), operation, attach);
+            wakeup();
         }
     }
 

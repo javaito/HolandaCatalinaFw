@@ -55,6 +55,5 @@ public class CloudClient extends MessagesNode<CloudSession> {
 
     @Override
     protected void onDisconnect(CloudSession session, NetPackage netPackage) {
-        CloudOrchestrator.getInstance().connectionLost(session);
     }
 }

@@ -38,11 +38,6 @@ public class CloudServer extends MessagesServer<CloudSession> {
     }
 
     @Override
-    protected void onDisconnect(CloudSession session, NetPackage netPackage) {
-        CloudOrchestrator.getInstance().connectionLost(session);
-    }
-
-    @Override
     protected void onRead(CloudSession session, Message message) {
         CloudOrchestrator.getInstance().incomingMessage(session, message);
     }

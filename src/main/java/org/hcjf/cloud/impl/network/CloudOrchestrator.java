@@ -55,10 +55,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     private Node thisNode;
-    private Set<Node> nodes;
+    private Map<UUID,Node> nodes;
     private Map<String, Node> nodesByLanId;
     private Map<String, Node> nodesByWanId;
-    private Map<UUID, CloudSession> sessionByNode;
     private Set<Node> sortedNodes;
     private Map<UUID, Node> waitingAck;
     private Map<UUID, ResponseListener> responseListeners;
@@ -89,11 +88,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     @Override
     protected void init() {
-        nodes = new HashSet<>();
+        nodes = new HashMap<>();
         nodesByLanId = new HashMap<>();
         nodesByWanId = new HashMap<>();
-        sessionByNode = new HashMap<>();
-        sortedNodes = new TreeSet<>(Comparator.comparing(Node::getId));
+        sortedNodes = new TreeSet<>();
         waitingAck = new HashMap<>();
         responseListeners = new HashMap<>();
 
@@ -142,8 +140,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         random = new Random();
         sharedStore = new DistributedTree(Strings.EMPTY_STRING);
 
-        fork(this::maintainConnections);
-        fork(this::initReorganizationTimer);
+//        fork(this::initReorganizationTimer);
         server = new CloudServer();
         server.start();
 
@@ -263,7 +260,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     @Override
     public void registerConsumer(NetworkComponent networkComponent) {
         Objects.requireNonNull(networkComponent, "Unable to register a null component");
-
         if(networkComponent instanceof Node) {
             Node node = (Node) networkComponent;
             String lanId = node.getLanId();
@@ -280,13 +276,15 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     node.setStatus(Node.Status.DISCONNECTED);
                     if (lanId != null) {
                         nodesByLanId.put(lanId, node);
+                        node.setId(new UUID(0L, lanId.hashCode()));
                     }
 
                     if (wanId != null) {
                         nodesByWanId.put(wanId, node);
                     }
 
-                    nodes.add(node);
+                    nodes.put(node.getId(), node);
+                    sortedNodes.add(node);
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "New node registered: %s", node);
                 }
             }
@@ -330,7 +328,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 serviceDefinitionMessage.setBroadcasting(true);
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
                 try {
-                    invokeService(serviceEndPoint.getId(), serviceDefinitionMessage);
+                    invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
                     break;
                 } catch (Exception ex) {
                     Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
@@ -391,63 +389,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     /**
-     * This method is called when a node is connected.
-     * @param networkComponent Component connected.
-     * @param session Net session assigned to the connected node.
-     */
-    private void nodeConnected(NetworkComponent networkComponent, CloudSession session) {
-        if(networkComponent instanceof Node) {
-            Node node = (Node) networkComponent;
-            synchronized (sessionByNode) {
-                sessionByNode.put(node.getId(), session);
-                sortedNodes.add(node);
-                session.setNode(node);
-                printNodes();
-            }
-            fork(() -> reorganize(node, session, ReorganizationAction.CONNECT));
-        } else if(networkComponent instanceof ServiceEndPoint) {
-
-        }
-    }
-
-    /**
-     * This method is called when a node is disconnected.
-     * @param networkComponent Component disconnected.
-     */
-    private void nodeDisconnected(NetworkComponent networkComponent) {
-        if(networkComponent instanceof Node) {
-            Node node = (Node) networkComponent;
-            synchronized (sessionByNode) {
-                sessionByNode.remove(node.getId());
-                sortedNodes.remove(node);
-                disconnected(node);
-                printNodes();
-            }
-
-            fork(() -> reorganize(node, null, ReorganizationAction.DISCONNECT));
-        } else if(networkComponent instanceof ServiceEndPoint) {
-
-        }
-    }
-
-    /**
-     * Prints a log record that show the information about all the connected nodes.
-     */
-    private void printNodes() {
-        synchronized (sessionByNode) {
-            Strings.Builder builder = new Strings.Builder();
-            builder.append(Strings.START_SUB_GROUP);
-            for (Node node : sortedNodes) {
-                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                builder.append(Strings.TAB).append(node, Strings.ARGUMENT_SEPARATOR);
-            }
-            builder.cleanBuffer();
-            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR).append(Strings.END_SUB_GROUP);
-            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "\r\n\r\nNodes: %s\r\n", builder.toString());
-        }
-    }
-
-    /**
      * This method is called periodically or for some particular events like the connection or disconnection of a node,
      * and verify the memory organization to fix it if necessary.
      * @param node Node that produce the event.
@@ -475,7 +416,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
                 publishObjectMessage.setTimestamp(System.currentTimeMillis());
                 publishObjectMessage.setPaths(paths);
-                sendMessageToNode(session, publishObjectMessage);
+                sendResponse(session, publishObjectMessage);
                 break;
             }
             case DISCONNECT: {
@@ -519,7 +460,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
                         publishObjectMessage.setPaths(paths);
                         publishObjectMessage.setTimestamp(System.currentTimeMillis());
-                        sendMessageToNode(sessionByNode.get(nodeId), publishObjectMessage);
+                        invokeNetworkComponent(nodes.get(nodeId), publishObjectMessage);
                         for(PublishObjectMessage.Path path : paths) {
                             addLocalObject(path.getValue(), path.getNodes(), List.of(), 0L, path.getPath());
                         }
@@ -533,57 +474,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(time > SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.REORGANIZATION_WARNING_TIME_LIMIT)) {
             Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
                     action.toString(), time);
-        }
-    }
-
-    /**
-     * This method is called into a new service thread in order to try to establish a connection
-     * for each node registered into the cloud service.
-     */
-    private void maintainConnections() {
-        while(!Thread.currentThread().isInterrupted()) {
-            for(Node node : nodes) {
-                synchronized (sessionByNode) {
-                    if(node.getStatus().equals(Node.Status.LOST) &&
-                            (System.currentTimeMillis() - node.getLastStatusUpdate()) >
-                                    SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.NODE_LOST_TIMEOUT)) {
-                        disconnected(node);
-                    }
-
-                    if(!node.getStatus().equals(Node.Status.LOST)) {
-                        if (!sessionByNode.containsKey(node.getId()) && !node.getStatus().equals(Node.Status.CONNECTED)) {
-                            CloudClient client = new CloudClient(node.getLanAddress(), node.getLanPort());
-                            NetService.getInstance().registerConsumer(client);
-                            if (client.waitForConnect()) {
-                                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Connected with %s:%d",
-                                        node.getLanAddress(), node.getLanPort());
-
-                                if (connecting(node)) {
-                                    try {
-                                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending credentials to %s:%d",
-                                                node.getLanAddress(), node.getLanPort());
-                                        client.send(new NodeIdentificationMessage(thisNode));
-                                    } catch (IOException e) {
-                                        client.disconnect();
-                                        disconnected(node);
-                                    }
-                                }
-                            } else {
-                                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to connect with %s:%d",
-                                        node.getLanAddress(), node.getLanPort());
-                                lost(node);
-                            }
-                        }
-                    }
-                }
-            }
-            try {
-                Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.Cloud.Orchestrator.CONNECTION_LOOP_WAIT_TIME)
-                        + (long)(random.nextDouble() * 1000));
-            } catch (InterruptedException e) {
-                break;
-            }
         }
     }
 
@@ -609,31 +499,21 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return messages;
     }
 
-    private void initReorganizationTimer() {
-        while(!Thread.currentThread().isInterrupted()) {
-            try {
-                Thread.sleep(SystemProperties.getLong(
-                        SystemProperties.Cloud.Orchestrator.REORGANIZATION_TIMEOUT));
-                try {
-                    reorganize(null, null, ReorganizationAction.TIME);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            } catch (InterruptedException ex){
-                break;
-            }
-        }
-    }
-
-    void connectionLost(CloudSession session) {
-        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "connection lost with %s:%d",
-                session.getRemoteHost(), session.getRemotePort());
-        synchronized (sessionByNode) {
-            if(session.getNode() != null) {
-                nodeDisconnected(session.getNode());
-            }
-        }
-    }
+//    private void initReorganizationTimer() {
+//        while(!Thread.currentThread().isInterrupted()) {
+//            try {
+//                Thread.sleep(SystemProperties.getLong(
+//                        SystemProperties.Cloud.Orchestrator.REORGANIZATION_TIMEOUT));
+//                try {
+//                    reorganize(null, null, ReorganizationAction.TIME);
+//                } catch (Exception ex) {
+//                    ex.printStackTrace();
+//                }
+//            } catch (InterruptedException ex){
+//                break;
+//            }
+//        }
+//    }
 
     public void incomingMessage(CloudSession session, Message message) {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
@@ -654,12 +534,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
 
             //Sent the message for all the replicas
-//            if(serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
-//                serviceDefinitionMessage.setBroadcasting(false);
-//                for (Node node : nodes) {
-//                    sendMessageToNode(sessionByNode.get(node.getId()), serviceDefinitionMessage);
-//                }
-//            }
+            if(serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
+                serviceDefinitionMessage.setBroadcasting(false);
+                for (Node node : nodes.values()) {
+                    invokeNetworkComponent(node, serviceDefinitionMessage);
+                }
+            }
         } else if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
             for(Message innerMessage : collection.getMessages()) {
@@ -676,7 +556,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                     "Sending response message: %s", message.getId());
-            sendMessageToNode(session, responseMessage);
+            sendResponse(session, responseMessage);
         }
     }
 
@@ -709,7 +589,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         ((CloudClient) session.getConsumer()).disconnect();
                     } else {
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as client %s", node);
-                        nodeConnected(node, session);
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Ack sent to %s:%d",
                                 node.getLanAddress(), node.getLanPort());
                         responseMessage = new AckMessage(message);
@@ -854,7 +733,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 if(node != null) {
                     if(connected(node)) {
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Node connected as server %s", node);
-                        nodeConnected(node, session);
                     }
                 }
             }
@@ -862,7 +740,16 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return responseMessage;
     }
 
-    private void sendMessageToNode(CloudSession session, Message message) {
+    private void nodeBroadcasting(Message message) {
+        List<Node> nodeList = new ArrayList<>(nodesByLanId.values());
+        for (Node node : nodeList) {
+            try {
+                fork(() -> invokeNetworkComponent(node, message));
+            } catch (Exception ex){}
+        }
+    }
+
+    private void sendResponse(CloudSession session, Message message) {
         try {
             NetServiceConsumer consumer = session.getConsumer();
             if(consumer instanceof CloudClient) {
@@ -875,48 +762,30 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
     }
 
-    private void registerListener(Message message, ResponseListener listener) {
-        synchronized (responseListeners) {
-            while (responseListeners.containsKey(message.getId())) {
-                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Message id crash!! %s", message.getId());
-                message.setId(UUID.randomUUID());
-            }
-            responseListeners.put(message.getId(), listener);
-        }
-    }
-
-    private Object invokeNode(CloudSession session, Message message) {
-        return invokeNode(session, message,
+    private Object invokeNetworkComponent(NetworkComponent networkComponent, Message message) {
+        return invokeNetworkComponent(networkComponent, message,
                 SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
     }
 
-    private Object invokeNode(CloudSession session, Message message, Long timeout) {
-        ResponseListener responseListener = new ResponseListener(timeout);
-        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                "Sending invokeNode message: %s", message.getId().toString());
-        registerListener(message, responseListener);
-        sendMessageToNode(session, message);
-        return responseListener.getResponse(message);
-    }
-
-    private Object invokeService(UUID serviceEndPointId, Message message) {
-        return invokeService(serviceEndPointId, message,
-                SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
-    }
-
-    private Object invokeService(UUID serviceEndPointId, Message message, Long timeout) {
+    private Object invokeNetworkComponent(NetworkComponent networkComponent, Message message, Long timeout) {
         Object result;
         if(message.getId() == null) {
             message.setId(UUID.randomUUID());
         }
-        ServiceEndPoint serviceEndPoint = endPoints.get(serviceEndPointId);
-        if(serviceEndPoint != null) {
+
+        if(networkComponent != null) {
             CloudClient client;
             try {
-                client = new CloudClient(serviceEndPoint.getGatewayAddress(), serviceEndPoint.getGatewayPort());
+                String host = networkComponent instanceof ServiceEndPoint ?
+                        ((ServiceEndPoint)networkComponent).getGatewayAddress() :
+                        ((Node)networkComponent).getLanAddress();
+                Integer port = networkComponent instanceof ServiceEndPoint ?
+                        ((ServiceEndPoint)networkComponent).getGatewayPort() :
+                        ((Node)networkComponent).getLanPort();
+                client = new CloudClient(host, port);
                 NetService.getInstance().registerConsumer(client);
             } catch (Exception ex) {
-                throw new RuntimeException("Unable to connect with service: " + serviceEndPoint.getName(), ex);
+                throw new RuntimeException("Unable to connect with service: " + networkComponent.getName(), ex);
             }
             try {
                 if (client.waitForConnect()) {
@@ -931,7 +800,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     }
                     result = responseListener.getResponse(message);
                 } else {
-                    throw new RuntimeException("Connection timeout with service: " + serviceEndPoint.getName());
+                    throw new RuntimeException("Connection timeout with service: " + networkComponent.getName());
                 }
             } finally {
                 try {
@@ -939,22 +808,19 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 } catch (Exception ex){}
             }
         } else {
-            throw new RuntimeException("Service end point not found (" + serviceEndPoint.getId() + ")");
+            throw new RuntimeException("Service end point not found (" + networkComponent.getId() + ")");
         }
         return result;
     }
 
-    private boolean testNode(CloudSession session) {
-        boolean result = true;
-        try {
-            UUID id = UUID.randomUUID();
-            invokeNode(session, new TestNodeMessage(id),
-                    SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.TEST_NODE_TIMEOUT));
-        } catch (Exception ex){
-            ex.printStackTrace();
-            result = false;
+    private void registerListener(Message message, ResponseListener listener) {
+        synchronized (responseListeners) {
+            while (responseListeners.containsKey(message.getId())) {
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Message id crash!! %s", message.getId());
+                message.setId(UUID.randomUUID());
+            }
+            responseListeners.put(message.getId(), listener);
         }
-        return result;
     }
 
     private DistributedLock getDistributedLock(Object... path) {
@@ -989,15 +855,15 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         while (!distributedLock.getStatus().equals(DistributedLock.Status.LOCKED)) {
             lockMessage.setNanos(distributedLock.getNanos());
             locked = true;
-            List<CloudSession> sessions = new ArrayList<>(sessionByNode.values());
-            for (CloudSession session : sessions) {
+            List<Node> nodeList = new ArrayList<>(nodesByLanId.values());
+            for (Node node : nodeList) {
                 try {
-                    if (!(locked = locked & (boolean) invokeNode(session, lockMessage))) {
+                    if (!(locked = locked & (boolean) invokeNetworkComponent(node, lockMessage))) {
                         break;
                     }
                 } catch (Exception ex){
                     Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                            "Unable to send lock message to session: ", session.getId());
+                            "Unable to send lock message to session: ", node.getId());
                 }
             }
             if (locked) {
@@ -1006,7 +872,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 distributedLock.setStatus(DistributedLock.Status.WAITING);
                 try {
                     synchronized (distributedLock) {
-                        distributedLock.wait(10);
+                        distributedLock.wait(5000);
                     }
                 } catch (InterruptedException e) { }
             }
@@ -1032,15 +898,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
         UnlockMessage unlockMessage = new UnlockMessage(UUID.randomUUID());
         unlockMessage.setPath(path);
-        List<CloudSession> sessions = new ArrayList<>(sessionByNode.values());
-        for (CloudSession session : sessions) {
-            try {
-                sendMessageToNode(session, unlockMessage);
-            } catch (Exception ex){
-                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                        "Unable to send unlock message to session: ", session.getId());
-            }
-        }
+        nodeBroadcasting(unlockMessage);
     }
 
     private synchronized void distributedUnlock(Object... path) {
@@ -1054,9 +912,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         SignalMessage signalMessage = new SignalMessage(UUID.randomUUID());
         signalMessage.setLockName(lockName);
         signalMessage.setConditionName(conditionName);
-        for (CloudSession session : sessionByNode.values()) {
-            sendMessageToNode(session, signalMessage);
-        }
+        nodeBroadcasting(signalMessage);
     }
 
     private void distributedSignal(String lockName, String conditionName) {
@@ -1070,9 +926,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         SignalAllMessage signalAllMessage = new SignalAllMessage(UUID.randomUUID());
         signalAllMessage.setLockName(lockName);
         signalAllMessage.setConditionName(conditionName);
-        for (CloudSession session : sessionByNode.values()) {
-            sendMessageToNode(session, signalAllMessage);
-        }
+        nodeBroadcasting(signalAllMessage);
     }
 
     private void distributedSignalAll(String lockName, String conditionName) {
@@ -1086,7 +940,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         EventMessage eventMessage = new EventMessage(UUID.randomUUID());
         eventMessage.setEvent(event);
         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-            invokeService(serviceEndPoint.getId(), eventMessage);
+            invokeNetworkComponent(serviceEndPoint, eventMessage);
         }
     }
 
@@ -1130,9 +984,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         publishPluginMessage.setJarFile(jarFile);
         publishPluginMessage.setId(UUID.randomUUID());
         publishPluginMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
-        for (CloudSession session : sessionByNode.values()) {
-            sendMessageToNode(session, publishPluginMessage);
-        }
+        nodeBroadcasting(publishPluginMessage);
     }
 
     public <O extends Object> O layerInvoke(Object[] parameters, Method method, Object... path) {
@@ -1149,7 +1001,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
         UUID serviceEndPointId = distributedLayer.getServiceToInvoke();
         if(serviceEndPointId != null) {
-                result = (O) invokeService(serviceEndPointId, layerInvokeMessage);
+                result = (O) invokeNetworkComponent(endPoints.get(serviceEndPointId), layerInvokeMessage);
         } else {
             throw new RuntimeException("Route not found to the layer: " + distributedLayer.getLayerInterface().getName() + "@" + distributedLayer.getLayerName());
         }
@@ -1229,24 +1081,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     /**
      *
      * @param node
-     * @return
-     */
-    private boolean lost(Node node) {
-        Objects.requireNonNull(node, "Null node");
-
-        boolean result = false;
-        node.setConnectionAttempts(node.getConnectionAttempts() + 1);
-        if(node.getConnectionAttempts() >= 2) {
-            if(changeStatus(node, Node.Status.LOST)) {
-                node.setConnectionAttempts(0);
-            }
-        }
-        return result;
-    }
-
-    /**
-     *
-     * @param node
      * @param message
      */
     private void updateNode(Node node, NodeIdentificationMessage message) {
@@ -1310,9 +1144,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             addPath(path);
             PublishPathMessage publishPathMessage = new PublishPathMessage();
             publishPathMessage.setPath(path);
-            for(CloudSession session : sessionByNode.values()) {
-                sendMessageToNode(session, publishPathMessage);
-            }
+            nodeBroadcasting(publishPathMessage);
         }
     }
 
@@ -1344,7 +1176,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     } else {
                         pathObject.setValue(null);
                     }
-                    sendMessageToNode(sessionByNode.get(node.getId()), publishObjectMessage);
+                    invokeNetworkComponent(node, publishObjectMessage);
                     counter++;
                 }
             }
@@ -1353,14 +1185,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     public void hidePath(Object... path) {
         removePath(path);
-
-        fork(()->{
-            for (CloudSession session : sessionByNode.values()) {
-                HidePathMessage hidePathMessage = new HidePathMessage(UUID.randomUUID());
-                hidePathMessage.setPath(path);
-                sendMessageToNode(session, hidePathMessage);
-            }
-        });
+        HidePathMessage hidePathMessage = new HidePathMessage(UUID.randomUUID());
+        hidePathMessage.setPath(path);
+        nodeBroadcasting(hidePathMessage);
     }
 
     public <O extends Object> O invokeNode(Object... path) {
@@ -1368,14 +1195,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(result instanceof RemoteLeaf) {
             InvokeMessage getMessage = new InvokeMessage(UUID.randomUUID());
             getMessage.setPath(path);
-            CloudSession session = null;
             Iterator<UUID> ids = ((RemoteLeaf)result).getNodes().iterator();
-            while (ids.hasNext() && session == null) {
-                session = sessionByNode.get(ids.next());
+            Node node = null;
+            while (ids.hasNext() && node == null) {
+                node = nodes.get(ids.next());
             }
 
-            if(session != null) {
-                result = (O) invokeNode(session, getMessage);
+            if(node != null) {
+                result = (O) invokeNetworkComponent(node, getMessage);
             } else {
                 result = null;
             }
@@ -1409,7 +1236,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     private Collection<JoinableMap> getNodesAsJoinableMap() {
         Collection<JoinableMap> result = new ArrayList<>();
-        for(Node node : nodes) {
+        List<Node> nodeList = new ArrayList<>(nodesByLanId.values());
+        for (Node node : nodeList) {
             result.add(new JoinableMap(Introspection.toMap(node)));
         }
         return result;

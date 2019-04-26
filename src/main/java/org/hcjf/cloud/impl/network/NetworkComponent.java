@@ -51,4 +51,5 @@ public class NetworkComponent implements ServiceConsumer, BsonParcelable {
     public String toString() {
         return gson.toJson(this);
     }
+
 }
