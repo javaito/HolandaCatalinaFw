@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.utils.Introspection;
 
 import java.util.Collection;
@@ -26,10 +27,10 @@ public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){
-                throw new RuntimeException("Sum aggregate function fail", ex);
+                throw new HCJFRuntimeException("Sum aggregate function fail", ex);
             }
         } else {
-            throw new IllegalArgumentException("Sum aggregate function need at leas one parameter");
+            throw new HCJFRuntimeException("Sum aggregate function need at leas one parameter");
         }
         return result;
     }

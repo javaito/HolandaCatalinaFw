@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
@@ -36,14 +37,14 @@ public class ReferenceFunctionLayer extends BaseQueryFunctionLayer implements Qu
         try{
             resourceName = (String)checkSize(3, parameters)[0];
         } catch (Exception ex){
-            throw new IllegalArgumentException("Unrecognized resource name");
+            throw new HCJFRuntimeException("Unrecognized resource name");
         }
 
         if(parameters.length >= 3) {
             try {
                 referenceField = (String) parameters[1];
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Unrecognized reference field");
+                throw new HCJFRuntimeException("Unrecognized reference field");
             }
             param = parameters[2];
         } else {

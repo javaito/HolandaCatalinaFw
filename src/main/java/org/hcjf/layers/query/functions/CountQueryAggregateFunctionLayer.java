@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.utils.Introspection;
 
@@ -41,7 +42,7 @@ public class CountQueryAggregateFunctionLayer extends BaseQueryAggregateFunction
                     ((Map)row).put(alias, countValue);
                 }
             } catch (Exception ex){
-                throw new RuntimeException("Count aggregate function fail", ex);
+                throw new HCJFRuntimeException("Count aggregate function fail", ex);
             }
         }
         return result;

@@ -1,5 +1,7 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -24,10 +26,10 @@ public class MinAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){
-                throw new RuntimeException("Sum aggregate function fail", ex);
+                throw new HCJFRuntimeException("Min aggregate function fail", ex);
             }
         } else {
-            throw new IllegalArgumentException("Sum aggregate function need at leas one parameter");
+            throw new HCJFRuntimeException("Min aggregate function need at leas one parameter");
         }
         return result;
     }

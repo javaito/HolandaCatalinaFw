@@ -1,5 +1,6 @@
 package org.hcjf.layers;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -44,7 +45,7 @@ public class LayerSearchTest {
                     layer -> layer.getImplName().contains("-c"));
             Assert.fail();
         } catch (Exception ex){
-            Assert.assertTrue(ex instanceof IllegalArgumentException);
+            Assert.assertTrue(ex instanceof HCJFRuntimeException);
         }
     }
 

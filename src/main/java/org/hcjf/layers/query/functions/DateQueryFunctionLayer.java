@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
 import java.time.*;
@@ -92,7 +93,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
                     ZoneId zoneId = ZoneId.of((String)parameters[0]);
                     result = Date.from(ZonedDateTime.now(zoneId).toInstant());
                 } else {
-                    throw new IllegalArgumentException();
+                    throw new HCJFRuntimeException("Illegal parameters length");
                 }
                 break;
             }
@@ -132,11 +133,11 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
                     ZonedDateTime zonedDateTime = getZonedDateTimeFromDate(1, parameters);
                     result = DateTimeFormatter.ofPattern(pattern).format(zonedDateTime);
                 } else {
-                    throw new IllegalArgumentException();
+                    throw new HCJFRuntimeException("Illegal parameters length");
                 }
                 break;
             }
-            default: throw new IllegalArgumentException("Date function not found: " + functionName);
+            default: throw new HCJFRuntimeException("Date function not found: %s", functionName);
         }
         return result;
     }
@@ -155,7 +156,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             ZoneId zoneId = ZoneId.of((String)parameters[0]);
             result = ZonedDateTime.ofInstant(((Date)parameters[0]).toInstant(), zoneId);
         } else {
-            throw new IllegalArgumentException();
+            throw new HCJFRuntimeException("Illegal parameters length");
         }
         return result;
     }
@@ -167,7 +168,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         } else if(parameters.length == 2) {
             result = Duration.between(((Date)parameters[0]).toInstant(), ((Date)parameters[0]).toInstant());
         } else {
-            throw new IllegalArgumentException();
+            throw new HCJFRuntimeException("Illegal parameters length");
         }
         return result;
     }

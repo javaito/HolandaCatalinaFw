@@ -1,10 +1,12 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
 public interface NumberSetFunction {
@@ -95,7 +97,7 @@ public interface NumberSetFunction {
                     evalResult = applyFunction(evalResult, secondParameter, BigDecimal::remainder);
                 }
             } else {
-                throw new IllegalArgumentException();
+                throw new HCJFRuntimeException("Illegal argument into the math expression: %s", Objects.toString(parameter));
             }
         }
 
@@ -115,7 +117,7 @@ public interface NumberSetFunction {
             } else if(comparator.equals(SystemProperties.get(SystemProperties.Query.Function.MATH_LESS_THAN_OR_EQUALS))) {
                 result = firstValue.doubleValue() <= evalResult.doubleValue();
             } else {
-                throw new IllegalArgumentException();
+                throw new HCJFRuntimeException("Illegal comparator into the meth expression: %s", Objects.toString(comparator));
             }
         } else {
             result = evalResult;

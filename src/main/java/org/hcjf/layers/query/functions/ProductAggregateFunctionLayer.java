@@ -1,5 +1,7 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -24,10 +26,10 @@ public class ProductAggregateFunctionLayer extends BaseQueryAggregateFunctionLay
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){
-                throw new RuntimeException("Product aggregate function fail", ex);
+                throw new HCJFRuntimeException("Product aggregate function fail", ex);
             }
         } else {
-            throw new IllegalArgumentException("Product aggregate function need at leas one parameter");
+            throw new HCJFRuntimeException("Product aggregate function need at leas one parameter");
         }
         return result;
     }

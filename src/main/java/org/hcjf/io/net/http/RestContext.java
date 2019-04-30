@@ -2,6 +2,7 @@ package org.hcjf.io.net.http;
 
 import com.google.gson.*;
 import org.hcjf.encoding.MimeType;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CreateLayerInterface;
 import org.hcjf.layers.crud.DeleteLayerInterface;
@@ -86,7 +87,7 @@ public class RestContext extends Context {
                     Queryable queryable = Query.compile(request.getParameter(DEFAULT_QUERY_PARAMETER));
                     jsonElement = gson.toJsonTree(Query.evaluate(queryable));
                 } else {
-                    throw new UnsupportedOperationException("Expected http parameter 'q' or id context");
+                    throw new HCJFRuntimeException("Expected http parameter 'q' or id context");
                 }
             } else {
                 ReadLayerInterface readLayerInterface = Layers.get(ReadLayerInterface.class, resourceName);
@@ -110,7 +111,7 @@ public class RestContext extends Context {
                     }
                     jsonElement = queriesResult;
                 } else {
-                    throw new UnsupportedOperationException("Unsupported http method: " + method.toString());
+                    throw new HCJFRuntimeException("Unsupported POST method configuration");
                 }
             } else {
                 // This method call by default to create layer interface implementation.
@@ -137,7 +138,7 @@ public class RestContext extends Context {
                 jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
             }
         } else {
-            throw new UnsupportedOperationException("Unsupported http method: " + method.toString());
+            throw new HCJFRuntimeException("Unsupported http method: %s", method.toString());
         }
 
         HttpResponse response = new HttpResponse();

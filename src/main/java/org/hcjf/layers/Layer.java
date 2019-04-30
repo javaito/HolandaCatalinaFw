@@ -1,5 +1,6 @@
 package org.hcjf.layers;
 
+import org.hcjf.errors.HCJFSecurityException;
 import org.hcjf.layers.plugins.PluginLayer;
 import org.hcjf.layers.storage.StorageLayerInterface;
 import org.hcjf.log.debug.Agent;
@@ -189,15 +190,15 @@ public abstract class Layer implements LayerInterface {
                 Access access = checkAccess();
 
                 if (access == null) {
-                    throw new SecurityException("Access null");
+                    throw new HCJFSecurityException("Access null");
                 }
                 if (!access.granted) {
                     if (access.message != null && access.getThrowable() != null) {
-                        throw new SecurityException(access.getMessage(), access.getThrowable());
+                        throw new HCJFSecurityException(access.getMessage(), access.getThrowable());
                     } else if (access.getMessage() != null) {
-                        throw new SecurityException(access.getMessage());
+                        throw new HCJFSecurityException(access.getMessage());
                     } else if (access.getThrowable() != null) {
-                        throw new SecurityException(access.getThrowable());
+                        throw new HCJFSecurityException("Empty message", access.getThrowable());
                     }
                 }
 

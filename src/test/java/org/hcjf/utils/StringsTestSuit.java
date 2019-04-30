@@ -160,4 +160,20 @@ public class StringsTestSuit {
         Object deductedValue = Strings.deductInstance(value);
         Assert.assertEquals(deductedValue.getClass(), Double.class);
     }
+
+    @Test
+    public void testNearFrom() {
+        String value = "Holanda Catalina";
+        String nearOffValue = Strings.getNearFrom(value, 4, 2);
+        Assert.assertEquals(nearOffValue, "land");
+
+        nearOffValue = Strings.getNearFrom(value, 4, 50);
+        Assert.assertEquals(nearOffValue, value);
+
+        nearOffValue = Strings.getNearFrom(value, 0, 4);
+        Assert.assertEquals(nearOffValue, "Hola");
+
+        nearOffValue = Strings.getNearFrom(value, value.length(), 4);
+        Assert.assertEquals(nearOffValue, "lina");
+    }
 }

@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.errors.HCJFRuntimeException;
+
 /**
  * Compare two object and return true if the objects are equals and false in other ways.
  * @author javaito
@@ -46,7 +48,7 @@ public class Equals extends FieldEvaluator {
                 result = leftValue.equals(rightValue) || rightValue.equals(leftValue);
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Equals evaluator fail", ex);
+            throw new HCJFRuntimeException("Equals evaluator fail", ex);
         }
         return result;
     }

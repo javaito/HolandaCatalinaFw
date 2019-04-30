@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
 import java.lang.reflect.Array;
@@ -63,7 +64,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 } else if(checkSize(2, parameters)[0].getClass().isArray()) {
                     result = Arrays.asList(parameters[0]).contains(parameters[1]);
                 } else {
-                    throw new IllegalArgumentException("Contains functions is only for collections and arrays");
+                    throw new HCJFRuntimeException("Contains functions is only for collections and arrays");
                 }
                 break;
             }
@@ -75,7 +76,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 } else if(parameters[0].getClass().isArray()) {
                     firstCollection = Arrays.asList(parameters[0]);
                 } else {
-                    throw new IllegalArgumentException("The first parameter for contains all function can only be a collection or an array");
+                    throw new HCJFRuntimeException("The first parameter for contains all function can only be a collection or an array");
                 }
 
                 if(parameters[1] instanceof Collection) {
@@ -83,7 +84,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 } else if(parameters[1].getClass().isArray()) {
                     secondCollection = Arrays.asList(parameters[1]);
                 } else {
-                    throw new IllegalArgumentException("The second parameter for contains all function can only be a collection or an array");
+                    throw new HCJFRuntimeException("The second parameter for contains all function can only be a collection or an array");
                 }
 
                 result = firstCollection.containsAll(secondCollection);
@@ -93,7 +94,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 if(checkSize(2, parameters)[0] instanceof Map) {
                     result = ((Map)parameters[0]).containsKey(parameters[1]);
                 } else {
-                    throw new IllegalArgumentException("Contains key function is only for maps");
+                    throw new HCJFRuntimeException("Contains key function is only for maps");
                 }
                 break;
             }
@@ -103,7 +104,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 if(checkSize(2, parameters)[0] instanceof Map) {
                     map = (Map) parameters[0];
                 } else {
-                    throw new IllegalArgumentException("The first parameter for contains all keys function can only be a map");
+                    throw new HCJFRuntimeException("The first parameter for contains all keys function can only be a map");
                 }
 
                 if(parameters[1] instanceof Collection) {
@@ -111,7 +112,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 } else if(parameters[1].getClass().isArray()) {
                     collection = Arrays.asList(parameters[1]);
                 } else {
-                    throw new IllegalArgumentException("The second parameter for contains all keys function can only be a collection or an array");
+                    throw new HCJFRuntimeException("The second parameter for contains all keys function can only be a collection or an array");
                 }
 
                 result = map.keySet().containsAll(collection);

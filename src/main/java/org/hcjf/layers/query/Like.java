@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
 import java.util.regex.Pattern;
@@ -47,13 +48,13 @@ public class Like extends FieldEvaluator {
                         result = stringFieldValue.toUpperCase().contains(stringValue.toUpperCase());
                     }
                 } else {
-                    throw new IllegalArgumentException("The right value in the like operation must be a string or pattern");
+                    throw new HCJFRuntimeException("The right value in the like operation must be a string or pattern");
                 }
             } else {
-                throw new IllegalArgumentException("The left value in the like operation must be a string");
+                throw new HCJFRuntimeException("The left value in the like operation must be a string");
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Like evaluator fail", ex);
+            throw new HCJFRuntimeException("Like evaluator fail", ex);
         }
 
         return result;

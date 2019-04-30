@@ -1,6 +1,7 @@
 package org.hcjf.layers;
 
 import org.hcjf.cloud.Cloud;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.distributed.DistributedLayer;
@@ -106,7 +107,7 @@ public final class Layers {
                     instance.instanceCache.put(clazz, result);
                 }
             } catch (Exception ex) {
-                throw new IllegalArgumentException("Unable to create layer instance", ex);
+                throw new HCJFRuntimeException("Unable to create layer instance", ex);
             }
         }
         return result;
@@ -222,8 +223,7 @@ public final class Layers {
         }
 
         if(result == null) {
-            throw new IllegalArgumentException("Layer implementation not found: "
-                    + layerClass + "@" + implName);
+            throw new HCJFRuntimeException("Layer implementation not found: %s@%s", layerClass, implName);
         }
 
         return result;
@@ -254,7 +254,7 @@ public final class Layers {
         Set<L> result = match(layerClass, matcher, true);
 
         if(result.isEmpty()) {
-            throw new IllegalArgumentException("Layer implementation not found");
+            throw new HCJFRuntimeException("Layer implementation not found");
         }
 
         return result.iterator().next();
@@ -319,14 +319,12 @@ public final class Layers {
         Class<? extends Layer> layerClass = layerInstance.getClass();
 
         if(layerClass.isAnonymousClass() && !layerInstance.isStateful()) {
-            throw new IllegalArgumentException("Unable to publish anonymous and stateless class," +
-                    " to publish anonymous class its must by stateful");
+            throw new HCJFRuntimeException("Unable to publish anonymous and stateless class, to publish anonymous class its must by stateful");
         }
 
         String implName = layerInstance.getImplName();
         if(implName == null) {
-            throw new IllegalArgumentException("Unable to publish " + layerClass +
-                    " because the implementation is not name declared");
+            throw new HCJFRuntimeException("Unable to publish %s because the implementation is not name declared", layerClass);
         }
 
         for(Class<? extends LayerInterface> layerInterfaceClass : getLayerInterfaceClass(layerClass)) {
@@ -416,15 +414,14 @@ public final class Layers {
      */
     public static synchronized String publishLayer(Class<? extends Layer> layerClass) {
         if(layerClass == null) {
-            throw new IllegalArgumentException("Unable to publish a null class");
+            throw new HCJFRuntimeException("Unable to publish a null class");
         }
 
         Layer layerInstance;
         try {
             layerInstance = layerClass.getConstructor().newInstance();
         } catch(Exception ex){
-            throw new IllegalArgumentException("Unable to publish " + layerClass +
-                    " because fail to create a new instance", ex);
+            throw new HCJFRuntimeException("Unable to publish %s because fail to create a new instance", ex, layerClass);
         }
 
         return publishLayer(layerInstance);
@@ -445,7 +442,7 @@ public final class Layers {
                         "The alias %s for the instance %s will be overwritten for instance of %s", alias,
                         initialImplementation.getClass().getName(), layerInstance.getClass().getName());
             } else {
-                throw new SecurityException("This implementation " + initialImplementation.getClass().toString() + " is not overwritable");
+                throw new HCJFRuntimeException("This implementation %s is not over-writable", initialImplementation.getClass().toString());
             }
         }
     }
@@ -473,12 +470,12 @@ public final class Layers {
 
             pluginGroupName = pluginAttributes.getValue(PLUGIN_GROUP_NAME);
             if(pluginGroupName == null) {
-                throw new IllegalArgumentException("Plugin group name is not specified into the manifest file (Plugin-Group-Name)");
+                throw new HCJFRuntimeException("Plugin group name is not specified into the manifest file (Plugin-Group-Name)");
             }
 
             pluginName = pluginAttributes.getValue(PLUGIN_NAME);
             if(pluginName == null) {
-                throw new IllegalArgumentException("Plugin name is not specified into the manifest file (Plugin-Name)");
+                throw new HCJFRuntimeException("Plugin name is not specified into the manifest file (Plugin-Name)");
             }
 
             pluginVersion = Version.build(pluginAttributes.getValue(PLUGIN_VERSION));
@@ -564,8 +561,7 @@ public final class Layers {
         }
 
         if(result.isEmpty()) {
-            throw new IllegalArgumentException("Unable to publish " + layerClass +
-                    " because must implement a son of LayerClass");
+            throw new HCJFRuntimeException("Unable to publish %s because must implement a son of LayerClass", layerClass);
         }
 
         return result;

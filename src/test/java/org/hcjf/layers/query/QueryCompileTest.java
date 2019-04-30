@@ -23,7 +23,6 @@ public class QueryCompileTest {
 
     @Test()
     public void testCompile() {
-
         try {
             Query query = Query.compile("SELECT 2+2*field1 as suma FROM namespace.resource WHERE resource.field != log(5)+2 AND resource.field = '2017-07-07 22:15:32'");
             query = Query.compile(query.toString());

@@ -35,6 +35,7 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION = "hcjf.math.connector.regular.expression";
     public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
     public static final String HCJF_DEFAULT_LRU_MAP_SIZE = "hcjf.default.lru.map.size";
+    public static final String HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG = "hcjf.default.exception.message.tag";
 
     public static final class Locale {
         public static final String LOG_TAG = "hcjf.locale.log.tag";
@@ -491,6 +492,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/%=<>!].*");
         defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))|(?=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))");
         defaults.put(HCJF_DEFAULT_LRU_MAP_SIZE, "1000");
+        defaults.put(HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG, "IMPL");
 
         defaults.put(Locale.DEFAULT_LOCALE, java.util.Locale.getDefault().toLanguageTag());
         defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, DefaultLocaleLayer.class.getName());

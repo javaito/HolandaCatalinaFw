@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.errors.HCJFRuntimeException;
+
 /**
  * Evaluate if the field's value of the instance is greater than the
  * parameter value.
@@ -67,15 +69,13 @@ public class GreaterThan extends FieldEvaluator {
                         result = ((Comparable)leftValue).compareTo(rightValue) > 0;
                     }
                 } else {
-                    throw new IllegalArgumentException("Incompatible types between values and field's value: " +
-                            leftValue.getClass() + " != " + rightValue.getClass());
+                    throw new HCJFRuntimeException("Incompatible types between values and field's value: %s != %s", leftValue.getClass(), rightValue.getClass());
                 }
             } else {
-                throw new IllegalArgumentException("Unsupported evaluator type: [" +
-                        leftValue.getClass() + ", " + rightValue.getClass() + "]");
+                throw new HCJFRuntimeException("Unsupported evaluator type: [%s, %s]", leftValue.getClass(), rightValue.getClass());
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Greater than evaluator fail", ex);
+            throw new HCJFRuntimeException("Greater than evaluator fail", ex);
         }
         return result;
     }

@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 
 /**
@@ -20,7 +21,7 @@ public abstract class BaseFunctionLayer extends Layer {
      */
     protected Object[] checkSize(int size, Object... parameters) {
         if(parameters.length != size) {
-            throw new IllegalArgumentException("Illegal parameters length");
+            throw new HCJFRuntimeException("Illegal parameters length");
         }
         return parameters;
     }

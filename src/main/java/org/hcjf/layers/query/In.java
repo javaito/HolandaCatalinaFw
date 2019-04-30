@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.errors.HCJFRuntimeException;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -34,7 +36,7 @@ public class In extends FieldEvaluator {
             } else if(rightValue.getClass().isArray()) {
                 collection = Arrays.asList((Object[])rightValue);
             } else {
-                throw new RuntimeException("The right value for the in operation must be a collection, map or array");
+                throw new HCJFRuntimeException("In evaluator fail, right value must be a collection, map or array");
             }
 
             if(leftValue instanceof Number) {
@@ -48,7 +50,7 @@ public class In extends FieldEvaluator {
                 result = collection.contains(leftValue);
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException("In evaluator fail", ex);
+            throw new HCJFRuntimeException("In evaluator fail", ex);
         }
 
         return result;

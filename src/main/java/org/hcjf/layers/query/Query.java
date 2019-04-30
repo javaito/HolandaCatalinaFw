@@ -1,10 +1,12 @@
 package org.hcjf.layers.query;
 
 import org.hcjf.bson.BsonDocument;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
+import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -425,7 +427,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                 comparable2 = consumer.get(o2, (QueryParameter) orderField, dataSource);
                             }
                         } catch (ClassCastException ex) {
-                            throw new IllegalArgumentException("Order field must be comparable");
+                            throw new HCJFRuntimeException("Order field must be comparable");
                         }
 
                         if (comparable1 == null ^ comparable2 == null) {
@@ -1217,7 +1219,20 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Collections of joinable map instances.
      */
     public static Collection<JoinableMap> evaluate(Queryable queryable) {
-        return queryable.evaluate(new Queryable.ReadableDataSource());
+        Collection<JoinableMap> result;
+        Query query;
+        if(queryable instanceof  Query) {
+            query = (Query) queryable;
+        } else {
+            query = ((ParameterizedQuery)queryable).getQuery();
+        }
+
+        if(query.getJoins().isEmpty()) {
+            result = Layers.get(ReadRowsLayerInterface.class, queryable.getResourceName()).readRows(queryable);
+        } else {
+            result = queryable.evaluate(new Queryable.ReadableDataSource());
+        }
+        return result;
     }
 
     /**
@@ -1328,8 +1343,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             }
         } else {
-            MatchResult mr = matcher.toMatchResult();
-            throw new IllegalArgumentException();
+            String value = groups.get(startGroup);
+            int place = Strings.getNoMatchPlace(matcher, groups.get(startGroup));
+            String nearFrom = Strings.getNearFrom(value, place, 5);
+            throw new HCJFRuntimeException("Query match fail near from ( '...%s...' ), query body: '%s'", nearFrom, value);
         }
 
         return query;
@@ -1491,7 +1508,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 } else if (operator.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.SMALLER_THAN_OR_EQUALS))) {
                     evaluator = new SmallerThanOrEqual(leftValue, rightValue);
                 } else {
-                    throw new IllegalArgumentException("Unsupported operator '" + operator + "'");
+                    throw new HCJFRuntimeException("Unsupported operator '%s', near '%s'", operator, definition);
                 }
             }
 
@@ -1565,13 +1582,13 @@ public class Query extends EvaluatorCollection implements Queryable {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.DECIMAL_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
-                throw new IllegalArgumentException("Unable to parse decimal number");
+                throw new HCJFRuntimeException("Unable to parse decimal number");
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.SCIENTIFIC_NOTATION_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
-                throw new IllegalArgumentException("Unable to parse scientific number");
+                throw new HCJFRuntimeException("Unable to parse scientific number");
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {

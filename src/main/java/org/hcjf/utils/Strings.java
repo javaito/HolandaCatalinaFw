@@ -4,6 +4,7 @@ import org.hcjf.properties.SystemProperties;
 
 import java.text.ParseException;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -701,6 +702,46 @@ public final class Strings {
             for(String tag : tags.split(ARGUMENT_SEPARATOR)) {
                 result.put(tag.trim(), message);
             }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the place where the regex is no matching with the value.
+     * @param matcher Matcher instance.
+     * @param value Value to found.
+     * @return Returns the index into the value where the regex is not matching.
+     */
+    public static final int getNoMatchPlace(Matcher matcher, String value) {
+        int result = 0;
+        for (int i = value.length(); i > 0; --i) {
+            Matcher region = matcher.region(0, i);
+            if (region.matches() || region.hitEnd()) {
+                result = i;
+                break;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns a shorted string that the original centered into the position parameter and with
+     * @param value
+     * @param position
+     * @param length
+     * @return
+     */
+    public static final String getNearFrom(String value, int position, int length) {
+        String result = null;
+        if(value != null) {
+            position = position < 0 ? 0 : position;
+            position = position > value.length() ? value.length() : position;
+            length = length == 0 ? 1 : length;
+            int start = position - Math.abs(length);
+            int end = position + Math.abs(length);
+            start = start < 0 ? 0 : start;
+            end = end > value.length() ? value.length() : end;
+            result = value.substring(start, end);
         }
         return result;
     }

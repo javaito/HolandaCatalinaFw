@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.QueryAggregateFunctionLayerInterface;
@@ -209,7 +210,7 @@ public interface Queryable extends BsonParcelable {
                         } else if(instance.getClass().isArray()) {
                             result = Array.get(index, index);
                         } else {
-                            throw new IllegalArgumentException("The array is only for collection or array values");
+                            throw new HCJFRuntimeException("The array is only for collection or array values");
                         }
                     } else {
                         if (instance instanceof JoinableMap) {
@@ -225,7 +226,7 @@ public interface Queryable extends BsonParcelable {
                         }
                     }
                 } catch (Exception ex) {
-                    throw new IllegalArgumentException("Unable to obtain order field value", ex);
+                    throw new HCJFRuntimeException("Unable to obtain order field value", ex);
                 }
             } else if(queryParameter instanceof Query.QueryFunction) {
                 result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);

@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
@@ -49,10 +50,10 @@ public class MeanAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer 
                     ((Map)row).put(alias, functionResult[1]);
                 }
             } catch (Exception ex){
-                throw new RuntimeException("Mean aggregate function fail", ex);
+                throw new HCJFRuntimeException("Mean aggregate function fail", ex);
             }
         } else {
-            throw new IllegalArgumentException("Mean aggregate function need at leas two parameter");
+            throw new HCJFRuntimeException("Mean aggregate function need at leas two parameter");
         }
         return result;
     }
