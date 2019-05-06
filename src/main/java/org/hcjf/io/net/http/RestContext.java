@@ -12,6 +12,7 @@ import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
@@ -225,10 +226,10 @@ public class RestContext extends Context {
             if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&
                     !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)) &&
                     !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD))) {
-                body = createBody(jsonObject);
+                body = JsonUtils.createBody(jsonObject);
             } else {
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD))) {
-                    body = createBody(jsonObject.getAsJsonObject(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)));
+                    body = JsonUtils.createBody(jsonObject.getAsJsonObject(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)));
                 }
 
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD))) {
@@ -256,7 +257,7 @@ public class RestContext extends Context {
                 JsonObject queryJsonObject = element.getAsJsonObject();
                 ParameterizedQuery parameterizedQuery = Query.compile(queryJsonObject.get(Fields.VALUE_FIELD).getAsString()).getParameterizedQuery();
                 if(queryJsonObject.has(Fields.PARAMS_FIELD)) {
-                    for (Object parameter : createList(queryJsonObject.get(Fields.PARAMS_FIELD).getAsJsonArray())) {
+                    for (Object parameter : JsonUtils.createList(queryJsonObject.get(Fields.PARAMS_FIELD).getAsJsonArray())) {
                         parameterizedQuery.add(parameter);
                     }
                 }
@@ -265,56 +266,6 @@ public class RestContext extends Context {
                 result = Query.compile(element.getAsString());
             }
             return result;
-        }
-
-        /**
-         * Creates the body object from a json object.
-         * @param jsonObject Json object instance.
-         * @return Map with all the fields of the object.
-         */
-        private Map<String,Object> createBody(JsonObject jsonObject) {
-            Map<String,Object> result = new HashMap<>();
-            for(String fieldName : jsonObject.keySet()) {
-                result.put(fieldName, createObject(jsonObject.get(fieldName)));
-            }
-            return result;
-        }
-
-        /**
-         * Creates the list instance from a json array.
-         * @param array Json array instance.
-         * @return List instance.
-         */
-        private List<Object> createList(JsonArray array) {
-            List<Object> result = new ArrayList<>();
-            for(JsonElement currentElement : array) {
-                result.add(createObject(currentElement));
-            }
-            return result;
-        }
-
-        /**
-         * Creates the object instance from a json element.
-         * @param element Json element.
-         * @return Object instance.
-         */
-        private Object createObject(JsonElement element) {
-            Object value;
-            if(element instanceof JsonObject) {
-                value = createBody((JsonObject) element);
-            } else if(element instanceof JsonArray) {
-                value = createList((JsonArray) element);
-            } else if(element instanceof JsonPrimitive && ((JsonPrimitive)element).isString()) {
-                value = Strings.deductInstance(element.getAsString());
-
-                //This control is to save the case when the value into the json file is marked with quotes
-                if(Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
-                    value = value.toString();
-                }
-            } else {
-                value = Strings.deductInstance(element.getAsString());
-            }
-            return value;
         }
 
         /**

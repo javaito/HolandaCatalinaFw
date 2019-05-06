@@ -1210,10 +1210,15 @@ public final class NetService extends Service<NetServiceConsumer> {
                         consumer.onDisconnect(netPackage);
                         break;
                     case READ:
-
+                        if(netPackage.getSession() != null && netPackage.getPayload() != null) {
+                            netPackage.getSession().addIngressPackage(netPackage.getPayload().length);
+                        }
                         consumer.onRead(netPackage);
                         break;
                     case WRITE:
+                        if(netPackage.getSession() != null && netPackage.getPayload() != null) {
+                            netPackage.getSession().addEgressPackage(netPackage.getPayload().length);
+                        }
                         consumer.onWrite(netPackage);
                         break;
                 }
