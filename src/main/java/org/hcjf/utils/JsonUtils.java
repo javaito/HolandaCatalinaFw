@@ -10,13 +10,23 @@ import java.util.Map;
 
 public class JsonUtils {
 
+    private static final JsonParser jsonParser;
     private static final Gson gson;
 
     static {
+        jsonParser = new JsonParser();
         gson = new GsonBuilder().setPrettyPrinting().setDateFormat(
                 SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
     }
 
+    /**
+     * Creates a instance from a json definition.
+     * @param json Json definition.
+     * @return Object instance.
+     */
+    public static Object createObject(String json) {
+        return createObject(jsonParser.parse(json));
+    }
 
     /**
      * Creates the body object from a json object.
