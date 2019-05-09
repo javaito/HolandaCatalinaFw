@@ -13,16 +13,21 @@ public abstract class BaseFunctionLayer extends Layer {
     }
 
     /**
-     * Check the number of parameter before call the specific function.
-     * @param size Parameters size to check.
-     * @param parameters Original array of parameters.
-     * @return Return the same original array of parameters.
-     * @throws IllegalArgumentException if the size to check is not equals to the length of original parameters array.
+     * This utils method returns a specific parameter and cast it with the expected type in the invoker.
+     * @param index Argument index.
+     * @param parameters Arguments array.
+     * @param <O> Expected data type for the invoker.
+     * @return Parameter value.
      */
-    protected Object[] checkSize(int size, Object... parameters) {
-        if(parameters.length != size) {
-            throw new HCJFRuntimeException("Illegal parameters length");
+    protected <O extends Object> O getParameter(int index, Object... parameters) {
+        try {
+            return (O) parameters[index];
+        } catch (ClassCastException ex) {
+            throw new HCJFRuntimeException("Illegal argument type, %d° argument", ex, index);
+        } catch (IndexOutOfBoundsException ex) {
+            throw new HCJFRuntimeException("Wrong number of arguments, getting %d° argument", ex, index);
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("Unexpected error getting %d° argument", ex, index);
         }
-        return parameters;
     }
 }

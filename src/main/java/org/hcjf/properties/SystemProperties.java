@@ -207,6 +207,8 @@ public final class SystemProperties extends Properties {
         }
 
         public static final class Http {
+            public static final String INPUT_LOG_ENABLED = "hcjf.net.http.server.input.log.enabled";
+            public static final String OUTPUT_LOG_ENABLED = "hcjf.net.http.server.output.log.enabled";
             public static final String LOG_TAG = "hcjf.net.http.server.log.tag";
             public static final String SERVER_NAME = "hcjf.net.http.server.name";
             public static final String RESPONSE_DATE_HEADER_FORMAT_VALUE = "hcjf.net.http.response.date.header.format.value";
@@ -621,6 +623,8 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Net.Messages.LOG_TAG, "MESSAGES");
 
+        defaults.put(Net.Http.INPUT_LOG_ENABLED, "false");
+        defaults.put(Net.Http.OUTPUT_LOG_ENABLED, "false");
         defaults.put(Net.Http.LOG_TAG, "HTTP_SERVER");
         defaults.put(Net.Http.SERVER_NAME, "HCJF Web Server");
         defaults.put(Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE, "EEE, dd MMM yyyy HH:mm:ss z");

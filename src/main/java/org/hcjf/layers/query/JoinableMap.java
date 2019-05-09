@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import com.google.common.collect.LinkedListMultimap;
+import com.google.gson.internal.LinkedTreeMap;
 import org.hcjf.bson.BsonArray;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.utils.Strings;
@@ -23,24 +25,28 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     private final Set<String> resources;
     private final Map<String, Object> mapInstance;
     private Set<String> staticFields;
+    private boolean purged = false;
     private Map<String, Object> staticFieldsMap;
 
     public JoinableMap() {
         this.resources = new TreeSet<>();
-        this.mapInstance = new HashMap<>();
+        this.mapInstance = new LinkedTreeMap<>();
     }
 
     public JoinableMap(String resourceName) {
         this.resources = new TreeSet<>();
         this.resources.add(resourceName);
-        this.mapInstance = new HashMap<>();
+        this.mapInstance = new LinkedHashMap<>();
     }
 
     public JoinableMap(Map<String, Object> mapInstance, String... fields) {
         this.resources = new TreeSet<>();
-        this.mapInstance = new HashMap<>();
+        this.mapInstance = new LinkedHashMap<>();
         if(fields != null && fields.length > 0) {
-            staticFields = Set.of(fields);
+            staticFields = new LinkedHashSet<>();
+            for(String field : fields) {
+                staticFields.add(field);
+            }
             staticFieldsMap = new HashMap<>();
         }
         for(String key : mapInstance.keySet()) {
@@ -85,11 +91,11 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
      */
     @Override
     public void purge() {
-        if(staticFields != null) {
+        if(staticFieldsMap != null) {
             mapInstance.clear();
             mapInstance.putAll(staticFieldsMap);
             staticFieldsMap = null;
-            staticFields = null;
+            purged = true;
         }
     }
 
@@ -277,7 +283,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
 
     @Override
     public Set<String> keySet() {
-        return mapInstance.keySet();
+        return purged ? staticFields : mapInstance.keySet();
     }
 
     @Override
@@ -287,7 +293,16 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
 
     @Override
     public Set<Entry<String, Object>> entrySet() {
-        return mapInstance.entrySet();
+        Set<Entry<String, Object>> result;
+        if(purged) {
+            result = new LinkedHashSet();
+            for (String key : keySet()) {
+                result.add(new JoinableEntry<>(key, get(key)));
+            }
+        } else {
+            result = mapInstance.entrySet();
+        }
+        return result;
     }
 
     @Override
@@ -361,4 +376,31 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
      * whit other instance or the set is domains information.
      */
     public static final class GroupableSet extends HashSet<Object> {}
+
+    public static final class JoinableEntry<K, V> implements Map.Entry<K, V> {
+        private final K key;
+        private V value;
+
+        public JoinableEntry(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public K getKey() {
+            return key;
+        }
+
+        @Override
+        public V getValue() {
+            return value;
+        }
+
+        @Override
+        public V setValue(V value) {
+            V old = this.value;
+            this.value = value;
+            return old;
+        }
+    }
 }

@@ -17,6 +17,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
     private static final String IS_NUMBER = "isNumber";
     private static final String IF = "if";
     private static final String EQUALS = "equals";
+    private static final String NEW = "new";
 
     public ObjectQueryFunction() {
         super(SystemProperties.get(SystemProperties.Query.Function.OBJECT_FUNCTION_NAME));
@@ -29,6 +30,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         addFunctionName(IS_NUMBER);
         addFunctionName(IF);
         addFunctionName(EQUALS);
+        addFunctionName(NEW);
     }
 
     @Override
@@ -50,13 +52,13 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 Boolean condition;
                 Object ifValue;
                 Object elseValue = null;
-                try {
-                    condition = (Boolean) checkSize(3, parameters)[0];
-                    ifValue = parameters[1];
-                    elseValue = parameters[2];
-                } catch (Exception ex) {
-                    condition = (Boolean) checkSize(2, parameters)[0];
-                    ifValue = parameters[1];
+                if(parameters.length == 2) {
+                    condition = getParameter(0, parameters);
+                    ifValue = getParameter(1, parameters);
+                    elseValue = getParameter(2, parameters);
+                } else {
+                    condition = getParameter(0, parameters);
+                    ifValue = getParameter(1, parameters);
                 }
                 if(condition) {
                     result = ifValue;
@@ -66,27 +68,31 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 break;
             }
             case(IS_COLLECTION): {
-                result = checkSize(1, parameters)[0] != null && parameters[0] instanceof Collection;
+                result = getParameter(0, parameters) != null && getParameter(0, parameters) instanceof Collection;
                 break;
             }
             case(IS_MAP): {
-                result = checkSize(1, parameters)[0] != null && parameters[0] instanceof Map;
+                result = getParameter(0, parameters) != null && getParameter(0, parameters) instanceof Map;
                 break;
             }
             case(IS_DATE): {
-                result = checkSize(1, parameters)[0] != null && parameters[0] instanceof Date;
+                result = getParameter(0, parameters) != null && getParameter(0, parameters) instanceof Date;
                 break;
             }
             case(IS_STRING): {
-                result = checkSize(1, parameters)[0] != null && parameters[0] instanceof String;
+                result = getParameter(0, parameters) != null && getParameter(0, parameters) instanceof String;
                 break;
             }
             case(IS_NUMBER): {
-                result = checkSize(1, parameters)[0] != null && parameters[0] instanceof Number;
+                result = getParameter(0, parameters) != null && getParameter(0, parameters) instanceof Number;
                 break;
             }
             case(EQUALS): {
-                result = Objects.equals(checkSize(2, parameters)[0], parameters[1]);
+                result = Objects.equals(getParameter(0, parameters), getParameter(1, parameters));
+                break;
+            }
+            case(NEW): {
+                result = getParameter(0, parameters);
                 break;
             }
         }

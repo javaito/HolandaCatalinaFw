@@ -1,14 +1,14 @@
 package org.hcjf.io.net.kubernetes;
 
-import com.google.gson.JsonObject;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 import io.kubernetes.client.ApiClient;
+import io.kubernetes.client.ApiException;
 import io.kubernetes.client.Configuration;
-import io.kubernetes.client.apis.CoreV1Api;
+import io.kubernetes.client.apis.*;
 import io.kubernetes.client.models.*;
 import io.kubernetes.client.util.Config;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
+import org.hcjf.layers.crud.CreateLayerInterface;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
@@ -16,12 +16,31 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterface {
+public class KubernetesSpyResource extends Layer implements CreateLayerInterface<Map<String,Object>>, ReadRowsLayerInterface {
+
+    private static final class Kinds {
+        private static final String JOB = "Job";
+    }
+
+    private static final class Fields {
+
+        private static final String KIND = "kind";
+
+        private static final class Job {
+            private static final String API_VERSION = "batch/v1";
+            private static final String NAME = "name";
+            private static final String RESTART_POLICY = "restartPolicy";
+        }
+
+        private static final class Containers {
+            private static final String NAME = "containerName";
+            private static final String IMAGE = "containerImage";
+            private static final String COMMAND = "containerCommand";
+            private static final String ARGS = "containerArgs";
+        }
+    }
 
     public static final String NAME = "system_k8s";
     public static final String CONFIG_MAP = "system_k8s_config_map";
@@ -41,6 +60,7 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
     public static final String SERVICE = "system_k8s_service";
 
     private final ApiClient client;
+    private final BatchV1Api batchApi;
     private final CoreV1Api api;
 
     public KubernetesSpyResource() {
@@ -52,6 +72,7 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
         }
         Configuration.setDefaultApiClient(client);
         this.api = new CoreV1Api();
+        this.batchApi = new BatchV1Api();
     }
 
     @Override
@@ -73,6 +94,61 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
                 SERVICE_ACCOUNT,
                 SERVICE
         );
+    }
+
+    @Override
+    public Map<String, Object> create(Map<String, Object> object) {
+        Map<String,Object> result;
+        if(!object.containsKey(Fields.KIND)) {
+            throw new HCJFRuntimeException("Unable to create some kubernetes artifact if 'kind' field is not present");
+        }
+        String kind = (String) object.get(Fields.KIND);
+        switch (kind) {
+            case Kinds.JOB: {
+                result = Introspection.toMap(createJob(object));
+                break;
+            }
+            default:{
+                throw new HCJFRuntimeException("Unrecognized kubernetes artifact '%s'", kind);
+            }
+        }
+        return result;
+    }
+
+    public V1Job createJob(Map<String,Object> object) {
+        V1Job job;
+        try {
+            job = new V1JobBuilder().
+                withApiVersion(Fields.Job.API_VERSION).
+                withKind((String) object.get(Fields.KIND)).
+                withMetadata(new V1ObjectMetaBuilder().
+                    withName((String) object.get(Fields.Job.NAME)).
+                    withNamespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE)).build()).
+                withSpec(new V1JobSpecBuilder().withTemplate(new V1PodTemplateSpecBuilder().
+                    withMetadata(new V1ObjectMetaBuilder().
+                        withName((String) object.get(Fields.Job.NAME)).
+                        withNamespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE)).build()
+                    ).
+                    withSpec(new V1PodSpecBuilder().
+                        withRestartPolicy((String) object.get(Fields.Job.RESTART_POLICY)).
+                        withContainers(new V1ContainerBuilder().
+                            withName((String) object.get(Fields.Containers.NAME)).
+                            withImage((String) object.get(Fields.Containers.IMAGE)).
+                            withCommand((List<String>) object.get(Fields.Containers.COMMAND)).
+                            withArgs((String) object.get(Fields.Containers.ARGS)).build()
+                        ).build()
+                    ).build()
+                ).build()
+            ).build();
+
+
+            batchApi.createNamespacedJob(
+                    SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                    job, null, null, null);
+        } catch (ApiException ex) {
+            throw new HCJFRuntimeException("Unable to create job", ex);
+        }
+        return job;
     }
 
     @Override
@@ -190,7 +266,7 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
             throw new RuntimeException("Kubernetes resource error", ex);
         }
 
-        return result;
+        return queryable.evaluate(result);
     }
 
 

@@ -25,10 +25,10 @@ public class MeanAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer 
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                String fieldName = (String) parameters[0];
+                String fieldName = getParameter(0, parameters);
                 Number accumulatedValue = 0;
                 Number[] functionResult;
-                String meanKind = parameters.length == 1 ? ARITHMETIC : (String) parameters[1];
+                String meanKind = parameters.length == 1 ? ARITHMETIC : getParameter(1, parameters);
                 for(Object row : resultSet) {
                     switch (meanKind) {
                         case GEOMETRIC: {

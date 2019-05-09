@@ -37,11 +37,11 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
 
         switch (functionName) {
             case SIZE: {
-                if(checkSize(1, parameters)[0] instanceof Collection) {
+                if(getParameter(0, parameters) instanceof Collection) {
                     result = ((Collection)parameters[0]).size();
-                } else if(checkSize(1, parameters)[0] instanceof Map) {
+                } else if(getParameter(0, parameters) instanceof Map) {
                     result = ((Map)parameters[0]).size();
-                } else if(checkSize(1, parameters)[0].getClass().isArray()) {
+                } else if(getParameter(0, parameters).getClass().isArray()) {
                     result = Array.getLength(parameters[0]);
                 } else {
                     result = 1;
@@ -49,20 +49,20 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 break;
             }
             case GET: {
-                if(checkSize(2, parameters)[0] instanceof Collection && parameters[1] instanceof Integer) {
+                if(getParameter(0, parameters) instanceof Collection && parameters[1] instanceof Integer) {
                     result = Array.get(((Collection)parameters[0]).toArray(), (Integer)parameters[1]);
-                } else if(checkSize(2, parameters)[0].getClass().isArray() && parameters[1] instanceof Integer) {
+                } else if(getParameter(0, parameters).getClass().isArray() && parameters[1] instanceof Integer) {
                     result = Array.get(parameters[0], (Integer)parameters[1]);
-                } else if(checkSize(2, parameters)[0] instanceof Map) {
+                } else if(getParameter(0, parameters) instanceof Map) {
                     result = ((Map)parameters[0]).get(parameters[1]);
                 }
                 break;
             }
             case CONTAINS: {
-                if(checkSize(2, parameters)[0] instanceof Collection) {
-                    result = ((Collection) parameters[0]).contains(parameters[1]);
-                } else if(checkSize(2, parameters)[0].getClass().isArray()) {
-                    result = Arrays.asList(parameters[0]).contains(parameters[1]);
+                if(getParameter(0, parameters) instanceof Collection) {
+                    result = ((Collection) getParameter(0, parameters)).contains(getParameter(1, parameters));
+                } else if(getParameter(0, parameters).getClass().isArray()) {
+                    result = Arrays.asList(getParameter(0, parameters)).contains(getParameter(1, parameters));
                 } else {
                     throw new HCJFRuntimeException("Contains functions is only for collections and arrays");
                 }
@@ -71,18 +71,18 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
             case CONTAINS_ALL: {
                 Collection firstCollection;
                 Collection secondCollection;
-                if(checkSize(2, parameters)[0] instanceof Collection) {
-                    firstCollection = (Collection) parameters[0];
-                } else if(parameters[0].getClass().isArray()) {
-                    firstCollection = Arrays.asList(parameters[0]);
+                if(getParameter(0, parameters) instanceof Collection) {
+                    firstCollection = getParameter(0, parameters);
+                } else if(getParameter(0, parameters).getClass().isArray()) {
+                    firstCollection = Arrays.asList(getParameter(0, parameters));
                 } else {
                     throw new HCJFRuntimeException("The first parameter for contains all function can only be a collection or an array");
                 }
 
-                if(parameters[1] instanceof Collection) {
-                    secondCollection = (Collection) parameters[1];
-                } else if(parameters[1].getClass().isArray()) {
-                    secondCollection = Arrays.asList(parameters[1]);
+                if(getParameter(1, parameters) instanceof Collection) {
+                    secondCollection = getParameter(1, parameters);
+                } else if(getParameter(1, parameters).getClass().isArray()) {
+                    secondCollection = Arrays.asList(getParameter(1, parameters));
                 } else {
                     throw new HCJFRuntimeException("The second parameter for contains all function can only be a collection or an array");
                 }
@@ -91,8 +91,8 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 break;
             }
             case CONTAINS_KEY: {
-                if(checkSize(2, parameters)[0] instanceof Map) {
-                    result = ((Map)parameters[0]).containsKey(parameters[1]);
+                if(getParameter(0, parameters) instanceof Map) {
+                    result = ((Map)getParameter(0, parameters)).containsKey(getParameter(1, parameters));
                 } else {
                     throw new HCJFRuntimeException("Contains key function is only for maps");
                 }
@@ -101,16 +101,16 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
             case CONTAINS_ALL_KEYS: {
                 Map map;
                 Collection collection;
-                if(checkSize(2, parameters)[0] instanceof Map) {
-                    map = (Map) parameters[0];
+                if(getParameter(0, parameters) instanceof Map) {
+                    map = getParameter(0, parameters);
                 } else {
                     throw new HCJFRuntimeException("The first parameter for contains all keys function can only be a map");
                 }
 
-                if(parameters[1] instanceof Collection) {
-                    collection = (Collection) parameters[1];
+                if(getParameter(1, parameters) instanceof Collection) {
+                    collection = getParameter(1, parameters);
                 } else if(parameters[1].getClass().isArray()) {
-                    collection = Arrays.asList(parameters[1]);
+                    collection = Arrays.asList(getParameter(1, parameters));
                 } else {
                     throw new HCJFRuntimeException("The second parameter for contains all keys function can only be a collection or an array");
                 }

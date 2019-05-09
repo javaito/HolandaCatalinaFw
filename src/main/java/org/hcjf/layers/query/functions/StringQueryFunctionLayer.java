@@ -40,15 +40,15 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
     public Object evaluate(String functionName, Object... parameters) {
         Object result = null;
         switch (functionName) {
-            case TRIM: result = ((String)checkSize(1, parameters)[0]).trim();break;
-            case LENGTH: result = ((String)checkSize(1, parameters)[0]).length();break;
-            case SPLIT: result = ((String)checkSize(2, parameters)[0]).split((String)parameters[1]);break;
-            case SPLIT_BY_LENGTH: result = Strings.splitByLength((String)checkSize(2, parameters)[0], (Integer)parameters[1]);break;
-            case TO_UPPER_CASE: result = ((String)checkSize(1, parameters)[0]).toUpperCase();break;
-            case TO_LOWER_CASE: result = ((String)checkSize(1, parameters)[0]).toLowerCase();break;
-            case TO_STRING: result = checkSize(1, parameters)[0].toString(); break;
-            case HEX_TO_BYTES: result = Strings.hexToBytes((String) checkSize(1, parameters)[0]);break;
-            case BYTES_TO_HEX: result = Strings.bytesToHex((byte[]) checkSize(1, parameters)[0]);break;
+            case TRIM: result = ((String)getParameter(0, parameters)).trim();break;
+            case LENGTH: result = ((String)getParameter(0, parameters)).length();break;
+            case SPLIT: result = ((String)getParameter(0, parameters)).split(getParameter(1, parameters));break;
+            case SPLIT_BY_LENGTH: result = Strings.splitByLength(getParameter(0, parameters), getParameter(1, parameters));break;
+            case TO_UPPER_CASE: result = ((String)getParameter(0, parameters)).toUpperCase();break;
+            case TO_LOWER_CASE: result = ((String)getParameter(0, parameters)).toLowerCase();break;
+            case TO_STRING: result = getParameter(0, parameters).toString(); break;
+            case HEX_TO_BYTES: result = Strings.hexToBytes(getParameter(0, parameters));break;
+            case BYTES_TO_HEX: result = Strings.bytesToHex(getParameter(0, parameters));break;
             case CONCAT: {
                 StringBuilder builder = new StringBuilder();
                 for(Object parameter : parameters) {
@@ -68,10 +68,10 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
                 for (int i = 1; i < parameters.length; i++) {
                     if(parameters[i] instanceof Collection) {
                         for(Object collectionParameter : ((Collection)parameters[i])) {
-                            builder.append(collectionParameter, (String)parameters[0]);
+                            builder.append(collectionParameter, getParameter(0, parameters));
                         }
                     } else {
-                        builder.append(parameters[i], (String)parameters[0]);
+                        builder.append(parameters[i], (String)getParameter(0, parameters));
                     }
                 }
                 result = builder.toString();

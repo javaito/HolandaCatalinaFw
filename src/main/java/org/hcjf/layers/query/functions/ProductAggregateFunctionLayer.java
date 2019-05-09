@@ -18,7 +18,7 @@ public class ProductAggregateFunctionLayer extends BaseQueryAggregateFunctionLay
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                String fieldName = (String) parameters[0];
+                String fieldName = getParameter(0, parameters);
                 Number accumulatedValue;
                 for(Object row : resultSet) {
                     accumulatedValue = 1;

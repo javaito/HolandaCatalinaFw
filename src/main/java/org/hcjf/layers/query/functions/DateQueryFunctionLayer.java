@@ -151,10 +151,10 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private ZonedDateTime getZonedDateTimeFromDate(Object... parameters) {
         ZonedDateTime result;
         if(parameters.length == 1) {
-            result = ZonedDateTime.ofInstant(((Date)parameters[0]).toInstant(), ZoneId.systemDefault());
+            result = ZonedDateTime.ofInstant(((Date)getParameter(0, parameters)).toInstant(), ZoneId.systemDefault());
         } else if(parameters.length == 2) {
-            ZoneId zoneId = ZoneId.of((String)parameters[0]);
-            result = ZonedDateTime.ofInstant(((Date)parameters[0]).toInstant(), zoneId);
+            ZoneId zoneId = ZoneId.of(getParameter(0, parameters));
+            result = ZonedDateTime.ofInstant(((Date)getParameter(1, parameters)).toInstant(), zoneId);
         } else {
             throw new HCJFRuntimeException("Illegal parameters length");
         }
@@ -164,9 +164,9 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private Duration getDuration(Object... parameters) {
         Duration result;
         if(parameters.length == 1) {
-            result = Duration.between(((Date)parameters[0]).toInstant(), Instant.now());
+            result = Duration.between(((Date)getParameter(0, parameters)).toInstant(), Instant.now());
         } else if(parameters.length == 2) {
-            result = Duration.between(((Date)parameters[0]).toInstant(), ((Date)parameters[0]).toInstant());
+            result = Duration.between(((Date)getParameter(0, parameters)).toInstant(), ((Date)getParameter(1, parameters)).toInstant());
         } else {
             throw new HCJFRuntimeException("Illegal parameters length");
         }

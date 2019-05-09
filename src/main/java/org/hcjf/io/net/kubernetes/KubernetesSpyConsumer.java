@@ -75,9 +75,20 @@ public abstract class KubernetesSpyConsumer implements ServiceConsumer {
         ids.addAll(services.keySet());
         for(V1Service service : serviceList.getItems()) {
             if(!ids.remove(service.getMetadata().getUid())) {
-                services.put(service.getMetadata().getUid(), service);
-                if(serviceMatcher.match(service)) {
-                    onServiceDiscovery(service);
+                if(!service.getSpec().getPorts().isEmpty()) {
+                    services.put(service.getMetadata().getUid(), service);
+                    if (serviceMatcher.match(service)) {
+                        onServiceDiscovery(service);
+                    }
+                } else {
+                    Log.d(SystemProperties.get(SystemProperties.Net.KubernetesSpy.LOG_TAG),
+                            "Service skip because there aren't end points present: %s", service.getMetadata().getName());
+                }
+            } else {
+                if(service.getSpec().getPorts().isEmpty()) {
+                    Log.d(SystemProperties.get(SystemProperties.Net.KubernetesSpy.LOG_TAG),
+                            "Service lost because there aren't end points present: %s", service.getMetadata().getName());
+                    onServiceLost(services.remove(service.getMetadata().getUid()));
                 }
             }
         }

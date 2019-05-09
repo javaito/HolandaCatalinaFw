@@ -8,6 +8,7 @@ import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.JsonUtils;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -294,6 +295,7 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT addressId, aggregateSum('weight') AS sum FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
+        System.out.println(JsonUtils.toJsonTree(resultSet).toString());
 
         query = Query.compile("SELECT name, if(weight + 10 > 100, 'gordo', 'flaco') AS es FROM character");
         resultSet = query.evaluate(dataSource);
@@ -301,6 +303,17 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT lastName, count('weight') as size, aggregateMin('weight') as min, aggregateMax('weight') as max, aggregateSum('weight') as sum, aggregateMean('weight') as arithmeticMean, aggregateMean('weight', 'harmonic') as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);
+        System.out.println(JsonUtils.toJsonTree(resultSet).toString());
+        System.out.println();
+
+        query = Query.compile("SELECT name, lastName, nickname FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println(JsonUtils.toJsonTree(resultSet).toString());
+        System.out.println();
+
+        query = Query.compile("SELECT name, lastName, nickname, new('literal') as literal FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println(JsonUtils.toJsonTree(resultSet).toString());
         System.out.println();
     }
 
@@ -341,4 +354,5 @@ public class QueryRunningTest {
             return queryable.evaluate(simpsonAddresses.values());
         }
     }
+
 }

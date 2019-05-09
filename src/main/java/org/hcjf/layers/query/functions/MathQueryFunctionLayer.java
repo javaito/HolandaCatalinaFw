@@ -1,14 +1,14 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.MathIntrospection;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Map;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.util.*;
 import java.util.function.BiFunction;
 
 /**
@@ -31,6 +31,9 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
     private static final String FLOAT_VALUE = "floatValue";
     private static final String DOUBLE_VALUE = "doubleValue";
     private static final String MEAN = "mean";
+    private static final String NUMBER_FORMAT = "numberFormat";
+    private static final String CURRENCY_FORMAT = "currencyFormat";
+    private static final String PERCENT_FORMAT = "percentFormat";
     private static final String EVAL_EXPRESSION = SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME);
 
     public MathQueryFunctionLayer() {
@@ -49,6 +52,9 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
         addFunctionName(FLOAT_VALUE);
         addFunctionName(DOUBLE_VALUE);
         addFunctionName(MEAN);
+        addFunctionName(NUMBER_FORMAT);
+        addFunctionName(CURRENCY_FORMAT);
+        addFunctionName(PERCENT_FORMAT);
         addFunctionName(EVAL_EXPRESSION);
     }
 
@@ -102,12 +108,31 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
                 }
                 break;
             }
-            case BYTE_VALUE: result = ((Number)checkSize(1, parameters)[0]).byteValue(); break;
-            case SHORT_VALUE: result = ((Number)checkSize(1, parameters)[0]).shortValue(); break;
-            case INTEGER_VALUE: result = ((Number)checkSize(1, parameters)[0]).intValue(); break;
-            case LONG_VALUE: result = ((Number)checkSize(1, parameters)[0]).longValue(); break;
-            case FLOAT_VALUE: result = ((Number)checkSize(1, parameters)[0]).floatValue(); break;
-            case DOUBLE_VALUE: result = ((Number)checkSize(1, parameters)[0]).doubleValue(); break;
+            case BYTE_VALUE: result = ((Number)getParameter(0, parameters)).byteValue(); break;
+            case SHORT_VALUE: result = ((Number)getParameter(0, parameters)).shortValue(); break;
+            case INTEGER_VALUE: result = ((Number)getParameter(0, parameters)).intValue(); break;
+            case LONG_VALUE: result = ((Number)getParameter(0, parameters)).longValue(); break;
+            case FLOAT_VALUE: result = ((Number)getParameter(0, parameters)).floatValue(); break;
+            case DOUBLE_VALUE: result = ((Number)getParameter(0, parameters)).doubleValue(); break;
+            case NUMBER_FORMAT: {
+                String pattern = getParameter(0, parameters);
+                Number number = getParameter(1, parameters);
+                NumberFormat numberFormat = new DecimalFormat(pattern);
+                result = numberFormat.format(number);
+                break;
+            }
+            case CURRENCY_FORMAT: {
+                Number number = getParameter(0, parameters);
+                Locale locale = ServiceSession.getCurrentIdentity().getLocale();
+                result = NumberFormat.getCurrencyInstance(locale).format(number.doubleValue());
+                break;
+            }
+            case PERCENT_FORMAT: {
+                Number number = getParameter(0, parameters);
+                Locale locale = ServiceSession.getCurrentIdentity().getLocale();
+                result = NumberFormat.getPercentInstance(locale).format(number.doubleValue());
+                break;
+            }
             default: {
                 if(functionName.equals(EVAL_EXPRESSION)) {
                     result = evalExpression(parameters);

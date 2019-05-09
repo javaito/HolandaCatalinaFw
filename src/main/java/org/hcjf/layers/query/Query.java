@@ -1559,7 +1559,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     result = trimmedStringValue;
                 }
             } else {
-                throw new IllegalArgumentException("");
+                throw new HCJFRuntimeException("Expecting string en delimiter, near %s", trimmedStringValue);
             }
         } else if(trimmedStringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));

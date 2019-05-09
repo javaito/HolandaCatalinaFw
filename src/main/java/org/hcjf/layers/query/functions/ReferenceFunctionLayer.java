@@ -31,24 +31,15 @@ public class ReferenceFunctionLayer extends BaseQueryFunctionLayer implements Qu
     @Override
     public Object evaluate(String functionName, Object... parameters) {
         Object result;
-        String resourceName;
+        String resourceName = getParameter(0, parameters);
         String referenceField = "id";
         Object param;
-        try{
-            resourceName = (String)checkSize(3, parameters)[0];
-        } catch (Exception ex){
-            throw new HCJFRuntimeException("Unrecognized resource name");
-        }
 
         if(parameters.length >= 3) {
-            try {
-                referenceField = (String) parameters[1];
-            } catch (Exception ex) {
-                throw new HCJFRuntimeException("Unrecognized reference field");
-            }
-            param = parameters[2];
+            referenceField = getParameter(1, parameters);
+            param = getParameter(2, parameters);
         } else {
-            param = parameters[1];
+            param = getParameter(1, parameters);
         }
 
         ParameterizedQuery parameterizedQuery = Query.compile(String.format(QUERY, resourceName, referenceField)).getParameterizedQuery();

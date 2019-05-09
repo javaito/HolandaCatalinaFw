@@ -35,7 +35,7 @@ public class BsonQueryFunctionLayer extends BaseQueryFunctionLayer {
     public Object evaluate(String functionName, Object... parameters) {
         Object result = null;
         switch(functionName) {
-            case BSON_PARSE: result = createMap(BsonDecoder.decode((byte[]) checkSize(1, parameters)[0])); break;
+            case BSON_PARSE: result = createMap(BsonDecoder.decode(getParameter(0, parameters))); break;
         }
         return result;
     }

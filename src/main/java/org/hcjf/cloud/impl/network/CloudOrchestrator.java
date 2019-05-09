@@ -356,12 +356,21 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     @Override
     public void unregisterConsumer(NetworkComponent networkComponent) {
         if(networkComponent instanceof Node) {
-            Node node = (Node) networkComponent;
-            String lanId = node.getLanId();
-            String wanId = node.getWanId();
-            nodesByLanId.remove(lanId);
-            nodesByWanId.remove(wanId);
-            nodes.remove(node);
+            synchronized (nodes) {
+                Node node = (Node) networkComponent;
+                String lanId = node.getLanId();
+                String wanId = node.getWanId();
+                nodesByLanId.remove(lanId);
+                nodesByWanId.remove(wanId);
+                nodes.remove(node.getId());
+                for(Node sortedNode : sortedNodes) {
+                    try {
+                        if (sortedNode.getLanId().equals(node.getLanId()) || sortedNode.getId().equals(node.getId())) {
+                            sortedNodes.remove(sortedNode);
+                        }
+                    } catch (Exception ex){}
+                }
+            }
         }
     }
 

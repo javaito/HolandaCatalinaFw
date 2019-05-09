@@ -247,7 +247,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
             HttpResponse response = null;
             HttpRequest request = (HttpRequest) payLoad;
-            //Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
+
+            if(SystemProperties.getBoolean(SystemProperties.Net.Http.INPUT_LOG_ENABLED)) {
+                Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
+            }
             try {
                 if(netPackage.getSession().isChecked()) {
                     HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
@@ -359,8 +362,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     write(session, response, false);
                 }
 
-                //Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
-                //        (System.currentTimeMillis() - time), response.toString());
+                if(SystemProperties.getBoolean(SystemProperties.Net.Http.OUTPUT_LOG_ENABLED)) {
+                    Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
+                            (System.currentTimeMillis() - time), response.toString());
+                }
             } catch (Throwable throwable) {
                 Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
                 connectionKeepAlive = false;
