@@ -44,7 +44,7 @@ public class RestContext extends Context {
         }
     }
 
-    private static final String REGEX_TEMPLATE = "\\/%s(\\/(?<resource>[A-Za-z0-9\\-]{0,})){0,}";
+    private static final String REGEX_TEMPLATE = "\\/%s(\\/(?<resource>[A-Za-z0-9\\-\\_]{0,})){0,}";
     private static final String DEFAULT_QUERY_PARAMETER = "q";
 
     private final List<Pattern> idRegexList;
