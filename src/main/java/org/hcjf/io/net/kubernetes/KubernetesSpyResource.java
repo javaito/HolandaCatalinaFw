@@ -172,7 +172,7 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                         job, null, null, null);
             }
         } catch (ApiException ex) {
-            throw new HCJFRuntimeException("Unable to create job", ex);
+            throw new HCJFRuntimeException("Unable to create job, '%s'", ex, ex.getResponseBody());
         }
         return job;
     }
