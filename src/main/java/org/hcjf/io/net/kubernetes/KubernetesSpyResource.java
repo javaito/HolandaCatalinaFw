@@ -3,7 +3,8 @@ package org.hcjf.io.net.kubernetes;
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.Configuration;
-import io.kubernetes.client.apis.*;
+import io.kubernetes.client.apis.BatchV1Api;
+import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.models.*;
 import io.kubernetes.client.util.Config;
 import org.hcjf.errors.HCJFRuntimeException;
@@ -38,7 +39,9 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
         private static final class Job {
             private static final String API_VERSION = "batch/v1";
             private static final String NAME = "name";
+            private static final String REPLICAS = "replicas";
             private static final String RESTART_POLICY = "restartPolicy";
+            private static final String CONTAINERS = "containers";
             private static final String VOLUMES = "volumes";
             private static final String VOLUME_MOUNTS = "volumeMounts";
         }
@@ -157,25 +160,38 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                         withSpec(new V1PodSpecBuilder().
                             withVolumes(getVolumes((Collection<Map<String, Object>>) jobDefinition.get(Fields.Job.VOLUMES))).
                             withRestartPolicy((String) jobDefinition.get(Fields.Job.RESTART_POLICY)).
-                            withContainers(new V1ContainerBuilder().
-                                withName((String) jobDefinition.get(Fields.Containers.NAME)).
-                                withImage((String) jobDefinition.get(Fields.Containers.IMAGE)).
-                                withCommand((List<String>) jobDefinition.get(Fields.Containers.COMMAND)).
-                                withArgs((String) jobDefinition.get(Fields.Containers.ARGS)).
-                                withVolumeMounts(getVolumeMounts((Collection<Map<String, Object>>) jobDefinition.get(Fields.Job.VOLUME_MOUNTS))).build()
-                            ).build()
+                            withContainers(getContainers((Collection<Map<String, Object>>) jobDefinition.get(Fields.Job.CONTAINERS))).build()
                         ).build()
                     ).build()
                 ).build();
 
-
-            batchApi.createNamespacedJob(
-                    SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                    job, null, null, null);
+            Integer replicas = (Integer) jobDefinition.get(Fields.Job.REPLICAS);
+            for (int i = 0; i < replicas; i++) {
+                batchApi.createNamespacedJob(
+                        SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                        job, null, null, null);
+            }
         } catch (ApiException ex) {
             throw new HCJFRuntimeException("Unable to create job", ex);
         }
         return job;
+    }
+
+    private List<V1Container> getContainers(Collection<Map<String,Object>> definition) {
+        List<V1Container> result = new ArrayList<>();
+
+        if(definition != null) {
+            for(Map<String,Object> container : definition) {
+                result.add(new V1ContainerBuilder().
+                        withName((String) container.get(Fields.Containers.NAME)).
+                        withImage((String) container.get(Fields.Containers.IMAGE)).
+                        withCommand((List<String>) container.get(Fields.Containers.COMMAND)).
+                        withArgs((String) container.get(Fields.Containers.ARGS)).
+                        withVolumeMounts(getVolumeMounts((Collection<Map<String, Object>>) container.get(Fields.Job.VOLUME_MOUNTS))).build());
+            }
+        }
+
+        return result;
     }
 
     private List<V1VolumeMount> getVolumeMounts(Collection<Map<String,Object>> definition) {
