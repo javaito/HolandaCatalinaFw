@@ -185,7 +185,7 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                 result.add(new V1ContainerBuilder().
                         withName((String) container.get(Fields.Containers.NAME)).
                         withImage((String) container.get(Fields.Containers.IMAGE)).
-                        withCommand((List<String>) container.get(Fields.Containers.COMMAND)).
+                        withCommand((List<String>) container.get(Fields.Job.CONTAINERS)).
                         withArgs((String) container.get(Fields.Containers.ARGS)).
                         withVolumeMounts(getVolumeMounts((Collection<Map<String, Object>>) container.get(Fields.Job.VOLUME_MOUNTS))).build());
             }
