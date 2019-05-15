@@ -58,10 +58,10 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
         }
 
         private static final class Containers {
-            private static final String NAME = "containerName";
-            private static final String IMAGE = "containerImage";
-            private static final String COMMAND = "containerCommand";
-            private static final String ARGS = "containerArgs";
+            private static final String NAME = "name";
+            private static final String IMAGE = "image";
+            private static final String COMMAND = "command";
+            private static final String ARGS = "args";
         }
     }
 
