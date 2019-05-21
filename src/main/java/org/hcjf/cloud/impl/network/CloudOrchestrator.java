@@ -772,8 +772,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     private Object invokeNetworkComponent(NetworkComponent networkComponent, Message message) {
-        return invokeNetworkComponent(networkComponent, message,
-                SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
+        Object result = null;
+        try {
+            result = invokeNetworkComponent(networkComponent, message,
+                    SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
+        } catch (Exception ex) {
+
+        }
+        return result;
     }
 
     private Object invokeNetworkComponent(NetworkComponent networkComponent, Message message, Long timeout) {
