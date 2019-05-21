@@ -27,7 +27,7 @@ import java.util.concurrent.locks.Lock;
  */
 public class CloudTestA {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
         System.setProperty(SystemProperties.Log.LEVEL, "0");
 //        System.setProperty(SystemProperties.Log.TRUNCATE_TAG, "true");
@@ -124,6 +124,8 @@ public class CloudTestA {
 //            }
 //        }, ServiceSession.getSystemSession());
 
+        Cloud.publishMe();
+
         Service.run(() -> {
             byte[] buffer = new byte[1024];
             int readSize;
@@ -175,6 +177,9 @@ public class CloudTestA {
                 }
             }
         }, ServiceSession.getSystemSession());
+
+        Thread.sleep(20000);
+        Layers.getAll(DistributedLayerTest.class, layer -> true);
     }
 
     public static class LayerTestA extends Layer implements DistributedLayerTest, DistributedLayerInterface {

@@ -61,7 +61,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
             private static final String IMAGE = "image";
             private static final String COMMAND = "command";
             private static final String ARGS = "args";
+            private static final String ENVIRONMENTS = "environments";
             private static final String VOLUME_MOUNTS = "volumeMounts";
+        }
+
+        private static final class EnvFromSource {
+            private static final String KIND = "kind";
+            private static final String NAME = "name";
         }
     }
 
@@ -183,11 +189,27 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
         if(definition != null) {
             for(Map<String,Object> container : definition) {
                 result.add(new V1ContainerBuilder().
+                        withEnvFrom(getEvnFromSources((Collection<Map<String, Object>>) container.get(Fields.Container.ENVIRONMENTS))).
                         withName((String) container.get(Fields.Container.NAME)).
                         withImage((String) container.get(Fields.Container.IMAGE)).
                         withCommand((List<String>) container.get(Fields.Container.COMMAND)).
                         withArgs((List<String>) container.get(Fields.Container.ARGS)).
                         withVolumeMounts(getVolumeMounts((Collection<Map<String, Object>>) container.get(Fields.Container.VOLUME_MOUNTS))).build());
+            }
+        }
+
+        return result;
+    }
+
+    private List<V1EnvFromSource> getEvnFromSources(Collection<Map<String,Object>> definition) {
+        List<V1EnvFromSource> result = new ArrayList<>();
+
+        if(definition != null) {
+            for(Map<String,Object> env : definition) {
+                result.add(new V1EnvFromSourceBuilder().withConfigMapRef(
+                        new V1ConfigMapEnvSourceBuilder().withName((String) env.get(Fields.EnvFromSource.NAME))
+                        .build()).
+                build());
             }
         }
 

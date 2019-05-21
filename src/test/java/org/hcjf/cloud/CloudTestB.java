@@ -80,6 +80,8 @@ public class CloudTestB {
 //            }
 //        }, ServiceSession.getSystemSession());
 
+        Cloud.publishMe();
+
         Service.run(() -> {
             byte[] buffer = new byte[1024];
             int readSize = 0;
