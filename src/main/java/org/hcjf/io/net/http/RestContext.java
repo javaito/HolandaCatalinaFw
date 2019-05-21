@@ -88,7 +88,8 @@ public class RestContext extends Context {
                     Queryable queryable = Query.compile(request.getParameter(DEFAULT_QUERY_PARAMETER));
                     jsonElement = gson.toJsonTree(Query.evaluate(queryable));
                 } else {
-                    throw new HCJFRuntimeException("Expected http parameter 'q' or id context");
+                    ReadLayerInterface readLayerInterface = Layers.get(ReadLayerInterface.class, resourceName);
+                    jsonElement = gson.toJsonTree(readLayerInterface.read());
                 }
             } else {
                 ReadLayerInterface readLayerInterface = Layers.get(ReadLayerInterface.class, resourceName);

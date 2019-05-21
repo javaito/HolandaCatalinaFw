@@ -3,7 +3,8 @@ package org.hcjf.io.net.kubernetes;
 import io.kubernetes.client.ApiClient;
 import io.kubernetes.client.ApiException;
 import io.kubernetes.client.Configuration;
-import io.kubernetes.client.apis.*;
+import io.kubernetes.client.apis.BatchV1Api;
+import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.models.*;
 import io.kubernetes.client.util.Config;
 import org.hcjf.errors.HCJFRuntimeException;
@@ -22,23 +23,51 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
 
     private static final class Kinds {
         private static final String JOB = "Job";
+        private static final String CONFIG_MAP = "ConfigMap";
     }
 
     private static final class Fields {
 
         private static final String KIND = "kind";
 
+        private static final class ConfigMap {
+            private static final String API_VERSION = "v1";
+            private static final String NAME = "name";
+            private static final String DATA = "data";
+        }
+
         private static final class Job {
             private static final String API_VERSION = "batch/v1";
             private static final String NAME = "name";
+            private static final String REPLICAS = "replicas";
             private static final String RESTART_POLICY = "restartPolicy";
+            private static final String CONTAINERS = "containers";
+            private static final String VOLUMES = "volumes";
         }
 
-        private static final class Containers {
-            private static final String NAME = "containerName";
-            private static final String IMAGE = "containerImage";
-            private static final String COMMAND = "containerCommand";
-            private static final String ARGS = "containerArgs";
+        private static final class Volume {
+            private static final String NAME = "name";
+            private static final String CONFIG_MAP_NAME = "configMapName";
+            private static final String SECRET_NAME = "secretName";
+        }
+
+        private static final class VolumeMount {
+            private static final String NAME = "name";
+            private static final String MOUNT_PATH = "mountPath";
+        }
+
+        private static final class Container {
+            private static final String NAME = "name";
+            private static final String IMAGE = "image";
+            private static final String COMMAND = "command";
+            private static final String ARGS = "args";
+            private static final String ENVIRONMENTS = "environments";
+            private static final String VOLUME_MOUNTS = "volumeMounts";
+        }
+
+        private static final class EnvFromSource {
+            private static final String KIND = "kind";
+            private static final String NAME = "name";
         }
     }
 
@@ -108,6 +137,10 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                 result = Introspection.toMap(createJob(object));
                 break;
             }
+            case Kinds.CONFIG_MAP: {
+                result = Introspection.toMap(createConfigMap(object));
+                break;
+            }
             default:{
                 throw new HCJFRuntimeException("Unrecognized kubernetes artifact '%s'", kind);
             }
@@ -115,40 +148,137 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
         return result;
     }
 
-    public V1Job createJob(Map<String,Object> object) {
+    private V1Job createJob(Map<String,Object> jobDefinition) {
         V1Job job;
         try {
             job = new V1JobBuilder().
                 withApiVersion(Fields.Job.API_VERSION).
-                withKind((String) object.get(Fields.KIND)).
+                withKind((String) jobDefinition.get(Fields.KIND)).
                 withMetadata(new V1ObjectMetaBuilder().
-                    withName((String) object.get(Fields.Job.NAME)).
+                    withName((String) jobDefinition.get(Fields.Job.NAME)).
                     withNamespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE)).build()).
-                withSpec(new V1JobSpecBuilder().withTemplate(new V1PodTemplateSpecBuilder().
-                    withMetadata(new V1ObjectMetaBuilder().
-                        withName((String) object.get(Fields.Job.NAME)).
-                        withNamespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE)).build()
-                    ).
-                    withSpec(new V1PodSpecBuilder().
-                        withRestartPolicy((String) object.get(Fields.Job.RESTART_POLICY)).
-                        withContainers(new V1ContainerBuilder().
-                            withName((String) object.get(Fields.Containers.NAME)).
-                            withImage((String) object.get(Fields.Containers.IMAGE)).
-                            withCommand((List<String>) object.get(Fields.Containers.COMMAND)).
-                            withArgs((String) object.get(Fields.Containers.ARGS)).build()
+                withSpec(new V1JobSpecBuilder().
+                    withTemplate(new V1PodTemplateSpecBuilder().
+                        withMetadata(new V1ObjectMetaBuilder().
+                            withName((String) jobDefinition.get(Fields.Job.NAME)).
+                            withNamespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE)).build()
+                        ).
+                        withSpec(new V1PodSpecBuilder().
+                            withVolumes(getVolumes((Collection<Map<String, Object>>) jobDefinition.get(Fields.Job.VOLUMES))).
+                            withRestartPolicy((String) jobDefinition.get(Fields.Job.RESTART_POLICY)).
+                            withContainers(getContainers((Collection<Map<String, Object>>) jobDefinition.get(Fields.Job.CONTAINERS))).build()
                         ).build()
                     ).build()
-                ).build()
-            ).build();
+                ).build();
 
-
-            batchApi.createNamespacedJob(
-                    SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                    job, null, null, null);
+            Integer replicas = (Integer) jobDefinition.get(Fields.Job.REPLICAS);
+            for (int i = 0; i < replicas; i++) {
+                batchApi.createNamespacedJob(
+                        SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                        job, null, null, null);
+            }
         } catch (ApiException ex) {
-            throw new HCJFRuntimeException("Unable to create job", ex);
+            throw new HCJFRuntimeException("Unable to create job, '%s'", ex, ex.getResponseBody());
         }
         return job;
+    }
+
+    private List<V1Container> getContainers(Collection<Map<String,Object>> definition) {
+        List<V1Container> result = new ArrayList<>();
+
+        if(definition != null) {
+            for(Map<String,Object> container : definition) {
+                result.add(new V1ContainerBuilder().
+                        withEnvFrom(getEvnFromSources((Collection<Map<String, Object>>) container.get(Fields.Container.ENVIRONMENTS))).
+                        withName((String) container.get(Fields.Container.NAME)).
+                        withImage((String) container.get(Fields.Container.IMAGE)).
+                        withCommand((List<String>) container.get(Fields.Container.COMMAND)).
+                        withArgs((List<String>) container.get(Fields.Container.ARGS)).
+                        withVolumeMounts(getVolumeMounts((Collection<Map<String, Object>>) container.get(Fields.Container.VOLUME_MOUNTS))).build());
+            }
+        }
+
+        return result;
+    }
+
+    private List<V1EnvFromSource> getEvnFromSources(Collection<Map<String,Object>> definition) {
+        List<V1EnvFromSource> result = new ArrayList<>();
+
+        if(definition != null) {
+            for(Map<String,Object> env : definition) {
+                result.add(new V1EnvFromSourceBuilder().withConfigMapRef(
+                        new V1ConfigMapEnvSourceBuilder().withName((String) env.get(Fields.EnvFromSource.NAME))
+                        .build()).
+                build());
+            }
+        }
+
+        return result;
+    }
+
+    private List<V1VolumeMount> getVolumeMounts(Collection<Map<String,Object>> definition) {
+        List<V1VolumeMount> result = new ArrayList<>();
+
+        if(definition != null) {
+            for(Map<String,Object> vm : definition) {
+                result.add(new V1VolumeMountBuilder().
+                        withName((String) vm.get(Fields.VolumeMount.NAME)).
+                        withMountPath((String) vm.get(Fields.VolumeMount.MOUNT_PATH)).
+                        build());
+            }
+        }
+
+        return result;
+    }
+
+    private List<V1Volume> getVolumes(Collection<Map<String,Object>> definition) {
+        List<V1Volume> result = new ArrayList<>();
+
+        if(definition != null) {
+            for(Map<String,Object> v : definition) {
+                if(v.containsKey(Fields.Volume.CONFIG_MAP_NAME)) {
+                    result.add(new V1VolumeBuilder().
+                            withName((String) v.get(Fields.Volume.NAME)).
+                            withConfigMap(new V1ConfigMapVolumeSourceBuilder().
+                                    withName((String) v.get(Fields.Volume.CONFIG_MAP_NAME)).
+                                    build()).
+                            build());
+                } else if(v.containsKey(Fields.Volume.SECRET_NAME)) {
+                    result.add(new V1VolumeBuilder().
+                            withName((String) v.get(Fields.Volume.NAME)).
+                            withSecret(new V1SecretVolumeSourceBuilder().
+                                    withSecretName((String) v.get(Fields.Volume.SECRET_NAME)).
+                                    build()).
+                            build());
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private V1ConfigMap createConfigMap(Map<String,Object> configMapDefinition) {
+        V1ConfigMap configMap;
+
+        try {
+            configMap = new V1ConfigMapBuilder().
+                    withApiVersion(Fields.ConfigMap.API_VERSION).
+                    withKind((String) configMapDefinition.get(Fields.KIND)).
+                    withMetadata(new V1ObjectMetaBuilder().
+                            withName((String) configMapDefinition.get(Fields.ConfigMap.NAME)).
+                            withNamespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE)).
+                            build()).
+                    withData((Map<String, String>) configMapDefinition.get(Fields.ConfigMap.DATA)).
+                    build();
+
+            api.createNamespacedConfigMap(
+                    SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
+                    configMap, null, null, null);
+        } catch (ApiException ex){
+            throw new HCJFRuntimeException("Unable to create config map", ex);
+        }
+
+        return configMap;
     }
 
     @Override

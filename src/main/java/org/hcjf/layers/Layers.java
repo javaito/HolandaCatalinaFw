@@ -304,6 +304,21 @@ public final class Layers {
             }
         }
 
+        if(result.isEmpty() || !onlyFirst) {
+            if(instance.distributedLayers.containsKey(layerClass)) {
+                Map<String,LayerInterface> layersByName = instance.distributedLayers.get(layerClass);
+                for(String implName : layersByName.keySet()) {
+                    layerFounded = (L) layersByName.get(implName);
+                    if(matcher.match(layerFounded)) {
+                        result.add(layerFounded);
+                        if(onlyFirst) {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         return result;
     }
 
