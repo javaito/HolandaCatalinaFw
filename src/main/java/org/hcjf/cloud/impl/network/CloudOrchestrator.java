@@ -772,14 +772,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     private Object invokeNetworkComponent(NetworkComponent networkComponent, Message message) {
-        Object result = null;
-        try {
-            result = invokeNetworkComponent(networkComponent, message,
-                    SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
-        } catch (Exception ex) {
-
-        }
-        return result;
+        return invokeNetworkComponent(networkComponent, message,
+                SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.INVOKE_TIMEOUT));
     }
 
     private Object invokeNetworkComponent(NetworkComponent networkComponent, Message message, Long timeout) {
@@ -955,7 +949,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         EventMessage eventMessage = new EventMessage(UUID.randomUUID());
         eventMessage.setEvent(event);
         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-            invokeNetworkComponent(serviceEndPoint, eventMessage);
+            try {
+                invokeNetworkComponent(serviceEndPoint, eventMessage);
+            } catch (Exception ex) {
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Couldn't dispatch event");
+            }
         }
     }
 
