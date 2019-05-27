@@ -129,7 +129,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
         Object result = null;
         if(!fieldName.contains(Strings.CLASS_SEPARATOR)) {
             for(String resource : resources) {
-                result = mapInstance.get(resource + Strings.CLASS_SEPARATOR + fieldName);
+                result = mapInstance.get(String.join(Strings.CLASS_SEPARATOR, resource, fieldName));
                 if(result != null) {
                     break;
                 }

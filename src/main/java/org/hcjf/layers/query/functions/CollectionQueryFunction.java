@@ -2,6 +2,7 @@ package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;

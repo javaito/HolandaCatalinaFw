@@ -11,10 +11,6 @@ public class Distinct extends Equals {
         super(leftValue, rightValue);
     }
 
-    public Distinct(String fieldName, Object value) {
-        super(fieldName, value);
-    }
-
     /**
      * Evaluate if the evaluator's value and the object's value in the specified field of
      * the parameter instance are distinct.

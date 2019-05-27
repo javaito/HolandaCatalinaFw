@@ -30,10 +30,10 @@ public abstract class FieldEvaluator extends BaseEvaluator {
     public final boolean containsReference(String fieldName) {
         boolean result = false;
         if(getLeftValue() instanceof Query.QueryField) {
-            result = ((Query.QueryField)getLeftValue()).getFieldName().equals(fieldName);
+            result = ((Query.QueryField)getLeftValue()).getFieldPath().equals(fieldName);
         }
         if(!result && getRightValue() instanceof Query.QueryField) {
-            result = ((Query.QueryField)getRightValue()).getFieldName().equals(fieldName);
+            result = ((Query.QueryField)getRightValue()).getFieldPath().equals(fieldName);
         }
         return result;
     }

@@ -6,10 +6,6 @@ package org.hcjf.layers.query;
  */
 public class NotIn extends In {
 
-    public NotIn(String fieldName, Object value) {
-        super(fieldName, value);
-    }
-
     public NotIn(Object leftValue, Object rightValue) {
         super(leftValue, rightValue);
     }

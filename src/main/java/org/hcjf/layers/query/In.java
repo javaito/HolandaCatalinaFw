@@ -12,10 +12,6 @@ import java.util.Map;
  */
 public class In extends FieldEvaluator {
 
-    public In(String fieldName, Object value) {
-        this(new Query.QueryField(fieldName), value);
-    }
-
     public In(Object leftValue, Object rightValue) {
         super(leftValue, rightValue);
     }

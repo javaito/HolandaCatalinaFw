@@ -1,6 +1,5 @@
 package org.hcjf.io.net.http;
 
-import org.hcjf.encoding.MimeType;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
@@ -16,7 +15,6 @@ import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -273,7 +271,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             HttpHeader originHeader = request.getHeader(HttpHeader.ORIGIN);
                             try {
                                 request.setMatcher(contextMatcher.getMatcher());
-                                //Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
+                                Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
                                 if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
                                     URL url = new URL(originHeader.getHeaderValue());
                                     response = new HttpResponse();
@@ -303,9 +301,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                         connectionKeepAlive = true;
                                     }
                                 }
-                                if(originHeader != null) {
-                                    response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN, originHeader.getHeaderValue()));
-                                }
                             } catch (Throwable throwable) {
                                 Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
                                 response = context.onError(request, throwable);
@@ -333,6 +328,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             } catch (Throwable throwable) {
                 response = createDefaultErrorResponse(throwable);
             }
+
+            response = addOriginHeader(request, response);
 
             try {
                 response.setProtocol(httpProtocol);
@@ -376,6 +373,20 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 }
             }
         }
+    }
+
+    /**
+     * Check if the request contains origin header then add the same header into the response.
+     * @param request Request instance.
+     * @param response Response instance.
+     * @return Returns the same response instance with origin header
+     */
+    private HttpResponse addOriginHeader(HttpRequest request, HttpResponse response) {
+        HttpHeader originHeader = request.getHeader(HttpHeader.ORIGIN);
+        if(originHeader != null) {
+            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN, originHeader.getHeaderValue()));
+        }
+        return response;
     }
 
     /**

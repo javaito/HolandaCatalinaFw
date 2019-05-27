@@ -3,7 +3,6 @@ package org.hcjf.layers.query;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
-import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
@@ -12,6 +11,7 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
+import org.hcjf.utils.Introspection;
 import org.hcjf.utils.LruMap;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
@@ -21,10 +21,8 @@ import org.hcjf.utils.bson.BsonParcelable;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * This class contains all the parameter needed to create a query.
@@ -38,6 +36,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     private final QueryId id;
     private final QueryResource resource;
+    private final List<QueryResource> resources;
     private Integer limit;
     private Integer start;
     private final List<QueryReturnParameter> groupParameters;
@@ -77,6 +76,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         this.returnParameters = new ArrayList<>();
         this.joins = new ArrayList<>();
         this.resource = new QueryResource(resource);
+        this.resources = new ArrayList<>();
+        this.resources.add(this.resource);
     }
 
     public Query(String resource){
@@ -87,6 +88,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         super(source);
         this.id = new QueryId();
         this.resource = source.resource;
+        this.resources = new ArrayList<>();
+        this.resources.add(this.resource);
         this.limit = source.limit;
         this.start = source.start;
         this.returnAll = source.returnAll;
@@ -104,9 +107,6 @@ public class Query extends EvaluatorCollection implements Queryable {
         if(queryParameter instanceof QueryField) {
             QueryField queryField = (QueryField) queryParameter;
             QueryResource resource = queryField.getResource();
-            if (resource == null) {
-                queryField.setResource(getResource());
-            }
         } else if(queryParameter instanceof QueryFunction) {
             QueryFunction function = (QueryFunction) queryParameter;
             for(Object functionParameter : function.getParameters()) {
@@ -181,6 +181,14 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
+     * Returns the list of resource of the query.
+     * @return List of resource fo the query.
+     */
+    public List<QueryResource> getResources() {
+        return resources;
+    }
+
+    /**
      * Return the limit of the query.
      * @return Query limit.
      */
@@ -227,7 +235,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Return the same instance of this class.
      */
     public final Query addGroupField(String groupField) {
-        return addGroupField(new QueryReturnField(groupField));
+        return addGroupField(new QueryReturnField(this, groupField));
     }
 
     /**
@@ -267,7 +275,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField, boolean desc) {
-        return addOrderField(new QueryOrderField(orderField, desc));
+        return addOrderField(new QueryOrderField(this, orderField, desc));
     }
 
     /**
@@ -298,7 +306,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         if(returnField.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
             returnAll = true;
         } else {
-            addReturnField(new QueryReturnField(returnField));
+            addReturnField(new QueryReturnField(this, returnField));
         }
         return this;
     }
@@ -309,7 +317,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Return the same instance of this class.
      */
     public final Query addReturnField(QueryReturnParameter returnParameter) {
-        if(returnParameter instanceof QueryReturnField && ((QueryReturnField)returnParameter).getFieldName().equals(
+        if(returnParameter instanceof QueryReturnField && ((QueryReturnField)returnParameter).getFieldPath().equals(
                 SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
             returnAll = true;
         } else {
@@ -523,7 +531,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     if (returnParameter instanceof QueryReturnField) {
                                         QueryReturnField returnField = (QueryReturnField) returnParameter;
                                         name = returnField.getAlias();
-                                        value = enlargedObject.get(returnField.getFieldName());
+                                        value = Introspection.resolve(enlargedObject, returnField.getFieldPath());
                                     } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                         name = function.getAlias();
@@ -1290,7 +1298,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             for(String returnField : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                 query.addReturnField((QueryReturnParameter)
-                        processStringValue(groups, richTexts, returnField, null, QueryReturnParameter.class, new ArrayList<>()));
+                        processStringValue(query, groups, richTexts, returnField, null, QueryReturnParameter.class, new ArrayList<>()));
             }
 
             if(conditionalBody != null) {
@@ -1319,21 +1327,22 @@ public class Query extends EvaluatorCollection implements Queryable {
                         }
 
                         Join join = new Join(query, joinResource, type);
-                        completeEvaluatorCollection(joinEvaluators, groups, richTexts, join, 0, new AtomicInteger(0));
+                        query.getResources().add(join.getResource());
+                        completeEvaluatorCollection(query, joinEvaluators, groups, richTexts, join, 0, new AtomicInteger(0));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
-                        completeEvaluatorCollection(elementValue, groups, richTexts, query, 0, new AtomicInteger(0));
+                        completeEvaluatorCollection(query, elementValue, groups, richTexts, query, 0, new AtomicInteger(0));
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addOrderField((QueryOrderParameter)
-                                    processStringValue(groups, richTexts, orderField, null, QueryOrderParameter.class, new ArrayList<>()));
+                                    processStringValue(query, groups, richTexts, orderField, null, QueryOrderParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addGroupField((QueryReturnParameter)
-                                    processStringValue(groups, richTexts, orderField, null, QueryReturnParameter.class, new ArrayList<>()));
+                                    processStringValue(query, groups, richTexts, orderField, null, QueryReturnParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         query.setLimit(Integer.parseInt(elementValue));
@@ -1358,7 +1367,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param parentCollection Parent collection.
      * @param definitionIndex Definition index into the groups.
      */
-    private static final void completeEvaluatorCollection(String startElement, List<String> groups, List<String> richTexts,
+    private static final void completeEvaluatorCollection(Query query, String startElement, List<String> groups, List<String> richTexts,
                                                           EvaluatorCollection parentCollection,
                                                           Integer definitionIndex,
                                                           AtomicInteger placesIndex) {
@@ -1405,7 +1414,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 pendingDefinitions.add(definition);
                 if(collection != null) {
                     for(String pendingDefinition : pendingDefinitions) {
-                        processDefinition(pendingDefinition, collection, groups, richTexts, placesIndex);
+                        processDefinition(query, pendingDefinition, collection, groups, richTexts, placesIndex);
                     }
                     pendingDefinitions.clear();
                 } else if(pendingDefinitions.size() > 1) {
@@ -1416,9 +1425,9 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         for(String pendingDefinition : pendingDefinitions) {
             if(collection != null) {
-                processDefinition(pendingDefinition, collection, groups, richTexts, placesIndex);
+                processDefinition(query, pendingDefinition, collection, groups, richTexts, placesIndex);
             } else {
-                processDefinition(pendingDefinition, parentCollection, groups, richTexts, placesIndex);
+                processDefinition(query, pendingDefinition, parentCollection, groups, richTexts, placesIndex);
             }
         }
     }
@@ -1430,7 +1439,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param groups Sub representation of the main representation.
      * @param placesIndex Place counter of the group list.
      */
-    private static void processDefinition(String definition, EvaluatorCollection collection, List<String> groups, List<String> richTexts, AtomicInteger placesIndex) {
+    private static void processDefinition(Query query, String definition, EvaluatorCollection collection, List<String> groups, List<String> richTexts, AtomicInteger placesIndex) {
         String[] evaluatorValues;
         Object leftValue;
         Object rightValue;
@@ -1441,7 +1450,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
-            completeEvaluatorCollection(null, groups, richTexts, collection, index, placesIndex);
+            completeEvaluatorCollection(query, null, groups, richTexts, collection, index, placesIndex);
         } else {
             evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
             boolean operatorDone = false;
@@ -1474,14 +1483,14 @@ public class Query extends EvaluatorCollection implements Queryable {
 
             List<QueryField> presentFields = new ArrayList<>();
             if (operator == null || operator.trim().isEmpty()) {
-                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class, presentFields);
+                leftValue = processStringValue(query, groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class, presentFields);
                 evaluator = new BooleanEvaluator(leftValue);
             } else {
-                leftValue = processStringValue(groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class, presentFields);
+                leftValue = processStringValue(query, groups, richTexts, firstArgument.trim(), placesIndex, QueryParameter.class, presentFields);
                 if (leftValue instanceof String) {
                     leftValue = Strings.reverseGrouping((String) leftValue, groups);
                 }
-                rightValue = processStringValue(groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class, presentFields);
+                rightValue = processStringValue(query, groups, richTexts, secondArgument.trim(), placesIndex, QueryParameter.class, presentFields);
                 if (rightValue instanceof String) {
                     rightValue = Strings.reverseGrouping((String) rightValue, groups);
                 }
@@ -1528,7 +1537,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param parameterClass Parameter class.
      * @return Return the specific implementation of the string representation.
      */
-    private static Object processStringValue(List<String> groups, List<String> richTexts, String stringValue, AtomicInteger placesIndex, Class parameterClass, List<QueryField> presentFields) {
+    private static Object processStringValue(Query query, List<String> groups, List<String> richTexts, String stringValue, AtomicInteger placesIndex, Class parameterClass, List<QueryField> presentFields) {
         Object result = null;
         String trimmedStringValue = stringValue.trim();
         if(trimmedStringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
@@ -1570,7 +1579,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();
                 for (String subStringValue : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    collection.add(processStringValue(groups, richTexts, subStringValue.trim(), placesIndex, parameterClass, presentFields));
+                    collection.add(processStringValue(query, groups, richTexts, subStringValue.trim(), placesIndex, parameterClass, presentFields));
                 }
                 result = collection;
             }
@@ -1632,18 +1641,18 @@ public class Query extends EvaluatorCollection implements Queryable {
                     parameters.add(currentValue.trim());
                 } else {
                     //If the current value is not a math connector then this string is evaluated recursively.
-                    parameters.add(processStringValue(groups, richTexts, currentValue, placesIndex, QueryParameter.class, presentFields));
+                    parameters.add(processStringValue(query, groups, richTexts, currentValue, placesIndex, QueryParameter.class, presentFields));
                 }
             }
 
             if(parameterClass.equals(QueryParameter.class)) {
-                result = new QueryFunction(Strings.reverseGrouping(trimmedStringValue, groups),
+                result = new QueryFunction(query, Strings.reverseGrouping(trimmedStringValue, groups),
                         SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters);
             } else if(parameterClass.equals(QueryReturnParameter.class)) {
-                result = new QueryReturnFunction(Strings.reverseGrouping(trimmedStringValue, groups),
+                result = new QueryReturnFunction(query, Strings.reverseGrouping(trimmedStringValue, groups),
                         SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters, alias);
             } else if(parameterClass.equals(QueryOrderParameter.class)) {
-                result = new QueryOrderFunction(Strings.reverseGrouping(trimmedStringValue, groups),
+                result = new QueryOrderFunction(query, Strings.reverseGrouping(trimmedStringValue, groups),
                         SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters, desc);
             }
         } else {
@@ -1662,7 +1671,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 originalValue = trimmedStringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
                 functionParameters = new ArrayList<>();
                 for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    functionParameters.add(processStringValue(groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                    functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
                 }
                 function = true;
             } else {
@@ -1673,9 +1682,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                 //If the parameter class is the default class then the result will be a
                 //QueryFunction.class instance or QueryField.class instance.
                 if(function) {
-                    result = new QueryFunction(originalValue, functionName, functionParameters);
+                    result = new QueryFunction(query, originalValue, functionName, functionParameters);
                 } else {
-                    result = new QueryField(trimmedStringValue);
+                    result = new QueryField(query, trimmedStringValue);
                 }
             } else if(parameterClass.equals(QueryReturnParameter.class)) {
                 //If the parameter class is the QueryReturnParameter.class then the result will be a
@@ -1688,9 +1697,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
 
                 if(function) {
-                    result = new QueryReturnFunction(originalValue, functionName, functionParameters, alias);
+                    result = new QueryReturnFunction(query, originalValue, functionName, functionParameters, alias);
                 } else {
-                    result = new QueryReturnField(originalValue, alias);
+                    result = new QueryReturnField(query, originalValue, alias);
                 }
             } else if(parameterClass.equals(QueryOrderParameter.class)) {
                 //If the parameter class is the QueryOrderParameter.class then the result will be a
@@ -1705,9 +1714,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
 
                 if(function) {
-                    result = new QueryOrderFunction(originalValue, functionName, functionParameters, desc) ;
+                    result = new QueryOrderFunction(query, originalValue, functionName, functionParameters, desc) ;
                 } else {
-                    result = new QueryOrderField(originalValue, desc);
+                    result = new QueryOrderField(query, originalValue, desc);
                 }
             }
         }
@@ -1802,10 +1811,49 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     public static abstract class QueryParameter implements Comparable<QueryParameter>, QueryComponent {
 
+        private QueryResource resource;
+        private String fieldPath;
         private final String originalValue;
 
-        public QueryParameter(String originalValue) {
+        public QueryParameter(Query query, String originalValue, String value) {
             this.originalValue = originalValue.trim();
+            this.resource = query.getResource();
+            if(value.contains(Strings.CLASS_SEPARATOR)) {
+                String[] steps = value.split(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.CLASS_SEPARATOR);
+                for(QueryResource queryResource : query.getResources()) {
+                    if(steps[0].equals(queryResource.resourceName)) {
+                        this.resource = queryResource;
+                        break;
+                    }
+                }
+                this.fieldPath = value.substring(value.indexOf(Strings.CLASS_SEPARATOR) + 1);
+            } else {
+                this.fieldPath = value;
+            }
+        }
+
+        /**
+         * Returns the resource of this parameter.
+         * @return Resource of this parameter.
+         */
+        public QueryResource getResource() {
+            return resource;
+        }
+
+        /**
+         * Returns the field path.
+         * @return Field path.
+         */
+        public String getFieldPath() {
+            return fieldPath;
+        }
+
+        /**
+         * Returns the original value.
+         * @return Original value.
+         */
+        public String getOriginalValue() {
+            return originalValue;
         }
 
         /**
@@ -1847,8 +1895,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         private final String functionName;
         private final List<Object> parameters;
 
-        public QueryFunction(String originalFunction, String functionName, List<Object> parameters) {
-            super(originalFunction);
+        public QueryFunction(Query query, String originalFunction, String functionName, List<Object> parameters) {
+            super(query, originalFunction, functionName);
             this.functionName = functionName;
             this.parameters = parameters;
         }
@@ -1881,89 +1929,10 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     public static class QueryField extends QueryParameter {
 
-        private QueryResource resource;
-        private String fieldName;
-        private List<QueryField> path;
-        private final String completeFieldName;
-        private final String index;
-
-        public QueryField(String field) {
-            super(field);
-
-            if(field.contains(Strings.CLASS_SEPARATOR)) {
-                resource = new QueryResource(field.substring(0, field.lastIndexOf(Strings.CLASS_SEPARATOR)));
-                this.fieldName = field.substring(field.lastIndexOf(Strings.CLASS_SEPARATOR) + 1).trim();
-            } else {
-                resource = null;
-                this.fieldName = field.trim();
-            }
-
-            if(fieldName.contains(Strings.START_SUB_GROUP)) {
-                index = fieldName.substring(field.indexOf(Strings.START_SUB_GROUP) + 1, field.indexOf(Strings.END_SUB_GROUP)).trim();
-                fieldName = fieldName.substring(0, field.indexOf(Strings.START_SUB_GROUP)).trim();
-            } else {
-                index = null;
-            }
-
-            completeFieldName = (resource == null ? "" : resource + Strings.CLASS_SEPARATOR) + fieldName;
-
-            path = new ArrayList<>();
-            if(field.contains(Strings.CLASS_SEPARATOR)) {
-                for (String pathPart : field.split(Strings.CLASS_SEPARATOR)) {
-                    path.add(new QueryField(pathPart));
-                }
-            } else {
-                path.add(this);
-            }
+        public QueryField(Query query, String fieldPath) {
+            super(query, fieldPath, fieldPath);
         }
 
-        /**
-         * Return the resource of the field.
-         * @param resource Field resource.
-         */
-        protected void setResource(QueryResource resource) {
-            this.resource = resource;
-        }
-
-        /**
-         * Return the resource associated to the field.
-         * @return Resource name, can be null.
-         */
-        public QueryResource getResource() {
-            return resource;
-        }
-
-        /**
-         * Return the field name without associated resource or index.
-         * @return Field name.
-         */
-        public String getFieldName() {
-            return fieldName;
-        }
-
-        /**
-         * Return the resource name and the field name into the same value.
-         * @return Complete name.
-         */
-        public String getCompleteFieldName() {
-            return completeFieldName;
-        }
-
-        /**
-         * Return the index associated to the field.
-         * @return Index, can be null.
-         */
-        public String getIndex() {
-            return index;
-        }
-
-        /**
-         * Returns the path of the field.
-         * @return Path of the field.
-         */
-        public List<QueryField> getPath() {
-            return path;
-        }
     }
 
     public interface QueryReturnParameter extends QueryComponent {
@@ -1983,14 +1952,14 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         private final String alias;
 
-        public QueryReturnField(String field) {
-            this(field, field);
+        public QueryReturnField(Query query, String fieldPath) {
+            this(query, fieldPath, fieldPath);
         }
 
-        public QueryReturnField(String field, String alias) {
-            super(field);
+        public QueryReturnField(Query query, String fieldPath, String alias) {
+            super(query, fieldPath);
             if(alias == null) {
-                this.alias = field;
+                this.alias = fieldPath;
             } else {
                 this.alias = alias;
             }
@@ -2011,8 +1980,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         private final String alias;
         private boolean aggregate;
 
-        public QueryReturnFunction(String originalFunction, String functionName, List<Object> parameters, String alias) {
-            super(originalFunction, functionName, parameters);
+        public QueryReturnFunction(Query query, String originalFunction, String functionName, List<Object> parameters, String alias) {
+            super(query, originalFunction, functionName, parameters);
 
             aggregate = false;
             try {
@@ -2063,8 +2032,8 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         private final boolean desc;
 
-        public QueryOrderField(String field, boolean desc) {
-            super(field);
+        public QueryOrderField(Query query, String fieldPath, boolean desc) {
+            super(query, fieldPath);
             this.desc = desc;
         }
 
@@ -2081,8 +2050,8 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         private final boolean desc;
 
-        public QueryOrderFunction(String originalFunction, String functionName, List<Object> parameters, boolean desc) {
-            super(originalFunction, functionName, parameters);
+        public QueryOrderFunction(Query query, String originalFunction, String functionName, List<Object> parameters, boolean desc) {
+            super(query, originalFunction, functionName, parameters);
             this.desc = desc;
         }
 

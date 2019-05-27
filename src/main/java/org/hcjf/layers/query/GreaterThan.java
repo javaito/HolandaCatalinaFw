@@ -16,16 +16,8 @@ public class GreaterThan extends FieldEvaluator {
         this.orEquals = orEquals;
     }
 
-    protected GreaterThan(String fieldName, Object value, boolean orEquals) {
-        this(new Query.QueryField(fieldName), value, orEquals);
-    }
-
     public GreaterThan(Object leftValue, Object rightValue) {
         this(leftValue, rightValue, false);
-    }
-
-    public GreaterThan(String fieldName, Object value) {
-        this(new Query.QueryField(fieldName), value, false);
     }
 
     /**

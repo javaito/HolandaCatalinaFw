@@ -201,32 +201,10 @@ public interface Queryable extends BsonParcelable {
             Object result = null;
             if(queryParameter instanceof Query.QueryField) {
                 Query.QueryField queryField = (Query.QueryField) queryParameter;
-                String fieldName = queryField.getFieldName();
-                try {
-                    if(queryField.getIndex() != null) {
-                        Integer index = Integer.parseInt(queryField.getIndex());
-                        if (instance instanceof Collection) {
-                            result = Array.get(((Collection)instance).toArray(), index);
-                        } else if(instance.getClass().isArray()) {
-                            result = Array.get(index, index);
-                        } else {
-                            throw new HCJFRuntimeException("The array is only for collection or array values");
-                        }
-                    } else {
-                        if (instance instanceof JoinableMap) {
-                            result = ((JoinableMap) instance).get(fieldName);
-                        } else {
-                            Introspection.Getter getter = Introspection.getGetters(instance.getClass()).get(fieldName);
-                            if (getter != null) {
-                                result = getter.get(instance);
-                            } else {
-                                Log.w(SystemProperties.get(SystemProperties.Query.LOG_TAG),
-                                        "Order field not found: %s", fieldName);
-                            }
-                        }
-                    }
-                } catch (Exception ex) {
-                    throw new HCJFRuntimeException("Unable to obtain order field value", ex);
+                if(queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
+                    result = SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL);
+                } else {
+                    result = Introspection.resolve(instance, queryField.getFieldPath());
                 }
             } else if(queryParameter instanceof Query.QueryFunction) {
                 result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);

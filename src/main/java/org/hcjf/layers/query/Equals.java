@@ -13,10 +13,6 @@ public class Equals extends FieldEvaluator {
         super(leftValue, rightValue);
     }
 
-    public Equals(String fieldName, Object value) {
-        this(new Query.QueryField(fieldName), value);
-    }
-
     /**
      * Evaluate if the evaluator's value and the object's value in the specified field of
      * the parameter instance are equals.

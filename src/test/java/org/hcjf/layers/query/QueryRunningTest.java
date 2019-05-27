@@ -255,6 +255,9 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(((Map<String,Object>)resultSet.iterator().next().get(BODY)).get("field1"), "string");
 
+        query = Query.compile("SELECT get(bsonParse(body),'field1') AS body FROM character WHERE name LIKE 'Bartolomeo'");
+        resultSet = query.evaluate(dataSource);
+
         query = Query.compile("SELECT bsonParse(body) AS body FROM character WHERE name LIKE ?");
         ParameterizedQuery parameterizedQuery = query.getParameterizedQuery();
         resultSet = parameterizedQuery.add("Bartolomeo").evaluate(dataSource);
@@ -312,6 +315,11 @@ public class QueryRunningTest {
         System.out.println();
 
         query = Query.compile("SELECT name, lastName, nickname, new('literal') as literal FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println(JsonUtils.toJsonTree(resultSet).toString());
+        System.out.println();
+
+        query = Query.compile("SELECT name, lastName, nickname, getMillisecondUnixEpoch(new('2019-01-01 00:00:00')) as literal FROM character");
         resultSet = query.evaluate(dataSource);
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());
         System.out.println();

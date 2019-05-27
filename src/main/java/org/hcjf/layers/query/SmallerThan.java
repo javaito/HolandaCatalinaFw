@@ -15,16 +15,8 @@ public class SmallerThan extends FieldEvaluator {
         this.orEquals = orEquals;
     }
 
-    protected SmallerThan(String fieldName, Object value, boolean orEquals) {
-        this(new Query.QueryField(fieldName), value, orEquals);
-    }
-
     public SmallerThan(Object leftValue, Object rightValue) {
         this(leftValue, rightValue, false);
-    }
-
-    public SmallerThan(String fieldName, Object value) {
-        this(new Query.QueryField(fieldName), value, false);
     }
 
     @Override

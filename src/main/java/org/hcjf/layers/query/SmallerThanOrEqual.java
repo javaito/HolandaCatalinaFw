@@ -10,8 +10,4 @@ public class SmallerThanOrEqual extends SmallerThan {
         super(leftValue, rightValue, true);
     }
 
-    public SmallerThanOrEqual(String fieldName, Object value) {
-        super(fieldName, value, true);
-    }
-
 }

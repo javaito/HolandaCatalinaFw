@@ -15,10 +15,6 @@ public class Like extends FieldEvaluator {
         super(leftValue, rightValue);
     }
 
-    public Like(String fieldName, Object value) {
-        super(new Query.QueryField(fieldName), value);
-    }
-
     @Override
     public boolean evaluate(Object object, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         boolean result;
