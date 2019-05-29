@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
 import org.hcjf.layers.Layer;
@@ -328,6 +329,17 @@ public class QueryRunningTest {
         query = Query.compile("SELECT name, lastName, nickname, getMillisecondUnixEpoch(new('2019-01-01 00:00:00')) as literal FROM character");
         resultSet = query.evaluate(dataSource);
         Assert.assertTrue(resultSet.stream().findFirst().get().get("literal") instanceof Long);
+
+        query = Query.compile("SELECT length(name) as length, length(name) + 5 as lengthName FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        BsonDocument bsonDocument = new BsonDocument(resultSet.stream().findFirst().get());
+        byte[] doc = BsonEncoder.encode(bsonDocument);
+
+        bsonDocument = BsonDecoder.decode(doc);
+        Map<String,Object> map = bsonDocument.toMap();
+        System.out.println();
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
