@@ -1819,14 +1819,21 @@ public class Query extends EvaluatorCollection implements Queryable {
             this.originalValue = originalValue.trim();
             this.resource = query.getResource();
             if(value.contains(Strings.CLASS_SEPARATOR)) {
+                boolean resourceNameFounded = false;
                 String[] steps = value.split(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.CLASS_SEPARATOR);
                 for(QueryResource queryResource : query.getResources()) {
                     if(steps[0].equals(queryResource.resourceName)) {
                         this.resource = queryResource;
+                        resourceNameFounded = true;
                         break;
                     }
                 }
-                this.fieldPath = value.substring(value.indexOf(Strings.CLASS_SEPARATOR) + 1);
+
+                if(resourceNameFounded) {
+                    this.fieldPath = value.substring(value.indexOf(Strings.CLASS_SEPARATOR) + 1);
+                } else {
+                    this.fieldPath = value;
+                }
             } else {
                 this.fieldPath = value;
             }

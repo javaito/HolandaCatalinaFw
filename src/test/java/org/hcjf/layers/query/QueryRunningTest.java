@@ -319,10 +319,15 @@ public class QueryRunningTest {
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());
         System.out.println();
 
-        query = Query.compile("SELECT name, lastName, nickname, getMillisecondUnixEpoch(new('2019-01-01 00:00:00')) as literal FROM character");
+        query = Query.compile("SELECT name, lastName, nickname, new('2019-01-01 00:00:00') as literal FROM character");
         resultSet = query.evaluate(dataSource);
+        Assert.assertTrue(resultSet.stream().findFirst().get().get("literal") instanceof Date);
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());
         System.out.println();
+
+        query = Query.compile("SELECT name, lastName, nickname, getMillisecondUnixEpoch(new('2019-01-01 00:00:00')) as literal FROM character");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertTrue(resultSet.stream().findFirst().get().get("literal") instanceof Long);
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
