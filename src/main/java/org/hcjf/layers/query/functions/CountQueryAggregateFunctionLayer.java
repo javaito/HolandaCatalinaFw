@@ -2,6 +2,7 @@ package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.JoinableMap;
+import org.hcjf.layers.query.Query;
 import org.hcjf.utils.Introspection;
 
 import java.util.ArrayList;
@@ -32,8 +33,9 @@ public class CountQueryAggregateFunctionLayer extends BaseQueryAggregateFunction
             try {
                 Object value;
                 Integer countValue;
+                String path = getPath(parameters[0]);
                 for (Object row : resultSet) {
-                    value = ((Map)row).get(parameters[0]);
+                    value = Introspection.resolve(row, path);
                     if(value instanceof Collection) {
                         countValue = ((Collection)value).size();
                     } else {

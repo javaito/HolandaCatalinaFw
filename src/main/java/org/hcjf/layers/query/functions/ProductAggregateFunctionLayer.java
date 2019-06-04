@@ -18,11 +18,11 @@ public class ProductAggregateFunctionLayer extends BaseQueryAggregateFunctionLay
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                String fieldName = getParameter(0, parameters);
+                String path = getPath(parameters[0]);
                 Number accumulatedValue;
                 for(Object row : resultSet) {
                     accumulatedValue = 1;
-                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(fieldName)}, (A, V)->A.multiply(V))[1];
+                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(path)}, (A, V)->A.multiply(V))[1];
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){

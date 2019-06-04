@@ -529,25 +529,40 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 "Incoming '%s' message: %s", message.getClass(), message.getId());
         Message responseMessage = null;
         if(message instanceof ServiceDefinitionMessage) {
-
-            //This king of messages contains all the information about a service.
-            ServiceDefinitionMessage serviceDefinitionMessage = (ServiceDefinitionMessage) message;
-            if(serviceDefinitionMessage.getMessages() != null) {
-                for(Message innerMessage : serviceDefinitionMessage.getMessages()) {
-                    processMessage(session, innerMessage);
-                }
+            try {
+                responseMessage = new ServiceDefinitionResponseMessage(message);
+                ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
+            } catch (Exception ex) {
+                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "Unable to create publication response message", ex);
             }
-            endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setName(
-                    ((ServiceDefinitionMessage) message).getServiceName());
-            responseMessage = new ServiceDefinitionResponseMessage(message);
-            ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
-
-            //Sent the message for all the replicas
-            if(serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
-                serviceDefinitionMessage.setBroadcasting(false);
-                for (Node node : nodes.values()) {
-                    invokeNetworkComponent(node, serviceDefinitionMessage);
+            try {
+                //This king of messages contains all the information about a service.
+                ServiceDefinitionMessage serviceDefinitionMessage = (ServiceDefinitionMessage) message;
+                if (serviceDefinitionMessage.getMessages() != null) {
+                    for (Message innerMessage : serviceDefinitionMessage.getMessages()) {
+                        processMessage(session, innerMessage);
+                    }
                 }
+
+                endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setName(
+                        ((ServiceDefinitionMessage) message).getServiceName());
+
+                //Sent the message for all the replicas
+                if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
+                    serviceDefinitionMessage.setBroadcasting(false);
+                    for (Node node : nodes.values()) {
+                        try {
+                            invokeNetworkComponent(node, serviceDefinitionMessage);
+                        } catch (Exception ex) {
+                            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                    "Unable to notify node: %s", node.toString());
+                        }
+                    }
+                }
+            } catch (Exception ex){
+                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "Exception processing publication message: %s", ex, message.getId().toString());
             }
         } else if(message instanceof MessageCollection) {
             MessageCollection collection = (MessageCollection) message;
@@ -691,7 +706,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
                     distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote %s layer founded %s in %s",
-                            layerInterfaceClass.getName(), implName, endPoints.get(publishLayerMessage.getServiceEndPointId()).getGatewayAddress());
+                            layerInterfaceClass.getName(), implName, endPoints.get(
+                                    publishLayerMessage.getServiceEndPointId()).getGatewayAddress());
                 }
                 ((ResponseMessage)responseMessage).setValue(true);
 

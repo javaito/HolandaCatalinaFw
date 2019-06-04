@@ -73,20 +73,29 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
 
     public static final String NAME = "system_k8s";
     public static final String CONFIG_MAP = "system_k8s_config_map";
+    public static final String NAMESPACED_CONFIG_MAP = "system_k8s_namespaced_config_map";
     public static final String END_POINT = "system_k8s_end_point";
+    public static final String NAMESPACED_END_POINT = "system_k8s_namespaced_end_point";
     public static final String EVENT = "system_k8s_event";
+    public static final String NAMESPACED_EVENT = "system_k8s_namespaced_event";
     public static final String LIMIT_RANGE = "system_k8s_limit_range";
     public static final String NAMESPACE = "system_k8s_namespace";
     public static final String NODE = "system_k8s_node";
     public static final String PERSISTENT_VOLUME = "system_k8s_persistent_volume";
     public static final String PERSISTENT_VOLUME_CLAIM = "system_k8s_persistent_volume_claim";
     public static final String POD = "system_k8s_pod";
+    public static final String NAMESPACED_POD = "system_k8s_namespaced_pod";
     public static final String POD_TEMPLATE = "system_k8s_pod_template";
+    public static final String NAMESPACED_POD_TEMPLATE = "system_k8s_namespaced_pod_template";
     public static final String REPLICATION_CONTROLLER = "system_k8s_replication_controller";
     public static final String RESOURCE_QUOTA = "system_k8s_resource_quota";
+    public static final String NAMESPACED_RESOURCE_QUOTA = "system_k8s_namespaced_resource_quota";
     public static final String SECRET = "system_k8s_secret";
+    public static final String NAMESPACED_SECRET = "system_k8s_namespaced_secret";
     public static final String SERVICE_ACCOUNT = "system_k8s_service_account";
+    public static final String NAMESPACED_SERVICE_ACCOUNT = "system_k8s_namespaced_service_account";
     public static final String SERVICE = "system_k8s_service";
+    public static final String NAMESPACED_SERVICE = "system_k8s_namespaced_service";
     public static final String COMPONENT_STATUS = "system_k8s_component_status";
 
     private final ApiClient client;
@@ -109,20 +118,29 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
     public Set<String> getAliases() {
         return Set.of(
                 CONFIG_MAP,
+                NAMESPACED_CONFIG_MAP,
                 END_POINT,
+                NAMESPACED_END_POINT,
                 EVENT,
+                NAMESPACED_EVENT,
                 LIMIT_RANGE,
                 NAMESPACE,
                 NODE,
                 PERSISTENT_VOLUME,
                 PERSISTENT_VOLUME_CLAIM,
                 POD,
+                NAMESPACED_POD,
                 POD_TEMPLATE,
+                NAMESPACED_POD_TEMPLATE,
                 REPLICATION_CONTROLLER,
                 RESOURCE_QUOTA,
+                NAMESPACED_RESOURCE_QUOTA,
                 SECRET,
+                NAMESPACED_SECRET,
                 SERVICE_ACCOUNT,
+                NAMESPACED_SERVICE_ACCOUNT,
                 SERVICE,
+                NAMESPACED_SERVICE,
                 COMPONENT_STATUS
         );
     }
@@ -290,6 +308,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
         try {
             switch (queryable.getResourceName()) {
                 case CONFIG_MAP: {
+                    for(V1ConfigMap configMap : api.listConfigMapForAllNamespaces(
+                            null, null, null, null, null, null, null, null, null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(configMap, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_CONFIG_MAP: {
                     for(V1ConfigMap configMap : api.listNamespacedConfigMap(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null, null, null, null, null, null, null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(configMap, consumer)));
@@ -297,6 +322,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     break;
                 }
                 case END_POINT: {
+                    for(V1Endpoints endpoints : api.listEndpointsForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(endpoints, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_END_POINT: {
                     for(V1Endpoints endpoints : api.listNamespacedEndpoints(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(endpoints, consumer)));
@@ -304,6 +336,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     break;
                 }
                 case EVENT: {
+                    for(V1Event event : api.listEventForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(event, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_EVENT: {
                     for(V1Event event : api.listNamespacedEvent(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(event, consumer)));
@@ -346,6 +385,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     break;
                 }
                 case POD: {
+                    for(V1Pod pod : api.listPodForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(pod, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_POD: {
                     for(V1Pod pod : api.listNamespacedPod(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(pod, consumer)));
@@ -359,6 +405,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     }
                     break;
                 }
+                case NAMESPACED_POD_TEMPLATE: {
+                    for(V1PodTemplate podTemplate : api.listPodTemplateForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(podTemplate, consumer)));
+                    }
+                    break;
+                }
                 case REPLICATION_CONTROLLER: {
                     for(V1ReplicationController replicationController : api.listNamespacedReplicationController(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
@@ -367,6 +420,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     break;
                 }
                 case RESOURCE_QUOTA: {
+                    for(V1ResourceQuota resourceQuota : api.listResourceQuotaForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(resourceQuota, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_RESOURCE_QUOTA: {
                     for(V1ResourceQuota resourceQuota : api.listNamespacedResourceQuota(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(resourceQuota, consumer)));
@@ -374,6 +434,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     break;
                 }
                 case SECRET: {
+                    for(V1Secret secret : api.listSecretForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(secret, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_SECRET: {
                     for(V1Secret secret : api.listNamespacedSecret(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(secret, consumer)));
@@ -381,6 +448,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     break;
                 }
                 case SERVICE_ACCOUNT: {
+                    for(V1ServiceAccount serviceAccount : api.listServiceAccountForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(serviceAccount, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_SERVICE_ACCOUNT: {
                     for(V1ServiceAccount serviceAccount : api.listNamespacedServiceAccount(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(serviceAccount, consumer)));
@@ -388,6 +462,13 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                     break;
                 }
                 case SERVICE: {
+                    for(V1Service service : api.listServiceForAllNamespaces(
+                            null, null,null,null,null,null,null,null,null).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(service, consumer)));
+                    }
+                    break;
+                }
+                case NAMESPACED_SERVICE: {
                     for(V1Service service : api.listNamespacedService(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
                             null, null,null,null,null,null,null,null,null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(service, consumer)));
