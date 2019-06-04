@@ -791,9 +791,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                 leftJoinables.clear();
                 keys = indexedJoineables.keySet();
                 if(currentQueryable instanceof ParameterizedQuery) {
-                    ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField.toString(), keys));
+                    ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField, keys));
                 } else {
-                    ((Query)currentQueryable).addEvaluator(new In(secondField.toString(), keys));
+                    ((Query)currentQueryable).addEvaluator(new In(secondField, keys));
                 }
                 rightJoinables.addAll(dataSource.getResourceData(currentQueryable));
                 for (Joinable rightJoinable : rightJoinables) {
@@ -833,9 +833,9 @@ public class Query extends EvaluatorCollection implements Queryable {
             rightJoinables.clear();
             keys = indexedJoineables.keySet();
             if(currentQueryable instanceof ParameterizedQuery) {
-                ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField.toString(), keys));
+                ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField, keys));
             } else {
-                ((Query)currentQueryable).addEvaluator(new In(secondField.toString(), keys));
+                ((Query)currentQueryable).addEvaluator(new In(secondField, keys));
             }
             leftJoinables.addAll(dataSource.getResourceData(currentQueryable));
             for (Joinable leftJoinable : leftJoinables) {
