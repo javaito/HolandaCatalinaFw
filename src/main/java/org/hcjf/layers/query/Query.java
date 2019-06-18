@@ -546,11 +546,17 @@ public class Query extends EvaluatorCollection implements Queryable {
                             if (!groupParameters.isEmpty() && object instanceof Groupable) {
                                 groupable = (Groupable) object;
                                 hashCode = new StringBuilder();
+                                Object groupValue;
                                 for (QueryReturnParameter returnParameter : groupParameters) {
                                     if (returnParameter instanceof QueryReturnField) {
-                                        hashCode.append(consumer.get(object, ((QueryReturnField) returnParameter), dataSource).hashCode());
+                                        groupValue = consumer.get(object, ((QueryReturnField) returnParameter), dataSource);
                                     } else {
-                                        hashCode.append(consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource).hashCode());
+                                        groupValue = consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource);
+                                    }
+                                    if(groupValue == null) {
+                                        hashCode.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL).hashCode());
+                                    } else {
+                                        hashCode.append(groupValue.hashCode());
                                     }
                                 }
                                 if (groupables.containsKey(hashCode.toString())) {
@@ -1235,7 +1241,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             query = ((ParameterizedQuery)queryable).getQuery();
         }
 
-        if(query.getJoins().isEmpty()) {
+        if(query.getJoins().isEmpty() && query.getOrderParameters().isEmpty()) {
             result = Layers.get(ReadRowsLayerInterface.class, queryable.getResourceName()).readRows(queryable);
         } else {
             result = queryable.evaluate(new Queryable.ReadableDataSource());

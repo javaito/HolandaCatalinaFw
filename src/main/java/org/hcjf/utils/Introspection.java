@@ -38,9 +38,21 @@ public final class Introspection {
      * @return Returns the value that point the path.
      */
     public static <O extends Object> O resolve(Object instance, String path) {
-        Object result = instance;
         String[] pathElements = path.split(PATH_SEPARATOR);
-        for(String element : pathElements) {
+        return resolve(instance, pathElements);
+    }
+
+    /**
+     * This method resolve the path using introspection to navigate into the instance finding each element of the path.
+     * The path is a set of elements that represents a field, key or index each one.
+     * This is a path example: field.0.field.field.1
+     * @param instance Object to navigate.
+     * @param path Path to navigate the instance.
+     * @return Returns the value that point the path.
+     */
+    public static <O extends Object> O resolve(Object instance, String... path) {
+        Object result = instance;
+        for(String element : path) {
             if(result == null) {
                 break;
             }
