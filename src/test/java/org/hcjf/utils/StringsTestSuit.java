@@ -1,12 +1,16 @@
 package org.hcjf.utils;
 
+import org.hcjf.bson.BsonArray;
+import org.hcjf.bson.BsonDecoder;
+import org.hcjf.bson.BsonDocument;
+import org.hcjf.bson.BsonEncoder;
+import org.hcjf.layers.query.JoinableMap;
+import org.hcjf.layers.query.Query;
+import org.hcjf.utils.bson.BsonParcelable;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author javaito
@@ -176,4 +180,92 @@ public class StringsTestSuit {
         nearOffValue = Strings.getNearFrom(value, value.length(), 4);
         Assert.assertEquals(nearOffValue, "lina");
     }
+
+    public static void main(String[] args) {
+        /**
+         * 1560880035309
+         * },
+         * {
+         * "startTimestamp": 1560880040918
+         * },
+         * {
+         * "startTimestamp": 1560881049657
+         * },
+         * {
+         * "startTimestamp": 1560881051237
+         * },
+         * {
+         * "startTimestamp": 1560881056146
+         * },
+         * {
+         * "startTimestamp": 1560881061012
+         * },
+         * {
+         * "startTimestamp": 1560880045960
+         * },
+         * {
+         * "startTimestamp": 1560880051667
+         * },
+         * {
+         * "startTimestamp": 1560880989097
+         * },
+         * {
+         * "startTimestamp": 1560880992709
+         * },
+         * {
+         * "startTimestamp": 1560880995050
+         * },
+         * {
+         * "startTimestamp": 1560881001090
+         * },
+         * {
+         * "startTimestamp": 1560881006090
+         * },
+         * {
+         * "startTimestamp": 1560881009805
+         */
+        Long l1 = 1560880035309L;
+        Long l2 = 1560880040918L;
+        Long l3 = 1560881049657L;
+        Long l4 = 1560881051237L;
+        Long l5 = 1560881056146L;
+        Long l6 = 1560881061012L;
+        Long l7 = 1560880045960L;
+        Long l8 = 1560880051667L;
+        Long l9 = 1560880989097L;
+        Long l10 = 1560880992709L;
+        Long l11 = 1560880995050L;
+        Long l12 = 1560881001090L;
+        Long l13 = 1560881006090L;
+        Long l14 = 1560881009805L;
+
+        Collection<Map<String,Object>> t = new ArrayList<>();
+        t.add(Map.of("id", 1, "value", l1));
+        t.add(Map.of("id", 2, "value", l2));
+        t.add(Map.of("id", 3, "value", l3));
+        t.add(Map.of("id", 4, "value", l4));
+        t.add(Map.of("id", 5, "value", l5));
+        t.add(Map.of("id", 6, "value", l6));
+        t.add(Map.of("id", 7, "value", l7));
+        t.add(Map.of("id", 8, "value", l8));
+        t.add(Map.of("id", 9, "value", l9));
+        t.add(Map.of("id", 10, "value", l10));
+        t.add(Map.of("id", 11, "value", l11));
+        t.add(Map.of("id", 12, "value", l12));
+        t.add(Map.of("id", 13, "value", l13));
+        t.add(Map.of("id", 14, "value", l14));
+
+
+        Collection<Map<String,Object>> resultSet = Query.compile("SELECT * FROM A ORDER BY value").evaluate(t);
+        BsonDocument document = new BsonDocument();
+        document.put("resultSet", resultSet);
+        byte[] body = BsonEncoder.encode(document);
+
+        BsonDocument document1 = BsonDecoder.decode(body);
+        Collection resultSet1 = ((BsonArray) document1.get("resultSet")).toList();
+
+        System.out.println(resultSet);
+        System.out.println(((BsonArray) document1.get("resultSet")).toJsonString());
+    }
+
 }

@@ -1,5 +1,6 @@
 package org.hcjf.utils;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.names.Naming;
 import org.hcjf.service.security.LazyPermission;
 import org.hcjf.service.security.Permission;
@@ -510,13 +511,23 @@ public final class Introspection {
          * @throws InvocationTargetException Invocation Target Exception
          * @throws IllegalAccessException Illegal Access Exception
          */
-        public Object invoke(Object instance, Object... params) throws InvocationTargetException, IllegalAccessException {
+        public Object invoke(Object instance, Object... params) {
             if(containsPermission) {
                 for (Permission permission : getAnnotations(Permission.class)) {
                     SecurityPermissions.checkPermission(instance.getClass(), permission.value());
                 }
             }
-            return getMethod().invoke(instance, params);
+            try {
+                Object result;
+                if(instance instanceof InvocationHandler) {
+                    result = ((InvocationHandler) instance).invoke(instance, method, params);
+                } else {
+                    result = getMethod().invoke(instance, params);
+                }
+                return result;
+            } catch (Throwable throwable) {
+                throw new HCJFRuntimeException("Layer invoker", throwable);
+            }
         }
     }
 

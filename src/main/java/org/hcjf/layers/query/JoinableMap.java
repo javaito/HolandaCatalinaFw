@@ -1,6 +1,5 @@
 package org.hcjf.layers.query;
 
-import com.google.common.collect.LinkedListMultimap;
 import com.google.gson.internal.LinkedTreeMap;
 import org.hcjf.bson.BsonArray;
 import org.hcjf.bson.BsonDocument;
@@ -21,9 +20,11 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
 
     private static final String RESOURCES_FIELD = "__resources__";
     private static final String MAP_INSTANCE_FIELD = "__map_instance__";
+    private static final String RESOURCE_FIELD_PATTERN = "%s.%s";
 
     private final Set<String> resources;
     private final Map<String, Object> mapInstance;
+    private final Map<String, Map<String,Object>> mapInstanceByResource;
     private Set<String> staticFields;
     private boolean purged = false;
     private Map<String, Object> staticFieldsMap;
@@ -31,17 +32,23 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     public JoinableMap() {
         this.resources = new TreeSet<>();
         this.mapInstance = new LinkedTreeMap<>();
+        this.mapInstanceByResource = new LinkedHashMap<>();
+        this.staticFields = new LinkedHashSet<>();
+        this.staticFieldsMap = new HashMap<>();
     }
 
     public JoinableMap(String resourceName) {
         this.resources = new TreeSet<>();
         this.resources.add(resourceName);
         this.mapInstance = new LinkedHashMap<>();
+        this.mapInstanceByResource = new LinkedHashMap<>();
+        this.mapInstanceByResource.put(resourceName, new HashMap<>());
     }
 
     public JoinableMap(Map<String, Object> mapInstance, String... fields) {
         this.resources = new TreeSet<>();
         this.mapInstance = new LinkedHashMap<>();
+        this.mapInstanceByResource = new LinkedHashMap<>();
         if(fields != null && fields.length > 0) {
             staticFields = new LinkedHashSet<>();
             for(String field : fields) {
@@ -105,7 +112,11 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
      */
     @Override
     public Enlarged clone(String... fields) {
-        return new JoinableMap(this, fields);
+        JoinableMap result = new JoinableMap(new HashMap<>(), fields);
+        result.resources.addAll(resources);
+        result.mapInstance.putAll(mapInstance);
+        result.mapInstanceByResource.putAll(mapInstanceByResource);
+        return result;
     }
 
     /**
@@ -147,13 +158,15 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     /**
      * Join the information stored into this instance of the joinable with the
      * informacion stored into the joinable parameter.
+     * @param leftResource Name of the left resource of the join.
+     * @param rightResource Name of the right resource of the join.
      * @param joinable Joinable parameter.
      * @return Return this instance of the joinable.
      * @throws IllegalArgumentException if the joinable parameter is not a JoinableMap instance.
      * @throws NullPointerException if the joinable parameter is null.
      */
     @Override
-    public Joinable join(Joinable joinable) {
+    public Joinable join(String leftResource, String rightResource, Joinable joinable) {
         if(joinable == null) {
             throw new NullPointerException("Try to join with null joinable.");
         }
@@ -162,13 +175,49 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
             throw new IllegalArgumentException("Only support JoinableMap instance.");
         }
 
-        JoinableMap result = new JoinableMap(new HashMap<>());
-        result.resources.addAll(resources);
-        result.mapInstance.putAll(mapInstance);
-        result.resources.addAll(((JoinableMap)joinable).resources);
-        result.mapInstance.putAll(((JoinableMap)joinable));
+        JoinableMap result;
+        if(mapInstanceByResource.containsKey(leftResource)) {
+            result = new JoinableMap();
+            result.resources.addAll(resources);
+            result.mapInstance.putAll(mapInstance);
+            result.mapInstanceByResource.putAll(mapInstanceByResource);
+        } else {
+            result = new JoinableMap(leftResource);
+            result.mapInstance.putAll(mapInstance);
+            result.mapInstanceByResource.get(leftResource).putAll(mapInstance);
+        }
+
+        result.resources.add(rightResource);
+        result.mapInstanceByResource.put(rightResource, new HashMap<>());
+        result.mapInstanceByResource.get(rightResource).putAll(((JoinableMap)joinable));
+
+        for(Entry<String,Object> entry : ((JoinableMap)joinable).entrySet()) {
+            if(result.mapInstance.containsKey(entry.getKey())) {
+                result.mapInstance.put(String.format(RESOURCE_FIELD_PATTERN, rightResource, entry.getKey()), entry.getValue());
+            } else {
+                result.mapInstance.put(entry.getKey(), entry.getValue());
+            }
+        }
 
         return result;
+    }
+
+    /**
+     * Verify if the joinable map instance contains a specific resource.
+     * @param resourceName Resource name
+     * @return Return true of the resource is present into the instance nad false in the otherwise.
+     */
+    public boolean containsResource(String resourceName) {
+        return mapInstanceByResource.containsKey(resourceName);
+    }
+
+    /**
+     * Returns a part of the model that represents a specific resource.
+     * @param resourceName Resource name.
+     * @return Part of the model.
+     */
+    public Map<String,Object> getResourceModel(String resourceName) {
+        return Collections.unmodifiableMap(mapInstanceByResource.get(resourceName));
     }
 
     @Override

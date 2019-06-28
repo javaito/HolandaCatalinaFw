@@ -23,6 +23,7 @@ import java.util.*;
 public class QueryRunningTest {
 
     private static final String CHARACTER = "character";
+    private static final String CHARACTER_2 = "character2";
     private static final String ADDRESS = "address";
 
     private static final String ID = "id";
@@ -41,6 +42,7 @@ public class QueryRunningTest {
     private static final String NUMBER = "number";
 
     private static final Map<UUID, JoinableMap> simpsonCharacters = new HashMap<>();
+    private static final Map<UUID, JoinableMap> simpsonCharacters2 = new HashMap<>();
     private static final Map<UUID, JoinableMap> simpsonAddresses = new HashMap<>();
     private static final TestDataSource dataSource = new TestDataSource();
 
@@ -66,6 +68,7 @@ public class QueryRunningTest {
             map.put(GENDER, Gender.MALE);
             map.put(ADDRESS_ID, addressId);
             simpsonCharacters.put((UUID) map.get(ID), map);
+            simpsonCharacters2.put((UUID) map.get(ID), map);
 
             map = new JoinableMap(CHARACTER);
             map.put(ID, UUID.randomUUID());
@@ -78,6 +81,7 @@ public class QueryRunningTest {
             map.put(GENDER, Gender.FEMALE);
             map.put(ADDRESS_ID, addressId);
             simpsonCharacters.put((UUID) map.get(ID), map);
+            simpsonCharacters2.put((UUID) map.get(ID), map);
 
             BsonDocument document = new BsonDocument();
             document.put("field1", "string");
@@ -96,6 +100,7 @@ public class QueryRunningTest {
             map.put(ADDRESS_ID, addressId);
             map.put(BODY, BsonEncoder.encode(document));
             simpsonCharacters.put((UUID) map.get(ID), map);
+            simpsonCharacters2.put((UUID) map.get(ID), map);
 
             map = new JoinableMap(CHARACTER);
             map.put(ID, UUID.randomUUID());
@@ -107,6 +112,7 @@ public class QueryRunningTest {
             map.put(GENDER, Gender.FEMALE);
             map.put(ADDRESS_ID, addressId);
             simpsonCharacters.put((UUID) map.get(ID), map);
+            simpsonCharacters2.put((UUID) map.get(ID), map);
 
             map = new JoinableMap(CHARACTER);
             map.put(ID, UUID.randomUUID());
@@ -119,6 +125,7 @@ public class QueryRunningTest {
             map.put(GENDER, Gender.FEMALE);
             map.put(ADDRESS_ID, addressId);
             simpsonCharacters.put((UUID) map.get(ID), map);
+            simpsonCharacters2.put((UUID) map.get(ID), map);
 
             map = new JoinableMap(ADDRESS);
             addressId = UUID.randomUUID();
@@ -138,9 +145,30 @@ public class QueryRunningTest {
             map.put(GENDER, Gender.MALE);
             map.put(ADDRESS_ID, addressId);
             simpsonCharacters.put((UUID) map.get(ID), map);
+            simpsonCharacters2.put((UUID) map.get(ID), map);
+
+            map = new JoinableMap(ADDRESS);
+            addressId = UUID.randomUUID();
+            map.put(ADDRESS_ID, addressId);
+            map.put(STREET, "Chubut");
+            map.put(NUMBER, 2321);
+            simpsonAddresses.put(addressId, map);
+
+            map = new JoinableMap(CHARACTER);
+            map.put(ID, UUID.randomUUID());
+            map.put(NAME, "Nedward");
+            map.put(LAST_NAME, "Flanders");
+            map.put(NICKNAME, "Ned");
+            map.put(BIRTHDAY, dateFormat.parse("1975-03-14"));
+            map.put(WEIGHT, 82.0);
+            map.put(HEIGHT, 1.70);
+            map.put(GENDER, Gender.MALE);
+            simpsonCharacters.put((UUID) map.get(ID), map);
+            simpsonCharacters2.put((UUID) map.get(ID), map);
         } catch (Exception ex){}
 
         Layers.publishLayer(CharacterResource.class);
+        Layers.publishLayer(Character2Resource.class);
         Layers.publishLayer(AddressResource.class);
     }
 
@@ -165,6 +193,12 @@ public class QueryRunningTest {
                     }
                     break;
                 }
+                case CHARACTER_2: {
+                    for(JoinableMap map : simpsonCharacters2.values()) {
+                        result.add(new JoinableMap(map));
+                    }
+                    break;
+                }
                 case ADDRESS: {
                     for(JoinableMap map : simpsonAddresses.values()) {
                         result.add(new JoinableMap(map));
@@ -179,6 +213,51 @@ public class QueryRunningTest {
             return result;
         }
 
+    }
+
+    @Test
+    public void distinct() {
+        Query query = Query.compile("SELECT lastName, distinct(lastName) FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 5);
+    }
+
+    @Test
+    public void join() {
+        Query query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonAddresses.size() - 1);
+
+        query = Query.compile("SELECT * FROM character RIGHT JOIN address ON address.addressId = character.addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+        query = Query.compile("SELECT * FROM character LEFT JOIN address ON address.addressId = character.addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+        query = Query.compile("SELECT * FROM character FULL JOIN address ON address.addressId = character.addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size() + 1);
+
+        query = Query.compile("SELECT * FROM character JOIN character2 ON character.id = character2.id");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+        query = Query.compile("SELECT * FROM character JOIN character2 ON true");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size() * simpsonCharacters.size());
+
+        query = Query.compile("SELECT * FROM character JOIN character2 ON character.id = character2.id JOIN address ON address.addressId = character.addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size() - 1);
+
+        query = Query.compile("SELECT * FROM character JOIN character2 ON character.id = character2.id LEFT JOIN address ON address.addressId = character.addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+        query = Query.compile("SELECT * FROM character JOIN character2 ON character.lastName like character2.lastName JOIN address ON address.addressId = character.addressId");
+        resultSet = query.evaluate(dataSource);
     }
 
     @Test
@@ -203,21 +282,25 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.iterator().next().get("size"), simpsonCharacters.size());
 
-        query = Query.compile("SELECT count('weight') AS size FROM character GROUP BY addressId");
+        query = Query.compile("SELECT count(weight) AS size FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 3);
+
+        query = Query.compile("SELECT count(weight) AS size FROM character WHERE isNotNull(addressId) GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 2);
 
-        query = Query.compile("SELECT aggregateSum('weight') AS sum FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateSum(weight) AS sum FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.size(), 2);
+        Assert.assertEquals(resultSet.size(), 3);
 
-        query = Query.compile("SELECT aggregateProduct('weight') AS product FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateProduct(weight) AS product FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.size(), 2);
+        Assert.assertEquals(resultSet.size(), 3);
 
-        query = Query.compile("SELECT aggregateMean('weight') AS mean FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateMean(weight) AS mean FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.size(), 2);
+        Assert.assertEquals(resultSet.size(), 3);
 
         query = Query.compile("SELECT now(), getYear(birthday), periodInDays(birthday), getMonth(birthday) FROM character");
         resultSet = query.evaluate(dataSource);
@@ -250,7 +333,7 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.size(), simpsonAddresses.size());
+        Assert.assertEquals(resultSet.size(), simpsonAddresses.size() - 1);
 
         query = Query.compile("SELECT bsonParse(body) AS body FROM character WHERE name LIKE 'Bartolomeo'");
         resultSet = query.evaluate(dataSource);
@@ -297,7 +380,7 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertTrue(resultSet.iterator().next().get("year") instanceof String);
 
-        query = Query.compile("SELECT addressId, aggregateSum('weight') AS sum FROM character GROUP BY addressId");
+        query = Query.compile("SELECT addressId, aggregateSum(weight) AS sum FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());
 
@@ -305,7 +388,7 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         System.out.println();
 
-        query = Query.compile("SELECT lastName, count('weight') as size, aggregateMin('weight') as min, aggregateMax('weight') as max, aggregateSum('weight') as sum, aggregateMean('weight') as arithmeticMean, aggregateMean('weight', 'harmonic') as harmonicMean FROM character group by lastName");
+        query = Query.compile("SELECT lastName, count(weight) as size, aggregateMin(weight) as min, aggregateMax(weight) as max, aggregateSum(weight) as sum, aggregateMean(weight) as arithmeticMean, aggregateMean(weight, 'harmonic') as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());
         System.out.println();
@@ -332,14 +415,12 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT length(name) as length, length(name) + 5 as lengthName FROM character");
         resultSet = query.evaluate(dataSource);
-        System.out.println();
 
         BsonDocument bsonDocument = new BsonDocument(resultSet.stream().findFirst().get());
         byte[] doc = BsonEncoder.encode(bsonDocument);
 
         bsonDocument = BsonDecoder.decode(doc);
         Map<String,Object> map = bsonDocument.toMap();
-        System.out.println();
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
@@ -364,6 +445,19 @@ public class QueryRunningTest {
         @Override
         public Collection<JoinableMap> readRows(Queryable queryable) {
             return queryable.evaluate(simpsonCharacters.values());
+        }
+    }
+
+    public static class Character2Resource extends Layer implements ReadRowsLayerInterface {
+
+        @Override
+        public String getImplName() {
+            return "character2";
+        }
+
+        @Override
+        public Collection<JoinableMap> readRows(Queryable queryable) {
+            return queryable.evaluate(simpsonCharacters2.values());
         }
     }
 

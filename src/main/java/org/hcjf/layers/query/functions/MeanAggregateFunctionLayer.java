@@ -1,6 +1,7 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 
@@ -25,25 +26,25 @@ public class MeanAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer 
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                String path = getPath(parameters[0]);
+                Query.QueryReturnField queryReturnField = (Query.QueryReturnField) parameters[0];
                 Number accumulatedValue = 0;
                 Number[] functionResult;
                 String meanKind = parameters.length == 1 ? ARITHMETIC : getParameter(1, parameters);
                 for(Object row : resultSet) {
                     switch (meanKind) {
                         case GEOMETRIC: {
-                            functionResult = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(path)}, (A, V)->A.multiply(V));
+                            functionResult = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.multiply(V));
                             functionResult[1] = Math.pow(functionResult[1].doubleValue(),  1 / functionResult[0].doubleValue());
                             break;
                         }
                         case HARMONIC: {
-                            functionResult = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(path)}, (A, V)->A.add(new BigDecimal(1).
+                            functionResult = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.add(new BigDecimal(1).
                                     divide(V, SystemProperties.getInteger(SystemProperties.Query.Function.BIG_DECIMAL_DIVIDE_SCALE), RoundingMode.HALF_EVEN)));
                             functionResult[1] = functionResult[0].doubleValue() / functionResult[1].doubleValue();
                             break;
                         }
                         default: {
-                            functionResult = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(path)}, (A, V)->A.add(V));
+                            functionResult = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.add(V));
                             functionResult[1] = functionResult[1].doubleValue() / functionResult[0].doubleValue();
                         }
                     }

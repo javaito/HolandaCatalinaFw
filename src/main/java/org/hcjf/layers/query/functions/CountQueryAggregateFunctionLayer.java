@@ -7,6 +7,7 @@ import org.hcjf.utils.Introspection;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -25,7 +26,7 @@ public class CountQueryAggregateFunctionLayer extends BaseQueryAggregateFunction
         Collection result = resultSet;
         if(parameters.length == 0 || parameters[0].equals("*")) {
             Collection<JoinableMap> newResultSet = new ArrayList<>();
-            JoinableMap size = new JoinableMap();
+            JoinableMap size = new JoinableMap(new HashMap<>(), alias);
             size.put(alias, resultSet.size());
             newResultSet.add(size);
             result = newResultSet;
@@ -33,9 +34,9 @@ public class CountQueryAggregateFunctionLayer extends BaseQueryAggregateFunction
             try {
                 Object value;
                 Integer countValue;
-                String path = getPath(parameters[0]);
+                Query.QueryReturnField queryReturnField = (Query.QueryReturnField) parameters[0];
                 for (Object row : resultSet) {
-                    value = Introspection.resolve(row, path);
+                    value = resolve(row, queryReturnField);
                     if(value instanceof Collection) {
                         countValue = ((Collection)value).size();
                     } else {

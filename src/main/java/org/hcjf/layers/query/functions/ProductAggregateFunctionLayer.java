@@ -1,6 +1,7 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.Query;
 
 import java.util.Collection;
 import java.util.Map;
@@ -18,11 +19,11 @@ public class ProductAggregateFunctionLayer extends BaseQueryAggregateFunctionLay
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                String path = getPath(parameters[0]);
+                Query.QueryReturnField queryReturnField = (Query.QueryReturnField) parameters[0];
                 Number accumulatedValue;
                 for(Object row : resultSet) {
                     accumulatedValue = 1;
-                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(path)}, (A, V)->A.multiply(V))[1];
+                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.multiply(V))[1];
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){

@@ -1,6 +1,7 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.Query;
 import org.hcjf.utils.Introspection;
 
 import java.util.Collection;
@@ -19,11 +20,11 @@ public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                String fieldName = getParameter(0, parameters);
+                Query.QueryReturnField queryReturnField = (Query.QueryReturnField) parameters[0];
                 Number accumulatedValue;
                 for(Object row : resultSet) {
                     accumulatedValue = 0;
-                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{((Map)row).get(fieldName)}, (A,V)->A.add(V))[1];
+                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A,V)->A.add(V))[1];
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){

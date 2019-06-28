@@ -1,8 +1,9 @@
 package org.hcjf.layers.query.functions;
 
-import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
 
 /**
  * @author javaito
@@ -13,15 +14,13 @@ public abstract class BaseQueryAggregateFunctionLayer extends BaseFunctionLayer 
         super(SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + implName);
     }
 
-    protected String getPath(Object parameter) {
-        String path;
-        if(parameter instanceof String) {
-            path = (String) parameter;
-        } else if(parameter instanceof Query.QueryReturnField) {
-            path = ((Query.QueryReturnField)parameter).getFieldPath();
+    protected Object resolve(Object instance, Query.QueryReturnField queryReturnField) {
+        Object result;
+        if(instance instanceof JoinableMap && ((JoinableMap)instance).containsResource(queryReturnField.getResource().getResourceName())) {
+            result = Introspection.resolve(((JoinableMap)instance).getResourceModel(queryReturnField.getResource().getResourceName()), queryReturnField.getFieldPath());
         } else {
-            throw new HCJFRuntimeException("Unsupported parameter type");
+            result = Introspection.resolve(instance, queryReturnField.getFieldPath());
         }
-        return path;
+        return result;
     }
 }

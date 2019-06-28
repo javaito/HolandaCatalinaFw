@@ -67,6 +67,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(MeanAggregateFunctionLayer.class);
         Layers.publishLayer(MaxAggregateFunctionLayer.class);
         Layers.publishLayer(MinAggregateFunctionLayer.class);
+        Layers.publishLayer(DistinctQueryAggregateFunction.class);
     }
 
     public Query(String resource, QueryId id) {
@@ -466,24 +467,23 @@ public class Query extends EvaluatorCollection implements Queryable {
             //Getting data from data source.
             Collection<O> data;
             try {
-                if (joins.size() > 0) {
-                    //If the query has joins then data source must return the joined data
-                    //collection using all the resources
-                    data = (Collection<O>) join((Queryable.DataSource<Joinable>) dataSource, (Queryable.Consumer<Joinable>) consumer);
+                //Creates the first query for the original resource.
+                Query resolveQuery = new Query(getResourceName());
+                resolveQuery.returnAll = true;
+                if (getStart() != null) {
+                    resolveQuery.setLimit(getLimit() + getStart());
                 } else {
-                    //Creates the first query for the original resource.
-                    Query resolveQuery = new Query(getResourceName());
-                    resolveQuery.returnAll = true;
-                    if (getStart() != null) {
-                        resolveQuery.setLimit(getLimit() + getStart());
-                    } else {
-                        resolveQuery.setLimit(getLimit());
-                    }
-                    copyEvaluators(resolveQuery, this);
+                    resolveQuery.setLimit(getLimit());
+                }
+                copyEvaluators(resolveQuery, this);
 
-                    //If the query has not joins then data source must return data from
-                    //resource of the query.
-                    data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
+                //If the query has not joins then data source must return data from
+                //resource of the query.
+                data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
+                if (joins.size() > 0) {
+                    data = (Collection<O>) join((Collection<Joinable>) data,
+                            (DataSource<Joinable>) dataSource,
+                            (Consumer<Joinable>) consumer);
                 }
 
                 //Filtering data
@@ -531,7 +531,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     if (returnParameter instanceof QueryReturnField) {
                                         QueryReturnField returnField = (QueryReturnField) returnParameter;
                                         name = returnField.getAlias();
-                                        value = Introspection.resolve(enlargedObject, returnField.getFieldPath());
+                                        value = consumer.get((O) enlargedObject, returnField, dataSource);
                                     } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                         QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                         name = function.getAlias();
@@ -720,141 +720,112 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Create a joined data from data source using the joins instances stored in the query.
-     * @param dataSource Data souce.
-     * @param consumer Consumer.
-     * @return Joined data collection.
+     * Evaluates the join operation.
+     * @param currentResult Current data result.
+     * @param dataSource Data source instance.
+     * @param consumer Consumer instance.
+     * @return Collection that is the result of the join operation.
      */
-    private Collection<Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
-        Collection<Joinable> result = new ArrayList<>();
-
-        //Creates the first query for the original resource.
-        Query joinQuery = new Query(getResourceName());
-        joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
-        for(Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, getResource())) {
-            joinQuery.addEvaluator(((FieldEvaluator)evaluator).copy());
-        }
-        //Set the first query as start by default
-        Query startQuery = joinQuery;
-
-        //Put the first query in the list
-        List<Queryable> queries = new ArrayList<>();
-        queries.add(verifyInstance(joinQuery, consumer));
-
-        //Build a query for each join and evaluate the better match to start
-        int queryStart = 0;
-        int joinStart = 0;
-        for (int i = 0; i < joins.size(); i++) {
-            Join join = joins.get(i);
-            joinQuery = new Query(join.getResourceName());
+    private Collection<Joinable> join(Collection<Joinable> currentResult, Queryable.DataSource<Joinable> dataSource,
+                                      Queryable.Consumer<Joinable> consumer) {
+        for(Join join : getJoins()) {
+            //Creates the first query for the original resource.
+            Query joinQuery = new Query(join.getResourceName());
             joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
-            for (Evaluator evaluator : join.getEvaluators()) {
-                joinQuery.addEvaluator(evaluator);
-            }
             for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResource())) {
                 joinQuery.addEvaluator(evaluator);
             }
-            queries.add(verifyInstance(joinQuery, consumer));
+            currentResult = product(currentResult, dataSource.getResourceData(joinQuery), join, dataSource, consumer);
+        }
+        return currentResult;
+    }
 
-            if(joinQuery.getEvaluators().size() > startQuery.getEvaluators().size()) {
-                startQuery = joinQuery;
-                queryStart = i+1;
-                joinStart = i;
+    /**
+     * Evaluates the join and creates the product of the intersection between the first resource and the second resource.
+     * @param left Left data to the product.
+     * @param right Right data to the product.
+     * @param join Join object to evaluate the kind and the evaluators of the product.
+     * @param dataSource Datasource instance.
+     * @param consumer Consumer instance.
+     * @return Collection that is the result of the join operation.
+     */
+    private Collection<Joinable> product(Collection<Joinable> left, Collection<Joinable> right, Join join,
+                                         Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
+
+        Collection<Joinable> leftCopy = null;
+        Collection<Joinable> rightCopy = null;
+        switch (join.getType()) {
+            case LEFT: {
+                leftCopy = new ArrayList<>();
+                leftCopy.addAll(left);
+                break;
+            }
+            case RIGHT: {
+                rightCopy = new ArrayList<>();
+                rightCopy.addAll(right);
+                break;
+            }
+            case FULL: {
+                leftCopy = new ArrayList<>();
+                leftCopy.addAll(left);
+                rightCopy = new ArrayList<>();
+                rightCopy.addAll(right);
+                break;
             }
         }
 
-        Map<Object, Set<Joinable>> indexedJoineables;
-        Collection<Joinable> leftJoinables = new ArrayList<>();
-        Collection<Joinable> rightJoinables = new ArrayList<>();
-        Join queryJoin;
-        Set<Object> keys;
-        QueryField firstField;
-        QueryField secondField;
-        Queryable currentQueryable;
 
-        //Evaluate from the start query to right
-        int j = joinStart;
-        for (int i = queryStart; i < queries.size(); i++) {
-            currentQueryable = queries.get(i);
-            if(leftJoinables.isEmpty()) {
-                leftJoinables.addAll(dataSource.getResourceData(currentQueryable));
-            } else {
-                queryJoin = joins.get(j);
+        Collection<Joinable> result = new ArrayList<>();
+        Joinable row;
+        Boolean rowEvaluation;
+        for(Joinable leftJoinable : left) {
+            for(Joinable rightJoinable : right) {
+                row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
+                rowEvaluation = false;
 
-                if(queryJoin.getLeftField().getResource().equals(queryJoin.getResource())) {
-                    //If the left field of the join has the same resource that join then the
-                    //right field index the accumulated data.
-                    firstField = queryJoin.getRightField();
-                    secondField = queryJoin.getLeftField();
-                } else {
-                    //If the right field of the join has the same resource that join then the
-                    //left field index the accumulated data.
-                    firstField = queryJoin.getLeftField();
-                    secondField = queryJoin.getRightField();
+                for(Evaluator evaluator : join.getEvaluators()) {
+                    if(!(rowEvaluation = evaluator.evaluate(row, dataSource, consumer))) {
+                        break;
+                    }
                 }
 
-                indexedJoineables = index(leftJoinables, firstField, consumer, dataSource);
-                leftJoinables.clear();
-                keys = indexedJoineables.keySet();
-                if(currentQueryable instanceof ParameterizedQuery) {
-                    ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField, keys));
-                } else {
-                    ((Query)currentQueryable).addEvaluator(new In(secondField, keys));
-                }
-                rightJoinables.addAll(dataSource.getResourceData(currentQueryable));
-                for (Joinable rightJoinable : rightJoinables) {
-                    Set<Joinable> joinables = indexedJoineables.get(consumer.get(rightJoinable, secondField, dataSource));
-                    if(joinables != null) {
-                        for (Joinable leftJoinable : joinables) {
-                            leftJoinables.add(leftJoinable.join(rightJoinable));
+                if(rowEvaluation) {
+                    result.add(row);
+                    switch (join.getType()) {
+                        case LEFT: {
+                            leftCopy.remove(leftJoinable);
+                            break;
+                        }
+                        case RIGHT: {
+                            rightCopy.remove(rightJoinable);
+                            break;
+                        }
+                        case FULL: {
+                            leftCopy.remove(leftJoinable);
+                            rightCopy.remove(rightJoinable);
+                            break;
                         }
                     }
                 }
-                j++;
             }
         }
 
-        rightJoinables = leftJoinables;
-        leftJoinables = new ArrayList<>();
-
-        //Evaluate from the start query to left
-        j = joinStart;
-        for (int i = queryStart - 1; i >= 0; i--, j--) {
-            currentQueryable = queries.get(i);
-            queryJoin = joins.get(j);
-
-            if(queryJoin.getLeftField().getResource().equals(queryJoin.getResource())) {
-                //If the right field of the join has the same resource that join then the
-                //left field index the accumulated data.
-                firstField = queryJoin.getLeftField();
-                secondField = queryJoin.getRightField();
-            } else {
-                //If the left field of the join has the same resource that join then the
-                //right field index the accumulated data.
-                firstField = queryJoin.getRightField();
-                secondField = queryJoin.getLeftField();
+        switch (join.getType()) {
+            case LEFT: {
+                result.addAll(leftCopy);
+                break;
             }
-
-            indexedJoineables = index(rightJoinables, firstField, consumer, dataSource);
-            rightJoinables.clear();
-            keys = indexedJoineables.keySet();
-            if(currentQueryable instanceof ParameterizedQuery) {
-                ((ParameterizedQuery)currentQueryable).getQuery().addEvaluator(new In(secondField, keys));
-            } else {
-                ((Query)currentQueryable).addEvaluator(new In(secondField, keys));
+            case RIGHT: {
+                result.addAll(rightCopy);
+                break;
             }
-            leftJoinables.addAll(dataSource.getResourceData(currentQueryable));
-            for (Joinable leftJoinable : leftJoinables) {
-                Set<Joinable> joinables = indexedJoineables.get(consumer.get(leftJoinable, secondField, dataSource));
-                if(joinables != null) {
-                    for (Joinable rightJoinable : joinables) {
-                        rightJoinables.add(rightJoinable.join(leftJoinable));
-                    }
-                }
+            case FULL: {
+                result.addAll(leftCopy);
+                result.addAll(rightCopy);
+                break;
             }
         }
 
-        result.addAll(rightJoinables);
         return result;
     }
 
@@ -1013,11 +984,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)).append(Strings.WHITE_SPACE);
                 resultBuilder.append(join.getResourceName()).append(Strings.WHITE_SPACE);
                 resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ON)).append(Strings.WHITE_SPACE);
-                resultBuilder.append(join.getLeftField()).append(Strings.WHITE_SPACE);
-                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.EQUALS)).append(Strings.WHITE_SPACE);
-                resultBuilder.append(join.getRightField()).append(Strings.WHITE_SPACE);
                 if (join.getEvaluators().size() > 0) {
-                    resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND)).append(Strings.WHITE_SPACE);
                     toStringEvaluatorCollection(resultBuilder, join);
                 }
             }
@@ -1316,6 +1283,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     element = conditionalElements[i++].trim();
                     elementValue = conditionalElements[i].trim();
                     if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FULL)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT))) {
@@ -1326,6 +1294,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                         }
 
                         String[] joinElements = elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
+
                         String joinResource = joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim();
                         String joinEvaluators = joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_EVALUATORS_INDEX)].trim();
                         if(joinEvaluators.startsWith(Strings.REPLACEABLE_GROUP)) {

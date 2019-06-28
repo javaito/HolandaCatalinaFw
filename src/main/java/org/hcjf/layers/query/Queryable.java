@@ -154,9 +154,13 @@ public interface Queryable extends BsonParcelable {
                             parameterValues.add(value);
                         }
                     } else if (currentParameter instanceof Query.QueryParameter) {
-                        value = get((O) instance, ((Query.QueryParameter) currentParameter), dataSource);
-                        if (value != null) {
-                            parameterValues.add(value);
+                        if(function instanceof Query.QueryReturnFunction && ((Query.QueryReturnFunction)function).isAggregate()) {
+                           parameterValues.add(currentParameter);
+                        } else {
+                            value = get((O) instance, ((Query.QueryParameter) currentParameter), dataSource);
+                            if (value != null) {
+                                parameterValues.add(value);
+                            }
                         }
                     } else if (currentParameter instanceof FieldEvaluator.UnprocessedValue) {
                         parameterValues.add(((FieldEvaluator.UnprocessedValue)currentParameter).
@@ -204,7 +208,11 @@ public interface Queryable extends BsonParcelable {
                 if(queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
                     result = SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL);
                 } else {
-                    result = Introspection.resolve(instance, queryField.getFieldPath());
+                    if(instance instanceof JoinableMap && ((JoinableMap)instance).containsResource(queryParameter.getResource().getResourceName())) {
+                        result = Introspection.resolve(((JoinableMap)instance).getResourceModel(queryParameter.getResource().getResourceName()), queryField.getFieldPath());
+                    } else {
+                        result = Introspection.resolve(instance, queryField.getFieldPath());
+                    }
                 }
             } else if(queryParameter instanceof Query.QueryFunction) {
                 result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);
