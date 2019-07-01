@@ -101,7 +101,7 @@ public final class Introspection {
      * @throws InvocationTargetException Invocation target exception.
      * @throws IllegalAccessException Illegal access exception.
      */
-    public static <O extends Object> O get(Object instance, String getterName) throws InvocationTargetException, IllegalAccessException {
+    public static <O extends Object> O get(Object instance, String getterName) {
         return getGetters(instance.getClass()).get(getterName).get(instance);
     }
 
@@ -113,7 +113,7 @@ public final class Introspection {
      * @throws InvocationTargetException Invocation target exception.
      * @throws IllegalAccessException Illegal access exception.
      */
-    public static List get(Object instance, String... getters) throws InvocationTargetException, IllegalAccessException {
+    public static List get(Object instance, String... getters) {
         List result = new ArrayList();
         for(String getter : getters) {
             result.add(get(instance, getter));
@@ -735,7 +735,7 @@ public final class Introspection {
          * @throws InvocationTargetException Invocation target exception.
          * @throws IllegalAccessException Illegal access exception.
          */
-        public <O extends Object> O get(Object instance) throws InvocationTargetException, IllegalAccessException {
+        public <O extends Object> O get(Object instance) {
             return (O) invoke(instance);
         }
 
@@ -833,7 +833,7 @@ public final class Introspection {
          * @throws InvocationTargetException Invocation target exception.
          * @throws IllegalAccessException Illegal access exception.
          */
-        public void set(Object instance, Object value) throws InvocationTargetException, IllegalAccessException {
+        public void set(Object instance, Object value) {
             invoke(instance, value);
         }
 
@@ -884,7 +884,7 @@ public final class Introspection {
          * @param method Declared method.
          * @return Return the entry or null if the method does not comply with the rule
          */
-        public InvokerEntry<I> filter(Method method);
+        InvokerEntry<I> filter(Method method);
 
         /**
          * Returns the name of the invoker to create the invoker key.
@@ -949,7 +949,7 @@ public final class Introspection {
          * @return Return a new representation of the value or the same object
          * depends the consumer implementation.
          */
-        public Object consume(Object value);
+        Object consume(Object value);
 
     }
 

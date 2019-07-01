@@ -732,12 +732,63 @@ public class Query extends EvaluatorCollection implements Queryable {
             //Creates the first query for the original resource.
             Query joinQuery = new Query(join.getResourceName());
             joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
+            for (Evaluator evaluator : optimizeJoin(currentResult, join)) {
+                joinQuery.addEvaluator(evaluator);
+            }
             for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResource())) {
                 joinQuery.addEvaluator(evaluator);
             }
             currentResult = product(currentResult, dataSource.getResourceData(joinQuery), join, dataSource, consumer);
         }
         return currentResult;
+    }
+
+    /**
+     * This method analyze the join structure and creates a set of evaluators in order to improve the performance of
+     * the sub queries used to select the objects of the right resource of the join.
+     * @param leftData Collection with the left data.
+     * @param join Join structure.
+     * @return Returns a set of the new filters in order to reduce the information of the right data.
+     */
+    private Collection<Evaluator> optimizeJoin(Collection<Joinable> leftData, Join join) {
+        Collection<Evaluator> result = new ArrayList<>();
+
+        if(join.getType().equals(Join.JoinType.JOIN) ||
+                join.getType().equals(Join.JoinType.INNER) ||
+                join.getType().equals(Join.JoinType.LEFT)) {
+            if(join.getEvaluators().size() == 1) {
+                if(join.getEvaluators().stream().findFirst().get() instanceof Equals) {
+                    //the join was identified with only one equality (...ON resource1.field = resource2.field)
+                    Equals equals = (Equals) join.getEvaluators().stream().findFirst().get();
+                    if(equals.getLeftValue() instanceof QueryField && equals.getRightValue() instanceof QueryField) {
+                        QueryField foreignKey = null;
+                        QueryField key = null;
+                        if (!((QueryField) equals.getLeftValue()).getResource().equals(join.getResource()) &&
+                                ((QueryField) equals.getRightValue()).getResource().equals(join.getResource())) {
+                            foreignKey = (QueryField) equals.getLeftValue();
+                            key = (QueryField) equals.getRightValue();
+                        } else if (!((QueryField) equals.getRightValue()).getResource().equals(join.getResource()) &&
+                                ((QueryField) equals.getLeftValue()).getResource().equals(join.getResource())) {
+                            foreignKey = (QueryField) equals.getRightValue();
+                            key = (QueryField) equals.getLeftValue();
+                        }
+                        if(foreignKey != null) {
+                            Collection reducerList = new HashSet();
+                            for(Object currentObject : leftData) {
+                                Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getFieldPath());
+                                if(foreignKeyValue != null) {
+                                    reducerList.add(foreignKeyValue);
+                                }
+                            }
+                            In inEvaluator = new In(key, reducerList);
+                            result.add(inEvaluator);
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -904,7 +955,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     /**
      * Return a copy of this query without all the evaluator and order fields of the
      * parameter collections.
-     * @param evaluatorsToRemove Evaluators to reduce.
+     * @param evaluatorsToRemove Evaluators to optimizeJoin.
      * @return Reduced copy of the query.
      */
     public final Query reduce(Collection<Evaluator> evaluatorsToRemove) {
@@ -925,7 +976,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     /**
      * Reduce recursively all the collection into the query.
-     * @param collection Collection to reduce.
+     * @param collection Collection to optimizeJoin.
      * @param evaluatorsToRemove Evaluator to remove.
      */
     private final void reduceCollection(EvaluatorCollection collection, Collection<Evaluator> evaluatorsToRemove) {

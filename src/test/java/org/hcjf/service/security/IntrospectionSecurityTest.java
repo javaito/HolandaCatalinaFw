@@ -43,8 +43,6 @@ public class IntrospectionSecurityTest {
             try {
                 getter.get(bean);
                 Assert.fail();
-            } catch (InvocationTargetException e) {
-            } catch (IllegalAccessException e) {
             } catch (SecurityException ex) {
                 Assert.assertTrue(true);
             }
@@ -59,8 +57,6 @@ public class IntrospectionSecurityTest {
                 String name = "testName";
                 setter.set(bean, name);
                 Assert.assertEquals(getter.get(bean), name);
-            } catch (InvocationTargetException e) {
-            } catch (IllegalAccessException e) {
             } catch (SecurityException ex) {
                 Assert.fail();
             }
