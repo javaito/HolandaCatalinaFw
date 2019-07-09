@@ -236,20 +236,24 @@ public final class Layers {
 
         if(result == null) {
             //Try to match with some layer's regex
-            for(String regex : instance.layerImplementationsByRegex.get(layerClass).keySet()) {
-                if(implName.matches(regex)) {
-                    result = getImplementationInstance(instance.layerImplementations.get(layerClass).get(
-                            instance.layerImplementationsByRegex.get(layerClass).get(regex)));
-                    break;
+            if(instance.layerImplementationsByRegex.containsKey(layerClass)) {
+                for (String regex : instance.layerImplementationsByRegex.get(layerClass).keySet()) {
+                    if (implName.matches(regex)) {
+                        result = getImplementationInstance(instance.layerImplementations.get(layerClass).get(
+                                instance.layerImplementationsByRegex.get(layerClass).get(regex)));
+                        break;
+                    }
                 }
             }
 
             if(result == null) {
-                for(String regex : instance.distributedLayersByRegex.get(layerClass).keySet()) {
-                    if(implName.matches(regex)) {
-                        getDistributedImplementationInstance(layerClass,
-                                instance.distributedLayersByRegex.get(layerClass).get(regex));
-                        break;
+                if(instance.distributedLayersByRegex.containsKey(layerClass)) {
+                    for (String regex : instance.distributedLayersByRegex.get(layerClass).keySet()) {
+                        if (implName.matches(regex)) {
+                            getDistributedImplementationInstance(layerClass,
+                                    instance.distributedLayersByRegex.get(layerClass).get(regex));
+                            break;
+                        }
                     }
                 }
             }
