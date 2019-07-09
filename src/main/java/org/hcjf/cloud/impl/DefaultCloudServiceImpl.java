@@ -5,6 +5,7 @@ import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
+import org.hcjf.cloud.impl.objects.DistributedLayer;
 import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.layers.Layer;
@@ -184,8 +185,8 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
      * @param implName Layer implementation name.
      */
     @Override
-    public void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName) {
-        CloudOrchestrator.getInstance().publishDistributedLayer(Layer.class.getName(), layerClass.getName(), implName);
+    public void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName, String regex) {
+        CloudOrchestrator.getInstance().publishDistributedLayer(regex, Layer.class.getName(), layerClass.getName(), implName);
     }
 
     /**
@@ -197,6 +198,17 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     @Override
     public boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName) {
         return CloudOrchestrator.getInstance().isDistributedLayerPublished(Layer.class.getName(), layerClass.getName(), implName);
+    }
+
+    /**
+     * Returns the object that represent the distributed layer.
+     * @param layerClass Layer class.
+     * @param implName Layer implementation name.
+     * @return Regex if exist or null.
+     */
+    @Override
+    public String getRegexFromDistributedLayer(Class<? extends LayerInterface> layerClass, String implName) {
+        return CloudOrchestrator.getInstance().getRegexFromDistributedLayer(Layer.class.getName(), layerClass.getName(), implName);
     }
 
     /**

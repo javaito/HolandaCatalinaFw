@@ -10,6 +10,7 @@ import java.util.UUID;
 public class PublishLayerMessage extends Message {
 
     private Object[] path;
+    private String regex;
     private UUID nodeId;
     private UUID serviceEndPointId;
 
@@ -26,6 +27,14 @@ public class PublishLayerMessage extends Message {
 
     public void setPath(Object[] path) {
         this.path = path;
+    }
+
+    public String getRegex() {
+        return regex;
+    }
+
+    public void setRegex(String regex) {
+        this.regex = regex;
     }
 
     public UUID getServiceEndPointId() {

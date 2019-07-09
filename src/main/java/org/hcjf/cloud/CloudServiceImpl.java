@@ -3,6 +3,7 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
+import org.hcjf.cloud.impl.objects.DistributedLayer;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.layers.LayerInterface;
 
@@ -112,8 +113,9 @@ public interface CloudServiceImpl {
      * Publish a distributed layer into the cloud.
      * @param layerClass Layer class.
      * @param implName Layer implementation name.
+     * @param regex Regex for match the implementation.
      */
-    void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName);
+    void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName, String regex);
 
     /**
      * This method send the plugin for all the nodes into the cloud.
@@ -128,6 +130,14 @@ public interface CloudServiceImpl {
      * @return Returns true if the layer is published and false in the otherwise.
      */
     boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName);
+
+    /**
+     * Returns the object that represent the distributed layer.
+     * @param layerClass Layer class.
+     * @param implName Layer implementation name.
+     * @return Regex if exist or null.
+     */
+    String getRegexFromDistributedLayer(Class<? extends LayerInterface> layerClass, String implName);
 
     /**
      * Invokes the remote instance of a layer.

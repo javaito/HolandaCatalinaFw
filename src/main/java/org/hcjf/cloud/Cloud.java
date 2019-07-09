@@ -3,6 +3,7 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
+import org.hcjf.cloud.impl.objects.DistributedLayer;
 import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.layers.LayerInterface;
@@ -186,9 +187,10 @@ public final class Cloud extends Service<CloudConsumer> {
      * Publish a distributed layer into the cloud.
      * @param layerClass Layer class.
      * @param implName Layer implementation name.
+     * @param regex Regex to match the layer.
      */
-    public static void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName) {
-        getInstance().impl.publishDistributedLayer(layerClass, implName);
+    public static void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName, String regex) {
+        getInstance().impl.publishDistributedLayer(layerClass, implName, regex);
     }
 
     /**
@@ -207,6 +209,16 @@ public final class Cloud extends Service<CloudConsumer> {
      */
     public static boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName) {
         return getInstance().impl.isLayerPublished(layerClass, implName);
+    }
+
+    /**
+     * Returns the object that represent the distributed layer.
+     * @param layerClass Layer class.
+     * @param implName Layer implementation name.
+     * @return Regex if exist or null.
+     */
+    public static String getRegexFromDistributedLayer(Class<? extends LayerInterface> layerClass, String implName) {
+        return getInstance().impl.getRegexFromDistributedLayer(layerClass, implName);
     }
 
     /**

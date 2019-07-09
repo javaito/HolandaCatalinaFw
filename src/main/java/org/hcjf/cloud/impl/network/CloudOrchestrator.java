@@ -501,6 +501,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             if (localLeaf.getInstance() instanceof DistributedLayer) {
                 publishLayerMessage = new PublishLayerMessage(UUID.randomUUID());
                 publishLayerMessage.setPath(path);
+                publishLayerMessage.setRegex(((DistributedLayer)localLeaf.getInstance()).getRegex());
                 publishLayerMessage.setServiceEndPointId(thisServiceEndPoint.getId());
                 messages.add(publishLayerMessage);
             }
@@ -704,6 +705,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
                 if(!localImpl) {
                     DistributedLayer distributedLayer = getDistributedLayer(false, publishLayerMessage.getPath());
+                    distributedLayer.setRegex(publishLayerMessage.getRegex());
                     distributedLayer.addServiceEndPoint(publishLayerMessage.getServiceEndPointId());
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Remote %s layer founded %s in %s",
                             layerInterfaceClass.getName(), implName, endPoints.get(
@@ -1004,8 +1006,19 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return sharedStore.getInstance(path) != null;
     }
 
-    public void publishDistributedLayer(Object... path) {
-        getDistributedLayer(true, path);
+    public String getRegexFromDistributedLayer(Object... path) {
+        String result = null;
+        DistributedLayer distributedLayer = (DistributedLayer) sharedStore.getInstance(path);
+        if(distributedLayer != null) {
+            result = distributedLayer.getRegex();
+        }
+        return result;
+    }
+
+    public void publishDistributedLayer(String regex, Object... path) {
+        DistributedLayer distributedLayer = getDistributedLayer(true, path);
+        distributedLayer.setRegex(regex);
+        System.out.println();
     }
 
     public void publishPlugin(byte[] jarFile) {

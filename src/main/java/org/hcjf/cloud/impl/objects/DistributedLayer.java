@@ -11,6 +11,7 @@ public class DistributedLayer {
     private final String layerName;
     private final List<UUID> serviceEndPoints;
     private final Map<UUID,ResponseAverage> invocationCounter;
+    private String regex;
 
     public DistributedLayer(Class layerInterface, String layerName) {
         this.layerInterface = layerInterface;
@@ -44,6 +45,14 @@ public class DistributedLayer {
     public synchronized void removeServiceEndPoint(UUID serviceEndPointId) {
         serviceEndPoints.remove(serviceEndPointId);
         invocationCounter.remove(serviceEndPointId);
+    }
+
+    public String getRegex() {
+        return regex;
+    }
+
+    public void setRegex(String regex) {
+        this.regex = regex;
     }
 
     private class ResponseAverage {

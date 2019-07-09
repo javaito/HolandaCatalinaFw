@@ -17,6 +17,15 @@ public interface LayerInterface extends InvocationHandler {
     String getImplName();
 
     /**
+     * Returns a regex to math, this regex only gonna by used if the get layer method not found any layer with the
+     * specific name.
+     * @return Regex value. Null by default.
+     */
+    default String getRegex() {
+        return null;
+    }
+
+    /**
      * Returns true if the layer is stateful or false in the otherwise.
      * @return Stateful
      */

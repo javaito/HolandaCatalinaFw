@@ -61,9 +61,11 @@ public final class Layers {
     private final Map<Class<? extends Layer>, Object> initialInstances;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> implAlias;
     private final Map<Class<? extends LayerInterface>, Map<String, Class<? extends Layer>>> layerImplementations;
+    private final Map<Class<? extends LayerInterface>, Map<String, String>> layerImplementationsByRegex;
     private final Map<Class<? extends LayerInterface>, String> defaultLayers;
     private final Map<Class<? extends LayerInterface>, Map<String, String>> pluginLayerImplementations;
     private final Map<Class<? extends LayerInterface>, Map<String, LayerInterface>> distributedLayers;
+    private final Map<Class<? extends LayerInterface>, Map<String, String>> distributedLayersByRegex;
     private final Map<Class<? extends Layer>, LayerInterface> instanceCache;
     private final Map<String, LayerInterface> pluginWrapperCache;
     private final Map<String, Layer> pluginCache;
@@ -74,8 +76,10 @@ public final class Layers {
         initialInstances = new HashMap<>();
         implAlias = new HashMap<>();
         layerImplementations = new HashMap<>();
+        layerImplementationsByRegex = new HashMap<>();
         pluginLayerImplementations = new HashMap<>();
         distributedLayers = new HashMap<>();
+        distributedLayersByRegex = new HashMap<>();
         defaultLayers = new HashMap<>();
         instanceCache = new HashMap<>();
         pluginWrapperCache = new HashMap<>();
@@ -157,6 +161,14 @@ public final class Layers {
             result = (L) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
                     new Class[]{layerClass}, new DistributedLayer(layerName, layerClass));
             instance.distributedLayers.get(layerClass).put(layerName, result);
+
+            String regex = Cloud.getRegexFromDistributedLayer(layerClass, layerName);
+            if(regex != null) {
+                if(!instance.distributedLayersByRegex.containsKey(layerClass)) {
+                    instance.distributedLayersByRegex.put(layerClass, new HashMap<>());
+                }
+                instance.distributedLayersByRegex.get(layerClass).put(regex, layerName);
+            }
         }
         return result;
     }
@@ -223,7 +235,28 @@ public final class Layers {
         }
 
         if(result == null) {
-            throw new HCJFRuntimeException("Layer implementation not found: %s@%s", layerClass, implName);
+            //Try to match with some layer's regex
+            for(String regex : instance.layerImplementationsByRegex.get(layerClass).keySet()) {
+                if(implName.matches(regex)) {
+                    result = getImplementationInstance(instance.layerImplementations.get(layerClass).get(
+                            instance.layerImplementationsByRegex.get(layerClass).get(regex)));
+                    break;
+                }
+            }
+
+            if(result == null) {
+                for(String regex : instance.distributedLayersByRegex.get(layerClass).keySet()) {
+                    if(implName.matches(regex)) {
+                        getDistributedImplementationInstance(layerClass,
+                                instance.distributedLayersByRegex.get(layerClass).get(regex));
+                        break;
+                    }
+                }
+            }
+
+            if(result == null) {
+                throw new HCJFRuntimeException("Layer implementation not found: %s@%s", layerClass, implName);
+            }
         }
 
         return result;
@@ -365,6 +398,12 @@ public final class Layers {
                 instance.initialInstances.put(layerClass, layerInstance);
             }
             instance.layerImplementations.get(layerInterfaceClass).put(implName, layerClass);
+            if(layerInstance.getRegex() != null) {
+                if (!instance.layerImplementationsByRegex.containsKey(layerInterfaceClass)) {
+                    instance.layerImplementationsByRegex.put(layerInterfaceClass, new HashMap<>());
+                }
+                instance.layerImplementationsByRegex.get(layerInterfaceClass).put(layerInstance.getRegex(), implName);
+            }
 
             //Add one map entry for each alias with the same implementation name.
             if (layerInstance.getAliases() != null) {
@@ -380,7 +419,7 @@ public final class Layers {
 
             if(SystemProperties.getBoolean(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED)) {
                 if (layerInstance instanceof DistributedLayerInterface) {
-                    Cloud.publishDistributedLayer(layerInterfaceClass, implName);
+                    Cloud.publishDistributedLayer(layerInterfaceClass, implName, layerInstance.getRegex());
                 }
             }
         }

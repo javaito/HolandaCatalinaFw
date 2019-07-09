@@ -2,6 +2,7 @@ package org.hcjf.layers;
 
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.distributed.DistributedLayerInterface;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -18,6 +19,7 @@ public class LayerSearchTest {
     public static void config() {
         Layers.publishLayer(LayerA.class);
         Layers.publishLayer(LayerB.class);
+        Layers.publishLayer(LayerSet.class);
     }
 
     @Test
@@ -66,6 +68,21 @@ public class LayerSearchTest {
         Assert.assertEquals(readRowsLayerInterfaces.iterator().next().getImplName(), "impl-layer-b");
     }
 
+    @Test
+    public void testSearchMatchLayer() {
+        ReadRowsLayerInterface readRowsLayerInterface = Layers.get(ReadRowsLayerInterface.class, "layer.set.test");
+        Assert.assertEquals(readRowsLayerInterface.getImplName(), "layer.set");
+
+        ReadRowsLayerInterface readRowsLayerInterface2 = Layers.get(ReadRowsLayerInterface.class, "layer.set.test2");
+        Assert.assertTrue(readRowsLayerInterface == readRowsLayerInterface2);
+
+        try {
+            readRowsLayerInterface = Layers.get(ReadRowsLayerInterface.class, "layer.sets.test");
+            Assert.fail();
+        } catch (Exception ex) {
+        }
+    }
+
     public static class LayerA extends Layer implements ReadRowsLayerInterface {
 
         public LayerA() {
@@ -80,5 +97,17 @@ public class LayerSearchTest {
             super("impl-layer-b");
         }
 
+    }
+
+    public static class LayerSet extends Layer implements ReadRowsLayerInterface {
+
+        public LayerSet() {
+            super("layer.set");
+        }
+
+        @Override
+        public String getRegex() {
+            return "layer\\.set\\..*";
+        }
     }
 }
