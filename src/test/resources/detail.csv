@@ -1,0 +1,7 @@
+id,idInvoice,detail,amount
+1,1,Thing 1,50
+2,1,Thing 2,5
+3,2,Thing 1,50
+4,2,Thing 3,50
+5,3,Thing 1,50
+6,3,Thing 4,100

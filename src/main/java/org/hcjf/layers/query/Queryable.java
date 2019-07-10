@@ -1,16 +1,13 @@
 package org.hcjf.layers.query;
 
-import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.QueryAggregateFunctionLayerInterface;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
-import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.bson.BsonParcelable;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 /**

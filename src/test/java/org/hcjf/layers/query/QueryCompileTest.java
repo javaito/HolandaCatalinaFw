@@ -12,15 +12,6 @@ import java.util.UUID;
  */
 public class QueryCompileTest {
 
-    public static void main(String[] args) {
-        Query q = Query.compile("SELECT * FROM bla");
-        System.out.println(q.toString());
-        BsonDocument qd = q.toBson();
-        Query q2 = BsonParcelable.Builder.create(qd);
-        System.out.println(q2.toString());
-        System.out.printf("");
-    }
-
     @Test
     public void testJoinCompile() {
         try {

@@ -1319,12 +1319,6 @@ public class Query extends EvaluatorCollection implements Queryable {
 
             query = new Query(fromBody.trim());
 
-            for(String returnField : selectBody.split(SystemProperties.get(
-                    SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                query.addReturnField((QueryReturnParameter)
-                        processStringValue(query, groups, richTexts, returnField, null, QueryReturnParameter.class, new ArrayList<>()));
-            }
-
             if(conditionalBody != null) {
                 Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
                 String[] conditionalElements = conditionalPatter.split(conditionalBody);
@@ -1376,6 +1370,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                         query.setStart(Integer.parseInt(elementValue));
                     }
                 }
+            }
+
+            for(String returnField : selectBody.split(SystemProperties.get(
+                    SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                query.addReturnField((QueryReturnParameter)
+                        processStringValue(query, groups, richTexts, returnField, null, QueryReturnParameter.class, new ArrayList<>()));
             }
         } else {
             String value = groups.get(startGroup);
@@ -1848,7 +1848,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 boolean resourceNameFounded = false;
                 String[] steps = value.split(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.CLASS_SEPARATOR);
                 for(QueryResource queryResource : query.getResources()) {
-                    if(steps[0].equals(queryResource.resourceName)) {
+                    if(originalValue.startsWith(queryResource.resourceName + ".")) {
                         this.resource = queryResource;
                         resourceNameFounded = true;
                         break;
@@ -1856,7 +1856,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
 
                 if(resourceNameFounded) {
-                    this.fieldPath = value.substring(value.indexOf(Strings.CLASS_SEPARATOR) + 1);
+                    this.fieldPath = value.substring((resource.resourceName).length() + 1);
                 } else {
                     this.fieldPath = value;
                 }

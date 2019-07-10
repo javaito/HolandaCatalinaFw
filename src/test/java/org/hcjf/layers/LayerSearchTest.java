@@ -20,6 +20,7 @@ public class LayerSearchTest {
         Layers.publishLayer(LayerA.class);
         Layers.publishLayer(LayerB.class);
         Layers.publishLayer(LayerSet.class);
+        Layers.publishLayer(Metrics.class);
     }
 
     @Test
@@ -81,6 +82,9 @@ public class LayerSearchTest {
             Assert.fail();
         } catch (Exception ex) {
         }
+
+        ReadRowsLayerInterface metricsInterface = Layers.get(ReadRowsLayerInterface.class, "metrics.test.javier");
+        System.out.println();
     }
 
     public static class LayerA extends Layer implements ReadRowsLayerInterface {
@@ -108,6 +112,18 @@ public class LayerSearchTest {
         @Override
         public String getRegex() {
             return "layer\\.set\\..*";
+        }
+    }
+
+    public static class Metrics extends Layer implements ReadRowsLayerInterface {
+
+        public Metrics() {
+            super("metrics");
+        }
+
+        @Override
+        public String getRegex() {
+            return "metrics\\..*";
         }
     }
 }

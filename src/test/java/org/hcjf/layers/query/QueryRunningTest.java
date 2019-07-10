@@ -3,6 +3,7 @@ package org.hcjf.layers.query;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
@@ -10,10 +11,17 @@ import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.JsonUtils;
+import org.hcjf.utils.Strings;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -224,7 +232,7 @@ public class QueryRunningTest {
 
     @Test
     public void join() {
-        Query query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+        Query query = Query.compile("SELECT address.street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonAddresses.size() - 1);
 
