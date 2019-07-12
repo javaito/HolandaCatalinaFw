@@ -59,6 +59,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(CollectionQueryFunction.class);
         Layers.publishLayer(ObjectQueryFunction.class);
         Layers.publishLayer(QueryBsonBuilderLayer.class);
+        Layers.publishLayer(GeoQueryFunctionLayer.class);
 
         //Publishing default aggregate function layers...
         Layers.publishLayer(CountQueryAggregateFunctionLayer.class);
@@ -68,6 +69,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(MaxAggregateFunctionLayer.class);
         Layers.publishLayer(MinAggregateFunctionLayer.class);
         Layers.publishLayer(DistinctQueryAggregateFunction.class);
+        Layers.publishLayer(GeoUnionAggregateFunctionLayer.class);
     }
 
     public Query(String resource, QueryId id) {

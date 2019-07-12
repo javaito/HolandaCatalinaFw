@@ -7,7 +7,7 @@
     <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>1.9.4</version>
+    <version>1.9.5</version>
     <packaging>jar</packaging>
     <description>Java framework to develop platforms based on distributed services</description>
     <url>https://github.com/javaito/HolandaCatalinaFw</url>
@@ -115,6 +115,11 @@
             <artifactId>client-java</artifactId>
             <version>4.0.0</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.esri.geometry</groupId>
+            <artifactId>esri-geometry-api</artifactId>
+            <version>2.2.2</version>
         </dependency>
     </dependencies>
 

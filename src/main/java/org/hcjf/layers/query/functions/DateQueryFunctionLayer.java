@@ -3,6 +3,7 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
+import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -43,6 +44,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String PERIOD_IN_HOURS = "periodInHours";
     private static final String PERIOD_IN_DAYS = "periodInDays";
     private static final String DATE_FORMAT = "dateFormat";
+    private static final String PARSE_DATE = "parseDate";
     private static final String TO_DATE = "toDate";
 
     public DateQueryFunctionLayer() {
@@ -93,7 +95,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
                     ZoneId zoneId = ZoneId.of((String)parameters[0]);
                     result = Date.from(ZonedDateTime.now(zoneId).toInstant());
                 } else {
-                    throw new HCJFRuntimeException("Illegal parameters length");
+                    throw new HCJFRuntimeException("Illegal parameters length, now() or now((String)zoneId)");
                 }
                 break;
             }
@@ -127,6 +129,18 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             case PERIOD_IN_HOURS: result = getDuration(parameters).toHours(); break;
             case PERIOD_IN_DAYS: result = getDuration(parameters).toDays(); break;
             case TO_DATE: result = new Date(((Number)parameters[0]).longValue()); break;
+            case PARSE_DATE: {
+                if(parameters.length >= 2) {
+                    try {
+                        result = new SimpleDateFormat((String) parameters[0]).parse((String) parameters[1]);
+                    } catch (Exception ex){
+                        throw new HCJFRuntimeException("Date parse fail", ex);
+                    }
+                } else {
+                    throw new HCJFRuntimeException("Illegal parameters length, parseDate((String)pattern, (String)vale)");
+                }
+                break;
+            }
             case DATE_FORMAT: {
                 if(parameters.length >= 2) {
                     String pattern = (String) parameters[parameters.length-1];

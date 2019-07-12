@@ -431,6 +431,15 @@ public class QueryRunningTest {
         Map<String,Object> map = bsonDocument.toMap();
     }
 
+    @Test
+    public void testGeoFunctions() {
+
+        Query query = Query.compile("SELECT name, geoAsText(geoUnion('POINT(-33.2569 -65.2548)', 'MULTIPOINT ((10 40), (40 30), (20 20), (30 10))')) as gulf FROM character");
+        Collection<JoinableMap>resultSet = query.evaluate(dataSource);
+
+        System.out.println();
+    }
+
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
         public CustomFunction() {
