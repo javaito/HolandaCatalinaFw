@@ -38,7 +38,9 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final QueryResource resource;
     private final List<QueryResource> resources;
     private Integer limit;
+    private Integer underlyingLimit;
     private Integer start;
+    private Integer underlyingStart;
     private final List<QueryReturnParameter> groupParameters;
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
@@ -208,6 +210,22 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
+     * Returns the query underlying limit.
+     * @return Underlying limit.
+     */
+    public Integer getUnderlyingLimit() {
+        return underlyingLimit;
+    }
+
+    /**
+     * Set the underlying limit.
+     * @param underlyingLimit Underlying limit value.
+     */
+    public void setUnderlyingLimit(Integer underlyingLimit) {
+        this.underlyingLimit = underlyingLimit;
+    }
+
+    /**
      * Return the object that represents the first element of the result.
      * @return Firts object of the result.
      */
@@ -221,6 +239,22 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     public final void setStart(Integer start) {
         this.start = start;
+    }
+
+    /**
+     * Returns the underlying start.
+     * @return Underlying start value.
+     */
+    public Integer getUnderlyingStart() {
+        return underlyingStart;
+    }
+
+    /**
+     * Set the underlying start.
+     * @param underlyingStart Underlying start value.
+     */
+    public void setUnderlyingStart(Integer underlyingStart) {
+        this.underlyingStart = underlyingStart;
     }
 
     /**
@@ -1073,9 +1107,23 @@ public class Query extends EvaluatorCollection implements Queryable {
                 resultBuilder.append(Strings.WHITE_SPACE).append(getStart());
             }
 
+            if (getUnderlyingStart() != null) {
+                if(getStart() == null) {
+                    resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.START)).append(Strings.WHITE_SPACE);
+                }
+                resultBuilder.append(Strings.ARGUMENT_SEPARATOR).append(getUnderlyingStart());
+            }
+
             if (getLimit() != null) {
                 resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT));
                 resultBuilder.append(Strings.WHITE_SPACE).append(getLimit());
+            }
+
+            if (getUnderlyingLimit() != null) {
+                if(getLimit() == null) {
+                    resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT)).append(Strings.WHITE_SPACE);
+                }
+                resultBuilder.append(Strings.ARGUMENT_SEPARATOR).append(getUnderlyingLimit());
             }
             stringRepresentation = resultBuilder.toString();
         }
@@ -1261,12 +1309,13 @@ public class Query extends EvaluatorCollection implements Queryable {
             query = ((ParameterizedQuery)queryable).getQuery();
         }
 
-        if(query.getJoins().isEmpty() && query.getOrderParameters().isEmpty()) {
-            result = Layers.get(ReadRowsLayerInterface.class, queryable.getResourceName()).readRows(queryable);
-        } else {
-            result = queryable.evaluate(new Queryable.ReadableDataSource());
-        }
-        return result;
+        //if(query.getJoins().isEmpty() && query.getOrderParameters().isEmpty()) {
+        //    result = Layers.get(ReadRowsLayerInterface.class, queryable.getResourceName()).readRows(queryable);
+        //} else {
+        //    result = queryable.evaluate(new Queryable.ReadableDataSource());
+        //}
+        //return result;
+        return queryable.evaluate(new Queryable.ReadableDataSource());
     }
 
     /**
@@ -1367,9 +1416,47 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     processStringValue(query, groups, richTexts, orderField, null, QueryReturnParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
-                        query.setLimit(Integer.parseInt(elementValue));
+                        if(elementValue == null || elementValue.isBlank()) {
+                            throw new HCJFRuntimeException("Undeclared limit value");
+                        }
+
+                        String[] limitValues = elementValue.split(Strings.ARGUMENT_SEPARATOR);
+                        if(limitValues.length > 0 && !limitValues[0].isBlank()) {
+                            try {
+                                query.setLimit(Integer.parseInt(limitValues[0].trim()));
+                            } catch (NumberFormatException ex) {
+                                throw new HCJFRuntimeException("The limit value must be an integer", ex);
+                            }
+                        }
+
+                        if(limitValues.length > 1 && !limitValues[1].isBlank()) {
+                            try {
+                                query.setUnderlyingLimit(Integer.parseInt(limitValues[1].trim()));
+                            } catch (NumberFormatException ex) {
+                                throw new HCJFRuntimeException("The underlying limit value must be an integer", ex);
+                            }
+                        }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.START))) {
-                        query.setStart(Integer.parseInt(elementValue));
+                        if(elementValue == null || elementValue.isBlank()) {
+                            throw new HCJFRuntimeException("Undeclared start value");
+                        }
+
+                        String[] startValues = elementValue.split(Strings.ARGUMENT_SEPARATOR);
+                        if(startValues.length > 0 && !startValues[0].isBlank()) {
+                            try {
+                                query.setStart(Integer.parseInt(startValues[0].trim()));
+                            } catch (NumberFormatException ex) {
+                                throw new HCJFRuntimeException("The start value must be an integer", ex);
+                            }
+                        }
+
+                        if(startValues.length > 1 && !startValues[1].isBlank()) {
+                            try {
+                                query.setUnderlyingStart(Integer.parseInt(startValues[1].trim()));
+                            } catch (NumberFormatException ex) {
+                                throw new HCJFRuntimeException("The underlying start value must be an integer", ex);
+                            }
+                        }
                     }
                 }
             }
@@ -1788,7 +1875,15 @@ public class Query extends EvaluatorCollection implements Queryable {
     /**
      * Group all the query components.
      */
-    public interface QueryComponent {}
+    public interface QueryComponent {
+
+        /**
+         * Verify if the component is underlying.
+         * @return True if the component is underlying.
+         */
+        boolean isUnderlying();
+
+    }
 
     /**
      * Represents any kind of resource.
@@ -1827,6 +1922,11 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
 
         @Override
+        public boolean isUnderlying() {
+            return false;
+        }
+
+        @Override
         public int compareTo(QueryResource o) {
             return resourceName.compareTo(o.getResourceName());
         }
@@ -1842,13 +1942,21 @@ public class Query extends EvaluatorCollection implements Queryable {
         private QueryResource resource;
         private String fieldPath;
         private final String originalValue;
+        private final boolean underlying;
 
         public QueryParameter(Query query, String originalValue, String value) {
             this.originalValue = originalValue.trim();
+
+            String cleanValue = value;
+            if(cleanValue.startsWith(Strings.AT)) {
+                cleanValue = value.substring(1);
+                underlying = true;
+            } else {
+                underlying = false;
+            }
             this.resource = query.getResource();
-            if(value.contains(Strings.CLASS_SEPARATOR)) {
+            if(cleanValue.contains(Strings.CLASS_SEPARATOR)) {
                 boolean resourceNameFounded = false;
-                String[] steps = value.split(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.CLASS_SEPARATOR);
                 for(QueryResource queryResource : query.getResources()) {
                     if(originalValue.startsWith(queryResource.resourceName + ".")) {
                         this.resource = queryResource;
@@ -1858,12 +1966,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
 
                 if(resourceNameFounded) {
-                    this.fieldPath = value.substring((resource.resourceName).length() + 1);
+                    this.fieldPath = cleanValue.substring((resource.resourceName).length() + 1);
                 } else {
-                    this.fieldPath = value;
+                    this.fieldPath = cleanValue;
                 }
             } else {
-                this.fieldPath = value;
+                this.fieldPath = cleanValue;
             }
         }
 
@@ -1898,6 +2006,15 @@ public class Query extends EvaluatorCollection implements Queryable {
         @Override
         public String toString() {
             return originalValue;
+        }
+
+        /**
+         * This method returns true if the component is underlying and false in the otherwise.
+         * @return Underlying value.
+         */
+        @Override
+        public boolean isUnderlying() {
+            return underlying;
         }
 
         /**
@@ -2118,10 +2235,6 @@ public class Query extends EvaluatorCollection implements Queryable {
         public Query create(BsonDocument document) {
             return Query.compile(document.get(QUERY_BSON_FIELD_NAME).getAsString());
         }
-
-    }
-
-    private static final class QueryCache {
 
     }
 

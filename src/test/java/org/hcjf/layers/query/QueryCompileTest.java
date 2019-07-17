@@ -257,4 +257,19 @@ public class QueryCompileTest {
         Assert.assertTrue(query1 == query2);
     }
 
+    @Test
+    public void testUnderlyingValues() {
+        Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84 limit 2, 50");
+        Assert.assertEquals(query.getLimit().intValue(), 2);
+        Assert.assertEquals(query.getUnderlyingLimit().intValue(), 50);
+
+        query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84 limit 2");
+        Assert.assertEquals(query.getLimit().intValue(), 2);
+        Assert.assertNull(query.getUnderlyingLimit());
+
+        query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84 limit ,50");
+        Assert.assertEquals(query.getUnderlyingLimit().intValue(), 50);
+        Assert.assertNull(query.getLimit());
+    }
+
 }

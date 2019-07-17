@@ -5,14 +5,14 @@ import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.utils.GeoUtils;
 import org.hcjf.utils.JsonUtils;
 
-import java.nio.ByteBuffer;
-import java.util.Map;
-
 public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
     private static final String NAME = "geo";
 
     private static final class Functions {
+        private static final String GEO_FROM_TEXT = "geoFromText";
+        private static final String GEO_FROM_GEO_JSON = "geoFromGeoJson";
+        private static final String GEO_FROM_BINARY = "geoFromBinary";
         private static final String GEO_AS_JSON = "geoAsJson";
         private static final String GEO_AS_GEO_JSON = "geoAsGeoJson";
         private static final String GEO_AS_BINARY = "geoAsBinary";
@@ -189,4 +189,8 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         return result;
     }
 
+    public static void main(String[] args) {
+        GeoUtils.createGeometry("POINT (30 10)");
+        System.out.println();
+    }
 }

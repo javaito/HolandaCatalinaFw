@@ -121,6 +121,7 @@ public final class Strings {
     public static final String LINE_SEPARATOR = "\n";
     public static final String TAB = "\t";
     public static final String SLASH = "/";
+    public static final String AT = "@";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
 

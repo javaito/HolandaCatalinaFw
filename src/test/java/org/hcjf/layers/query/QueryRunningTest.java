@@ -435,7 +435,13 @@ public class QueryRunningTest {
     public void testGeoFunctions() {
 
         Query query = Query.compile("SELECT name, geoAsText(geoUnion('POINT(-33.2569 -65.2548)', 'MULTIPOINT ((10 40), (40 30), (20 20), (30 10))')) as gulf FROM character");
-        Collection<JoinableMap>resultSet = query.evaluate(dataSource);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+
+        query = Query.compile("SELECT name, geoUnion('POINT(-33.2569 -65.2548)', 'MULTIPOINT ((10 40), (40 30), (20 20), (30 10))') as gulf FROM character");
+        resultSet = query.evaluate(dataSource);
+
+        query = Query.compile("SELECT name, new('hola') as gulf FROM character");
+        resultSet = query.evaluate(dataSource);
 
         System.out.println();
     }
