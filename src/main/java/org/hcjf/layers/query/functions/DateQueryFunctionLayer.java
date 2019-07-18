@@ -81,6 +81,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         addFunctionName(PERIOD_IN_HOURS);
         addFunctionName(PERIOD_IN_DAYS);
         addFunctionName(DATE_FORMAT);
+        addFunctionName(PARSE_DATE);
         addFunctionName(TO_DATE);
     }
 
