@@ -10,9 +10,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
     private static final String NAME = "geo";
 
     private static final class Functions {
-        private static final String GEO_FROM_TEXT = "geoFromText";
-        private static final String GEO_FROM_GEO_JSON = "geoFromGeoJson";
-        private static final String GEO_FROM_BINARY = "geoFromBinary";
+        private static final String GEO_NEW = "geoNew";
         private static final String GEO_AS_JSON = "geoAsJson";
         private static final String GEO_AS_GEO_JSON = "geoAsGeoJson";
         private static final String GEO_AS_BINARY = "geoAsBinary";
@@ -49,6 +47,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
     public GeoQueryFunctionLayer() {
         super(NAME);
 
+        addFunctionName(Functions.GEO_NEW);
         addFunctionName(Functions.GEO_AS_BINARY);
         addFunctionName(Functions.GEO_AS_JSON);
         addFunctionName(Functions.GEO_AS_GEO_JSON);
@@ -88,6 +87,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         OGCGeometry geometry = GeoUtils.createGeometry(parameters[0]);
 
         switch (functionName) {
+            case Functions.GEO_NEW: result = JsonUtils.createObject(geometry.asGeoJson());break;
             case Functions.GEO_AS_BINARY: result = geometry.asBinary(); break;
             case Functions.GEO_AS_GEO_JSON: result = geometry.asGeoJson(); break;
             case Functions.GEO_AS_JSON: result = geometry.asJson(); break;
@@ -189,8 +189,4 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         return result;
     }
 
-    public static void main(String[] args) {
-        GeoUtils.createGeometry("POINT (30 10)");
-        System.out.println();
-    }
 }

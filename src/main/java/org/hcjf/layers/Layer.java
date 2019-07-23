@@ -2,7 +2,6 @@ package org.hcjf.layers;
 
 import org.hcjf.errors.HCJFSecurityException;
 import org.hcjf.layers.plugins.PluginLayer;
-import org.hcjf.layers.storage.StorageLayerInterface;
 import org.hcjf.log.debug.Agent;
 import org.hcjf.log.debug.Agents;
 import org.hcjf.service.Service;
@@ -119,16 +118,6 @@ public abstract class Layer implements LayerInterface {
      */
     protected final <L extends LayerInterface> L getLayer(Class<? extends L> layerClass, String implName) {
         return Layers.get(layerClass, implName);
-    }
-
-    /**
-     * Delegation method to get some storage layer implementation.
-     * @param implName Layer implementation name.
-     * @param <L> Expected storage layer implementation class.
-     * @return Storage layer implementation.
-     */
-    protected final <L extends StorageLayerInterface<?>> L getStorageLayer(String implName) {
-        return (L) getLayer(StorageLayerInterface.class, implName);
     }
 
     /**

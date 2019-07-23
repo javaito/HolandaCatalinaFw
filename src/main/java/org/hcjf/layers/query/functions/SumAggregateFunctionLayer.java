@@ -24,7 +24,7 @@ public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
                 Number accumulatedValue;
                 for(Object row : resultSet) {
                     accumulatedValue = 0;
-                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A,V)->A.add(V))[1];
+                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{queryReturnField.resolve(row)}, (A,V)->A.add(V))[1];
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){

@@ -248,6 +248,18 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size() + 1);
 
+        query = Query.compile("SELECT * FROM character JOIN address ON address.addressId = character.addressId where isNotNull(nickname)");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 4);
+
+        query = Query.compile("SELECT * FROM character JOIN address ON address.addressId = character.addressId where isNotNull(character.nickname)");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 4);
+
+        query = Query.compile("SELECT * FROM character JOIN address ON address.addressId = character.addressId where isNotNull(nickname) and street = 'Evergreen Terrace'");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 3);
+
         query = Query.compile("SELECT * FROM character JOIN character2 ON character.id = character2.id");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
@@ -266,6 +278,10 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT * FROM character JOIN character2 ON character.lastName like character2.lastName JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
+
+        query = Query.compile("SELECT * FROM character JOIN character2 ON character.lastName like character2.lastName JOIN address ON address.addressId = character.addressId");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test
@@ -394,7 +410,9 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT name, if(weight + 10 > 100, 'gordo', 'flaco') AS es FROM character");
         resultSet = query.evaluate(dataSource);
-        System.out.println();
+        for(JoinableMap map : resultSet) {
+            Assert.assertNotNull(map.get("es"));
+        }
 
         query = Query.compile("SELECT lastName, count(weight) as size, aggregateMin(weight) as min, aggregateMax(weight) as max, aggregateSum(weight) as sum, aggregateMean(weight) as arithmeticMean, aggregateMean(weight, 'harmonic') as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);

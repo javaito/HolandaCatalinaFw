@@ -220,6 +220,14 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
         return Collections.unmodifiableMap(mapInstanceByResource.get(resourceName));
     }
 
+    /**
+     * Returns the set of resources.
+     * @return Set of resources.
+     */
+    public Set<String> getResources() {
+        return Collections.unmodifiableSet(resources);
+    }
+
     @Override
     public Groupable group(Groupable groupable) {
 

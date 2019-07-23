@@ -205,11 +205,7 @@ public interface Queryable extends BsonParcelable {
                 if(queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
                     result = SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL);
                 } else {
-                    if(instance instanceof JoinableMap && ((JoinableMap)instance).containsResource(queryParameter.getResource().getResourceName())) {
-                        result = Introspection.resolve(((JoinableMap)instance).getResourceModel(queryParameter.getResource().getResourceName()), queryField.getFieldPath());
-                    } else {
-                        result = Introspection.resolve(instance, queryField.getFieldPath());
-                    }
+                    result = queryField.resolve(instance);
                 }
             } else if(queryParameter instanceof Query.QueryFunction) {
                 result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);

@@ -33,18 +33,18 @@ public class MeanAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer 
                 for(Object row : resultSet) {
                     switch (meanKind) {
                         case GEOMETRIC: {
-                            functionResult = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.multiply(V));
+                            functionResult = accumulateFunction(accumulatedValue, new Object[]{queryReturnField.resolve(row)}, (A, V)->A.multiply(V));
                             functionResult[1] = Math.pow(functionResult[1].doubleValue(),  1 / functionResult[0].doubleValue());
                             break;
                         }
                         case HARMONIC: {
-                            functionResult = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.add(new BigDecimal(1).
+                            functionResult = accumulateFunction(accumulatedValue, new Object[]{queryReturnField.resolve(row)}, (A, V)->A.add(new BigDecimal(1).
                                     divide(V, SystemProperties.getInteger(SystemProperties.Query.Function.BIG_DECIMAL_DIVIDE_SCALE), RoundingMode.HALF_EVEN)));
                             functionResult[1] = functionResult[0].doubleValue() / functionResult[1].doubleValue();
                             break;
                         }
                         default: {
-                            functionResult = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.add(V));
+                            functionResult = accumulateFunction(accumulatedValue, new Object[]{queryReturnField.resolve(row)}, (A, V)->A.add(V));
                             functionResult[1] = functionResult[1].doubleValue() / functionResult[0].doubleValue();
                         }
                     }

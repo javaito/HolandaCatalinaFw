@@ -2,10 +2,10 @@ package org.hcjf.layers.query.functions;
 
 import com.esri.core.geometry.ogc.OGCGeometry;
 import org.hcjf.layers.query.Enlarged;
+import org.hcjf.layers.query.Query;
 import org.hcjf.utils.GeoUtils;
 import org.hcjf.utils.JsonUtils;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -29,26 +29,29 @@ public class GeoUnionAggregateFunctionLayer extends BaseQueryAggregateFunctionLa
             collection = List.of(parameters[0]);
         }
 
-        OGCGeometry geometry = null;
-        for(Object object : collection) {
-            if(object == null) {
-                continue;
+        for(Object row : (Collection<Enlarged>)resultSet) {
+            OGCGeometry geometry = null;
+            for(Object object : collection) {
+                if(object == null) {
+                    continue;
+                }
+
+                Object value = object;
+                if(value instanceof Query.QueryReturnField) {
+                    value = ((Query.QueryReturnField)value).resolve(row);
+                }
+                if(geometry == null) {
+                    geometry = GeoUtils.createGeometry(value);
+                } else {
+                    geometry = geometry.union(GeoUtils.createGeometry(value));
+                }
             }
 
-            if(geometry == null) {
-                geometry = GeoUtils.createGeometry(object);
-            } else {
-                geometry = geometry.union(GeoUtils.createGeometry(object));
+            Object result = null;
+            if(geometry != null) {
+                result = JsonUtils.createObject(geometry.asGeoJson());
             }
-        }
-
-        Object result = null;
-        if(geometry != null) {
-            result = JsonUtils.createObject(geometry.asGeoJson());
-        }
-
-        for(Enlarged enlarged : (Collection<Enlarged>)resultSet) {
-            enlarged.put(alias, result);
+            ((Enlarged)row).put(alias, result);
         }
 
         return resultSet;

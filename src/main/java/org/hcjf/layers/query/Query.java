@@ -72,6 +72,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(MinAggregateFunctionLayer.class);
         Layers.publishLayer(DistinctQueryAggregateFunction.class);
         Layers.publishLayer(GeoUnionAggregateFunctionLayer.class);
+        Layers.publishLayer(EvalExpressionAggregateFunctionLayer.class);
     }
 
     public Query(String resource, QueryId id) {
@@ -506,20 +507,20 @@ public class Query extends EvaluatorCollection implements Queryable {
                 //Creates the first query for the original resource.
                 Query resolveQuery = new Query(getResourceName());
                 resolveQuery.returnAll = true;
-                if (getStart() != null) {
-                    resolveQuery.setLimit(getLimit() + getStart());
-                } else {
-                    resolveQuery.setLimit(getLimit());
-                }
+
+                resolveQuery.setLimit(getLimit());
+                resolveQuery.setUnderlyingLimit(getUnderlyingLimit());
+                resolveQuery.setStart(getStart());
+                resolveQuery.setUnderlyingStart(getUnderlyingStart());
+
                 copyEvaluators(resolveQuery, this);
 
-                //If the query has not joins then data source must return data from
-                //resource of the query.
-                data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
                 if (joins.size() > 0) {
-                    data = (Collection<O>) join((Collection<Joinable>) data,
-                            (DataSource<Joinable>) dataSource,
-                            (Consumer<Joinable>) consumer);
+                    data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
+                } else {
+                    //If the query has not joins then data source must return data from
+                    //resource of the query.
+                    data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
                 }
 
                 //Filtering data
@@ -665,6 +666,11 @@ public class Query extends EvaluatorCollection implements Queryable {
     private boolean verifyCondition(Object object, DataSource dataSource, Consumer consumer) {
         Boolean result = true;
         for (Evaluator evaluator : getEvaluators()) {
+            if (evaluator instanceof BooleanEvaluator &&
+                    ((BooleanEvaluator) evaluator).getValue() instanceof QueryParameter &&
+                    ((QueryParameter)((BooleanEvaluator) evaluator).getValue()).isUnderlying()) {
+                continue;
+            }
             if (!isEvaluatorDone(evaluator)) {
                 result &= evaluator.evaluate(object, dataSource, consumer);
                 if (!result) {
@@ -757,24 +763,29 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     /**
      * Evaluates the join operation.
-     * @param currentResult Current data result.
      * @param dataSource Data source instance.
      * @param consumer Consumer instance.
      * @return Collection that is the result of the join operation.
      */
-    private Collection<Joinable> join(Collection<Joinable> currentResult, Queryable.DataSource<Joinable> dataSource,
-                                      Queryable.Consumer<Joinable> consumer) {
+    private Collection<Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
+        Query query = new Query(getResource().getResourceName());
+        query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
+        for (Evaluator evaluator : getEvaluatorsFromResource(this, query, query.getResource())) {
+            query.addEvaluator(evaluator);
+        }
+        Collection<Joinable> currentResult = dataSource.getResourceData(verifyInstance(query, consumer));
+
         for(Join join : getJoins()) {
             //Creates the first query for the original resource.
-            Query joinQuery = new Query(join.getResourceName());
-            joinQuery.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
+            query = new Query(join.getResourceName());
+            query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             for (Evaluator evaluator : optimizeJoin(currentResult, join)) {
-                joinQuery.addEvaluator(evaluator);
+                query.addEvaluator(evaluator);
             }
-            for (Evaluator evaluator : getEvaluatorsFromResource(this, joinQuery, join.getResource())) {
-                joinQuery.addEvaluator(evaluator);
+            for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
+                query.addEvaluator(evaluator);
             }
-            currentResult = product(currentResult, dataSource.getResourceData(joinQuery), join, dataSource, consumer);
+            currentResult = product(currentResult, dataSource.getResourceData(query), join, dataSource, consumer);
         }
         return currentResult;
     }
@@ -924,32 +935,33 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     private List<Evaluator> getEvaluatorsFromResource(EvaluatorCollection collection, EvaluatorCollection parent, QueryResource resource) {
         List<Evaluator> result = new ArrayList<>();
+        QueryParameter queryParameter;
         for(Evaluator evaluator : collection.getEvaluators()) {
             if(evaluator instanceof FieldEvaluator) {
                 FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-                QueryParameter queryParameter;
                 boolean evaluatorAdded = false;
 
-                if(fieldEvaluator.getLeftValue() instanceof QueryParameter) {
+                if (fieldEvaluator.getLeftValue() instanceof QueryParameter) {
                     queryParameter = (QueryParameter) fieldEvaluator.getLeftValue();
-                    if((queryParameter instanceof QueryField &&
-                            ((QueryField)queryParameter).getResource().equals(resource)) ||
-                            (queryParameter instanceof QueryFunction &&
-                                    ((QueryFunction)queryParameter).getResources().contains(resource))){
+                    if(queryParameter.verifyResource(resource)) {
                         result.add(evaluator);
                         evaluatorAdded = true;
                     }
                 }
 
-                if(!evaluatorAdded) {
-                    if(fieldEvaluator.getRightValue() instanceof QueryParameter) {
+                if (!evaluatorAdded) {
+                    if (fieldEvaluator.getRightValue() instanceof QueryParameter) {
                         queryParameter = (QueryParameter) fieldEvaluator.getRightValue();
-                        if((queryParameter instanceof QueryField &&
-                                ((QueryField)queryParameter).getResource().equals(resource)) ||
-                                (queryParameter instanceof QueryFunction &&
-                                        ((QueryFunction)queryParameter).getResources().contains(resource))){
+                        if(queryParameter.verifyResource(resource)) {
                             result.add(evaluator);
                         }
+                    }
+                }
+            } else if(evaluator instanceof BooleanEvaluator) {
+                if(((BooleanEvaluator)evaluator).getValue() instanceof QueryParameter) {
+                    queryParameter = (QueryParameter) ((BooleanEvaluator)evaluator).getValue();
+                    if(queryParameter.verifyResource(resource)) {
+                        result.add(evaluator);
                     }
                 }
             } else if(evaluator instanceof EvaluatorCollection) {
@@ -964,27 +976,6 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             }
         }
-        return result;
-    }
-
-    /**
-     * This method evaluate all the values of the collection and put each of values
-     * into a map indexed by the value of the parameter field.
-     * @param objects Collection of data to evaluate.
-     * @param fieldIndex Field to index result.
-     * @param consumer Implementation to get the value from the collection
-     * @return Return the filtered data indexed by value of the parameter field.
-     */
-    private final Map<Object, Set<Joinable>> index(Collection<Joinable> objects, QueryField fieldIndex, Consumer<Joinable> consumer, DataSource<Joinable> dataSource) {
-        Map<Object, Set<Joinable>> result = new HashMap<>();
-
-        Object key;
-        Set<Joinable> set;
-        for(Joinable joinable : objects) {
-            key = consumer.get(joinable, fieldIndex, dataSource);
-            result.computeIfAbsent(key, k -> new HashSet<>()).add(joinable);
-        }
-
         return result;
     }
 
@@ -1890,6 +1881,8 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     public static class QueryResource implements Comparable<QueryResource>, QueryComponent {
 
+        public static final QueryResource ANY = new QueryResource(Strings.ALL);
+
         private String resourceName;
 
         public QueryResource(String resourceName) {
@@ -1935,6 +1928,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         public String toString() {
             return getResourceName();
         }
+
     }
 
     public static abstract class QueryParameter implements Comparable<QueryParameter>, QueryComponent {
@@ -1954,7 +1948,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             } else {
                 underlying = false;
             }
-            this.resource = query.getResource();
+            this.resource = QueryResource.ANY;
             if(cleanValue.contains(Strings.CLASS_SEPARATOR)) {
                 boolean resourceNameFounded = false;
                 for(QueryResource queryResource : query.getResources()) {
@@ -2037,6 +2031,13 @@ public class Query extends EvaluatorCollection implements Queryable {
             return toString().compareTo(o.toString());
         }
 
+        /**
+         * Verify if the query parameter make reference to the specified resource.
+         * @param resource Resource instance to test.
+         * @return Returns true if the parameter make reference to the specified resource and false in the otherwise.
+         */
+        public abstract boolean verifyResource(QueryResource resource);
+
     }
 
     /**
@@ -2074,6 +2075,11 @@ public class Query extends EvaluatorCollection implements Queryable {
 
             return queryResources;
         }
+
+        @Override
+        public boolean verifyResource(QueryResource resource) {
+            return getResources().contains(resource);
+        }
     }
 
     /**
@@ -2085,6 +2091,38 @@ public class Query extends EvaluatorCollection implements Queryable {
             super(query, fieldPath, fieldPath);
         }
 
+        /**
+         * This method resolves the introspection over the instance using the information into the
+         * query field.
+         * @param instance Instance to resolve the introspection.
+         * @param <R> Expected data type.
+         * @return Introspection result.
+         */
+        public <R extends Object> R resolve(Object instance) {
+            Object result = null;
+            if(instance instanceof JoinableMap && !((JoinableMap) instance).getResources().isEmpty()) {
+                if(getResource().equals(Query.QueryResource.ANY)) {
+                    for(String resourceName : ((JoinableMap)instance).getResources()) {
+                        result = Introspection.resolve(((JoinableMap) instance).
+                                getResourceModel(resourceName), getFieldPath());
+                        if(result != null) {
+                            break;
+                        }
+                    }
+                } else {
+                    result = Introspection.resolve(((JoinableMap) instance).
+                            getResourceModel(getResource().getResourceName()), getFieldPath());
+                }
+            } else {
+                result = Introspection.resolve(instance, getFieldPath());
+            }
+            return (R) result;
+        }
+
+        @Override
+        public boolean verifyResource(QueryResource resource) {
+            return getResource().equals(resource);
+        }
     }
 
     public interface QueryReturnParameter extends QueryComponent {

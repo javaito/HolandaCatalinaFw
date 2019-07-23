@@ -52,7 +52,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 Boolean condition;
                 Object ifValue;
                 Object elseValue = null;
-                if(parameters.length == 2) {
+                if(parameters.length == 3) {
                     condition = getParameter(0, parameters);
                     ifValue = getParameter(1, parameters);
                     elseValue = getParameter(2, parameters);

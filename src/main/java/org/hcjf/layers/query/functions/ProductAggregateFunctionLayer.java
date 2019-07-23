@@ -23,7 +23,7 @@ public class ProductAggregateFunctionLayer extends BaseQueryAggregateFunctionLay
                 Number accumulatedValue;
                 for(Object row : resultSet) {
                     accumulatedValue = 1;
-                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A, V)->A.multiply(V))[1];
+                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{queryReturnField.resolve(row)}, (A, V)->A.multiply(V))[1];
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){

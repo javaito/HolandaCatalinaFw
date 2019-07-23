@@ -21,10 +21,10 @@ public class SimpleRestEndPoint {
     public static void main(String[] args) throws MalformedURLException {
 
 
-        HttpClient client = new HttpClient(new URL("https://beta.sitrack.io/edna?q=" + URLEncoder.encode("SELECT * FROM Account")));
-        System.out.println(client.request());
+        //HttpClient client = new HttpClient(new URL("https://beta.sitrack.io/edna?q=" + URLEncoder.encode("SELECT * FROM Account")));
+        //System.out.println(client.request());
 
-        Layers.publishLayer(Bag.class);
+        //Layers.publishLayer(Bag.class);
         HttpResponse response = new HttpResponse();
         response.setBody("Hello world".getBytes());
 

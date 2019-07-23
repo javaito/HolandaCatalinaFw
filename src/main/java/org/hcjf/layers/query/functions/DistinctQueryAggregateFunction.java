@@ -29,7 +29,7 @@ public class DistinctQueryAggregateFunction extends BaseQueryAggregateFunctionLa
         for(Object row : resultSet) {
             hash = Strings.EMPTY_STRING;
             for(Query.QueryReturnField field : fields) {
-                hash += Integer.toString(resolve(row, field).hashCode());
+                hash += Integer.toString(field.resolve(row).hashCode());
             }
             if(!hashSet.contains(hash)) {
                 hashSet.add(hash);

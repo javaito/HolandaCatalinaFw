@@ -23,7 +23,7 @@ public class MinAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
                 Number accumulatedValue;
                 for(Object row : resultSet) {
                     accumulatedValue = Double.MAX_VALUE;
-                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{resolve(row, queryReturnField)}, (A,V)-> A.compareTo(V) <= 0 ? A : V)[1];
+                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{queryReturnField.resolve(row)}, (A,V)-> A.compareTo(V) <= 0 ? A : V)[1];
                     ((Map)row).put(alias, accumulatedValue);
                 }
             } catch (Exception ex){
