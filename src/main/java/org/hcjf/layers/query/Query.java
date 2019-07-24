@@ -23,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * This class contains all the parameter needed to create a query.
@@ -231,7 +232,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Firts object of the result.
      */
     public final Integer getStart() {
-        return start;
+        return start != null ? start : 0;
     }
 
     /**
@@ -525,7 +526,6 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                 //Filtering data
                 boolean add;
-                int start = getStart() == null ? 0 : getStart();
 
                 //Collect all the aggregate functions into the array list.
                 List<String> returnParametersAsArray = new ArrayList<>();
@@ -536,97 +536,94 @@ public class Query extends EvaluatorCollection implements Queryable {
                     returnParametersAsArray.add(returnParameter.getAlias());
                 }
 
-                if (start < data.size()) {
+                StringBuilder hashCode;
+                Groupable groupable;
+                if (!groupParameters.isEmpty()) {
+                    groupables = new HashMap<>();
+                }
 
-                    StringBuilder hashCode;
-                    Groupable groupable;
-                    Integer count = -1;
-                    if (!groupParameters.isEmpty()) {
-                        groupables = new HashMap<>();
-                    }
-
-                    for (O object : data) {
-                        add = verifyCondition(object, dataSource, consumer);
-                        if (add) {
-                            count++;
-                            if(start > count) {
-                                continue;
-                            }
-                            if (object instanceof Enlarged) {
-                                Enlarged enlargedObject;
-                                if(returnAll) {
-                                    enlargedObject = ((Enlarged) object).clone();
-                                } else {
-                                    enlargedObject = ((Enlarged) object).clone(returnParametersAsArray.toArray(new String[]{}));
-                                }
-                                object = (O) enlargedObject;
-                                String name;
-                                Object value;
-                                for (QueryReturnParameter returnParameter : getReturnParameters()) {
-                                    name = null;
-                                    value = null;
-                                    if (returnParameter instanceof QueryReturnField) {
-                                        QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                        name = returnField.getAlias();
-                                        value = consumer.get((O) enlargedObject, returnField, dataSource);
-                                    } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
-                                        QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                        name = function.getAlias();
-                                        value = consumer.resolveFunction(function, enlargedObject, dataSource);
-                                    }
-                                    if(name != null && value != null) {
-                                        enlargedObject.put(name, value);
-                                    }
-                                }
-                            }
-
-                            if (!groupParameters.isEmpty() && object instanceof Groupable) {
-                                groupable = (Groupable) object;
-                                hashCode = new StringBuilder();
-                                Object groupValue;
-                                for (QueryReturnParameter returnParameter : groupParameters) {
-                                    if (returnParameter instanceof QueryReturnField) {
-                                        groupValue = consumer.get(object, ((QueryReturnField) returnParameter), dataSource);
-                                    } else {
-                                        groupValue = consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource);
-                                    }
-                                    if(groupValue == null) {
-                                        hashCode.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL).hashCode());
-                                    } else {
-                                        hashCode.append(groupValue.hashCode());
-                                    }
-                                }
-                                if (groupables.containsKey(hashCode.toString())) {
-                                    groupables.get(hashCode.toString()).group(groupable);
-                                } else {
-                                    groupables.put(hashCode.toString(), groupable);
-                                }
+                for (O object : data) {
+                    add = verifyCondition(object, dataSource, consumer);
+                    if (add) {
+                        if (object instanceof Enlarged) {
+                            Enlarged enlargedObject;
+                            if(returnAll) {
+                                enlargedObject = ((Enlarged) object).clone();
                             } else {
-                                result.add(object);
+                                enlargedObject = ((Enlarged) object).clone(returnParametersAsArray.toArray(new String[]{}));
+                            }
+                            object = (O) enlargedObject;
+                            String name;
+                            Object value;
+                            for (QueryReturnParameter returnParameter : getReturnParameters()) {
+                                name = null;
+                                value = null;
+                                if (returnParameter instanceof QueryReturnField) {
+                                    QueryReturnField returnField = (QueryReturnField) returnParameter;
+                                    name = returnField.getAlias();
+                                    value = consumer.get((O) enlargedObject, returnField, dataSource);
+                                } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
+                                    QueryReturnFunction function = (QueryReturnFunction) returnParameter;
+                                    name = function.getAlias();
+                                    value = consumer.resolveFunction(function, enlargedObject, dataSource);
+                                }
+                                if(name != null && value != null) {
+                                    enlargedObject.put(name, value);
+                                }
                             }
                         }
-                        if (getLimit() != null && result.size() == (start + getLimit())) {
-                            break;
+
+                        if (!groupParameters.isEmpty() && object instanceof Groupable) {
+                            groupable = (Groupable) object;
+                            hashCode = new StringBuilder();
+                            Object groupValue;
+                            for (QueryReturnParameter returnParameter : groupParameters) {
+                                if (returnParameter instanceof QueryReturnField) {
+                                    groupValue = consumer.get(object, ((QueryReturnField) returnParameter), dataSource);
+                                } else {
+                                    groupValue = consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource);
+                                }
+                                if(groupValue == null) {
+                                    hashCode.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL).hashCode());
+                                } else {
+                                    hashCode.append(groupValue.hashCode());
+                                }
+                            }
+                            if (groupables.containsKey(hashCode.toString())) {
+                                groupables.get(hashCode.toString()).group(groupable);
+                            } else {
+                                groupables.put(hashCode.toString(), groupable);
+                            }
+                        } else {
+                            result.add(object);
                         }
                     }
+                }
 
-                    if(groupables != null) {
-                        result.addAll((Collection<? extends O>) groupables.values());
-                    }
+                if(groupables != null) {
+                    result.addAll((Collection<? extends O>) groupables.values());
                 }
             } finally {
                 clearEvaluatorsCache();
             }
-        }
 
-        if(aggregateFunctions.size() > 0) {
-            for (QueryReturnFunction function : aggregateFunctions) {
-                result = consumer.resolveFunction(function, result, dataSource);
+            if(aggregateFunctions.size() > 0) {
+                for (QueryReturnFunction function : aggregateFunctions) {
+                    result = consumer.resolveFunction(function, result, dataSource);
+                }
             }
-        }
 
-        if(result.size() > 0 && result.iterator().next() instanceof Enlarged && !returnAll) {
-            result.forEach(O -> ((Enlarged)O).purge());
+            if(result.size() > 0 && result.iterator().next() instanceof Enlarged && !returnAll) {
+                result.forEach(O -> ((Enlarged)O).purge());
+            }
+
+            if(getStart() != 0 || getLimit() != null) {
+                if (getLimit() != null) {
+                    result = result.stream().skip(getStart()).limit(getLimit()).collect(Collectors.toList());
+                } else {
+                    result = result.stream().skip(getStart()).collect(Collectors.toList());
+                }
+            }
         }
 
         return result;

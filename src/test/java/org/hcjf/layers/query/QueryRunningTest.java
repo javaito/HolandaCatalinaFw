@@ -231,6 +231,40 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void startAndLimit() {
+        Query query = Query.compile("SELECT name FROM character ORDER BY name");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+
+        Collection<JoinableMap> firstResultSet = resultSet;
+        JoinableMap first = resultSet.stream().findFirst().get();
+        JoinableMap last = resultSet.stream().skip(resultSet.stream().count() - 1).findFirst().get();
+
+        query = Query.compile("SELECT * FROM character ORDER BY name LIMIT 1");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("name"), first.get("name"));
+
+        query = Query.compile("SELECT * FROM character ORDER BY name DESC LIMIT 1");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("name"), last.get("name"));
+
+        query = Query.compile("SELECT * FROM character ORDER BY name LIMIT 1000");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), firstResultSet.size());
+
+        query = Query.compile("SELECT * FROM character ORDER BY name START 0 LIMIT 1000");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), firstResultSet.size());
+
+        query = Query.compile("SELECT * FROM character ORDER BY name START 2 LIMIT 1000");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), firstResultSet.size()-2);
+
+        query = Query.compile("SELECT * FROM character ORDER BY name START 2 LIMIT 2");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+    }
+
+    @Test
     public void join() {
         Query query = Query.compile("SELECT address.street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
