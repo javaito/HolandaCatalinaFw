@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.functions;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.MathIntrospection;
@@ -8,6 +9,7 @@ import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
 import java.util.function.BiFunction;
 
@@ -34,6 +36,7 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
     private static final String NUMBER_FORMAT = "numberFormat";
     private static final String CURRENCY_FORMAT = "currencyFormat";
     private static final String PERCENT_FORMAT = "percentFormat";
+    private static final String PARSE_NUMBER = "parseNumber";
     private static final String EVAL_EXPRESSION = SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME);
 
     public MathQueryFunctionLayer() {
@@ -55,6 +58,7 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
         addFunctionName(NUMBER_FORMAT);
         addFunctionName(CURRENCY_FORMAT);
         addFunctionName(PERCENT_FORMAT);
+        addFunctionName(PARSE_NUMBER);
         addFunctionName(EVAL_EXPRESSION);
     }
 
@@ -131,6 +135,17 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
                 Number number = getParameter(0, parameters);
                 Locale locale = ServiceSession.getCurrentIdentity().getLocale();
                 result = NumberFormat.getPercentInstance(locale).format(number.doubleValue());
+                break;
+            }
+            case PARSE_NUMBER: {
+                String pattern = getParameter(0, parameters);
+                String source = getParameter(1, parameters);
+                NumberFormat numberFormat = new DecimalFormat(pattern);
+                try {
+                    result = numberFormat.parse(source);
+                } catch (ParseException ex) {
+                    throw new HCJFRuntimeException("Number parse fail", ex);
+                }
                 break;
             }
             default: {

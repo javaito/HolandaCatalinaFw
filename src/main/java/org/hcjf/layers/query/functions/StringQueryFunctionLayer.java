@@ -21,6 +21,7 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
     private static final String TO_STRING = "toString";
     private static final String HEX_TO_BYTES = "hexToBytes";
     private static final String BYTES_TO_HEX = "bytesToHex";
+    private static final String REPLACE = "replace";
 
     public StringQueryFunctionLayer() {
         super(SystemProperties.get(SystemProperties.Query.Function.STRING_FUNCTION_NAME));
@@ -34,6 +35,7 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
         addFunctionName(TO_UPPER_CASE);
         addFunctionName(TO_LOWER_CASE);
         addFunctionName(TO_STRING);
+        addFunctionName(REPLACE);
     }
 
     @Override
@@ -49,6 +51,13 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
             case TO_STRING: result = getParameter(0, parameters).toString(); break;
             case HEX_TO_BYTES: result = Strings.hexToBytes(getParameter(0, parameters));break;
             case BYTES_TO_HEX: result = Strings.bytesToHex(getParameter(0, parameters));break;
+            case REPLACE: {
+                String source = getParameter(0, parameters);
+                String target = getParameter(1, parameters);
+                String replacement = getParameter(2, parameters);
+                result = source.replace(target, replacement);
+                break;
+            }
             case CONCAT: {
                 StringBuilder builder = new StringBuilder();
                 for(Object parameter : parameters) {
