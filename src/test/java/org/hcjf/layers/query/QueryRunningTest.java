@@ -448,6 +448,12 @@ public class QueryRunningTest {
             Assert.assertNotNull(map.get("es"));
         }
 
+        query = Query.compile("SELECT name, if(equals(name, 'Homer Jay'), 'gordo', 'flaco') AS es FROM character");
+        resultSet = query.evaluate(dataSource);
+
+        query = Query.compile("SELECT name, case(name, 'Homer Jay', 'gordo', 'Marjorie Jaqueline', 'flaco', 'mmm!') AS es FROM character");
+        resultSet = query.evaluate(dataSource);
+
         query = Query.compile("SELECT lastName, count(weight) as size, aggregateMin(weight) as min, aggregateMax(weight) as max, aggregateSum(weight) as sum, aggregateMean(weight) as arithmeticMean, aggregateMean(weight, 'harmonic') as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());

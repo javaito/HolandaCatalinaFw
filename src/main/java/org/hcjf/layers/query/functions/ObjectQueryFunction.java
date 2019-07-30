@@ -16,6 +16,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
     private static final String IS_STRING = "isString";
     private static final String IS_NUMBER = "isNumber";
     private static final String IF = "if";
+    private static final String CASE = "case";
     private static final String EQUALS = "equals";
     private static final String NEW = "new";
 
@@ -29,6 +30,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         addFunctionName(IS_STRING);
         addFunctionName(IS_NUMBER);
         addFunctionName(IF);
+        addFunctionName(CASE);
         addFunctionName(EQUALS);
         addFunctionName(NEW);
     }
@@ -64,6 +66,20 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                     result = ifValue;
                 } else {
                     result = elseValue;
+                }
+                break;
+            }
+            case(CASE): {
+                Object mainValue = getParameter(0, parameters);
+                for (int i = 1; i < parameters.length; i += 2) {
+                    if(i + 1 < parameters.length) {
+                        if(mainValue.equals(parameters[i])) {
+                            result = parameters[i+1];
+                            break;
+                        }
+                    } else {
+                        result = parameters[i];
+                    }
                 }
                 break;
             }

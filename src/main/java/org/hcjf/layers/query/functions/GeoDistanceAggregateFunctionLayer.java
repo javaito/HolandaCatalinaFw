@@ -38,7 +38,7 @@ public class GeoDistanceAggregateFunctionLayer extends BaseQueryAggregateFunctio
             Object parameterValue = ((Query.QueryReturnField) parameters[0]).resolve(row);
             currentGeometry = GeoUtils.createGeometry(parameterValue);
             if (previousGeometry != null) {
-                distance = previousGeometry.centroid().distance(currentGeometry.centroid());
+                distance = previousGeometry.centroid().distance(currentGeometry.centroid()) * 100;
                 totalDistance += distance;
             }
             previousGeometry = currentGeometry;
