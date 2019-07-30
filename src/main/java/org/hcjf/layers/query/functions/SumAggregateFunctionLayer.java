@@ -1,10 +1,13 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.utils.Introspection;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer implements NumberSetFunction {
@@ -21,11 +24,29 @@ public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
         if(parameters.length >= 1) {
             try {
                 Query.QueryReturnField queryReturnField = (Query.QueryReturnField) parameters[0];
-                Number accumulatedValue;
-                for(Object row : resultSet) {
-                    accumulatedValue = 0;
-                    accumulatedValue = accumulateFunction(accumulatedValue, new Object[]{queryReturnField.resolve(row)}, (A,V)->A.add(V))[1];
-                    ((Map)row).put(alias, accumulatedValue);
+                boolean accumulate = parameters.length >= 2 && (boolean) parameters[1];
+                boolean group = parameters.length >= 3 && (boolean) parameters[2];
+                Number value;
+                Number accumulatedValue = 0;
+                for (Object row : resultSet) {
+                    value = accumulateFunction(accumulatedValue,
+                            new Object[]{queryReturnField.resolve(row)}, (A, V) -> A.add(V))[1];
+                    accumulatedValue = accumulatedValue.doubleValue() + value.doubleValue();
+                    if(!group) {
+                        if(accumulate) {
+                            ((Map) row).put(alias, accumulatedValue);
+                        } else {
+                            ((Map) row).put(alias, value);
+                        }
+                    }
+                }
+
+                if(group) {
+                    Collection<JoinableMap> newResultSet = new ArrayList<>();
+                    JoinableMap count = new JoinableMap(new HashMap<>(), alias);
+                    count.put(alias, accumulatedValue);
+                    newResultSet.add(count);
+                    result = newResultSet;
                 }
             } catch (Exception ex){
                 throw new HCJFRuntimeException("Sum aggregate function fail", ex);
