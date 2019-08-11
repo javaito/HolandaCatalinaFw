@@ -11,6 +11,13 @@ public class HttpSimpleServer {
                 return response;
             }
         });
+
+        HttpServer.create(8080, new Context(".*") {
+            @Override
+            public HttpResponse onContext(HttpRequest httpRequest) {
+                return response;
+            }
+        });
     }
 
 }

@@ -1,5 +1,6 @@
 package org.hcjf.io.net;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -49,15 +50,12 @@ public final class NetService extends Service<NetServiceConsumer> {
     private Set<NetSession> sessions;
     private Map<NetSession, SSLHelper> sslHelpers;
 
-    private Selector selector;
-    private Object selectorMonitor;
-    private Boolean selectorBlocking;
+    private Map<NetServiceConsumer,SelectorRunnable> selectors;
+    private Map<NetServiceConsumer,Future> tasks;
 
     private Timer timer;
     private boolean creationTimeoutAvailable;
     private long creationTimeout;
-
-    private Future mainTaskFuture;
     private boolean shuttingDown;
 
     private Queue<SelectionKey> readableKeys;
@@ -83,95 +81,51 @@ public final class NetService extends Service<NetServiceConsumer> {
      */
     @Override
     protected void init() {
-        try {
-            createSelector();
+        this.timer = new Timer();
+        selectors = new HashMap<>();
+        tasks = new HashMap<>();
 
-            this.timer = new Timer();
-            this.selectorMonitor = new Object();
-            this.selectorBlocking = false;
-
-            this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.Net.CONNECTION_TIMEOUT_AVAILABLE);
-            this.creationTimeout = SystemProperties.getLong(SystemProperties.Net.CONNECTION_TIMEOUT);
-            if (creationTimeoutAvailable && creationTimeout <= 0) {
-                throw new IllegalArgumentException("Illegal creation timeout value: " + creationTimeout);
-            }
-
-            lastWrite = Collections.synchronizedMap(new HashMap<>());
-            outputQueue = Collections.synchronizedMap(new HashMap<>());
-            tcpServers = Collections.synchronizedList(new ArrayList<>());
-            channels = Collections.synchronizedMap(new TreeMap<>());
-            sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
-            sessionsByAddress = Collections.synchronizedMap(new HashMap<>());
-            sessions = Collections.synchronizedSet(new TreeSet<>());
-            sslHelpers = Collections.synchronizedMap(new HashMap<>());
-            addresses = Collections.synchronizedMap(new HashMap<>());
-
-            readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
-            writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
-
-            ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
-            ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
-            int corePoolSize = SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE);
-            if(corePoolSize < 8) {
-                corePoolSize = 8;
-            }
-            ioExecutor.setCorePoolSize(corePoolSize);
-            ioExecutor.setMaximumPoolSize(corePoolSize);
-
-            int count = 0;
-            while(true) {
-                count++;
-                fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
-                if(count >= ioExecutor.getCorePoolSize()) {
-                    break;
-                }
-                count++;
-                fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
-                if(count >= ioExecutor.getCorePoolSize()) {
-                    break;
-                }
-            }
-
-            mainTaskFuture = fork(() -> runNetService());
-        } catch (IOException ex) {
-            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to init net service %s", ex, this);
-        }
-    }
-
-    /**
-     * Creates a new instance of a selector, if there are a previous instance then the previous keys are registered into
-     * the new selector instance.
-     * @return Returns the new instance of a selector
-     * @throws IOException
-     */
-    private void createSelector() throws IOException {
-        Selector newSelector = Selector.open();
-        Selector selector = getSelector();
-
-        if(selector != null) {
-            //This loop is to register all the channels of the previous keys into the new selector.
-            for (SelectionKey key : selector.keys()) {
-                try {
-                    SelectableChannel ch = key.channel();
-                    int ops = key.interestOps();
-                    Object att = key.attachment();
-                    // Cancel the old key
-                    key.cancel();
-
-                    // Register the channel with the new selector
-                    ch.register(newSelector, ops, att);
-                } catch (Exception ex){}
-            }
-            try {
-                selector.close();
-                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Previous selector closed");
-            } catch (Throwable ex) {
-                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Fail to close the old selector", ex);
-            }
+        this.creationTimeoutAvailable = SystemProperties.getBoolean(SystemProperties.Net.CONNECTION_TIMEOUT_AVAILABLE);
+        this.creationTimeout = SystemProperties.getLong(SystemProperties.Net.CONNECTION_TIMEOUT);
+        if (creationTimeoutAvailable && creationTimeout <= 0) {
+            throw new IllegalArgumentException("Illegal creation timeout value: " + creationTimeout);
         }
 
-        setSelector(newSelector);
-        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "New selector created");
+        lastWrite = Collections.synchronizedMap(new HashMap<>());
+        outputQueue = Collections.synchronizedMap(new HashMap<>());
+        tcpServers = Collections.synchronizedList(new ArrayList<>());
+        channels = Collections.synchronizedMap(new TreeMap<>());
+        sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
+        sessionsByAddress = Collections.synchronizedMap(new HashMap<>());
+        sessions = Collections.synchronizedSet(new TreeSet<>());
+        sslHelpers = Collections.synchronizedMap(new HashMap<>());
+        addresses = Collections.synchronizedMap(new HashMap<>());
+
+        readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+        writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+
+        ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
+        ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+        int corePoolSize = SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE);
+        if(corePoolSize < 8) {
+            corePoolSize = 8;
+        }
+        ioExecutor.setCorePoolSize(corePoolSize);
+        ioExecutor.setMaximumPoolSize(corePoolSize);
+
+        int count = 0;
+        while(true) {
+            count++;
+            fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
+            if(count >= ioExecutor.getCorePoolSize()) {
+                break;
+            }
+            count++;
+            fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
+            if(count >= ioExecutor.getCorePoolSize()) {
+                break;
+            }
+        }
     }
 
     /**
@@ -182,28 +136,9 @@ public final class NetService extends Service<NetServiceConsumer> {
      */
     @Override
     protected void shutdown(ShutdownStage stage) {
-        switch (stage) {
-            case START: {
-                shuttingDown = true;
-                for (NetSession session : getSessions()) {
-                    try {
-                        writeData(session, session.getConsumer().getShutdownFrame(session));
-                    } catch (IOException e) {
-                        //This exception is totally ignored because the shutdown procedure must be go on
-                    }
-                }
-                wakeup();
-                break;
-            }
-            case END: {
-                for (NetSession session : getSessions()) {
-                    disconnect(session, "");
-                }
-
-                mainTaskFuture.cancel(true);
-                wakeup();
-                break;
-            }
+        shuttingDown = true;
+        for(SelectorRunnable selectorRunnable : selectors.values()) {
+            selectorRunnable.shutdown(stage);
         }
     }
 
@@ -265,7 +200,6 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method registers a TCP server service.
-     *
      * @param server TCP Server.
      */
     private void registerTCPNetServer(NetServer server) throws IOException {
@@ -273,25 +207,23 @@ public final class NetService extends Service<NetServiceConsumer> {
         tcpServer.configureBlocking(false);
         InetSocketAddress tcpAddress = new InetSocketAddress(server.getPort());
         tcpServer.socket().bind(tcpAddress);
-        registerChannel(tcpServer, SelectionKey.OP_ACCEPT, server);
+        registerChannel(server, tcpServer, SelectionKey.OP_ACCEPT, server);
         tcpServers.add(tcpServer);
     }
 
     /**
      * This method registers a TCP client service.
-     *
      * @param client TCP Client.
      */
     private void registerTCPNetClient(NetClient client) throws IOException {
         final SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         channel.connect(new InetSocketAddress(client.getHost(), client.getPort()));
-        registerChannel(channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, client);
+        registerChannel(client, channel, SelectionKey.OP_CONNECT | SelectionKey.OP_READ, client);
     }
 
     /**
      * This method registers a UDP server service.
-     *
      * @param server UDP Server.
      */
     private void registerUDPNetServer(NetServer server) throws IOException {
@@ -299,12 +231,11 @@ public final class NetService extends Service<NetServiceConsumer> {
         udpServer.configureBlocking(false);
         InetSocketAddress udpAddress = new InetSocketAddress(server.getPort());
         udpServer.socket().bind(udpAddress);
-        registerChannel(udpServer, SelectionKey.OP_READ, server);
+        registerChannel(server, udpServer, SelectionKey.OP_READ, server);
     }
 
     /**
      * This method registers a UDP client service.
-     *
      * @param client UDP Client.
      */
     private void registerUDPNetClient(NetClient client) throws IOException {
@@ -317,12 +248,11 @@ public final class NetService extends Service<NetServiceConsumer> {
         addresses.put(client.getSession(), address);
         sessionsByAddress.put(channel.getRemoteAddress(), client.getSession());
 
-        registerChannel(channel, SelectionKey.OP_READ, client);
+        registerChannel(client, channel, SelectionKey.OP_READ, client);
     }
 
     /**
      * Return an unmodificable add with all the sessions created en the service.
-     *
      * @return Set with se sessions.
      */
     public final Set<NetSession> getSessions() {
@@ -330,26 +260,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * Return the net selector.
-     *
-     * @return Net selector.
-     */
-    private Selector getSelector() {
-        return selector;
-    }
-
-    /**
-     * Set the net selector.
-     *
-     * @param selector Net selector.
-     */
-    private void setSelector(Selector selector) {
-        this.selector = selector;
-    }
-
-    /**
      * Return a value to indicate if the session creation timeout is available ot not.
-     *
      * @return True if it is available.
      */
     private boolean isCreationTimeoutAvailable() {
@@ -359,7 +270,6 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * Return the value in milliseconds that the server wait before destroy the channel if
      * it has not session assigned.
-     *
      * @return Session creation timeout.
      */
     private long getCreationTimeout() {
@@ -378,7 +288,6 @@ public final class NetService extends Service<NetServiceConsumer> {
     /**
      * Return a boolean to knows if the instance of the java vm is into the
      * shutdown process or not.
-     *
      * @return True if the vm is into the shutdown porcess and false in the otherwise.
      */
     public final boolean isShuttingDown() {
@@ -387,7 +296,6 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * Check if the specific session is active into the sercie.
-     *
      * @param session Specific session.
      * @return Return true if the session is active into the
      */
@@ -404,17 +312,15 @@ public final class NetService extends Service<NetServiceConsumer> {
 
     /**
      * This method blocks the selector to add a new channel to the key system
-     *
      * @param channel   The new channel to be register
      * @param operation The first channel operation.
      * @param attach    Object to be attached into the registered key.
      * @throws ClosedChannelException
      */
-    private void registerChannel(SelectableChannel channel, int operation, Object attach) throws ClosedChannelException {
-        synchronized (selectorMonitor) {
-            channel.register(getSelector(), operation, attach);
-            wakeup();
-        }
+    private void registerChannel(NetServiceConsumer consumer, SelectableChannel channel, int operation, Object attach) throws ClosedChannelException {
+        selectors.put(consumer, new SelectorRunnable(consumer));
+        tasks.put(consumer, fork(selectors.get(consumer)));
+        selectors.get(consumer).registerChannel(channel, operation, attach);
     }
 
     /**
@@ -464,7 +370,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     private void writeWakeup(SelectableChannel channel, NetPackage netPackage) {
         outputQueue.get(channel).add(netPackage);
 
-        SelectionKey key = channel.keyFor(getSelector());
+        SelectionKey key = channel.keyFor(selectors.get(netPackage.getSession().getConsumer()).getSelector());
         synchronized (writableKeys) {
             if (key.isValid() && !writableKeys.contains(key)) {
                 if (!writableKeys.offer(key)) {
@@ -554,6 +460,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
             } catch (Exception ex) {
                 Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Destroy method exception", ex);
+            }
+
+            if(session.getConsumer() instanceof NetClient) {
+                SelectorRunnable selectorRunnable = selectors.remove(session.getConsumer());
+                selectorRunnable.shutdown(ShutdownStage.START);
+                selectorRunnable.shutdown(ShutdownStage.END);
             }
         }
     }
@@ -721,143 +633,278 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * This method performs a non blocking select operation over the selector and check if the number of available
-     * keys is bigger than zero. If the available keys are zero then the thread are waiting until some operation invoke
-     * the wakeup method.
-     * @return Returns the number of available keys into the selector.
-     * @throws IOException
+     * This runnable encapsulate all the components needing to the selection process.
      */
-    private int select() throws IOException {
-        int result;
-        synchronized (selectorMonitor) {
-            selectorBlocking = true;
-        }
-        result = getSelector().select();
-        synchronized (selectorMonitor) {
-            selectorBlocking = false;
-        }
-        return result;
-    }
+    private class SelectorRunnable implements Runnable {
 
-    /**
-     * This method wakeup the main thread in order to verify if there are some available keys into selector. All the
-     * times verify if the selector is blocking into the select method, because only invoke the method wakeup of the
-     * selector if it is blocking in the select method.
-     */
-    private void wakeup() {
-        synchronized (selectorMonitor) {
-            if(selectorBlocking) {
-                getSelector().wakeup();
-                selectorBlocking = false;
-            }
-        }
-    }
+        private final NetServiceConsumer consumer;
+        private Selector selector;
+        private final Object monitor;
+        private Boolean blocking;
 
-    /**
-     * This method is the body of the net service.
-     */
-    public final void runNetService() {
-        try {
+        public SelectorRunnable(NetServiceConsumer consumer) {
+            this.consumer = consumer;
+            this.monitor = new Object();
+            this.blocking = false;
             try {
-                Thread.currentThread().setName(SystemProperties.get(SystemProperties.Net.LOG_TAG));
-                Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-            } catch (SecurityException ex) {
+                createSelector();
+            } catch (IOException ex) {
+                throw new HCJFRuntimeException("Unable to create selector", ex);
+            }
+        }
+
+        /**
+         * Returns the selector instance.
+         * @return Selector instance.
+         */
+        public Selector getSelector() {
+            return selector;
+        }
+
+        /**
+         * Set the selector instance.
+         * @param selector Selector instance.
+         */
+        public void setSelector(Selector selector) {
+            this.selector = selector;
+        }
+
+        /**
+         * Returns the monitor instance.
+         * @return Monitor instance.
+         */
+        public Object getMonitor() {
+            return monitor;
+        }
+
+        /**
+         * Returns the blocking value.
+         * @return Blocking value.
+         */
+        public Boolean getBlocking() {
+            return blocking;
+        }
+
+        /**
+         * This method blocks the selector to add a new channel to the key system
+         * @param channel   The new channel to be register
+         * @param operation The first channel operation.
+         * @param attach    Object to be attached into the registered key.
+         * @throws ClosedChannelException
+         */
+        private void registerChannel(SelectableChannel channel, int operation, Object attach) throws ClosedChannelException {
+            synchronized (monitor) {
+                channel.register(getSelector(), operation, attach);
+                wakeup();
+            }
+        }
+
+        /**
+         * This method will be called immediately after the static
+         * method 'shutdown' of the class has been called.
+         * @param stage Shutdown stage.
+         */
+        private void shutdown(ShutdownStage stage) {
+            switch (stage) {
+                case START: {
+                    for (NetSession session : getSessions()) {
+                        try {
+                            writeData(session, session.getConsumer().getShutdownFrame(session));
+                        } catch (IOException e) { }
+                    }
+                    wakeup();
+                    break;
+                }
+                case END: {
+                    for (NetSession session : getSessions()) {
+                        disconnect(session, "");
+                    }
+
+                    tasks.remove(consumer).cancel(true);
+                    System.out.printf("Tasks size: %d\r\n", tasks.size());
+                    System.out.printf("Selectors size: %d\r\n", selectors.size());
+                    wakeup();
+                    break;
+                }
+            }
+        }
+
+        /**
+         * Creates a new instance of a selector, if there are a previous instance then the previous keys are registered into
+         * the new selector instance.
+         * @return Returns the new instance of a selector
+         * @throws IOException
+         */
+        private void createSelector() throws IOException {
+            Selector newSelector = Selector.open();
+            Selector selector = getSelector();
+
+            if(selector != null) {
+                //This loop is to register all the channels of the previous keys into the new selector.
+                for (SelectionKey key : selector.keys()) {
+                    try {
+                        SelectableChannel ch = key.channel();
+                        int ops = key.interestOps();
+                        Object att = key.attachment();
+                        // Cancel the old key
+                        key.cancel();
+
+                        // Register the channel with the new selector
+                        ch.register(newSelector, ops, att);
+                    } catch (Exception ex){}
+                }
+                try {
+                    selector.close();
+                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Previous selector closed");
+                } catch (Throwable ex) {
+                    Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Fail to close the old selector", ex);
+                }
             }
 
-            long selectorMinWaitTime = SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
-            int selectorCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
-            int selectorCounter = 0;
-            long selectionStartPeriod;
-            long selectionPeriod;
-            int selectionSize;
-            Iterator<SelectionKey> selectedKeys;
-            SelectionKey key;
+            setSelector(newSelector);
+            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "New selector created");
+        }
 
-            while (!Thread.currentThread().isInterrupted()) {
-                //Select the next schedule key or sleep if the aren't any key to select.
-                selectionStartPeriod = System.currentTimeMillis();
-                selectionSize = select();
+        /**
+         * This method performs a non blocking select operation over the selector and check if the number of available
+         * keys is bigger than zero. If the available keys are zero then the thread are waiting until some operation invoke
+         * the wakeup method.
+         * @return Returns the number of available keys into the selector.
+         * @throws IOException
+         */
+        private int select() throws IOException {
+            int result;
+            synchronized (monitor) {
+                blocking = true;
+            }
+            result = getSelector().select();
+            synchronized (monitor) {
+                blocking = false;
+            }
+            return result;
+        }
 
-                if(selectionSize == 0) {
-                    selectionPeriod = System.currentTimeMillis() - selectionStartPeriod;
-                    if(selectionPeriod < selectorMinWaitTime) {
-                        selectorCounter++;
-                        if(selectorCounter > selectorCounterLimit) {
-                            selectorCounter = 0;
-                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector recreated!!!");
+        /**
+         * This method wakeup the main thread in order to verify if there are some available keys into selector. All the
+         * times verify if the selector is blocking into the select method, because only invoke the method wakeup of the
+         * selector if it is blocking in the select method.
+         */
+        private void wakeup() {
+            synchronized (monitor) {
+                if(blocking) {
+                    getSelector().wakeup();
+                    blocking = false;
+                }
+            }
+        }
+
+        /**
+         * This method run continuously the selection process.
+         */
+        @Override
+        public void run() {
+            try {
+                try {
+                    Thread.currentThread().setName(SystemProperties.get(SystemProperties.Net.LOG_TAG));
+                    Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+                } catch (SecurityException ex) {
+                }
+
+                long selectorMinWaitTime = SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
+                int selectorCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
+                int selectorCounter = 0;
+                long selectionStartPeriod;
+                long selectionPeriod;
+                int selectionSize;
+                Iterator<SelectionKey> selectedKeys;
+                SelectionKey key;
+
+                while (!Thread.currentThread().isInterrupted()) {
+                    //Select the next schedule key or sleep if the aren't any key to select.
+                    selectionStartPeriod = System.currentTimeMillis();
+                    selectionSize = select();
+
+                    if(selectionSize == 0) {
+                        selectionPeriod = System.currentTimeMillis() - selectionStartPeriod;
+                        if(selectionPeriod < selectorMinWaitTime) {
+                            selectorCounter++;
+                            if(selectorCounter > selectorCounterLimit) {
+                                selectorCounter = 0;
+                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector recreated!!!");
+                            }
                         }
-                    }
-                    continue;
-                } else {
-                    selectorCounter = 0;
-                    selectedKeys = getSelector().selectedKeys().iterator();
-                    while (selectedKeys.hasNext()) {
-                        key = selectedKeys.next();
-                        selectedKeys.remove();
+                        continue;
+                    } else {
+                        selectorCounter = 0;
+                        selectedKeys = getSelector().selectedKeys().iterator();
+                        while (selectedKeys.hasNext()) {
+                            key = selectedKeys.next();
+                            selectedKeys.remove();
 
-                        if (key.isValid()) {
-                            try {
-                                final SelectableChannel keyChannel = key.channel();
-                                if (keyChannel != null && key.channel().isOpen() && key.isValid()) {
-                                    final NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
-                                    //If the kind of key is acceptable or connectable then
-                                    //the processing do over this thread in the other case
-                                    //the processing is delegated to the thread pool
-                                    if (key.isAcceptable()) {
-                                        accept(key.channel(), (NetServer) consumer);
-                                    } else if (key.isConnectable()) {
-                                        connect(key.channel(), (NetClient) consumer);
-                                    } else if (key.isReadable()) {
-                                        synchronized (readableKeys) {
-                                            if (key.isValid() && !readableKeys.contains(key)) {
-                                                if (!readableKeys.offer(key)) {
-                                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add readable key!!!!");
+                            if (key.isValid()) {
+                                try {
+                                    final SelectableChannel keyChannel = key.channel();
+                                    if (keyChannel != null && key.channel().isOpen() && key.isValid()) {
+                                        final NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
+                                        //If the kind of key is acceptable or connectable then
+                                        //the processing do over this thread in the other case
+                                        //the processing is delegated to the thread pool
+                                        if (key.isAcceptable()) {
+                                            accept(key.channel(), (NetServer) consumer);
+                                        } else if (key.isConnectable()) {
+                                            connect(key.channel(), (NetClient) consumer);
+                                        } else if (key.isReadable()) {
+                                            synchronized (readableKeys) {
+                                                if (key.isValid() && !readableKeys.contains(key)) {
+                                                    if (!readableKeys.offer(key)) {
+                                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add readable key!!!!");
+                                                    }
                                                 }
+                                                readableKeys.notifyAll();
                                             }
-                                            readableKeys.notifyAll();
-                                        }
-                                    } else if (key.isWritable()) {
-                                        synchronized (writableKeys) {
-                                            if (key.isValid() && !writableKeys.contains(key)) {
-                                                if (!writableKeys.offer(key)) {
-                                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
+                                        } else if (key.isWritable()) {
+                                            synchronized (writableKeys) {
+                                                if (key.isValid() && !writableKeys.contains(key)) {
+                                                    if (!writableKeys.offer(key)) {
+                                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
+                                                    }
                                                 }
+                                                writableKeys.notifyAll();
                                             }
-                                            writableKeys.notifyAll();
                                         }
+                                    } else {
+                                        key.cancel();
                                     }
-                                } else {
-                                    key.cancel();
+                                } catch (CancelledKeyException ex) {
+                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
+                                } catch (Exception ex) {
+                                    Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service main thread exception", ex);
                                 }
-                            } catch (CancelledKeyException ex) {
-                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
-                            } catch (Exception ex) {
-                                Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service main thread exception", ex);
                             }
                         }
                     }
                 }
-            }
 
-            try {
-                getSelector().close();
-            } catch (IOException ex) {
-                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing selector...", ex);
-            }
-
-            //Close all the servers.
-            for (ServerSocketChannel channel : tcpServers) {
                 try {
-                    channel.close();
+                    getSelector().close();
                 } catch (IOException ex) {
-                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing channel...", ex);
+                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing selector...", ex);
                 }
-            }
-        } catch (Exception ex) {
-            Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
-        }
 
-        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service stopped");
+                //Close all the servers.
+                for (ServerSocketChannel channel : tcpServers) {
+                    try {
+                        channel.close();
+                    } catch (IOException ex) {
+                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing channel...", ex);
+                    }
+                }
+            } catch (Exception ex) {
+                Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
+            }
+
+            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service stopped");
+        }
     }
 
     /**
@@ -957,7 +1004,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
 
                     //A new readable key is created associated to the channel.
-                    socketChannel.register(getSelector(), SelectionKey.OP_READ, server);
+                    socketChannel.register(selectors.get(server).getSelector(), SelectionKey.OP_READ, server);
 
                     if (isCreationTimeoutAvailable() && server.isCreationTimeoutAvailable()) {
                         getTimer().schedule(new ConnectionTimeout(socketChannel), getCreationTimeout());
@@ -1153,7 +1200,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                             try {
                                 //Change the key operation to finish write loop
-                                channel.keyFor(getSelector()).interestOps(SelectionKey.OP_READ);
+                                channel.keyFor(selectors.get(consumer).getSelector()).interestOps(SelectionKey.OP_READ);
                             } catch (Exception ex) {
                                 Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Write error", ex);
                             }
