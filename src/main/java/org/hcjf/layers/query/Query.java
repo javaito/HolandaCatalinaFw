@@ -1333,7 +1333,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             result = compile(groups, richTexts, groups.size() - 1);
             cache.put(sql,result);
         }
-        return result;
+        return new Query(result);
     }
 
     /**

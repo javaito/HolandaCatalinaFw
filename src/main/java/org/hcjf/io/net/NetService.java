@@ -36,7 +36,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         instance = new NetService(SystemProperties.get(SystemProperties.Net.SERVICE_NAME));
     }
 
-    private List<ServerSocketChannel> tcpServers;
+    private Map<NetServiceConsumer, ServerSocketChannel> serverSocketChannelMap;
     private Map<NetSession, SelectableChannel> channels;
     private Map<SelectableChannel, NetSession> sessionsByChannel;
 
@@ -93,7 +93,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         lastWrite = Collections.synchronizedMap(new HashMap<>());
         outputQueue = Collections.synchronizedMap(new HashMap<>());
-        tcpServers = Collections.synchronizedList(new ArrayList<>());
+        serverSocketChannelMap = Collections.synchronizedMap(new HashMap<>());
         channels = Collections.synchronizedMap(new TreeMap<>());
         sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
         sessionsByAddress = Collections.synchronizedMap(new HashMap<>());
@@ -208,7 +208,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         InetSocketAddress tcpAddress = new InetSocketAddress(server.getPort());
         tcpServer.socket().bind(tcpAddress);
         registerChannel(server, tcpServer, SelectionKey.OP_ACCEPT, server);
-        tcpServers.add(tcpServer);
+        serverSocketChannelMap.put(server, tcpServer);
     }
 
     /**
@@ -721,8 +721,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
 
                     tasks.remove(consumer).cancel(true);
-                    System.out.printf("Tasks size: %d\r\n", tasks.size());
-                    System.out.printf("Selectors size: %d\r\n", selectors.size());
                     wakeup();
                     break;
                 }
@@ -833,7 +831,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector recreated!!!");
                             }
                         }
-                        continue;
                     } else {
                         selectorCounter = 0;
                         selectedKeys = getSelector().selectedKeys().iterator();
@@ -892,7 +889,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
 
                 //Close all the servers.
-                for (ServerSocketChannel channel : tcpServers) {
+                if(NetServer.class.isAssignableFrom(consumer.getClass())) {
+                    ServerSocketChannel channel = serverSocketChannelMap.get(consumer);
                     try {
                         channel.close();
                     } catch (IOException ex) {
@@ -903,7 +901,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
             }
 
-            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service stopped");
+            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector stopped");
         }
     }
 
