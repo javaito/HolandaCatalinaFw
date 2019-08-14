@@ -266,7 +266,8 @@ public class ServiceSession implements Comparable {
         LayerStackElement result = null;
         //Verify if this instance is a current session of is a identity
         if(ServiceSession.getCurrentSession().equals(this)) {
-            if (layerStack.get(Thread.currentThread().getId()).size() > 0) {
+            if (layerStack.containsKey(Thread.currentThread().getId()) &&
+                    layerStack.get(Thread.currentThread().getId()).size() > 0) {
                 result = layerStack.get(Thread.currentThread().getId()).get(0);
             }
         } else {
