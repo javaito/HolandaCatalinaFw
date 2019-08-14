@@ -39,25 +39,18 @@ public final class NetService extends Service<NetServiceConsumer> {
     private Map<NetServiceConsumer, ServerSocketChannel> serverSocketChannelMap;
     private Map<NetSession, SelectableChannel> channels;
     private Map<SelectableChannel, NetSession> sessionsByChannel;
-
     private DatagramChannel udpServer;
     private Map<NetSession, SocketAddress> addresses;
     private Map<SocketAddress, NetSession> sessionsByAddress;
-
     private Map<SelectableChannel, Long> lastWrite;
     private Map<SelectableChannel, Queue<NetPackage>> outputQueue;
-
-    private Set<NetSession> sessions;
     private Map<NetSession, SSLHelper> sslHelpers;
-
     private Map<NetServiceConsumer,SelectorRunnable> selectors;
     private Map<NetServiceConsumer,Future> tasks;
-
     private Timer timer;
     private boolean creationTimeoutAvailable;
     private long creationTimeout;
     private boolean shuttingDown;
-
     private Queue<SelectionKey> readableKeys;
     private Queue<SelectionKey> writableKeys;
     private ThreadPoolExecutor ioExecutor;
@@ -97,7 +90,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         channels = Collections.synchronizedMap(new TreeMap<>());
         sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
         sessionsByAddress = Collections.synchronizedMap(new HashMap<>());
-        sessions = Collections.synchronizedSet(new TreeSet<>());
         sslHelpers = Collections.synchronizedMap(new HashMap<>());
         addresses = Collections.synchronizedMap(new HashMap<>());
 
@@ -243,20 +235,10 @@ public final class NetService extends Service<NetServiceConsumer> {
         channel.configureBlocking(false);
         InetSocketAddress address = new InetSocketAddress(client.getHost(), client.getPort());
         channel.connect(address);
-
-        sessions.add(client.getSession());
         addresses.put(client.getSession(), address);
         sessionsByAddress.put(channel.getRemoteAddress(), client.getSession());
-
         registerChannel(client, channel, SelectionKey.OP_READ, client);
-    }
-
-    /**
-     * Return an unmodificable add with all the sessions created en the service.
-     * @return Set with se sessions.
-     */
-    public final Set<NetSession> getSessions() {
-        return Collections.unmodifiableSet(sessions);
+        selectors.get(client).addSession(client.getSession());
     }
 
     /**
@@ -433,8 +415,8 @@ public final class NetService extends Service<NetServiceConsumer> {
             NetSession session = sessionsByChannel.remove(channel);
             lastWrite.remove(channel);
             outputQueue.remove(channel);
-            if (sslHelpers.containsKey(sessions)) {
-                sslHelpers.remove(sessions).close();
+            if (sslHelpers.containsKey(session)) {
+                sslHelpers.remove(session).close();
             }
             List<NetSession> removedSessions = new ArrayList<>();
 
@@ -444,7 +426,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                     if (session.getConsumer() instanceof NetServer) {
                         NetServer server = (NetServer) session.getConsumer();
                         if (server.isDisconnectAndRemove()) {
-                            sessions.remove(session);
                             destroySession(session);
                         }
                     }
@@ -641,11 +622,13 @@ public final class NetService extends Service<NetServiceConsumer> {
         private Selector selector;
         private final Object monitor;
         private Boolean blocking;
+        private Set<NetSession> sessions;
 
-        public SelectorRunnable(NetServiceConsumer consumer) {
+        private SelectorRunnable(NetServiceConsumer consumer) {
             this.consumer = consumer;
             this.monitor = new Object();
             this.blocking = false;
+            this.sessions = new TreeSet<>();
             try {
                 createSelector();
             } catch (IOException ex) {
@@ -654,10 +637,26 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         /**
+         * Returns the set of sessions.
+         * @return Set of sessions.
+         */
+        private Set<NetSession> getSessions() {
+            return Collections.unmodifiableSet(sessions);
+        }
+
+        /**
+         * Add a session on the selector artifact.
+         * @param session Net session instance.
+         */
+        public void addSession(NetSession session) {
+            sessions.add(session);
+        }
+
+        /**
          * Returns the selector instance.
          * @return Selector instance.
          */
-        public Selector getSelector() {
+        private Selector getSelector() {
             return selector;
         }
 
@@ -665,7 +664,7 @@ public final class NetService extends Service<NetServiceConsumer> {
          * Set the selector instance.
          * @param selector Selector instance.
          */
-        public void setSelector(Selector selector) {
+        private void setSelector(Selector selector) {
             this.selector = selector;
         }
 
@@ -897,6 +896,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing channel...", ex);
                     }
                 }
+                selectors.remove(consumer);
             } catch (Exception ex) {
                 Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
             }
@@ -940,7 +940,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         createPackage(channel, null, NetPackage.ActionEvent.CONNECT),
                         (SocketChannel) keyChannel);
                 if(session != null) {
-                    sessions.add(session);
+                    selectors.get(client).addSession(session);
                     sessionsByChannel.put(channel, session);
                     channels.put(session, channel);
                     outputQueue.put(channel, new LinkedBlockingQueue<>());
@@ -994,6 +994,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                         outputQueue.put(socketChannel, new LinkedBlockingQueue<>());
                         lastWrite.put(socketChannel, System.currentTimeMillis());
                         channels.put(session, socketChannel);
+                        selectors.get(server).addSession(session);
                     }
 
                     if (server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
@@ -1215,7 +1216,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 if (netPackage.getSession().getConsumer() instanceof NetServer) {
                                     NetServer server = (NetServer) netPackage.getSession().getConsumer();
                                     if (server.isDisconnectAndRemove()) {
-                                        sessions.remove(netPackage.getSession());
                                         destroySession(session);
                                     }
                                 }
