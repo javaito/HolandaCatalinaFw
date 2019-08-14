@@ -1326,14 +1326,27 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Query instance.
      */
     public static Query compile(String sql) {
-        Query result = cache.get(sql);
+        return compile(sql, false);
+    }
+
+    /**
+     * Create a query instance from sql definition.
+     * @param sql Sql definition
+     * @param ignoreCache Boolean value to indicate if the cache must be ignored or not.
+     * @return Query instance.
+     */
+    public static Query compile(String sql, boolean ignoreCache) {
+        Query result = null;
+        if(!ignoreCache) {
+            result = cache.get(sql);
+        }
         if(result == null) {
             List<String> richTexts = Strings.groupRichText(sql);
             List<String> groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() - 1)));
             result = compile(groups, richTexts, groups.size() - 1);
             cache.put(sql,result);
         }
-        return new Query(result);
+        return result;
     }
 
     /**
