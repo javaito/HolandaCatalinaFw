@@ -1344,7 +1344,9 @@ public class Query extends EvaluatorCollection implements Queryable {
             List<String> richTexts = Strings.groupRichText(sql);
             List<String> groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() - 1)));
             result = compile(groups, richTexts, groups.size() - 1);
-            cache.put(sql,result);
+            if(!ignoreCache) {
+                cache.put(sql, result);
+            }
         }
         return result;
     }
