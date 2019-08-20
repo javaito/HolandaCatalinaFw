@@ -250,7 +250,7 @@ public final class Layers {
                 if(instance.distributedLayersByRegex.containsKey(layerClass)) {
                     for (String regex : instance.distributedLayersByRegex.get(layerClass).keySet()) {
                         if (implName.matches(regex)) {
-                            getDistributedImplementationInstance(layerClass,
+                            result = getDistributedImplementationInstance(layerClass,
                                     instance.distributedLayersByRegex.get(layerClass).get(regex));
                             break;
                         }

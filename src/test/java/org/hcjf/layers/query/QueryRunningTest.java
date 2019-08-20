@@ -231,6 +231,14 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void placeHolder() {
+        Query query = Query.compile("SELECT name FROM character WHERE name = ?");
+        ParameterizedQuery parameterizedQuery = query.getParameterizedQuery().add("Margaret Abigail");
+        Collection<JoinableMap> resultSet = parameterizedQuery.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void startAndLimit() {
         Query query = Query.compile("SELECT name FROM character ORDER BY name");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
