@@ -31,9 +31,9 @@ public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
                 for (Object row : resultSet) {
                     value = accumulateFunction(accumulatedValue,
                             new Object[]{queryReturnField.resolve(row)}, (A, V) -> A.add(V))[1];
-                    accumulatedValue = accumulatedValue.doubleValue() + value.doubleValue();
                     if(!group) {
                         if(accumulate) {
+                            accumulatedValue = accumulatedValue.doubleValue() + value.doubleValue();
                             ((Map) row).put(alias, accumulatedValue);
                         } else {
                             ((Map) row).put(alias, value);
