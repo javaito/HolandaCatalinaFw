@@ -69,9 +69,11 @@ public class JsonUtils {
             value = Strings.deductInstance(element.getAsString());
 
             //This control is to save the case when the value into the json file is marked with quotes
-            if(Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
+            if (Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
                 value = value.toString();
             }
+        }else if(element instanceof JsonNull) {
+            value = null;
         } else {
             value = Strings.deductInstance(element.getAsString());
         }
