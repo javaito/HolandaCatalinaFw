@@ -324,6 +324,10 @@ public class QueryRunningTest {
         query = Query.compile("SELECT * FROM character JOIN character2 ON character.lastName like character2.lastName JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        query = Query.compile("SELECT name, aggregateSum(weight) FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test
