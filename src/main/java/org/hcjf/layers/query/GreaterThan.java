@@ -40,31 +40,39 @@ public class GreaterThan extends FieldEvaluator {
             Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
             Object rightValue = getProcessedRightValue(object, dataSource, consumer);
 
-            if(leftValue instanceof Number && rightValue instanceof Number) {
-                if(leftValue instanceof Double || leftValue instanceof Float ||
-                        rightValue instanceof Double || rightValue instanceof Float) {
-                    leftValue = Double.valueOf(((Number)leftValue).doubleValue());
-                    rightValue = Double.valueOf(((Number)rightValue).doubleValue());
-                } else {
-                    leftValue = Long.valueOf(((Number)leftValue).longValue());
-                    rightValue = Long.valueOf(((Number)rightValue).longValue());
-                }
-            }
-
-            if(Comparable.class.isAssignableFrom(leftValue.getClass()) &&
-                    Comparable.class.isAssignableFrom(rightValue.getClass())) {
-                if(leftValue.getClass().isAssignableFrom(rightValue.getClass()) ||
-                        rightValue.getClass().isAssignableFrom(leftValue.getClass())) {
-                    if(orEquals) {
-                        result = ((Comparable)leftValue).compareTo(rightValue) >= 0;
+            if(leftValue == null && rightValue == null) {
+                result = orEquals;
+            } else if(leftValue == null) {
+                result = false;
+            } else if(rightValue == null) {
+                result = true;
+            } else {
+                if (leftValue instanceof Number && rightValue instanceof Number) {
+                    if (leftValue instanceof Double || leftValue instanceof Float ||
+                            rightValue instanceof Double || rightValue instanceof Float) {
+                        leftValue = Double.valueOf(((Number) leftValue).doubleValue());
+                        rightValue = Double.valueOf(((Number) rightValue).doubleValue());
                     } else {
-                        result = ((Comparable)leftValue).compareTo(rightValue) > 0;
+                        leftValue = Long.valueOf(((Number) leftValue).longValue());
+                        rightValue = Long.valueOf(((Number) rightValue).longValue());
+                    }
+                }
+
+                if (Comparable.class.isAssignableFrom(leftValue.getClass()) &&
+                        Comparable.class.isAssignableFrom(rightValue.getClass())) {
+                    if (leftValue.getClass().isAssignableFrom(rightValue.getClass()) ||
+                            rightValue.getClass().isAssignableFrom(leftValue.getClass())) {
+                        if (orEquals) {
+                            result = ((Comparable) leftValue).compareTo(rightValue) >= 0;
+                        } else {
+                            result = ((Comparable) leftValue).compareTo(rightValue) > 0;
+                        }
+                    } else {
+                        throw new HCJFRuntimeException("Incompatible types between values and field's value: %s != %s", leftValue.getClass(), rightValue.getClass());
                     }
                 } else {
-                    throw new HCJFRuntimeException("Incompatible types between values and field's value: %s != %s", leftValue.getClass(), rightValue.getClass());
+                    throw new HCJFRuntimeException("Unsupported evaluator type: [%s, %s]", leftValue.getClass(), rightValue.getClass());
                 }
-            } else {
-                throw new HCJFRuntimeException("Unsupported evaluator type: [%s, %s]", leftValue.getClass(), rightValue.getClass());
             }
         } catch (Exception ex) {
             throw new HCJFRuntimeException("Greater than evaluator fail", ex);

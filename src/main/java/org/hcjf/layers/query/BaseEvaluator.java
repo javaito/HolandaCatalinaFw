@@ -55,22 +55,28 @@ public abstract class BaseEvaluator implements Evaluator {
     protected final Object getProcessedValue(Object currentResultSetElement, Object rawValue, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result = rawValue;
 
-        if(result instanceof FieldEvaluator.UnprocessedValue) {
-            result = ((FieldEvaluator.UnprocessedValue)result).process(dataSource, consumer);
-        } else if(result instanceof Query.QueryParameter) {
-            result = consumer.get(currentResultSetElement, (Query.QueryParameter) result, dataSource);
-        } else if(result instanceof Collection) {
-            Collection<Object> collectionResult = new ArrayList<>();
-            for(Object internalValue : (Collection)result) {
-                collectionResult.add(getProcessedValue(currentResultSetElement, internalValue, dataSource, consumer));
+        if(result != null) {
+            if (result instanceof FieldEvaluator.UnprocessedValue) {
+                result = ((FieldEvaluator.UnprocessedValue) result).process(dataSource, consumer);
+            } else if (result instanceof Query.QueryParameter) {
+                if(((Query.QueryParameter)result).isUnderlying()) {
+                    result = true;
+                } else {
+                    result = consumer.get(currentResultSetElement, (Query.QueryParameter) result, dataSource);
+                }
+            } else if (result instanceof Collection) {
+                Collection<Object> collectionResult = new ArrayList<>();
+                for (Object internalValue : (Collection) result) {
+                    collectionResult.add(getProcessedValue(currentResultSetElement, internalValue, dataSource, consumer));
+                }
+                result = collectionResult;
+            } else if (result.getClass().isArray()) {
+                Collection<Object> collectionResult = new ArrayList<>();
+                for (int i = 0; i < Array.getLength(result); i++) {
+                    collectionResult.add(getProcessedValue(currentResultSetElement, Array.get(result, i), dataSource, consumer));
+                }
+                result = collectionResult;
             }
-            result = collectionResult;
-        } else if(result.getClass().isArray()) {
-            Collection<Object> collectionResult = new ArrayList<>();
-            for (int i = 0; i < Array.getLength(result); i++) {
-                collectionResult.add(getProcessedValue(currentResultSetElement, Array.get(result, i), dataSource, consumer));
-            }
-            result = collectionResult;
         }
 
         return result;

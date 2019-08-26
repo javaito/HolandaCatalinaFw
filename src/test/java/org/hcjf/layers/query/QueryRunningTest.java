@@ -224,6 +224,32 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void underlyingFunction() {
+        Query query = Query.compile("SELECT * FROM character WHERE  @underlying()");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 7);
+    }
+
+    @Test
+    public void nullValues() {
+        Query query = Query.compile("SELECT * FROM character WHERE  name = null");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 0);
+
+        query = Query.compile("SELECT * FROM character WHERE  nickname like 'Bart'");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 1);
+
+        query = Query.compile("SELECT * FROM character WHERE  nickname = null");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+
+        query = Query.compile("SELECT * FROM character WHERE  nickname != null");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 5);
+    }
+
+    @Test
     public void distinct() {
         Query query = Query.compile("SELECT lastName, distinct(lastName) FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);

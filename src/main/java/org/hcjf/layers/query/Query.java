@@ -870,7 +870,6 @@ public class Query extends EvaluatorCollection implements Queryable {
             }
         }
 
-
         Collection<Joinable> result = new ArrayList<>();
         Joinable row;
         Boolean rowEvaluation;
@@ -883,6 +882,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                     if(!(rowEvaluation = evaluator.evaluate(row, dataSource, consumer))) {
                         break;
                     }
+                }
+
+                if(join.getOuter()) {
+                    rowEvaluation = !rowEvaluation;
                 }
 
                 if(rowEvaluation) {

@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import com.squareup.okhttp.Route;
+
 /**
  * This class represent a join operation
  * @author javaito
@@ -9,11 +11,17 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
 
     private final Query.QueryResource resource;
     private final JoinType type;
+    private final Boolean outer;
 
     public Join(Query query, String resourceName, JoinType type) {
+        this(query, resourceName, type, false);
+    }
+
+    public Join(Query query, String resourceName, JoinType type, boolean outer) {
         super(query);
         this.resource = new Query.QueryResource(resourceName);
         this.type = type;
+        this.outer = outer;
     }
 
     /**
@@ -38,6 +46,14 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
      */
     public JoinType getType() {
         return type;
+    }
+
+    /**
+     * Verify if the join instance has a outer modifier.
+     * @return True if the join has a modifier.
+     */
+    public Boolean getOuter() {
+        return outer;
     }
 
     /**

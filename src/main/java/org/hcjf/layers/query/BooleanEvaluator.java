@@ -27,7 +27,7 @@ public class BooleanEvaluator extends BaseEvaluator {
             } else if (Number.class.isAssignableFrom(processedValue.getClass())) {
                 result = ((Number) processedValue).intValue() != 0;
             } else if (processedValue instanceof String) {
-                result = ((String)processedValue).equalsIgnoreCase(Boolean.TRUE.toString());
+                result = Boolean.parseBoolean((String) processedValue);
             } else {
                 throw new IllegalArgumentException("Value evaluator only supports boolean values or functions that response with boolean values.");
             }

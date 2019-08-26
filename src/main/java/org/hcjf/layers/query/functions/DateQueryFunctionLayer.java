@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author javaito
@@ -47,8 +49,12 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String PARSE_DATE = "parseDate";
     private static final String TO_DATE = "toDate";
 
+    private final Map<String,DateTimeFormatter> dateTimeFormatterCache;
+
     public DateQueryFunctionLayer() {
         super(SystemProperties.get(SystemProperties.Query.Function.DATE_FUNCTION_NAME));
+
+        this.dateTimeFormatterCache = new HashMap<>();
 
         addFunctionName(NOW);
         addFunctionName(GET_YEAR);
@@ -146,7 +152,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
                 if(parameters.length >= 2) {
                     String pattern = (String) parameters[parameters.length-1];
                     ZonedDateTime zonedDateTime = getZonedDateTimeFromDate(1, parameters);
-                    result = DateTimeFormatter.ofPattern(pattern).format(zonedDateTime);
+                    result = getDateFormatter(pattern).format(zonedDateTime);
                 } else {
                     throw new HCJFRuntimeException("Illegal parameters length");
                 }
@@ -155,6 +161,15 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             default: throw new HCJFRuntimeException("Date function not found: %s", functionName);
         }
         return result;
+    }
+
+    private synchronized DateTimeFormatter getDateFormatter(String pattern) {
+        DateTimeFormatter formatter = this.dateTimeFormatterCache.get(pattern);
+        if(formatter == null) {
+            formatter = DateTimeFormatter.ofPattern(pattern);
+            this.dateTimeFormatterCache.put(pattern, formatter);
+        }
+        return formatter;
     }
 
     private ZonedDateTime getZonedDateTimeFromDate(int skipping, Object... parameters) {
