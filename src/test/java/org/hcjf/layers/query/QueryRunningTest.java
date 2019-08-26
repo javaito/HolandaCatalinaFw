@@ -226,7 +226,11 @@ public class QueryRunningTest {
     @Test
     public void underlyingFunction() {
         Query query = Query.compile("SELECT * FROM character WHERE  @underlying()");
-        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        Assert.assertEquals(resultSet.size(), 7);
+
+        query = Query.compile("SELECT * FROM character WHERE  @underlying()");
+        resultSet = Query.evaluate(query);
         Assert.assertEquals(resultSet.size(), 7);
     }
 

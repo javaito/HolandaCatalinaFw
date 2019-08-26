@@ -751,6 +751,14 @@ public class Query extends EvaluatorCollection implements Queryable {
         for(Evaluator evaluator : src.getEvaluators()) {
             if(evaluator instanceof FieldEvaluator) {
                 dest.addEvaluator(((FieldEvaluator)evaluator).copy());
+            } else if(evaluator instanceof BooleanEvaluator) {
+                BooleanEvaluator booleanEvaluator = (BooleanEvaluator) evaluator;
+                if(booleanEvaluator.getValue() instanceof QueryFunction) {
+                    QueryFunction queryFunction = (QueryFunction) booleanEvaluator.getValue();
+                    if(queryFunction.isUnderlying()) {
+                        dest.addEvaluator(evaluator);
+                    }
+                }
             } else if(evaluator instanceof And) {
                 copyEvaluators(dest.and(), (EvaluatorCollection) evaluator);
             } else if(evaluator instanceof Or) {
