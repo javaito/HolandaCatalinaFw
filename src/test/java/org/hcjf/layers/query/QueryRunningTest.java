@@ -224,6 +224,13 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void checkToString() {
+        Query query = Query.compile("SELECT * FROM character WHERE @underlying('field')");
+        String queryToString = query.toString();
+        Assert.assertTrue(queryToString.contains("@underlying('field')"));
+    }
+
+    @Test
     public void underlyingFunction() {
         Query query = Query.compile("SELECT * FROM character WHERE  @underlying()");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
@@ -304,7 +311,7 @@ public class QueryRunningTest {
 
     @Test
     public void join() {
-        Query query = Query.compile("SELECT address.street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+        Query query = Query.compile("SELECT address.street, concat(name), stringJoin('@', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonAddresses.size() - 1);
 
@@ -431,7 +438,7 @@ public class QueryRunningTest {
         JoinableMap first = resultSet.iterator().next();
         Assert.assertEquals(first.get("nombre"), first.get("name"));
 
-        query = Query.compile("SELECT street, concat(name), stringJoin('&', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+        query = Query.compile("SELECT street, concat(name), stringJoin('@', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonAddresses.size() - 1);
 

@@ -1795,7 +1795,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             Boolean function = false;
             if(trimmedStringValue.contains(Strings.REPLACEABLE_GROUP)) {
                 //If the string contains a replaceable group character then the parameter is a function.
-                replaceValue = Strings.getGroupIndex(trimmedStringValue);
+                replaceValue = Strings.getGroupIndex(trimmedStringValue, Strings.REPLACEABLE_GROUP);
                 group = groups.get(Integer.parseInt(replaceValue.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING)));
                 functionName = trimmedStringValue.substring(0, trimmedStringValue.indexOf(Strings.REPLACEABLE_GROUP));
                 originalValue = trimmedStringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
@@ -1803,6 +1803,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                     functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
                 }
+                originalValue = Strings.reverseRichTextGrouping(originalValue, richTexts);
                 function = true;
             } else {
                 originalValue = trimmedStringValue;

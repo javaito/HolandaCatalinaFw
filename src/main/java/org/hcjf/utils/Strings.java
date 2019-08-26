@@ -501,14 +501,14 @@ public final class Strings {
      * @param value Value to analyse
      * @return Replaceable index.
      */
-    public static String getGroupIndex(String value) {
+    public static String getGroupIndex(String value, String groupIndicator) {
         String result = null;
-        Integer startIndex = value.indexOf(REPLACEABLE_GROUP);
+        Integer startIndex = value.indexOf(groupIndicator);
         StringBuilder resultBuilder = new StringBuilder();
         char current;
         for (int i = startIndex; i < value.length() && i >= 0; i++) {
             current = value.charAt(i);
-            if(Character.isDigit(current) || current == Strings.REPLACEABLE_GROUP.charAt(0)) {
+            if(Character.isDigit(current) || current == groupIndicator.charAt(0)) {
                 resultBuilder.append(current);
             } else {
                 break;
@@ -523,18 +523,36 @@ public final class Strings {
     /**
      * Reverts the grouping action over the specific value.
      * @param value Value to revert.
+     * @param richTextGroups Group lists.
+     * @return Reverted value.
+     */
+    public static String reverseRichTextGrouping(String value, List<String> richTextGroups) {
+        String result = value;
+        String groupIndex = Strings.getGroupIndex(result, REPLACEABLE_RICH_TEXT);
+        Integer index;
+        while(groupIndex != null) {
+            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_RICH_TEXT, EMPTY_STRING));
+            result = result.replace(groupIndex, richTextGroups.get(index));
+            groupIndex = Strings.getGroupIndex(result, REPLACEABLE_RICH_TEXT);
+        }
+        return result;
+    }
+
+    /**
+     * Reverts the grouping action over the specific value.
+     * @param value Value to revert.
      * @param groups Group lists.
      * @return Reverted value.
      */
     public static String reverseGrouping(String value, List<String> groups) {
         String result = value;
-        String groupIndex = Strings.getGroupIndex(result);
+        String groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
         Integer index;
         while(groupIndex != null) {
-            index = Integer.parseInt(groupIndex.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING));
+            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_GROUP, EMPTY_STRING));
             result = result.replace(groupIndex,
                     START_GROUP + groups.get(index) + END_GROUP);
-            groupIndex = Strings.getGroupIndex(result);
+            groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
         }
         return result;
     }
