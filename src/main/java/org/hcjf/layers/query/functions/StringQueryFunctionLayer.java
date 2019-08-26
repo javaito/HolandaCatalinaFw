@@ -35,6 +35,8 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
         addFunctionName(TO_UPPER_CASE);
         addFunctionName(TO_LOWER_CASE);
         addFunctionName(TO_STRING);
+        addFunctionName(HEX_TO_BYTES);
+        addFunctionName(BYTES_TO_HEX);
         addFunctionName(REPLACE);
     }
 
