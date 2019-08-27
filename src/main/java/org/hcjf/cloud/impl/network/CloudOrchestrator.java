@@ -169,6 +169,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             thisNode.setId(new UUID((NetUtils.getLocalIp() + Node.class.getName()).hashCode(), KubernetesSpy.getHostName().hashCode()));
             thisServiceEndPoint.setId(new UUID(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE).hashCode(),
                     SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_NAME).hashCode()));
+            thisServiceEndPoint.setName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_NAME));
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes service id %s", thisServiceEndPoint.getId());
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Kubernetes node id %s", thisNode.getId());
             Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Local IP %s", NetUtils.getLocalIp());
@@ -967,8 +968,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         EventMessage eventMessage = new EventMessage(UUID.randomUUID());
         eventMessage.setEvent(event);
         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-            if(!thisServiceEndPoint.getGatewayId().equals(serviceEndPoint.getGatewayId())) {
+            if(!thisServiceEndPoint.getId().equals(serviceEndPoint.getId())) {
                 try {
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending event to %s", serviceEndPoint.toString());
                     invokeNetworkComponent(serviceEndPoint, eventMessage);
                 } catch (Exception ex) {
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Couldn't dispatch event");
