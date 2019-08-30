@@ -107,6 +107,18 @@ public class StringsTestSuit {
     }
 
     @Test
+    public void testSplitWord() {
+        String splitResult = Strings.splitInWord("JavierQuiroga", " ");
+        Assert.assertEquals(splitResult, "Javier Quiroga");
+        splitResult = Strings.splitInWord("JavierQUiroga", " ");
+        Assert.assertEquals(splitResult, "Javier QUiroga");
+        splitResult = Strings.splitInWord("JAVIERQUIROGA", " ");
+        Assert.assertEquals(splitResult, "JAVIERQUIROGA");
+        splitResult = Strings.splitInWord("JAVIER QUIRoGA", " ");
+        Assert.assertEquals(splitResult, "JAVIER QUIRo GA");
+    }
+
+    @Test
     public void testTrim() {
         String value = "%hello world%";
         value = Strings.trim(value, "%");

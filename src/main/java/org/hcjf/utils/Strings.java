@@ -268,11 +268,13 @@ public final class Strings {
      */
     public static String splitInWord(String value, String separator) {
         StringBuilder result = new StringBuilder();
+        Character previousCharacter = null;
         for(char character : value.toCharArray()) {
-            if(Character.isUpperCase(character) && result.length() > 0) {
+            if(previousCharacter != null && Character.isLowerCase(previousCharacter) && Character.isUpperCase(character)) {
                 result.append(separator);
             }
             result.append(character);
+            previousCharacter = character;
         }
         return result.toString();
     }
