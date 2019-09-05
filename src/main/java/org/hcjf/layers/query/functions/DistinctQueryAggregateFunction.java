@@ -1,6 +1,6 @@
 package org.hcjf.layers.query.functions;
 
-import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.utils.Strings;
 
 import java.util.ArrayList;
@@ -19,16 +19,16 @@ public class DistinctQueryAggregateFunction extends BaseQueryAggregateFunctionLa
     @Override
     public Collection evaluate(String alias, Collection resultSet, Object... parameters) {
         Collection result = new ArrayList();
-        Collection<Query.QueryReturnField> fields = new ArrayList<>();
+        Collection<QueryReturnField> fields = new ArrayList<>();
         for(Object param : parameters) {
-            fields.add((Query.QueryReturnField) param);
+            fields.add((QueryReturnField) param);
         }
 
         Set<String> hashSet = new HashSet<>();
         String hash;
         for(Object row : resultSet) {
             hash = Strings.EMPTY_STRING;
-            for(Query.QueryReturnField field : fields) {
+            for(QueryReturnField field : fields) {
                 hash += Integer.toString(field.resolve(row).hashCode());
             }
             if(!hashSet.contains(hash)) {

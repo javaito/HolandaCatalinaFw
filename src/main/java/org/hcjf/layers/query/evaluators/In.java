@@ -1,6 +1,7 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.Queryable;
 
 import java.util.Arrays;
 import java.util.Collection;

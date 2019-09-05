@@ -1,4 +1,9 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
+
+import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.Queryable;
+import org.hcjf.layers.query.model.QueryField;
+import org.hcjf.layers.query.model.QueryParameter;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -8,7 +13,7 @@ import java.util.*;
  */
 public abstract class BaseEvaluator implements Evaluator {
 
-    private List<Query.QueryField> evaluatorFields;
+    private List<QueryField> evaluatorFields;
     private boolean trueForced;
 
     /**
@@ -31,7 +36,7 @@ public abstract class BaseEvaluator implements Evaluator {
      * This method returns the list of fields that are present into the evaluator.
      * @return List of the fields present into the evaluator.
      */
-    public final List<Query.QueryField> getEvaluatorFields() {
+    public final List<QueryField> getEvaluatorFields() {
         return evaluatorFields;
     }
 
@@ -39,7 +44,7 @@ public abstract class BaseEvaluator implements Evaluator {
      * This method set the list of fields present into the evaluator.
      * @param evaluatorFields List of fields present into the evaluator.
      */
-    public final void setEvaluatorFields(List<Query.QueryField> evaluatorFields) {
+    public final void setEvaluatorFields(List<QueryField> evaluatorFields) {
         this.evaluatorFields = evaluatorFields;
     }
 
@@ -58,11 +63,11 @@ public abstract class BaseEvaluator implements Evaluator {
         if(result != null) {
             if (result instanceof FieldEvaluator.UnprocessedValue) {
                 result = ((FieldEvaluator.UnprocessedValue) result).process(dataSource, consumer);
-            } else if (result instanceof Query.QueryParameter) {
-                if(((Query.QueryParameter)result).isUnderlying()) {
+            } else if (result instanceof QueryParameter) {
+                if(((QueryParameter)result).isUnderlying()) {
                     result = true;
                 } else {
-                    result = consumer.get(currentResultSetElement, (Query.QueryParameter) result, dataSource);
+                    result = consumer.get(currentResultSetElement, (QueryParameter) result, dataSource);
                 }
             } else if (result instanceof Collection) {
                 Collection<Object> collectionResult = new ArrayList<>();
@@ -166,7 +171,7 @@ public abstract class BaseEvaluator implements Evaluator {
             if(query.getReturnParameters().size() == 1){
                 List<Object> listResult = new ArrayList<>();
                 for(Object element : subQueryResult) {
-                    listResult.add(consumer.get(element, (Query.QueryParameter) query.getReturnParameters().get(0), dataSource));
+                    listResult.add(consumer.get(element, (QueryParameter) query.getReturnParameters().get(0), dataSource));
                 }
                 collection = listResult;
             } else {

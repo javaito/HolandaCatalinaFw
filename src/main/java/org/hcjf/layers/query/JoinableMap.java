@@ -155,6 +155,13 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
         return result;
     }
 
+    public void setResource(String resourceName) {
+        if(!containsResource(resourceName)) {
+            resources.add(resourceName);
+            mapInstanceByResource.put(resourceName, mapInstance);
+        }
+    }
+
     /**
      * Join the information stored into this instance of the joinable with the
      * informacion stored into the joinable parameter.
@@ -180,7 +187,11 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
             result = new JoinableMap();
             result.resources.addAll(resources);
             result.mapInstance.putAll(mapInstance);
-            result.mapInstanceByResource.putAll(mapInstanceByResource);
+            if(mapInstanceByResource.size() > 1) {
+                result.mapInstanceByResource.putAll(mapInstanceByResource);
+            } else {
+                result.mapInstanceByResource.put(leftResource, mapInstance);
+            }
         } else {
             result = new JoinableMap(leftResource);
             result.mapInstance.putAll(mapInstance);

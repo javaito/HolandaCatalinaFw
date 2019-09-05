@@ -1,7 +1,7 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.layers.query.Enlarged;
-import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.model.QueryReturnField;
 
 import java.util.Collection;
 
@@ -18,11 +18,7 @@ public class EvalExpressionAggregateFunctionLayer extends BaseQueryAggregateFunc
         Object[] resolvedParameters = new Object[parameters.length];
         for(Object row : resultSet) {
             for (int i = 0; i < parameters.length; i++) {
-                if(parameters[i] instanceof Query.QueryReturnField) {
-                    resolvedParameters[i] = ((Query.QueryReturnField)parameters[i]).resolve(row);
-                } else {
-                    resolvedParameters[i] = parameters[i];
-                }
+                resolvedParameters[i] = resolveValue(row, parameters[i]);
             }
             ((Enlarged)row).put(alias, evalExpression(resolvedParameters));
         }

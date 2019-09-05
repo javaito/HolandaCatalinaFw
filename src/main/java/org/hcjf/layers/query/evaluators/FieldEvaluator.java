@@ -1,5 +1,8 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
 
+import org.hcjf.layers.query.Queryable;
+import org.hcjf.layers.query.model.QueryField;
+import org.hcjf.layers.query.model.QueryParameter;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 
@@ -29,11 +32,11 @@ public abstract class FieldEvaluator extends BaseEvaluator {
      */
     public final boolean containsReference(String fieldName) {
         boolean result = false;
-        if(getLeftValue() instanceof Query.QueryField) {
-            result = ((Query.QueryField)getLeftValue()).getFieldPath().equals(fieldName);
+        if(getLeftValue() instanceof QueryField) {
+            result = ((QueryField)getLeftValue()).getFieldPath().equals(fieldName);
         }
-        if(!result && getRightValue() instanceof Query.QueryField) {
-            result = ((Query.QueryField)getRightValue()).getFieldPath().equals(fieldName);
+        if(!result && getRightValue() instanceof QueryField) {
+            result = ((QueryField)getRightValue()).getFieldPath().equals(fieldName);
         }
         return result;
     }
@@ -55,7 +58,7 @@ public abstract class FieldEvaluator extends BaseEvaluator {
      */
     protected final Object getProcessedLeftValue(Object currentResultSetElement, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result;
-        if(getLeftValue() instanceof Query.QueryParameter) {
+        if(getLeftValue() instanceof QueryParameter) {
             result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
         } else {
             Map<Evaluator, Object> cache = getLeftCache();
@@ -97,7 +100,7 @@ public abstract class FieldEvaluator extends BaseEvaluator {
      */
     protected final Object getProcessedRightValue(Object currentResultSetElement, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result;
-        if(getRightValue() instanceof Query.QueryParameter) {
+        if(getRightValue() instanceof QueryParameter) {
             result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
         } else {
             Map<Evaluator, Object> cache = getRightCache();

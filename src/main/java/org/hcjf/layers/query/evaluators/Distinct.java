@@ -1,4 +1,6 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
+
+import org.hcjf.layers.query.Queryable;
 
 /**
  * Compare two object and return true if the objects are distinct and false in other ways.

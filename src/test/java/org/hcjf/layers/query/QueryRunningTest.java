@@ -224,10 +224,33 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void aggregateFunction() {
+        Query query = Query.compile("SELECT addressId, aggregateProduct(weight) as aggregateWeight FROM character group by addressId");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        query = Query.compile("SELECT addressId, aggregateSum(weight) as aggregateWeight, aggregateSum(height) as aggregateHeight, aggregateEvalExpression(aggregateWeight - aggregateHeight) as result FROM character group by addressId");
+        Collection<JoinableMap> resultSet1 = Query.evaluate(query);
+        query = Query.compile("SELECT addressId, aggregateEvalExpression(sum(weight) / 2) as aggregateWeight FROM character group by addressId");
+        Collection<JoinableMap> resultSet2 = Query.evaluate(query);
+        System.out.println();
+    }
+
+    @Test
     public void checkToString() {
         Query query = Query.compile("SELECT * FROM character WHERE @underlying('field')");
         String queryToString = query.toString();
         Assert.assertTrue(queryToString.contains("@underlying('field')"));
+    }
+
+    @Test
+    public void queryDynamicResource() {
+        Query query1 = Query.compile("SELECT * FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson'");
+        Collection<JoinableMap> resultSet1 = Query.evaluate(query1);
+        Query query2 = Query.compile("SELECT * FROM (SELECT * FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson') as ch WHERE weight > 16");
+        Collection<JoinableMap> resultSet2 = Query.evaluate(query2);
+        System.out.printf("");
+        Query query3 = Query.compile("SELECT * FROM (SELECT * FROM (SELECT * FROM character WHERE toString(gender) = 'FEMALE') as ch1 where lastName like 'Simpson') as ch JOIN address ON address.addressId = ch.addressId WHERE weight > 16");
+        Collection<JoinableMap> resultSet3 = Query.evaluate(query3);
+        System.out.println();
     }
 
     @Test
@@ -426,7 +449,7 @@ public class QueryRunningTest {
             }
         }
 
-        query = Query.compile("SELECT weight, 2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
+        query = Query.compile("SELECT weight, -2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
         resultSet = query.evaluate(dataSource);
 
         query = Query.compile("SELECT name FROM character");

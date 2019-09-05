@@ -3,6 +3,8 @@ package org.hcjf.layers.query;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
+import org.hcjf.layers.query.model.QueryFunction;
+import org.hcjf.layers.query.model.QueryParameter;
 import org.hcjf.utils.bson.BsonCustomBuilderLayer;
 import org.hcjf.utils.bson.BsonParcelable;
 
@@ -189,10 +191,10 @@ public class ParameterizedQuery implements Queryable {
          * @return Returns the value of the inner consumer.
          */
         @Override
-        public Object get(Object instance, Query.QueryParameter queryParameter, DataSource dataSource) {
+        public Object get(Object instance, QueryParameter queryParameter, DataSource dataSource) {
             Object result;
-            if(queryParameter instanceof Query.QueryFunction) {
-                result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);
+            if(queryParameter instanceof QueryFunction) {
+                result = resolveFunction((QueryFunction) queryParameter, instance, dataSource);
             } else {
                 result = consumer.get(instance, queryParameter, dataSource);
             }

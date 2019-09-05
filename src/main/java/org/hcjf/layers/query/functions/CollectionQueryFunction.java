@@ -20,6 +20,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
     private static final String CONTAINS_ALL = "containsAll";
     private static final String CONTAINS_KEY = "containsKey";
     private static final String CONTAINS_ALL_KEYS = "containsAllKeys";
+    private static final String KEYS = "keys";
 
     public CollectionQueryFunction() {
         super(SystemProperties.get(SystemProperties.Query.Function.COLLECTION_FUNCTION_NAME));
@@ -30,6 +31,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
         addFunctionName(CONTAINS_ALL);
         addFunctionName(CONTAINS_KEY);
         addFunctionName(CONTAINS_ALL_KEYS);
+        addFunctionName(KEYS);
     }
 
     @Override
@@ -117,6 +119,17 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 }
 
                 result = map.keySet().containsAll(collection);
+                break;
+            }
+            case KEYS: {
+                Map map;
+                if(getParameter(0, parameters) instanceof Map) {
+                    map = getParameter(0, parameters);
+                } else {
+                    throw new HCJFRuntimeException("The first parameter for 'keys' function can only be a map");
+                }
+
+                result = map.keySet();
                 break;
             }
         }

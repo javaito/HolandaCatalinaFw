@@ -2,10 +2,14 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.functions.QueryAggregateFunctionLayerInterface;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
+import org.hcjf.layers.query.model.QueryField;
+import org.hcjf.layers.query.model.QueryFunction;
+import org.hcjf.layers.query.model.QueryParameter;
+import org.hcjf.layers.query.model.QueryReturnFunction;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.utils.Introspection;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.*;
@@ -91,7 +95,7 @@ public interface Queryable extends BsonParcelable {
          * @return Return the data storage in the data source indexed
          * by the parameter name.
          */
-        <R extends Object> R get(O instance, Query.QueryParameter queryParameter, DataSource<O> dataSource);
+        <R extends Object> R get(O instance, QueryParameter queryParameter, DataSource<O> dataSource);
 
         /**
          * This method must resolve the functions that are used into the query object.
@@ -101,7 +105,7 @@ public interface Queryable extends BsonParcelable {
          * @param <R> Expected result.
          * @return Return the value obtained of the function resolution.
          */
-        <R extends Object> R resolveFunction(Query.QueryFunction function, Object instance, DataSource<O> dataSource);
+        <R extends Object> R resolveFunction(QueryFunction function, Object instance, DataSource<O> dataSource);
 
         /**
          * This method must returns the parameter for the place indicated as parameter.
@@ -137,24 +141,28 @@ public interface Queryable extends BsonParcelable {
          * @return Return the value obtained of the function resolution.
          */
         @Override
-        public <R extends Object> R resolveFunction(Query.QueryFunction function, Object instance, DataSource<O> dataSource) {
+        public <R extends Object> R resolveFunction(QueryFunction function, Object instance, DataSource<O> dataSource) {
             List<Object> parameterValues = new ArrayList<>();
             Object currentParameter;
             Object value;
             for (int i = 0; i < function.getParameters().size(); i++) {
                 currentParameter = function.getParameters().get(i);
                 if(currentParameter != null) {
-                    if (currentParameter instanceof Query.QueryFunction) {
-                        Query.QueryFunction innerFunction = (Query.QueryFunction) currentParameter;
-                        value = resolveFunction(innerFunction, instance, dataSource);
-                        if(value != null) {
-                            parameterValues.add(value);
+                    if (currentParameter instanceof QueryFunction) {
+                        if(function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
+                            parameterValues.add(currentParameter);
+                        } else {
+                            QueryFunction innerFunction = (QueryFunction) currentParameter;
+                            value = resolveFunction(innerFunction, instance, dataSource);
+                            if (value != null) {
+                                parameterValues.add(value);
+                            }
                         }
-                    } else if (currentParameter instanceof Query.QueryParameter) {
-                        if(function instanceof Query.QueryReturnFunction && ((Query.QueryReturnFunction)function).isAggregate()) {
+                    } else if (currentParameter instanceof QueryParameter) {
+                        if(function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
                            parameterValues.add(currentParameter);
                         } else {
-                            value = get((O) instance, ((Query.QueryParameter) currentParameter), dataSource);
+                            value = get((O) instance, ((QueryParameter) currentParameter), dataSource);
                             if (value != null) {
                                 parameterValues.add(value);
                             }
@@ -169,10 +177,10 @@ public interface Queryable extends BsonParcelable {
             }
 
             R result;
-            if(function instanceof Query.QueryReturnFunction && ((Query.QueryReturnFunction)function).isAggregate()) {
+            if(function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
                 QueryAggregateFunctionLayerInterface queryAggregateFunctionLayerInterface = Layers.get(QueryAggregateFunctionLayerInterface.class,
                         SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) + function.getFunctionName());
-                String alias = ((Query.QueryReturnFunction) function).getAlias() == null ? function.toString() : ((Query.QueryReturnFunction) function).getAlias();
+                String alias = ((QueryReturnFunction) function).getAlias() == null ? function.toString() : ((QueryReturnFunction) function).getAlias();
                 result = (R) queryAggregateFunctionLayerInterface.evaluate(alias, (Collection) instance, parameterValues.toArray());
             } else {
                 QueryFunctionLayerInterface queryFunctionLayerInterface = Layers.get(QueryFunctionLayerInterface.class,
@@ -198,17 +206,17 @@ public interface Queryable extends BsonParcelable {
          * by the parameter name.
          */
         @Override
-        public <R extends Object> R get(O instance, Query.QueryParameter queryParameter, DataSource<O> dataSource) {
+        public <R extends Object> R get(O instance, QueryParameter queryParameter, DataSource<O> dataSource) {
             Object result = null;
-            if(queryParameter instanceof Query.QueryField) {
-                Query.QueryField queryField = (Query.QueryField) queryParameter;
+            if(queryParameter instanceof QueryField) {
+                QueryField queryField = (QueryField) queryParameter;
                 if(queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
                     result = SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL);
                 } else {
                     result = queryField.resolve(instance);
                 }
-            } else if(queryParameter instanceof Query.QueryFunction) {
-                result = resolveFunction((Query.QueryFunction) queryParameter, instance, dataSource);
+            } else if(queryParameter instanceof QueryFunction) {
+                result = resolveFunction((QueryFunction) queryParameter, instance, dataSource);
             }
             return (R) result;
         }

@@ -3,14 +3,12 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.Enlarged;
 import org.hcjf.layers.query.JoinableMap;
-import org.hcjf.layers.query.Query;
-import org.hcjf.utils.Introspection;
+import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.utils.Strings;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author javaito
@@ -36,9 +34,8 @@ public class CountQueryAggregateFunctionLayer extends BaseQueryAggregateFunction
             try {
                 Object value;
                 Integer countValue;
-                Query.QueryReturnField queryReturnField = (Query.QueryReturnField) parameters[0];
                 for (Object row : resultSet) {
-                    value = queryReturnField.resolve(row);
+                    value = resolveValue(row, parameters[0]);
                     if(value instanceof Collection) {
                         countValue = ((Collection)value).size();
                     } else {

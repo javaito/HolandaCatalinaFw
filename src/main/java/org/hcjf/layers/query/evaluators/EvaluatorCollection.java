@@ -1,5 +1,9 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
 
+import org.hcjf.layers.query.model.QueryField;
+import org.hcjf.layers.query.model.QueryFunction;
+import org.hcjf.layers.query.model.QueryParameter;
+import org.hcjf.layers.query.model.QueryResource;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
@@ -67,6 +71,14 @@ public abstract class EvaluatorCollection {
     }
 
     /**
+     * This method remove the evaluator into the collection.
+     * @param evaluator Evaluator to remove.
+     */
+    public void removeEvaluator(Evaluator evaluator) {
+        evaluators.remove(evaluator);
+    }
+
+    /**
      * Add an instance of the evaluator object that evaluate if some instance of the
      * data collection must be in the result add or not.
      * @param evaluator FieldEvaluator instance.
@@ -98,15 +110,15 @@ public abstract class EvaluatorCollection {
         return true;
     }
 
-    private Query.QueryParameter checkQueryParameter(Query.QueryParameter queryParameter) {
-        if(queryParameter instanceof Query.QueryField) {
-            Query.QueryField queryField = (Query.QueryField) queryParameter;
-            Query.QueryResource resource = queryField.getResource();
-        } else if(queryParameter instanceof Query.QueryFunction) {
-            Query.QueryFunction function = (Query.QueryFunction) queryParameter;
+    private QueryParameter checkQueryParameter(QueryParameter queryParameter) {
+        if(queryParameter instanceof QueryField) {
+            QueryField queryField = (QueryField) queryParameter;
+            QueryResource resource = queryField.getResource();
+        } else if(queryParameter instanceof QueryFunction) {
+            QueryFunction function = (QueryFunction) queryParameter;
             for(Object functionParameter : function.getParameters()) {
-                if(functionParameter instanceof Query.QueryParameter) {
-                    checkQueryParameter((Query.QueryParameter) functionParameter);
+                if(functionParameter instanceof QueryParameter) {
+                    checkQueryParameter((QueryParameter) functionParameter);
                 }
             }
         }
@@ -116,11 +128,11 @@ public abstract class EvaluatorCollection {
     protected Evaluator checkEvaluator(Evaluator evaluator) {
         if(evaluator instanceof FieldEvaluator) {
             FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-            if(fieldEvaluator.getLeftValue() instanceof Query.QueryParameter) {
-                checkQueryParameter((Query.QueryParameter) fieldEvaluator.getLeftValue());
+            if(fieldEvaluator.getLeftValue() instanceof QueryParameter) {
+                checkQueryParameter((QueryParameter) fieldEvaluator.getLeftValue());
             }
-            if(fieldEvaluator.getRightValue() instanceof Query.QueryParameter) {
-                checkQueryParameter((Query.QueryParameter) fieldEvaluator.getRightValue());
+            if(fieldEvaluator.getRightValue() instanceof QueryParameter) {
+                checkQueryParameter((QueryParameter) fieldEvaluator.getRightValue());
             }
         }
         return evaluator;

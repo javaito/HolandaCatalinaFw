@@ -1,4 +1,6 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
+
+import org.hcjf.layers.query.Queryable;
 
 /**
  * Evaluate all the evaluators into the collection and concat all the result with or operation.

@@ -1,7 +1,7 @@
 package org.hcjf.layers.query;
 
-import org.hcjf.bson.BsonDocument;
-import org.hcjf.utils.bson.BsonParcelable;
+import org.hcjf.layers.query.evaluators.FieldEvaluator;
+import org.hcjf.layers.query.model.QueryDynamicResource;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,6 +11,32 @@ import java.util.UUID;
  * @author javaito
  */
 public class QueryCompileTest {
+
+    @Test
+    public void dynamicResourceCompile() {
+        try {
+            Query query = Query.compile("SELECT * FROM (SELECT * FROM resource WHERE limit 10) as resource JOIN resource1 ON resource.id = resource1.id WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 LIMIT 10");
+            query = Query.compile(query.toString());
+            Assert.assertNotNull(query);
+            Assert.assertEquals(query.getLimit().intValue(), 10);
+            Assert.assertNotNull(query.getJoins());
+            Assert.assertEquals(query.getJoins().size(), 1);
+            Assert.assertTrue(query.getResource() instanceof QueryDynamicResource);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+
+        try {
+            Query query = Query.compile("SELECT * FROM resource JOIN (SELECT * FROM resource WHERE limit 10) as resource1 ON resource.id = resource1.id WHERE resource.field != 5 AND resource.field = 6 OR resource.field <> 7 LIMIT 10");
+            query = Query.compile(query.toString());
+            Assert.assertNotNull(query);
+            Assert.assertEquals(query.getLimit().intValue(), 10);
+            Assert.assertNotNull(query.getJoins());
+            Assert.assertEquals(query.getJoins().size(), 1);
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+    }
 
     @Test
     public void testJoinCompile() {
@@ -245,11 +271,11 @@ public class QueryCompileTest {
     @Test
     public void testCompileCache() {
         long startTime = System.currentTimeMillis();
-        Query query1 = Query.compile("SELECT * FROM resource50");
+        Query query1 = Query.compile("SELECT * FROM resource50", false);
         long firstTime = System.currentTimeMillis() - startTime;
 
         startTime = System.currentTimeMillis();
-        Query query2 = Query.compile("SELECT * FROM resource50");
+        Query query2 = Query.compile("SELECT * FROM resource50", false);
         long secondTime = System.currentTimeMillis() - startTime;
 
         System.out.printf("First time: %d \r\n", firstTime);

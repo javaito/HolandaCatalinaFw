@@ -4,9 +4,8 @@ import com.esri.core.geometry.ogc.OGCGeometry;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.Enlarged;
 import org.hcjf.layers.query.JoinableMap;
-import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.utils.GeoUtils;
-import org.hcjf.utils.JsonUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,8 +34,7 @@ public class GeoDistanceAggregateFunctionLayer extends BaseQueryAggregateFunctio
         boolean accumulate = parameters.length >= 2 && (boolean) parameters[1];
         boolean group = parameters.length >= 3 && (boolean) parameters[2];
         for(Object row : result) {
-            Object parameterValue = ((Query.QueryReturnField) parameters[0]).resolve(row);
-            currentGeometry = GeoUtils.createGeometry(parameterValue);
+            currentGeometry = GeoUtils.createGeometry(resolveValue(row, parameters[0]));
             if (previousGeometry != null) {
                 distance = previousGeometry.centroid().distance(currentGeometry.centroid()) * 100;
                 totalDistance += distance;

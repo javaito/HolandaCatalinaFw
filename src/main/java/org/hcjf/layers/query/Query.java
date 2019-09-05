@@ -2,11 +2,11 @@ package org.hcjf.layers.query;
 
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.errors.HCJFRuntimeException;
-import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
-import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.evaluators.*;
 import org.hcjf.layers.query.functions.*;
+import org.hcjf.layers.query.model.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
@@ -15,7 +15,6 @@ import org.hcjf.utils.Introspection;
 import org.hcjf.utils.LruMap;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
-import org.hcjf.utils.bson.BsonCustomBuilderLayer;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.text.ParseException;
@@ -32,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public class Query extends EvaluatorCollection implements Queryable {
 
-    private static final String QUERY_BSON_FIELD_NAME = "__query__";
+    public static final String QUERY_BSON_FIELD_NAME = "__query__";
     private static final LruMap<String,Query> cache;
 
     private final QueryId id;
@@ -47,7 +46,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
     private boolean returnAll;
-    private String stringRepresentation;
+    //private String stringRepresentation;
 
     static {
         //Init query compiler cache
@@ -77,18 +76,22 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(EvalExpressionAggregateFunctionLayer.class);
     }
 
-    public Query(String resource, QueryId id) {
+    public Query(QueryResource resource, QueryId id) {
         this.id = id;
         this.groupParameters = new ArrayList<>();
         this.orderParameters = new ArrayList<>();
         this.returnParameters = new ArrayList<>();
         this.joins = new ArrayList<>();
-        this.resource = new QueryResource(resource);
+        this.resource = resource;
         this.resources = new ArrayList<>();
         this.resources.add(this.resource);
     }
 
-    public Query(String resource){
+    public Query(String resource) {
+        this(new QueryResource(resource));
+    }
+
+    public Query(QueryResource resource){
         this(resource, new QueryId());
     }
 
@@ -506,23 +509,26 @@ public class Query extends EvaluatorCollection implements Queryable {
             //Getting data from data source.
             Collection<O> data;
             try {
-                //Creates the first query for the original resource.
-                Query resolveQuery = new Query(getResourceName());
-                resolveQuery.returnAll = true;
-
-                resolveQuery.setLimit(getLimit());
-                resolveQuery.setUnderlyingLimit(getUnderlyingLimit());
-                resolveQuery.setStart(getStart());
-                resolveQuery.setUnderlyingStart(getUnderlyingStart());
-
-                copyEvaluators(resolveQuery, this);
-
                 if (joins.size() > 0) {
                     data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
                 } else {
                     //If the query has not joins then data source must return data from
                     //resource of the query.
-                    data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
+                    if(getResource() instanceof QueryDynamicResource) {
+                        data = (Collection<O>) Query.evaluate(((QueryDynamicResource)getResource()).getQuery());
+                    } else {
+                        //Creates the first query for the original resource.
+                        Query resolveQuery = new Query(getResource());
+                        resolveQuery.returnAll = true;
+
+                        resolveQuery.setLimit(getLimit());
+                        resolveQuery.setUnderlyingLimit(getUnderlyingLimit());
+                        resolveQuery.setStart(getStart());
+                        resolveQuery.setUnderlyingStart(getUnderlyingStart());
+
+                        copyEvaluators(resolveQuery, this);
+                        data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
+                    }
                 }
 
                 //Filtering data
@@ -767,33 +773,54 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
     }
 
+    private Collection<? extends Joinable> setResource(Collection<? extends Joinable> resultSet, String resourceName) {
+        for(Joinable joinable : resultSet) {
+            if(joinable instanceof  JoinableMap) {
+                ((JoinableMap)joinable).setResource(resourceName);
+            }
+        }
+        return resultSet;
+    }
+
     /**
      * Evaluates the join operation.
      * @param dataSource Data source instance.
      * @param consumer Consumer instance.
      * @return Collection that is the result of the join operation.
      */
-    private Collection<Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
-        Query query = new Query(getResource().getResourceName());
+    private Collection<? extends Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
+        Query query = new Query(getResource());
         query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
         for (Evaluator evaluator : getEvaluatorsFromResource(this, query, query.getResource())) {
             query.addEvaluator(evaluator);
         }
-        Collection<Joinable> currentResult = dataSource.getResourceData(verifyInstance(query, consumer));
+
+        Collection<? extends Joinable> rightData;
+        Collection<? extends Joinable> leftData;
+        if(query.getResource() instanceof  QueryDynamicResource) {
+            leftData = setResource(Query.evaluate(query), query.getResourceName());
+        } else {
+            leftData = setResource(dataSource.getResourceData(verifyInstance(query, consumer)), query.getResourceName());
+        }
 
         for(Join join : getJoins()) {
             //Creates the first query for the original resource.
-            query = new Query(join.getResourceName());
+            query = new Query(join.getResource());
             query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
-            for (Evaluator evaluator : optimizeJoin(currentResult, join)) {
+            for (Evaluator evaluator : optimizeJoin(leftData, join)) {
                 query.addEvaluator(evaluator);
             }
             for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
                 query.addEvaluator(evaluator);
             }
-            currentResult = product(currentResult, dataSource.getResourceData(query), join, dataSource, consumer);
+            if(query.getResource() instanceof QueryDynamicResource) {
+                rightData = setResource(Query.evaluate(query), query.getResourceName());
+            } else {
+                rightData = setResource(dataSource.getResourceData(verifyInstance(query, consumer)), query.getResourceName());
+            }
+            leftData = product(leftData, rightData, join, dataSource, consumer);
         }
-        return currentResult;
+        return leftData;
     }
 
     /**
@@ -803,7 +830,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param join Join structure.
      * @return Returns a set of the new filters in order to reduce the information of the right data.
      */
-    private Collection<Evaluator> optimizeJoin(Collection<Joinable> leftData, Join join) {
+    private Collection<Evaluator> optimizeJoin(Collection<? extends Joinable> leftData, Join join) {
         Collection<Evaluator> result = new ArrayList<>();
 
         if(join.getType().equals(Join.JoinType.JOIN) ||
@@ -853,8 +880,8 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param consumer Consumer instance.
      * @return Collection that is the result of the join operation.
      */
-    private Collection<Joinable> product(Collection<Joinable> left, Collection<Joinable> right, Join join,
-                                         Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
+    private Collection<Joinable> product(Collection<? extends Joinable> left, Collection<? extends Joinable> right, Join join,
+                                         Queryable.DataSource<? extends Joinable> dataSource, Queryable.Consumer<? extends Joinable> consumer) {
 
         Collection<Joinable> leftCopy = null;
         Collection<Joinable> rightCopy = null;
@@ -1017,11 +1044,11 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     private final void reduceCollection(EvaluatorCollection collection, Collection<Evaluator> evaluatorsToRemove) {
         for(Evaluator evaluatorToRemove : evaluatorsToRemove) {
-            collection.evaluators.remove(evaluatorToRemove);
+            collection.removeEvaluator(evaluatorToRemove);
             collection.addEvaluator(new TrueEvaluator());
         }
 
-        for(Evaluator evaluator : collection.evaluators) {
+        for(Evaluator evaluator : collection.getEvaluators()) {
             if(evaluator instanceof Or || evaluator instanceof And) {
                 reduceCollection((EvaluatorCollection)evaluator, evaluatorsToRemove);
             }
@@ -1034,7 +1061,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     @Override
     public synchronized String toString() {
-        if(stringRepresentation == null) {
+//        if(stringRepresentation == null) {
             Strings.Builder resultBuilder = new Strings.Builder();
 
             //Print select
@@ -1059,7 +1086,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             resultBuilder.append(Strings.WHITE_SPACE);
             resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.FROM));
             resultBuilder.append(Strings.WHITE_SPACE);
-            resultBuilder.append(getResourceName());
+            resultBuilder.append(getResource().toString());
             resultBuilder.append(Strings.WHITE_SPACE);
 
             //Print joins
@@ -1069,7 +1096,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     resultBuilder.append(Strings.WHITE_SPACE);
                 }
                 resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)).append(Strings.WHITE_SPACE);
-                resultBuilder.append(join.getResourceName()).append(Strings.WHITE_SPACE);
+                resultBuilder.append(join.getResource().toString()).append(Strings.WHITE_SPACE);
                 resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ON)).append(Strings.WHITE_SPACE);
                 if (join.getEvaluators().size() > 0) {
                     toStringEvaluatorCollection(resultBuilder, join);
@@ -1125,10 +1152,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
                 resultBuilder.append(Strings.ARGUMENT_SEPARATOR).append(getUnderlyingLimit());
             }
-            stringRepresentation = resultBuilder.toString();
-        }
-
-        return stringRepresentation;
+            return resultBuilder.toString();
+//        }
+//
+//        return stringRepresentation;
     }
 
     /**
@@ -1337,7 +1364,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Query instance.
      */
     public static Query compile(String sql) {
-        return compile(sql, false);
+        return compile(sql, true);
     }
 
     /**
@@ -1374,16 +1401,26 @@ public class Query extends EvaluatorCollection implements Queryable {
         Matcher matcher = pattern.matcher(groups.get(startGroup));
 
         if(matcher.matches()) {
-            String selectBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.SELECT_GROUP_INDEX));
+            String selectBody = matcher.group(SystemProperties.get(SystemProperties.Query.SELECT_GROUP_INDEX));
             selectBody = selectBody.replaceFirst(Strings.CASE_INSENSITIVE_REGEX_FLAG+SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT), Strings.EMPTY_STRING);
-            String fromBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.FROM_GROUP_INDEX));
+            String fromBody = matcher.group(SystemProperties.get(SystemProperties.Query.FROM_GROUP_INDEX));
             fromBody = fromBody.replaceFirst(Strings.CASE_INSENSITIVE_REGEX_FLAG+SystemProperties.get(SystemProperties.Query.ReservedWord.FROM), Strings.EMPTY_STRING);
-            String conditionalBody = matcher.group(SystemProperties.getInteger(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
+            String conditionalBody = matcher.group(SystemProperties.get(SystemProperties.Query.CONDITIONAL_GROUP_INDEX));
             if(conditionalBody != null && conditionalBody.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))) {
                 conditionalBody = conditionalBody.substring(0, conditionalBody.indexOf(SystemProperties.get(SystemProperties.Query.ReservedWord.STATEMENT_END))-1);
             }
 
-            query = new Query(fromBody.trim());
+            String resourceValue = matcher.group(SystemProperties.get(SystemProperties.Query.RESOURCE_VALUE_INDEX));
+            String dynamicResource = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_INDEX));
+            if(dynamicResource.isBlank()) {
+                query = new Query(resourceValue.trim());
+            } else {
+                String dynamicResourceAlias = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_ALIAS_INDEX)).trim();
+                resourceValue = Strings.reverseGrouping(resourceValue, groups);
+                resourceValue = Strings.reverseRichTextGrouping(resourceValue, richTexts);
+                Query subQuery = compile(resourceValue.substring(1, resourceValue.length() - 1));
+                query = new Query(new QueryDynamicResource(dynamicResourceAlias, subQuery));
+            }
 
             if(conditionalBody != null) {
                 Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
@@ -1404,17 +1441,32 @@ public class Query extends EvaluatorCollection implements Queryable {
                             elementValue = conditionalElements[++i].trim();
                         }
 
-                        String[] joinElements = elementValue.split(SystemProperties.get(SystemProperties.Query.JOIN_REGULAR_EXPRESSION));
-
-                        String joinResource = joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_RESOURCE_NAME_INDEX)].trim();
-                        String joinEvaluators = joinElements[SystemProperties.getInteger(SystemProperties.Query.JOIN_EVALUATORS_INDEX)].trim();
-                        if(joinEvaluators.startsWith(Strings.REPLACEABLE_GROUP)) {
-                            joinEvaluators = groups.get(Integer.parseInt(joinEvaluators.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING)));
+                        QueryResource joinResource;
+                        String joinConditionalBody;
+                        Pattern joinPattern = SystemProperties.getPattern(SystemProperties.Query.JOIN_REGULAR_EXPRESSION);
+                        Matcher joinMatcher = joinPattern.matcher(elementValue);
+                        if(joinMatcher.matches()) {
+                            String joinDynamicResource = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_DYNAMIC_RESOURCE_INDEX));
+                            String joinResourceValue = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_RESOURCE_VALUE_INDEX));
+                            joinConditionalBody = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_CONDITIONAL_BODY_INDEX));
+                            joinConditionalBody = Strings.reverseGrouping(joinConditionalBody, groups);
+                            joinConditionalBody = Strings.reverseRichTextGrouping(joinConditionalBody, richTexts);
+                            if(!joinDynamicResource.isBlank()) {
+                                String joinDynamicResourceAlias = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX));
+                                joinResourceValue = Strings.reverseGrouping(joinResourceValue, groups);
+                                joinResourceValue = Strings.reverseRichTextGrouping(joinResourceValue, richTexts);
+                                Query joinDynamicResourceQuery = Query.compile(joinResourceValue.substring(1, joinResourceValue.length() - 1));
+                                joinResource = new QueryDynamicResource(joinDynamicResourceAlias, joinDynamicResourceQuery);
+                            } else {
+                                joinResource = new QueryResource(joinResourceValue);
+                            }
+                        } else {
+                            throw new HCJFRuntimeException("Join syntax wrong, near '%s'", elementValue);
                         }
 
                         Join join = new Join(query, joinResource, type);
                         query.getResources().add(join.getResource());
-                        completeEvaluatorCollection(query, joinEvaluators, groups, richTexts, join, 0, new AtomicInteger(0));
+                        completeEvaluatorCollection(query, joinConditionalBody, groups, richTexts, join, 0, new AtomicInteger(0));
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
                         completeEvaluatorCollection(query, elementValue, groups, richTexts, query, 0, new AtomicInteger(0));
@@ -1862,443 +1914,6 @@ public class Query extends EvaluatorCollection implements Queryable {
     @Override
     public boolean equals(Object obj) {
         return (obj instanceof Query) && obj.toString().equals(toString());
-    }
-
-    /**
-     * Represents an query id. Wrapper of the UUID class.
-     */
-    public static final class QueryId {
-
-        private final UUID id;
-
-        private QueryId() {
-            this.id = UUID.randomUUID();
-        }
-
-        public QueryId(UUID id) {
-            this.id = id;
-        }
-
-        /**
-         * Get the UUID instance.
-         * @return UUID instance.
-         */
-        public UUID getId() {
-            return id;
-        }
-    }
-
-    /**
-     * Group all the query components.
-     */
-    public interface QueryComponent {
-
-        /**
-         * Verify if the component is underlying.
-         * @return True if the component is underlying.
-         */
-        boolean isUnderlying();
-
-    }
-
-    /**
-     * Represents any kind of resource.
-     */
-    public static class QueryResource implements Comparable<QueryResource>, QueryComponent {
-
-        public static final QueryResource ANY = new QueryResource(Strings.ALL);
-
-        private String resourceName;
-
-        public QueryResource(String resourceName) {
-            this.resourceName = resourceName;
-        }
-
-        /**
-         * Set the name of the resource.
-         * @param resourceName Name of the resource
-         */
-        public void setResourceName(String resourceName) {
-            this.resourceName = resourceName;
-        }
-
-        /**
-         * Return the resource name.
-         * @return Resource name.
-         */
-        public String getResourceName() {
-            return resourceName;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            boolean result = false;
-            if(obj instanceof QueryResource) {
-                result = resourceName.equals(((QueryResource)obj).getResourceName());
-            }
-            return result;
-        }
-
-        @Override
-        public boolean isUnderlying() {
-            return false;
-        }
-
-        @Override
-        public int compareTo(QueryResource o) {
-            return resourceName.compareTo(o.getResourceName());
-        }
-
-        @Override
-        public String toString() {
-            return getResourceName();
-        }
-
-    }
-
-    public static abstract class QueryParameter implements Comparable<QueryParameter>, QueryComponent {
-
-        private QueryResource resource;
-        private String fieldPath;
-        private final String originalValue;
-        private final boolean underlying;
-
-        public QueryParameter(Query query, String originalValue, String value) {
-            this.originalValue = originalValue.trim();
-
-            String cleanValue = value;
-            if(cleanValue.startsWith(Strings.AT)) {
-                cleanValue = value.substring(1);
-                underlying = true;
-            } else {
-                underlying = false;
-            }
-            this.resource = QueryResource.ANY;
-            if(cleanValue.contains(Strings.CLASS_SEPARATOR)) {
-                boolean resourceNameFounded = false;
-                for(QueryResource queryResource : query.getResources()) {
-                    if(originalValue.startsWith(queryResource.resourceName + ".")) {
-                        this.resource = queryResource;
-                        resourceNameFounded = true;
-                        break;
-                    }
-                }
-
-                if(resourceNameFounded) {
-                    this.fieldPath = cleanValue.substring((resource.resourceName).length() + 1);
-                } else {
-                    this.fieldPath = cleanValue;
-                }
-            } else {
-                this.fieldPath = cleanValue;
-            }
-        }
-
-        /**
-         * Returns the resource of this parameter.
-         * @return Resource of this parameter.
-         */
-        public QueryResource getResource() {
-            return resource;
-        }
-
-        /**
-         * Returns the field path.
-         * @return Field path.
-         */
-        public String getFieldPath() {
-            return fieldPath;
-        }
-
-        /**
-         * Returns the original value.
-         * @return Original value.
-         */
-        public String getOriginalValue() {
-            return originalValue;
-        }
-
-        /**
-         * Return the original representation of the field.
-         * @return Original representation.
-         */
-        @Override
-        public String toString() {
-            return originalValue;
-        }
-
-        /**
-         * This method returns true if the component is underlying and false in the otherwise.
-         * @return Underlying value.
-         */
-        @Override
-        public boolean isUnderlying() {
-            return underlying;
-        }
-
-        /**
-         * Compare the original value of the fields.
-         * @param obj Other field.
-         * @return True if the fields are equals.
-         */
-        @Override
-        public boolean equals(Object obj) {
-            return toString().equals(obj.toString());
-        }
-
-        /**
-         * Compare the string representation of both objects.
-         * @param o Other object.
-         * @return Magnitude of the difference between both objects.
-         */
-        @Override
-        public int compareTo(QueryParameter o) {
-            return toString().compareTo(o.toString());
-        }
-
-        /**
-         * Verify if the query parameter make reference to the specified resource.
-         * @param resource Resource instance to test.
-         * @return Returns true if the parameter make reference to the specified resource and false in the otherwise.
-         */
-        public abstract boolean verifyResource(QueryResource resource);
-
-    }
-
-    /**
-     *
-     */
-    public static class QueryFunction extends QueryParameter {
-
-        private final String functionName;
-        private final List<Object> parameters;
-
-        public QueryFunction(Query query, String originalFunction, String functionName, List<Object> parameters) {
-            super(query, originalFunction, functionName);
-            this.functionName = functionName;
-            this.parameters = parameters;
-        }
-
-        public String getFunctionName() {
-            return functionName;
-        }
-
-        public List<Object> getParameters() {
-            return parameters;
-        }
-
-        public Set<QueryResource> getResources() {
-            Set<QueryResource> queryResources = new TreeSet<>();
-
-            for(Object parameter : parameters) {
-                if(parameter instanceof QueryField) {
-                    queryResources.add(((QueryField)parameter).getResource());
-                } else if(parameter instanceof QueryFunction) {
-                    queryResources.addAll(((QueryFunction)parameter).getResources());
-                }
-            }
-
-            return queryResources;
-        }
-
-        @Override
-        public boolean verifyResource(QueryResource resource) {
-            return getResources().contains(resource);
-        }
-    }
-
-    /**
-     * This class represents any kind of query fields.
-     */
-    public static class QueryField extends QueryParameter {
-
-        public QueryField(Query query, String fieldPath) {
-            super(query, fieldPath, fieldPath);
-        }
-
-        /**
-         * This method resolves the introspection over the instance using the information into the
-         * query field.
-         * @param instance Instance to resolve the introspection.
-         * @param <R> Expected data type.
-         * @return Introspection result.
-         */
-        public <R extends Object> R resolve(Object instance) {
-            Object result = null;
-            if(instance instanceof JoinableMap && !((JoinableMap) instance).getResources().isEmpty()) {
-                if(getResource().equals(Query.QueryResource.ANY)) {
-                    for(String resourceName : ((JoinableMap)instance).getResources()) {
-                        result = Introspection.resolve(((JoinableMap) instance).
-                                getResourceModel(resourceName), getFieldPath());
-                        if(result != null) {
-                            break;
-                        }
-                    }
-                } else {
-                    result = Introspection.resolve(((JoinableMap) instance).
-                            getResourceModel(getResource().getResourceName()), getFieldPath());
-                }
-            } else {
-                result = Introspection.resolve(instance, getFieldPath());
-            }
-            return (R) result;
-        }
-
-        @Override
-        public boolean verifyResource(QueryResource resource) {
-            return getResource().equals(resource);
-        }
-    }
-
-    public interface QueryReturnParameter extends QueryComponent {
-
-        /**
-         * Return the field alias, can be null.
-         * @return Field alias.
-         */
-        String getAlias();
-
-    }
-
-    /**
-     * This kind of component represent the fields to be returned into the query.
-     */
-    public static class QueryReturnField extends QueryField implements QueryReturnParameter {
-
-        private final String alias;
-
-        public QueryReturnField(Query query, String fieldPath) {
-            this(query, fieldPath, fieldPath);
-        }
-
-        public QueryReturnField(Query query, String fieldPath, String alias) {
-            super(query, fieldPath);
-            if(alias == null) {
-                this.alias = fieldPath;
-            } else {
-                this.alias = alias;
-            }
-        }
-
-        /**
-         * Return the field alias, can be null.
-         * @return Field alias.
-         */
-        public String getAlias() {
-            return alias;
-        }
-
-    }
-
-    public static class QueryReturnFunction extends QueryFunction implements QueryReturnParameter {
-
-        private final String alias;
-        private boolean aggregate;
-
-        public QueryReturnFunction(Query query, String originalFunction, String functionName, List<Object> parameters, String alias) {
-            super(query, originalFunction, functionName, parameters);
-
-            aggregate = false;
-            try {
-                QueryAggregateFunctionLayerInterface aggregateFunctionLayerInterface =
-                        Layers.get(QueryAggregateFunctionLayerInterface.class,
-                                SystemProperties.get(SystemProperties.Query.Function.NAME_PREFIX) +functionName);
-                aggregate = aggregateFunctionLayerInterface != null;
-            } catch (Exception ex){}
-
-            if(alias != null) {
-                this.alias = alias;
-            } else {
-                this.alias = originalFunction;
-            }
-        }
-
-        /**
-         * Return the field alias, can be null.
-         * @return Field alias.
-         */
-        public String getAlias() {
-            return alias;
-        }
-
-        /**
-         * Verify if the function is an aggregate function or not.
-         * @return True if the function is an aggregate function and false in the otherwise.
-         */
-        public boolean isAggregate() {
-            return aggregate;
-        }
-    }
-
-    public interface QueryOrderParameter extends QueryComponent {
-
-        /**
-         * Return the desc property.
-         * @return Desc property.
-         */
-        boolean isDesc();
-
-    }
-
-    /**
-     * This class represents a order field with desc property
-     */
-    public static class QueryOrderField extends QueryField implements QueryOrderParameter {
-
-        private final boolean desc;
-
-        public QueryOrderField(Query query, String fieldPath, boolean desc) {
-            super(query, fieldPath);
-            this.desc = desc;
-        }
-
-        /**
-         * Return the desc property.
-         * @return Desc property.
-         */
-        public boolean isDesc() {
-            return desc;
-        }
-    }
-
-    public static class QueryOrderFunction extends QueryFunction implements QueryOrderParameter {
-
-        private final boolean desc;
-
-        public QueryOrderFunction(Query query, String originalFunction, String functionName, List<Object> parameters, boolean desc) {
-            super(query, originalFunction, functionName, parameters);
-            this.desc = desc;
-        }
-
-        /**
-         * Return the desc property.
-         * @return Desc property.
-         */
-        public boolean isDesc() {
-            return desc;
-        }
-
-    }
-
-    /**
-     * This inner class implements the custom method to create a query instance from a bson document.
-     */
-    public static class QueryBsonBuilderLayer extends Layer implements BsonCustomBuilderLayer<Query> {
-
-        public QueryBsonBuilderLayer() {
-            super(Query.class.getName());
-        }
-
-        /**
-         * This implementation required that the document contains a field called '__query__' to create the query instance.
-         * @param document Bson document.
-         * @return Returns a query instance.
-         */
-        @Override
-        public Query create(BsonDocument document) {
-            return Query.compile(document.get(QUERY_BSON_FIELD_NAME).getAsString());
-        }
-
     }
 
 }

@@ -1,4 +1,4 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
 
 /**
  * @author javaito

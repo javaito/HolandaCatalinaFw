@@ -1,4 +1,6 @@
-package org.hcjf.layers.query;
+package org.hcjf.layers.query.evaluators;
+
+import org.hcjf.layers.query.Queryable;
 
 /**
  * @author javaito

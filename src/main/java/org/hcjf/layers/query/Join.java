@@ -1,6 +1,7 @@
 package org.hcjf.layers.query;
 
-import com.squareup.okhttp.Route;
+import org.hcjf.layers.query.evaluators.EvaluatorCollection;
+import org.hcjf.layers.query.model.QueryResource;
 
 /**
  * This class represent a join operation
@@ -9,17 +10,25 @@ import com.squareup.okhttp.Route;
  */
 public class Join extends EvaluatorCollection implements Comparable<Join> {
 
-    private final Query.QueryResource resource;
+    private final QueryResource resource;
     private final JoinType type;
     private final Boolean outer;
 
     public Join(Query query, String resourceName, JoinType type) {
-        this(query, resourceName, type, false);
+        this(query, new QueryResource(resourceName), type, false);
+    }
+
+    public Join(Query query, QueryResource resource, JoinType type) {
+        this(query, resource, type, false);
     }
 
     public Join(Query query, String resourceName, JoinType type, boolean outer) {
+        this(query, new QueryResource(resourceName), type, outer);
+    }
+
+    public Join(Query query, QueryResource resource, JoinType type, boolean outer) {
         super(query);
-        this.resource = new Query.QueryResource(resourceName);
+        this.resource = resource;
         this.type = type;
         this.outer = outer;
     }
@@ -28,7 +37,7 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
      * Return the resource of the join.
      * @return Join's resource
      */
-    public Query.QueryResource getResource() {
+    public QueryResource getResource() {
         return resource;
     }
 

@@ -2,8 +2,7 @@ package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.JoinableMap;
-import org.hcjf.layers.query.Query;
-import org.hcjf.utils.Introspection;
+import org.hcjf.layers.query.model.QueryReturnField;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,14 +22,13 @@ public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                Query.QueryReturnField queryReturnField = (Query.QueryReturnField) parameters[0];
                 boolean accumulate = parameters.length >= 2 && (boolean) parameters[1];
                 boolean group = parameters.length >= 3 && (boolean) parameters[2];
                 Number value;
                 Number accumulatedValue = 0;
                 for (Object row : resultSet) {
                     value = accumulateFunction(accumulatedValue,
-                            new Object[]{queryReturnField.resolve(row)}, (A, V) -> A.add(V))[1];
+                            new Object[]{resolveValue(row, parameters[0])}, (A, V) -> A.add(V))[1];
                     if(!group) {
                         if(accumulate) {
                             accumulatedValue = accumulatedValue.doubleValue() + value.doubleValue();

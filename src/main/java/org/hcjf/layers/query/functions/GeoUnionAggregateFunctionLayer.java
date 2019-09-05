@@ -2,7 +2,7 @@ package org.hcjf.layers.query.functions;
 
 import com.esri.core.geometry.ogc.OGCGeometry;
 import org.hcjf.layers.query.Enlarged;
-import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.utils.GeoUtils;
 import org.hcjf.utils.JsonUtils;
 
@@ -21,15 +21,16 @@ public class GeoUnionAggregateFunctionLayer extends BaseQueryAggregateFunctionLa
     @Override
     public Collection evaluate(String alias, Collection resultSet, Object... parameters) {
         Collection collection;
-        if(parameters[0] instanceof Collection) {
-            collection = (Collection) parameters[0];
-        } else if(parameters[0].getClass().isArray()) {
-            collection = Arrays.asList(parameters[0]);
-        } else {
-            collection = List.of(parameters[0]);
-        }
-
         for(Object row : (Collection<Enlarged>)resultSet) {
+            Object parameterValue = resolveValue(row, parameters[0]);
+            if(parameterValue instanceof Collection) {
+                collection = (Collection) parameterValue;
+            } else if(parameterValue.getClass().isArray()) {
+                collection = Arrays.asList(parameterValue);
+            } else {
+                collection = List.of(parameterValue);
+            }
+
             OGCGeometry geometry = null;
             for(Object object : collection) {
                 if(object == null) {
@@ -37,8 +38,8 @@ public class GeoUnionAggregateFunctionLayer extends BaseQueryAggregateFunctionLa
                 }
 
                 Object value = object;
-                if(value instanceof Query.QueryReturnField) {
-                    value = ((Query.QueryReturnField)value).resolve(row);
+                if(value instanceof QueryReturnField) {
+                    value = ((QueryReturnField)value).resolve(row);
                 }
                 if(geometry == null) {
                     geometry = GeoUtils.createGeometry(value);
