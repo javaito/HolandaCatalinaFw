@@ -75,6 +75,15 @@ public class HttpHeader {
     public static final String X_REQUESTED_WITH = "X-Requested-With";
     public static final String X_UIDH = "X-UIDH";
     public static final String X_WAP_PROFILE = "X-Wap-Profile";
+    public static final String X_HCJF_QUERY_TOTAL_TIME = "X-HCJF-Query-Total-Time";
+    public static final String X_HCJF_QUERY_TIME_COMPILING = "X-HCJF-Query-Time-Compiling";
+    public static final String X_HCJF_QUERY_TIME_COLLECTING_DATA = "X-HCJF-Query-Time-Collecting-Data";
+    public static final String X_HCJF_QUERY_TIME_EVALUATING_CONDITIONS = "X-HCJF-Query-Time-Evaluating-Conditions";
+    public static final String X_HCJF_QUERY_AVERAGE_TIME_EVALUATING_CONDITIONS = "X-HCJF-Query-Average-Time-Evaluating-Conditions";
+    public static final String X_HCJF_QUERY_TIME_FORMATTING_DATA = "X-HCJF-Query-Time-Formatting-Data";
+    public static final String X_HCJF_QUERY_AVERAGE_TIME_FORMATTING_DATA = "X-HCJF-Query-Average-Time-Formatting-Data";
+    public static final String X_HCJF_QUERY_TIME_AGGREGATING_DATA = "X-HCJF-Query-Time-Aggregating-Data";
+    public static final String X_HCJF_QUERY_PRESENT_FIELDS = "X-HCJF-Query-Present-Fields";
 
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";

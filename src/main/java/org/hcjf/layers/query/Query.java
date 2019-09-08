@@ -318,7 +318,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Return the same instance of this class.
      */
     public final Query addOrderField(String orderField, boolean desc) {
-        return addOrderField(new QueryOrderField(this, orderField, desc));
+        return addOrderParameter(new QueryOrderField(this, orderField, desc));
     }
 
     /**
@@ -327,7 +327,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param orderParameter Order parameter.
      * @return Return the same instance of this class.
      */
-    public final Query addOrderField(QueryOrderParameter orderParameter) {
+    public final Query addOrderParameter(QueryOrderParameter orderParameter) {
         orderParameters.add((QueryOrderParameter) checkQueryParameter((QueryParameter) orderParameter));
         return this;
     }
@@ -454,6 +454,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             //method again using a service thread.
             result = Service.call(()->evaluate(dataSource, consumer), ServiceSession.getGuestSession());
         } else {
+            Long totalTime = System.currentTimeMillis();
 
             //Initialize the evaluators cache because the evaluators in the simple
             //query are valid into the platform evaluation environment.
@@ -506,6 +507,13 @@ public class Query extends EvaluatorCollection implements Queryable {
                 result = new ArrayList<>();
             }
 
+            Long timeCollectingData = System.currentTimeMillis();
+            Integer evaluatingCount = 0;
+            Integer formattingCount = 0;
+            Long timeEvaluatingConditions = 0L;
+            Long timeFormattingData = 0L;
+            Set<String> presentFields = new TreeSet<>();
+
             //Getting data from data source.
             Collection<O> data;
             try {
@@ -515,7 +523,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                     //If the query has not joins then data source must return data from
                     //resource of the query.
                     if(getResource() instanceof QueryDynamicResource) {
-                        data = (Collection<O>) Query.evaluate(((QueryDynamicResource)getResource()).getQuery());
+                        QueryDynamicResource queryDynamicResource = (QueryDynamicResource) getResource();
+                        data = (Collection<O>) Query.evaluate(queryDynamicResource.getQuery());
+
+                        if(queryDynamicResource.getPath() != null && !queryDynamicResource.getPath().isBlank()) {
+                            data = resolveResourcePath(data, queryDynamicResource.getPath());
+                        }
                     } else {
                         //Creates the first query for the original resource.
                         Query resolveQuery = new Query(getResource());
@@ -525,11 +538,15 @@ public class Query extends EvaluatorCollection implements Queryable {
                         resolveQuery.setUnderlyingLimit(getUnderlyingLimit());
                         resolveQuery.setStart(getStart());
                         resolveQuery.setUnderlyingStart(getUnderlyingStart());
+                        for(QueryOrderParameter orderParameter : getOrderParameters()) {
+                            resolveQuery.addOrderParameter(orderParameter);
+                        }
 
                         copyEvaluators(resolveQuery, this);
                         data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
                     }
                 }
+                timeCollectingData = System.currentTimeMillis() - timeCollectingData;
 
                 //Filtering data
                 boolean add;
@@ -550,12 +567,18 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
 
                 for (O object : data) {
+                    Long timeEvaluating = System.currentTimeMillis();
                     add = verifyCondition(object, dataSource, consumer);
+                    timeEvaluating = System.currentTimeMillis() - timeEvaluating;
+                    timeEvaluatingConditions += timeEvaluating;
+                    evaluatingCount++;
                     if (add) {
+                        Long timeFormatting = System.currentTimeMillis();
                         if (object instanceof Enlarged) {
                             Enlarged enlargedObject;
                             if(returnAll) {
                                 enlargedObject = ((Enlarged) object).clone();
+                                presentFields.addAll(enlargedObject.keySet());
                             } else {
                                 enlargedObject = ((Enlarged) object).clone(returnParametersAsArray.toArray(new String[]{}));
                             }
@@ -575,6 +598,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     value = consumer.resolveFunction(function, enlargedObject, dataSource);
                                 }
                                 if(name != null && value != null) {
+                                    presentFields.add(name);
                                     enlargedObject.put(name, value);
                                 }
                             }
@@ -604,6 +628,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                         } else {
                             result.add(object);
                         }
+                        timeFormatting = System.currentTimeMillis() - timeFormatting;
+                        formattingCount++;
+                        timeFormattingData += timeFormatting;
                     }
                 }
 
@@ -614,6 +641,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 clearEvaluatorsCache();
             }
 
+            Long timeAggregatingData = System.currentTimeMillis();
             if(aggregateFunctions.size() > 0) {
                 for (QueryReturnFunction function : aggregateFunctions) {
                     result = consumer.resolveFunction(function, result, dataSource);
@@ -631,8 +659,42 @@ public class Query extends EvaluatorCollection implements Queryable {
                     result = result.stream().skip(getStart()).collect(Collectors.toList());
                 }
             }
+            timeAggregatingData = System.currentTimeMillis() - timeAggregatingData;
+            totalTime = System.currentTimeMillis() - totalTime;
+
+            ResultSet<O> resultSet = new ResultSet<>(totalTime, timeCollectingData,
+                    timeEvaluatingConditions,
+                    evaluatingCount == 0 ? 0 :timeEvaluatingConditions / evaluatingCount,
+                    timeFormattingData,
+                    formattingCount == 0 ? 0 :timeFormattingData / formattingCount,
+                    timeAggregatingData,
+                    presentFields,
+                    result);
+            result = resultSet;
         }
 
+        return result;
+    }
+
+    /**
+     * Resolve the introspection over the result set making union of the fields values.
+     * @param resultSet Result set to make introspection.
+     * @param path Path in order to found the value.
+     * @return Returns the union of all the values.
+     */
+    private Collection resolveResourcePath(Collection resultSet, String path) {
+        Collection result = new ArrayList<>();
+        Object pathValue;
+        for(Object row : resultSet) {
+            pathValue = Introspection.resolve(resultSet, path);
+            if(pathValue != null) {
+                if (pathValue instanceof Collection) {
+                    result.addAll(((Collection) pathValue));
+                } else {
+                    result.add(pathValue);
+                }
+            }
+        }
         return result;
     }
 
@@ -796,12 +858,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
 
         Collection<? extends Joinable> rightData;
-        Collection<? extends Joinable> leftData;
-        if(query.getResource() instanceof  QueryDynamicResource) {
-            leftData = setResource(Query.evaluate(query), query.getResourceName());
-        } else {
-            leftData = setResource(dataSource.getResourceData(verifyInstance(query, consumer)), query.getResourceName());
-        }
+        Collection<? extends Joinable> leftData = getJoinData(query, dataSource, consumer);
 
         for(Join join : getJoins()) {
             //Creates the first query for the original resource.
@@ -813,14 +870,31 @@ public class Query extends EvaluatorCollection implements Queryable {
             for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
                 query.addEvaluator(evaluator);
             }
-            if(query.getResource() instanceof QueryDynamicResource) {
-                rightData = setResource(Query.evaluate(query), query.getResourceName());
-            } else {
-                rightData = setResource(dataSource.getResourceData(verifyInstance(query, consumer)), query.getResourceName());
-            }
+            rightData = getJoinData(query, dataSource, consumer);
             leftData = product(leftData, rightData, join, dataSource, consumer);
         }
         return leftData;
+    }
+
+    /**
+     * Get the data for each part of the join.
+     * @param query Query associated to the join.
+     * @param dataSource Data source instance.
+     * @param consumer Consumer instance.
+     * @return Returns the result set.
+     */
+    private Collection<? extends Joinable> getJoinData(Query query, Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
+        Collection<? extends Joinable> result;
+        if(query.getResource() instanceof  QueryDynamicResource) {
+            QueryDynamicResource queryDynamicResource = (QueryDynamicResource) query.getResource();
+            result = Query.evaluate(queryDynamicResource.getQuery());
+            if(queryDynamicResource.getPath() != null && !queryDynamicResource.getPath().isBlank()) {
+                result = resolveResourcePath(result, queryDynamicResource.getPath());
+            }
+        } else {
+            result = dataSource.getResourceData(verifyInstance(query, consumer));
+        }
+        return setResource(result, query.getResourceName());
     }
 
     /**
@@ -1359,6 +1433,15 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
+     * Creates a query with next structure 'SELECT * FROM {resourceName}'
+     * @param resourceName Resource name.
+     * @return Returns a single query instance.
+     */
+    public static Query compileSingleQuery(String resourceName) {
+        return compile(String.format(SystemProperties.get(SystemProperties.Query.SINGLE_PATTERN), resourceName));
+    }
+
+    /**
      * Create a query instance from sql definition.
      * @param sql Sql definition.
      * @return Query instance.
@@ -1412,24 +1495,17 @@ public class Query extends EvaluatorCollection implements Queryable {
 
             String resourceValue = matcher.group(SystemProperties.get(SystemProperties.Query.RESOURCE_VALUE_INDEX));
             String dynamicResource = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_INDEX));
-            if(dynamicResource.isBlank()) {
-                query = new Query(resourceValue.trim());
-            } else {
-                String dynamicResourceAlias = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_ALIAS_INDEX)).trim();
-                resourceValue = Strings.reverseGrouping(resourceValue, groups);
-                resourceValue = Strings.reverseRichTextGrouping(resourceValue, richTexts);
-                Query subQuery = compile(resourceValue.substring(1, resourceValue.length() - 1));
-                query = new Query(new QueryDynamicResource(dynamicResourceAlias, subQuery));
-            }
+            String dynamicResourceAlias = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_ALIAS_INDEX));
+            query = new Query(createResource(resourceValue, dynamicResource, dynamicResourceAlias, groups, richTexts));
 
             if(conditionalBody != null) {
                 Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
-                String[] conditionalElements = conditionalPatter.split(conditionalBody);
+                List<String> conditionalElements = List.of(conditionalPatter.split(conditionalBody)).stream().filter(S -> !S.isBlank()).collect(Collectors.toList());
                 String element;
                 String elementValue;
-                for (int i = 0; i < conditionalElements.length; i++) {
-                    element = conditionalElements[i++].trim();
-                    elementValue = conditionalElements[i].trim();
+                for (int i = 0; i < conditionalElements.size(); i++) {
+                    element = conditionalElements.get(i++).trim();
+                    elementValue = conditionalElements.get(i).trim();
                     if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FULL)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER)) ||
@@ -1438,28 +1514,21 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                         Join.JoinType type = Join.JoinType.valueOf(element.toUpperCase());
                         if(type != Join.JoinType.JOIN) {
-                            elementValue = conditionalElements[++i].trim();
+                            elementValue = conditionalElements.get(++i).trim();
                         }
 
-                        QueryResource joinResource;
                         String joinConditionalBody;
+                        QueryResource joinResource;
                         Pattern joinPattern = SystemProperties.getPattern(SystemProperties.Query.JOIN_REGULAR_EXPRESSION);
                         Matcher joinMatcher = joinPattern.matcher(elementValue);
                         if(joinMatcher.matches()) {
                             String joinDynamicResource = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_DYNAMIC_RESOURCE_INDEX));
                             String joinResourceValue = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_RESOURCE_VALUE_INDEX));
+                            String joinDynamicResourceAlias = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX));
+                            joinResource = createResource(joinResourceValue, joinDynamicResource, joinDynamicResourceAlias, groups, richTexts);
                             joinConditionalBody = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_CONDITIONAL_BODY_INDEX));
                             joinConditionalBody = Strings.reverseGrouping(joinConditionalBody, groups);
                             joinConditionalBody = Strings.reverseRichTextGrouping(joinConditionalBody, richTexts);
-                            if(!joinDynamicResource.isBlank()) {
-                                String joinDynamicResourceAlias = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX));
-                                joinResourceValue = Strings.reverseGrouping(joinResourceValue, groups);
-                                joinResourceValue = Strings.reverseRichTextGrouping(joinResourceValue, richTexts);
-                                Query joinDynamicResourceQuery = Query.compile(joinResourceValue.substring(1, joinResourceValue.length() - 1));
-                                joinResource = new QueryDynamicResource(joinDynamicResourceAlias, joinDynamicResourceQuery);
-                            } else {
-                                joinResource = new QueryResource(joinResourceValue);
-                            }
                         } else {
                             throw new HCJFRuntimeException("Join syntax wrong, near '%s'", elementValue);
                         }
@@ -1473,7 +1542,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                            query.addOrderField((QueryOrderParameter)
+                            query.addOrderParameter((QueryOrderParameter)
                                     processStringValue(query, groups, richTexts, orderField, null, QueryOrderParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
@@ -1541,6 +1610,39 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
 
         return query;
+    }
+
+    /**
+     * Creates the resource implementation depends of the values.
+     * @param resourceValue Resource value definition.
+     * @param dynamicResource Dynamic resource value.
+     * @param dynamicResourceAlias Dynamic resource alias.
+     * @param groups Groups collection.
+     * @param richTexts Rich texts collection.
+     * @return Returns the resource implementation.
+     */
+    private static QueryResource createResource(String resourceValue, String dynamicResource, String dynamicResourceAlias, List<String> groups, List<String> richTexts) {
+        QueryResource result;
+        if(dynamicResource.isBlank()) {
+            result = new QueryResource(resourceValue.trim());
+        } else {
+            String path = null;
+            if (resourceValue.indexOf(Strings.CLASS_SEPARATOR) > 0) {
+                path = resourceValue.substring(resourceValue.indexOf(Strings.CLASS_SEPARATOR) + 1).trim();
+                resourceValue = resourceValue.substring(0, resourceValue.indexOf(Strings.CLASS_SEPARATOR));
+            }
+            resourceValue = Strings.reverseGrouping(resourceValue, groups);
+            resourceValue = Strings.reverseRichTextGrouping(resourceValue, richTexts);
+            resourceValue = resourceValue.substring(1, resourceValue.length() - 1);
+            Query subQuery;
+            if (resourceValue.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
+                subQuery = compile(resourceValue);
+            } else {
+                subQuery = compileSingleQuery(resourceValue);
+            }
+            result = new QueryDynamicResource(dynamicResourceAlias.trim(), subQuery, path);
+        }
+        return result;
     }
 
     /**

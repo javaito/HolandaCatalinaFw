@@ -1,5 +1,7 @@
 package org.hcjf.layers.query;
 
+import java.util.Set;
+
 /**
  * This interface provides the functionality to extends the instance domain.
  * @author javaito.
@@ -21,6 +23,12 @@ public interface Enlarged {
      * @return Return the value added.
      */
     Object put(String key, Object value);
+
+    /**
+     * Returns the key set of the object.
+     * @return Key set of the object
+     */
+    Set<String> keySet();
 
     /**
      * Clone th enlarged object.

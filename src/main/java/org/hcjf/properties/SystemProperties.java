@@ -283,6 +283,7 @@ public final class SystemProperties extends Properties {
     }
 
     public static final class Query {
+        public static final String SINGLE_PATTERN = "hcjf.query.single.pattern";
         public static final String LOG_TAG = "hcjf.query.log.tag";
         public static final String DEFAULT_LIMIT = "hcjf.query.default.limit";
         public static final String DEFAULT_DESC_ORDER = "hcjf.query.default.desc.order";
@@ -687,10 +688,11 @@ public final class SystemProperties extends Properties {
         defaults.put(ProcessDiscovery.SERVICE_PRIORITY, "1");
         defaults.put(ProcessDiscovery.DELAY, "3000");
 
+        defaults.put(Query.SINGLE_PATTERN, "SELECT * FROM %s");
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<select>select[  ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*%\\$&@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>{1,}[a-zA-Z_0-9$.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,}[ ]{1,})|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/* ?%\\$&@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<select>select[  ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*%\\$&@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/* ?%\\$&@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right | full )?join )| where | limit | start | order by | group by )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right | full )?join )| where | limit | start | order by | group by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");

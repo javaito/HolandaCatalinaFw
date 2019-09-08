@@ -8,19 +8,14 @@ import org.hcjf.layers.crud.CreateLayerInterface;
 import org.hcjf.layers.crud.DeleteLayerInterface;
 import org.hcjf.layers.crud.ReadLayerInterface;
 import org.hcjf.layers.crud.UpdateLayerInterface;
-import org.hcjf.layers.query.ParameterizedQuery;
-import org.hcjf.layers.query.Query;
-import org.hcjf.layers.query.Queryable;
+import org.hcjf.layers.query.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -70,6 +65,7 @@ public class RestContext extends Context {
         JsonParser jsonParser = new JsonParser();
         Gson gson = new GsonBuilder().setDateFormat(SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
         JsonElement jsonElement;
+        Collection<HttpHeader> headers = new ArrayList<>();
 
         String lastPart = request.getPathParts().get(request.getPathParts().size() -1);
         Object id = null;
@@ -86,7 +82,19 @@ public class RestContext extends Context {
             if(id == null) {
                 if (request.hasParameter(DEFAULT_QUERY_PARAMETER)) {
                     Queryable queryable = Query.compile(request.getParameter(DEFAULT_QUERY_PARAMETER));
-                    jsonElement = gson.toJsonTree(Query.evaluate(queryable));
+                    Collection<JoinableMap> queryResult = Query.evaluate(queryable);
+                    if(queryResult instanceof ResultSet) {
+                        ResultSet<JoinableMap> resultSet = (ResultSet<JoinableMap>) queryResult;
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_TOTAL_TIME, resultSet.getTotalTime().toString()));
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_TIME_COMPILING, resultSet.getTimeCompilingQuery().toString()));
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_TIME_COLLECTING_DATA, resultSet.getTimeCollectingData().toString()));
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_TIME_EVALUATING_CONDITIONS, resultSet.getTimeEvaluatingConditions().toString()));
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_AVERAGE_TIME_EVALUATING_CONDITIONS, resultSet.getAverageTimeFormattingDataByRow().toString()));
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_TIME_FORMATTING_DATA, resultSet.getTimeFormattingData().toString()));
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_AVERAGE_TIME_FORMATTING_DATA, resultSet.getAverageTimeFormattingDataByRow().toString()));
+                        headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_PRESENT_FIELDS, Strings.join(resultSet.getPresentFields(), Strings.ARGUMENT_SEPARATOR)));
+                    }
+                    jsonElement = gson.toJsonTree(queryResult);
                 } else {
                     ReadLayerInterface readLayerInterface = Layers.get(ReadLayerInterface.class, resourceName);
                     jsonElement = gson.toJsonTree(readLayerInterface.read());
@@ -147,6 +155,9 @@ public class RestContext extends Context {
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
         byte[] body = jsonElement.toString().getBytes();
         response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+        for(HttpHeader header : headers) {
+            response.addHeader(header);
+        }
         response.setBody(body);
 
         return response;
