@@ -1,6 +1,7 @@
 package org.hcjf.layers.query.evaluators;
 
 import org.hcjf.layers.query.Queryable;
+import org.hcjf.layers.query.model.QueryParameter;
 
 /**
  * Evaluate all the evaluators into the collection and concat all the result with or operation.
@@ -24,7 +25,13 @@ public class Or extends EvaluatorCollection implements Evaluator {
         boolean result = false;
 
         for(Evaluator evaluator : getEvaluators()) {
-            result |= evaluator.evaluate(object, dataSource, consumer);
+            if (evaluator instanceof BooleanEvaluator &&
+                    ((BooleanEvaluator) evaluator).getValue() instanceof QueryParameter &&
+                    ((QueryParameter)((BooleanEvaluator) evaluator).getValue()).isUnderlying()) {
+                result = true;
+            } else {
+                result |= evaluator.evaluate(object, dataSource, consumer);
+            }
             if(result) {
                 break;
             }
