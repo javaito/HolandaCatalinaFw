@@ -1,5 +1,7 @@
 package org.hcjf.service.security;
 
+import org.hcjf.utils.Strings;
+
 import java.lang.annotation.*;
 
 /**
@@ -12,4 +14,6 @@ import java.lang.annotation.*;
 @Repeatable(Permissions.class)
 public @interface Permission {
     String value();
+    String description() default Strings.EMPTY_STRING;
+    String[] tags() default {};
 }
