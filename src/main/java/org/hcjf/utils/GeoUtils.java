@@ -13,7 +13,11 @@ public class GeoUtils {
         if(object instanceof byte[]) {
             geometry = OGCGeometry.fromBinary(ByteBuffer.wrap((byte[])object));
         } else if(object instanceof String) {
-            geometry = OGCGeometry.fromText((String)object);
+            if(((String)object).startsWith(Strings.START_GROUP) || ((String)object).startsWith(Strings.START_SUB_GROUP)) {
+                geometry = OGCGeometry.fromGeoJson((String) object);
+            } else {
+                geometry = OGCGeometry.fromText((String) object);
+            }
         } else if(object instanceof Map) {
             geometry = OGCGeometry.fromGeoJson(JsonUtils.toJsonTree(object).toString());
         } else {
