@@ -17,7 +17,7 @@ public class GeoUtilsTest {
                 "        \"marker-color\": \"#7e7e7e\"," +
                 "        \"marker-size\": \"medium\"," +
                 "        \"marker-symbol\": \"\"," +
-                "        \"radius\": 2000" +
+                "        \"_radius\": 2000" +
                 "      }," +
                 "      \"geometry\": {" +
                 "        \"type\": \"Point\"," +

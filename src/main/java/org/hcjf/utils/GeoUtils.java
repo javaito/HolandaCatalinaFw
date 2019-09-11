@@ -15,8 +15,8 @@ public class GeoUtils {
     private static final class Paths {
         private static final String COORDINATES = "coordinates";
         private static final String FEATURES = "features";
-        private static final String PROPERTIES_RADIUS = "properties.radius";
-        private static final String PROPERTIES_BUFFER = "properties.buffer";
+        private static final String PROPERTIES_RADIUS = "properties._radius";
+        private static final String PROPERTIES_BUFFER = "properties._buffer";
         private static final String GEOMETRY = "geometry";
     }
 
