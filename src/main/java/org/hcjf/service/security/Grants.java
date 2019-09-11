@@ -22,7 +22,7 @@ public final class Grants {
      * @param permission Permission instance as parameter.
      */
     public synchronized static void publishGrant(SecurityPermissions.SecurityPermission permission) {
-        Grant grant = new Grant(permission.getName(), permission.getTargetClassName(), permission.getPermissionName());
+        Grant grant = new Grant(permission.getName(), permission.getTargetClassName(), permission.getPermissionName(), permission.getDescription(), permission.getTags());
         Map<String, Grant> grantsByClass = grants.get(permission.getTargetClassName());
         if(grantsByClass == null) {
             grantsByClass = new HashMap<>();
@@ -77,11 +77,15 @@ public final class Grants {
         private final String permissionId;
         private final String targetClassName;
         private final String grantName;
+        private final String description;
+        private final List<String> tags;
 
-        private Grant(String permissionId, String targetClassName, String grantName) {
+        private Grant(String permissionId, String targetClassName, String grantName, String description, List<String> tags) {
             this.permissionId = permissionId;
             this.targetClassName = targetClassName;
             this.grantName = grantName;
+            this.description = description;
+            this.tags = tags;
         }
 
         /**
@@ -106,6 +110,22 @@ public final class Grants {
          */
         public String getGrantName() {
             return grantName;
+        }
+
+        /**
+         * Returns the description of the grant.
+         * @return Grant description.
+         */
+        public String getDescription() {
+            return description;
+        }
+
+        /**
+         * Returns the lost of tags of the grant.
+         * @return List of tags.
+         */
+        public List<String> getTags() {
+            return tags;
         }
 
         /**

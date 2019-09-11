@@ -430,10 +430,10 @@ public final class Introspection {
                 annotationList.add(annotation);
 
                 if(annotationClass.equals(Permission.class)) {
-                    SecurityPermissions.publishPermission(implementationClass, ((Permission)annotation).value());
+                    SecurityPermissions.publishPermission(implementationClass, ((Permission)annotation).value(), ((Permission)annotation).description(), List.of(((Permission)annotation).tags()));
                     containsPermission = true;
                 } else if(annotationClass.equals(LazyPermission.class)) {
-                    SecurityPermissions.publishPermission(implementationClass, ((LazyPermission)annotation).value());
+                    SecurityPermissions.publishPermission(implementationClass, ((LazyPermission)annotation).value(), ((Permission)annotation).description(), List.of(((LazyPermission)annotation).tags()));
                 }
             }
         }

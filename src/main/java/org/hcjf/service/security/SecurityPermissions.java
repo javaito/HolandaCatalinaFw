@@ -1,6 +1,7 @@
 package org.hcjf.service.security;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,8 +33,8 @@ public class SecurityPermissions {
      * @param permissionName Name of the permission.
      * @return Returns the instance of the new permission created.
      */
-    public static SecurityPermission publishPermission(Class targetClass, String permissionName) {
-        return createPermission(targetClass.getName(), permissionName);
+    public static SecurityPermission publishPermission(Class targetClass, String permissionName, String description, List<String> tags) {
+        return createPermission(targetClass.getName(), permissionName, description, tags);
     }
 
     /**
@@ -42,9 +43,9 @@ public class SecurityPermissions {
      * @param permissionName Name of the permission.
      * @return Returns the instance of the permission created.
      */
-    private static SecurityPermission createPermission(String className, String permissionName) {
+    private static SecurityPermission createPermission(String className, String permissionName, String description, List<String> tags) {
         String permissionId = createPermissionId(className, permissionName);
-        SecurityPermission permission = new SecurityPermission(permissionId, className, permissionName);
+        SecurityPermission permission = new SecurityPermission(permissionId, className, permissionName, description, tags);
         permissions.put(permissionId, permission);
 
         Grants.publishGrant(permission);
@@ -96,11 +97,15 @@ public class SecurityPermissions {
 
         private final String targetClassName;
         private final String permissionName;
+        private final String description;
+        private final List<String> tags;
 
-        private SecurityPermission(String name, String targetClassName, String permissionName) {
+        private SecurityPermission(String name, String targetClassName, String permissionName, String description, List<String> tags) {
             super(name);
             this.targetClassName = targetClassName;
             this.permissionName = permissionName;
+            this.description = description;
+            this.tags = tags;
         }
 
         /**
@@ -117,6 +122,22 @@ public class SecurityPermissions {
          */
         public String getPermissionName() {
             return permissionName;
+        }
+
+        /**
+         * Returns the description of the permission.
+         * @return Permission description.
+         */
+        public String getDescription() {
+            return description;
+        }
+
+        /**
+         * Returns the list of tags.
+         * @return List of tags
+         */
+        public List<String> getTags() {
+            return tags;
         }
 
         @Override
