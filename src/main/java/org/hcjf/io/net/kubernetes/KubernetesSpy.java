@@ -116,7 +116,6 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                             null,
                             null,
                             null,
-                            null,
                             null);
 
                     for(KubernetesSpyConsumer consumer : consumers) {
@@ -131,7 +130,6 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                 try {
                     V1ServiceList serviceList = api.listNamespacedService(
                             namespace,
-                            null,
                             null,
                             null,
                             null,
