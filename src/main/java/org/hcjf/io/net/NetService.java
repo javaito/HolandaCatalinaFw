@@ -957,11 +957,17 @@ public final class NetService extends Service<NetServiceConsumer> {
                     Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Rejected connection, session null");
                     channel.close();
                     client.onConnectFail();
+                    SelectorRunnable selectorRunnable = selectors.remove(client);
+                    selectorRunnable.shutdown(ShutdownStage.START);
+                    selectorRunnable.shutdown(ShutdownStage.END);
                 }
             } catch (Exception ex) {
                 Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
                         "Error creating new client connection, %s:%d", ex, client.getHost(), client.getPort());
                 client.onConnectFail();
+                SelectorRunnable selectorRunnable = selectors.remove(client);
+                selectorRunnable.shutdown(ShutdownStage.START);
+                selectorRunnable.shutdown(ShutdownStage.END);
             }
         }
     }

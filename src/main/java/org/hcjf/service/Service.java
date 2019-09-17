@@ -1,5 +1,7 @@
 package org.hcjf.service;
 
+import org.hcjf.io.net.NetService;
+import org.hcjf.io.net.NetSession;
 import org.hcjf.log.Log;
 import org.hcjf.log.debug.Agent;
 import org.hcjf.log.debug.Agents;
