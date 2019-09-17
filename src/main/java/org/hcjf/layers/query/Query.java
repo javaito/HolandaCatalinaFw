@@ -686,7 +686,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Collection result = new ArrayList<>();
         Object pathValue;
         for(Object row : resultSet) {
-            pathValue = Introspection.resolve(resultSet, path);
+            pathValue = Introspection.resolve(row, path);
             if(pathValue != null) {
                 if (pathValue instanceof Collection) {
                     result.addAll(((Collection) pathValue));
