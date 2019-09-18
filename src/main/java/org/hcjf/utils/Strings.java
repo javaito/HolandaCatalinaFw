@@ -105,7 +105,7 @@ public final class Strings {
     public static final String START_OBJECT = "{";
     public static final String END_OBJECT = "}";
     public static final String OBJETC_FIELD_SEPARATOR = ":";
-    public static final String REPLACEABLE_GROUP = "$";
+    public static final String REPLACEABLE_GROUP = "¿";
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";
     public static final String CLASS_SEPARATOR = ".";
@@ -113,7 +113,7 @@ public final class Strings {
     public static final String ARGUMENT_SEPARATOR = ",";
     public static final String ARGUMENT_SEPARATOR_2 = ";";
     public static final String ASSIGNATION = "=";
-    public static final String REPLACEABLE_RICH_TEXT = "&";
+    public static final String REPLACEABLE_RICH_TEXT = "¡";
     public static final String RICH_TEXT_SEPARATOR = "'";
     public static final String RICH_TEXT_SKIP_CHARACTER = "\\";
     public static final String CARRIAGE_RETURN_AND_LINE_SEPARATOR = "\r\n";

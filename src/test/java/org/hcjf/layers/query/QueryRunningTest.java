@@ -10,6 +10,7 @@ import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 import org.junit.Assert;
@@ -232,6 +233,9 @@ public class QueryRunningTest {
         query = Query.compile("SELECT addressId, aggregateEvalExpression(sum(weight) / 2) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet2 = Query.evaluate(query);
         System.out.println();
+        query = Query.compile("SELECT addressId, aggregateEvalExpression(sum(weight) / 2) as aggregateWeight, aggregateContext(numberFormat('$#,###.00', aggregateWeight)) as weightFormatted FROM character group by addressId");
+        Collection<JoinableMap> resultSet3 = Query.evaluate(query);
+        System.out.println();
     }
 
     @Test
@@ -251,6 +255,9 @@ public class QueryRunningTest {
         Query query3 = Query.compile("SELECT * FROM (SELECT * FROM (SELECT * FROM character WHERE toString(gender) = 'FEMALE') as ch1 where lastName like 'Simpson') as ch JOIN address ON address.addressId = ch.addressId WHERE weight > 16");
         Collection<JoinableMap> resultSet3 = Query.evaluate(query3);
         System.out.println();
+        Query query4 = Query.compile("SELECT * FROM (SELECT *, bsonParse(body) AS bodyDecoded  FROM character where isNotNull(body)).bodyDecoded as body");
+        Collection<JoinableMap> resultSet4 = Query.evaluate(query4);
+        Assert.assertEquals(Introspection.resolve(resultSet4.stream().findFirst().get(), "field1"), "string");
     }
 
     @Test

@@ -1,10 +1,15 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.properties.SystemProperties;
+
 import java.net.URL;
 
 public class SimpleHttpClient {
 
     public static void main(String[] args) throws Exception {
+
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+
         for (int i = 0; i < 1000; i++) {
             try {
                 HttpClient client = new HttpClient(new URL("https://localhost:6065"));

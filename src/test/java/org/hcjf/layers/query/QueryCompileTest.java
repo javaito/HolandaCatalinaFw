@@ -43,6 +43,7 @@ public class QueryCompileTest {
             Assert.assertNotNull(query.getJoins());
             Assert.assertEquals(query.getJoins().size(), 1);
         } catch (Exception ex) {
+            ex.printStackTrace();
             Assert.fail(ex.getMessage());
         }
 

@@ -74,6 +74,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(GeoUnionAggregateFunctionLayer.class);
         Layers.publishLayer(GeoDistanceAggregateFunctionLayer.class);
         Layers.publishLayer(EvalExpressionAggregateFunctionLayer.class);
+        Layers.publishLayer(ContextAggregateFunction.class);
     }
 
     public Query(QueryResource resource, QueryId id) {
