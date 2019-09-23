@@ -2,7 +2,7 @@ package org.hcjf.errors;
 
 import org.hcjf.utils.Strings;
 
-public class HCJFSecurityException extends HCJFRuntimeException {
+public class HCJFSecurityException extends TaggedException {
 
     private static final String SECURITY_TAG = "SECURITY";
 
@@ -11,6 +11,6 @@ public class HCJFSecurityException extends HCJFRuntimeException {
     }
 
     public HCJFSecurityException(String message, Throwable cause, Object... params) {
-        super(Strings.createTaggedMessage(String.format(message, params), getTag(SECURITY_TAG, cause)), cause);
+        super(SECURITY_TAG, message, cause, params);
     }
 }

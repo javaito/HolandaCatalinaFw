@@ -113,7 +113,6 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
         this.api = new CoreV1Api();
         this.batchApi = new BatchV1Api();
 
-
     }
 
     @Override

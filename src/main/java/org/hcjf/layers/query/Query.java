@@ -524,12 +524,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     //If the query has not joins then data source must return data from
                     //resource of the query.
                     if(getResource() instanceof QueryDynamicResource) {
-                        QueryDynamicResource queryDynamicResource = (QueryDynamicResource) getResource();
-                        data = (Collection<O>) Query.evaluate(queryDynamicResource.getQuery());
-
-                        if(queryDynamicResource.getPath() != null && !queryDynamicResource.getPath().isBlank()) {
-                            data = resolveResourcePath(data, queryDynamicResource.getPath());
-                        }
+                        data = (Collection<O>) resolveDynamicResource((QueryDynamicResource)getResource());
                     } else {
                         //Creates the first query for the original resource.
                         Query resolveQuery = new Query(getResource());
@@ -675,6 +670,25 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
 
         return result;
+    }
+
+    /**
+     * Resolves dynamic resource and returns a collection with enlarged objects.
+     * @param resource Dynamic resource instance.
+     * @return Result set.
+     */
+    private Collection<JoinableMap> resolveDynamicResource(QueryDynamicResource resource) {
+        QueryDynamicResource queryDynamicResource = (QueryDynamicResource) getResource();
+        Collection<JoinableMap> data = Query.evaluate(queryDynamicResource.getQuery());
+
+        if(queryDynamicResource.getPath() != null && !queryDynamicResource.getPath().isBlank()) {
+            Collection resultPath = resolveResourcePath(data, queryDynamicResource.getPath());
+            data = new ArrayList<>();
+            for(Object dataObject : resultPath) {
+                data.add(new JoinableMap(Introspection.toMap(dataObject)));
+            }
+        }
+        return data;
     }
 
     /**
@@ -887,11 +901,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private Collection<? extends Joinable> getJoinData(Query query, Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
         Collection<? extends Joinable> result;
         if(query.getResource() instanceof  QueryDynamicResource) {
-            QueryDynamicResource queryDynamicResource = (QueryDynamicResource) query.getResource();
-            result = Query.evaluate(queryDynamicResource.getQuery());
-            if(queryDynamicResource.getPath() != null && !queryDynamicResource.getPath().isBlank()) {
-                result = resolveResourcePath(result, queryDynamicResource.getPath());
-            }
+            result = resolveDynamicResource((QueryDynamicResource) query.getResource());
         } else {
             result = dataSource.getResourceData(verifyInstance(query, consumer));
         }

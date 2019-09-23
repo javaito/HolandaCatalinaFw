@@ -258,6 +258,9 @@ public class QueryRunningTest {
         Query query4 = Query.compile("SELECT * FROM (SELECT *, bsonParse(body) AS bodyDecoded  FROM character where isNotNull(body)).bodyDecoded as body");
         Collection<JoinableMap> resultSet4 = Query.evaluate(query4);
         Assert.assertEquals(Introspection.resolve(resultSet4.stream().findFirst().get(), "field1"), "string");
+        Query query5 = Query.compile("SELECT field1 FROM (SELECT *, bsonParse(body) AS bodyDecoded  FROM character where isNotNull(body)).bodyDecoded as body");
+        Collection<JoinableMap> resultSet5 = Query.evaluate(query5);
+        Assert.assertEquals(resultSet5.stream().findFirst().get().size(), 1);
     }
 
     @Test

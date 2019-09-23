@@ -7,6 +7,7 @@ import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.cloud.impl.objects.*;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.events.Events;
 import org.hcjf.events.RemoteEvent;
@@ -813,7 +814,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 client = new CloudClient(host, port);
                 NetService.getInstance().registerConsumer(client);
             } catch (Exception ex) {
-                throw new RuntimeException("Unable to connect with service: " + networkComponent.getName(), ex);
+                throw new HCJFRuntimeException("Unable to connect with service: " + networkComponent.getName(), ex);
             }
             try {
                 if (client.waitForConnect()) {
@@ -824,11 +825,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                                 "Sending invoke service message: '%s' %s", message.getClass().getName(), message.getId().toString());
                         client.send(message);
                     } catch (Exception ex) {
-                        throw new RuntimeException("Unable to send message", ex);
+                        throw new HCJFRuntimeException("Unable to send message", ex);
                     }
                     result = responseListener.getResponse(message);
                 } else {
-                    throw new RuntimeException("Connection timeout with service: " + networkComponent.getName());
+                    throw new HCJFRuntimeException("Connection timeout with service: " + networkComponent.getName());
                 }
             } finally {
                 try {
@@ -836,7 +837,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 } catch (Exception ex){}
             }
         } else {
-            throw new RuntimeException("Service end point not found (" + networkComponent.getId() + ")");
+            throw new HCJFRuntimeException("Service end point not found (" + networkComponent.getId() + ")");
         }
         return result;
     }
@@ -973,7 +974,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending event to %s", serviceEndPoint.toString());
                     invokeNetworkComponent(serviceEndPoint, eventMessage);
                 } catch (Exception ex) {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Couldn't dispatch event");
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Couldn't dispatch event %s", ex, serviceEndPoint.toString());
                 }
             }
         }
@@ -998,8 +999,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     } else {
                         addRemoteObject(distributedLayer, List.of(), List.of(), System.currentTimeMillis(), path);
                     }
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException();
+                } catch (ClassNotFoundException ex) {
+                    throw new HCJFRuntimeException("Class not found, trying to create the distributed layer instance", ex);
                 }
             }
         }
@@ -1049,7 +1050,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(serviceEndPointId != null) {
                 result = (O) invokeNetworkComponent(endPoints.get(serviceEndPointId), layerInvokeMessage);
         } else {
-            throw new RuntimeException("Route not found to the layer: " + distributedLayer.getLayerInterface().getName() + "@" + distributedLayer.getLayerName());
+            throw new HCJFRuntimeException("Route not found to the layer: " + distributedLayer.getLayerInterface().getName() + "@" + distributedLayer.getLayerName());
         }
 
         return result;
@@ -1082,11 +1083,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     ServiceSession.getCurrentSession().addIdentity(ServiceSession.findSession(sessionId));
                 }
                 result = invokers.values().iterator().next().invoke(layer, parameters);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            } catch (Exception ex) {
+                throw new HCJFRuntimeException("Remote method invocation fail, %s", ex, methodName);
             }
         } else {
-            throw new RuntimeException();
+            throw new HCJFRuntimeException("Remote method signature not found, %s(%s)", methodName, parameterTypes);
         }
         return result;
     }
@@ -1321,12 +1322,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
             if(responseMessage != null) {
                 if(responseMessage.getThrowable() != null) {
-                    throw new RuntimeException("Remote exception", responseMessage.getThrowable());
+                    throw new HCJFRuntimeException("Remote exception", responseMessage.getThrowable());
                 } else {
                     result = responseMessage.getValue();
                 }
             } else {
-                throw new RuntimeException("Remote invocation timeout, message id: " + message.getId().toString());
+                throw new HCJFRuntimeException("Remote invocation timeout, message id: " + message.getId().toString());
             }
             responseListeners.remove(message.getId());
             return result;
