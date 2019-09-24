@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.evaluators;
 
+import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.query.model.QueryField;
@@ -140,6 +141,7 @@ public abstract class BaseEvaluator implements Evaluator {
     public static class QueryValue implements UnprocessedValue {
 
         private final Query query;
+        private Collection subQueryResult;
 
         public QueryValue(Query query) {
             this.query = query;
@@ -166,12 +168,14 @@ public abstract class BaseEvaluator implements Evaluator {
         @Override
         public Object process(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
             Object result;
-            Collection<Object> collection;
-            Collection<Object> subQueryResult = query.evaluate(dataSource, consumer);
+            Collection collection;
+            if(subQueryResult == null) {
+                subQueryResult = Query.evaluate(query);
+            }
             if(query.getReturnParameters().size() == 1){
                 List<Object> listResult = new ArrayList<>();
                 for(Object element : subQueryResult) {
-                    listResult.add(consumer.get(element, (QueryParameter) query.getReturnParameters().get(0), dataSource));
+                    listResult.add(((JoinableMap)element).values().stream().findFirst().orElse(null));
                 }
                 collection = listResult;
             } else {

@@ -225,6 +225,29 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void innerQuery() {
+        Query query = Query.compile("SELECT * FROM character WHERE (SELECT name FROM character2 WHERE name like 'Homer') like name");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM character WHERE concat((SELECT name FROM character2 WHERE name like 'Homer'), ' Jay') like name");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+
+        query = Query.compile("select addressId from address where street like 'Evergreen Terrace' limit 1");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+
+        query = Query.compile("SELECT name FROM character WHERE addressId = (select addressId from address where street like 'Evergreen Terrace' limit 1)");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM character WHERE (SELECT name FROM character2 WHERE addressId = (select addressId from address where street like 'Evergreen Terrace' limit 1) limit 1) like name");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+    }
+
+    @Test
     public void aggregateFunction() {
         Query query = Query.compile("SELECT addressId, aggregateProduct(weight) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet = Query.evaluate(query);

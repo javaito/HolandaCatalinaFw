@@ -1743,11 +1743,11 @@ public class Query extends EvaluatorCollection implements Queryable {
         String operator;
         Evaluator evaluator;
 
-        if (definition.startsWith(Strings.REPLACEABLE_GROUP)) {
+        evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
+        if (evaluatorValues.length == 1 && definition.startsWith(Strings.REPLACEABLE_GROUP)) {
             Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             completeEvaluatorCollection(query, null, groups, richTexts, collection, index, placesIndex);
         } else {
-            evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
             boolean operatorDone = false;
             firstArgument = Strings.EMPTY_STRING;
             secondArgument = Strings.EMPTY_STRING;
