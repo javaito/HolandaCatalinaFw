@@ -286,6 +286,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                             response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS,
                                                     Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
                                         }
+                                        if(!accessControl.getExposeHeaders().isEmpty()) {
+                                            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
+                                                    Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
+                                        }
                                     }
                                 } else {
                                     if (context.getTimeout() > 0) {
@@ -556,12 +560,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         private final Integer maxAge;
         private final List<String> allowMethods;
         private final List<String> allowHeaders;
+        private final List<String> exposeHeaders;
 
         public AccessControl(String domain, Integer maxAge) {
             this.domain = domain;
             this.maxAge = maxAge <= 0 || maxAge > MAX_AGE ? MAX_AGE : maxAge;
             this.allowMethods = new ArrayList<>();
             this.allowHeaders = new ArrayList<>();
+            this.exposeHeaders = new ArrayList<>();
         }
 
         public AccessControl(String domain) {
@@ -584,17 +590,20 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             return Collections.unmodifiableList(allowHeaders);
         }
 
+        public List<String> getExposeHeaders() {
+            return Collections.unmodifiableList(exposeHeaders);
+        }
+
         public void addAllowMethod(String... methods) {
-            for(String method : methods) {
-                allowMethods.add(method);
-            }
+            allowMethods.addAll(Arrays.asList(methods));
         }
 
         public void addAllowHeader(String... headers) {
-            for(String header : headers) {
-                allowHeaders.add(header);
-            }
+            allowHeaders.addAll(Arrays.asList(headers));
         }
 
+        public void addExposeHeader(String... headers) {
+            exposeHeaders.addAll(Arrays.asList(headers));
+        }
     }
 }
