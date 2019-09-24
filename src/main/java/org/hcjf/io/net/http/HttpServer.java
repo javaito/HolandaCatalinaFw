@@ -275,20 +275,16 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                 if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
                                     URL url = new URL(originHeader.getHeaderValue());
                                     response = new HttpResponse();
-                                    if(accessControlMap.containsKey(url.getHost())) {
+                                    if (accessControlMap.containsKey(url.getHost())) {
                                         AccessControl accessControl = accessControlMap.get(url.getHost());
                                         response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.maxAge.toString()));
-                                        if(!accessControl.getAllowMethods().isEmpty()) {
+                                        if (!accessControl.getAllowMethods().isEmpty()) {
                                             response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
                                                     Strings.join(accessControl.getAllowMethods(), Strings.ARGUMENT_SEPARATOR)));
                                         }
-                                        if(!accessControl.getAllowHeaders().isEmpty()) {
+                                        if (!accessControl.getAllowHeaders().isEmpty()) {
                                             response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS,
                                                     Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
-                                        }
-                                        if(!accessControl.getExposeHeaders().isEmpty()) {
-                                            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
-                                                    Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
                                         }
                                     }
                                 } else {
@@ -297,6 +293,16 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                                 ServiceSession.getCurrentIdentity(), context.getTimeout());
                                     } else {
                                         response = context.onContext(request);
+                                    }
+                                    if(originHeader != null){
+                                        URL url = new URL(originHeader.getHeaderValue());
+                                        if (accessControlMap.containsKey(url.getHost())) {
+                                            AccessControl accessControl = accessControlMap.get(url.getHost());
+                                            if (!accessControl.getExposeHeaders().isEmpty()) {
+                                                response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
+                                                        Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
+                                            }
+                                        }
                                     }
                                 }
                                 if (request.containsHeader(HttpHeader.CONNECTION)) {
