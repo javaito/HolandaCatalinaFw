@@ -288,7 +288,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                         }
                                         if(!accessControl.getExposeHeaders().isEmpty()) {
                                             response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
-                                                    Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
+                                                    Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
                                         }
                                     }
                                 } else {
