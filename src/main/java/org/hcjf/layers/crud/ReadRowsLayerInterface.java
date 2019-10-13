@@ -2,7 +2,6 @@ package org.hcjf.layers.crud;
 
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.query.JoinableMap;
-import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 
 import java.util.Collection;

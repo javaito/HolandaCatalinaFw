@@ -1,15 +1,11 @@
 package org.hcjf.cloud.impl.network;
 
-import org.hcjf.io.net.messages.Message;
 import org.hcjf.cloud.impl.messages.ShutdownMessage;
-import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
-import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.io.net.messages.Message;
 import org.hcjf.io.net.messages.MessageBuffer;
 import org.hcjf.io.net.messages.MessagesNode;
-
-import java.io.IOException;
 
 /**
  * @author javaito

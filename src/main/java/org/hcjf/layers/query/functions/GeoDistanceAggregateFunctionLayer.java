@@ -4,7 +4,6 @@ import com.esri.core.geometry.ogc.OGCGeometry;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.Enlarged;
 import org.hcjf.layers.query.JoinableMap;
-import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.utils.GeoUtils;
 
 import java.util.ArrayList;

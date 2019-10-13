@@ -5,8 +5,6 @@ import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
 import org.hcjf.cloud.impl.network.CloudOrchestrator;
-import org.hcjf.cloud.impl.objects.DistributedLayer;
-import org.hcjf.cloud.timer.CloudTimerTask;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;

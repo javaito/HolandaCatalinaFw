@@ -17,10 +17,8 @@ import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.nio.channels.spi.SelectorProvider;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class implements a service that provide an

@@ -1,6 +1,5 @@
 package org.hcjf.layers.query.functions;
 
-import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.ParameterizedQuery;
 import org.hcjf.layers.query.Query;
 import org.hcjf.properties.SystemProperties;

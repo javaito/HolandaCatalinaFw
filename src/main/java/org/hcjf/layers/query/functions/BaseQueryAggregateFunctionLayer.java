@@ -5,10 +5,6 @@ import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.layers.query.model.QueryReturnFunction;
 import org.hcjf.properties.SystemProperties;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 /**
  * @author javaito
  */

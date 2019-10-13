@@ -7,7 +7,9 @@ import org.hcjf.layers.query.model.QueryField;
 import org.hcjf.layers.query.model.QueryParameter;
 
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author javaito

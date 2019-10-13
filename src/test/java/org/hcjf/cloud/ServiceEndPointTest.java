@@ -1,7 +1,5 @@
 package org.hcjf.cloud;
 
-import org.hcjf.io.net.http.HttpClient;
-import org.hcjf.io.net.http.HttpResponse;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CreateLayerInterface;
@@ -11,7 +9,6 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 
-import java.net.URL;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.locks.Condition;

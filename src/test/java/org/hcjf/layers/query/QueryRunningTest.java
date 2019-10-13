@@ -3,7 +3,6 @@ package org.hcjf.layers.query;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
-import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
@@ -12,17 +11,10 @@ import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
-import org.hcjf.utils.Strings;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
 

@@ -5,7 +5,6 @@ import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.utils.Strings;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.BufferedReader;

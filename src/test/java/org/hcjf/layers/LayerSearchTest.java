@@ -2,7 +2,6 @@ package org.hcjf.layers;
 
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
-import org.hcjf.layers.distributed.DistributedLayerInterface;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -5,7 +5,6 @@ import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.LayerInterface;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**

@@ -1,7 +1,5 @@
 package org.hcjf.io.console;
 
-import org.hcjf.io.net.NetService;
-import org.hcjf.io.net.messages.MessageBuffer;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.query.JoinableMap;
@@ -11,7 +9,10 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.Cryptography;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author javaito

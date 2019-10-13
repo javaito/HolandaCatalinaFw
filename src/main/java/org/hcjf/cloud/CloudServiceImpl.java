@@ -3,7 +3,6 @@ package org.hcjf.cloud;
 import org.hcjf.cloud.cache.CloudCache;
 import org.hcjf.cloud.cache.CloudCacheStrategy;
 import org.hcjf.cloud.counter.Counter;
-import org.hcjf.cloud.impl.objects.DistributedLayer;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.layers.LayerInterface;
 

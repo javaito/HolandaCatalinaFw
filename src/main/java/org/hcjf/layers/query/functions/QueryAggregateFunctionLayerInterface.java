@@ -3,7 +3,6 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.layers.LayerInterface;
 
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * @author javaito

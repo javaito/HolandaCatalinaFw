@@ -3,7 +3,6 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.Enlarged;
 import org.hcjf.layers.query.JoinableMap;
-import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.utils.Strings;
 
 import java.util.ArrayList;

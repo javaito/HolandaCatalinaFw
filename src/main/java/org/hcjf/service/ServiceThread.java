@@ -1,13 +1,11 @@
 package org.hcjf.service;
 
 import com.sun.management.ThreadMXBean;
-import org.hcjf.layers.Layer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 
 import java.lang.management.ManagementFactory;
 import java.util.Collection;
-import java.util.UUID;
 
 /**
  * This are the thread created by the factory in the

@@ -12,8 +12,6 @@ import org.junit.Test;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
 
 /**
  * @author javaito.

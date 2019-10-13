@@ -1,7 +1,5 @@
 package org.hcjf.io.net.http.http2;
 
-import org.hcjf.properties.SystemProperties;
-
 /**
  * @author javaito.
  */

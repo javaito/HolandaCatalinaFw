@@ -5,9 +5,6 @@ import org.hcjf.properties.SystemProperties;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**

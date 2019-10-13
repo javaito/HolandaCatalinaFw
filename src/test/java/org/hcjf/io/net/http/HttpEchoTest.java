@@ -2,10 +2,7 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.properties.SystemProperties;
 import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
-import javax.net.ssl.SSLParameters;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;

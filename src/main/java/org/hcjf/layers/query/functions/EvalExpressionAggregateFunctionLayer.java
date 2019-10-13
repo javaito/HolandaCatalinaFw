@@ -1,7 +1,6 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.layers.query.Enlarged;
-import org.hcjf.layers.query.model.QueryReturnField;
 
 import java.util.Collection;
 

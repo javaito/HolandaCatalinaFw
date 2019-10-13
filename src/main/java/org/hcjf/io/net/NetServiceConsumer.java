@@ -3,18 +3,12 @@ package org.hcjf.io.net;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceConsumer;
-import org.hcjf.service.ServiceThread;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.SocketOption;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This consumer provide an interface for the net service.

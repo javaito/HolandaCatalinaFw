@@ -1,7 +1,6 @@
 package org.hcjf.errors;
 
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.utils.Strings;
 
 public class HCJFRuntimeException extends TaggedException {
 

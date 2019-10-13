@@ -2,8 +2,6 @@ package org.hcjf.layers.crud;
 
 import org.hcjf.layers.LayerInterface;
 
-import java.util.Map;
-
 /**
  * @author javaito
  */

@@ -1,9 +1,6 @@
 package org.hcjf.utils;
 
-import com.esri.core.geometry.Geometry;
 import com.esri.core.geometry.ogc.OGCGeometry;
-import com.esri.core.geometry.ogc.OGCGeometryCollection;
-import org.hcjf.cloud.impl.messages.PublishObjectMessage;
 import org.hcjf.errors.HCJFRuntimeException;
 
 import java.nio.ByteBuffer;

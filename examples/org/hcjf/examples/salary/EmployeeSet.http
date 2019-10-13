@@ -1,0 +1,53 @@
+# For a quick start check out our HTTP Requests collection (Tools|HTTP Client|Open HTTP Requests Collection) or
+# paste cURL into the file and request will be converted to HTTP Request format.
+#
+# Following HTTP Request Live Templates are available:
+# * 'gtrp' and 'gtr' create a GET request with or without query parameters;
+# * 'ptr' and 'ptrp' create a POST request with a simple or parameter-like body;
+# * 'mptr' and 'fptr' create a POST request to submit a form with a text or file field (multipart/form-data);
+POST http://localhost:9090/api/employee
+Content-Type: application/json
+
+{
+  "name": "Javier",
+  "lastName": "Quiroga",
+  "activity": "Mirar"
+}
+
+###
+GET http://localhost:9090/api/employee/378df4c1-25c6-4502-928b-abdd0a6891f5
+
+###
+
+POST http://localhost:9090/api/salary
+Content-Type: application/json
+
+{
+  "employeeId": "e2ae1193-09c5-4124-96da-4e5be09fd95a",
+  "rawSalary": 23400.99,
+  "items": ["salud"]
+}
+
+###
+POST http://localhost:9090/api/salary
+Content-Type: application/json
+
+{
+"employeeId": "f9310f9a-1274-409b-9ecc-b945a691236c",
+"rawSalary": 25400.99,
+"items": ["salud", "retiro"]
+}
+
+###
+
+GET http://localhost:9090/api?q=SELECT * FROM employee JOIN salary ON employee.id = salary.employeeId;
+
+###
+
+GET http://localhost:9090/api?q=SELECT * FROM employee JOIN salary ON employee.id = salary.employeeId GROUP BY id;
+
+###
+
+GET http://localhost:9090/api?q=SELECT * FROM salary
+
+###

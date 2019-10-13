@@ -4,9 +4,7 @@ import org.hcjf.bson.BsonArray;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
-import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
-import org.hcjf.utils.bson.BsonParcelable;
 import org.junit.Assert;
 import org.junit.Test;
 

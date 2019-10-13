@@ -1,16 +1,11 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.layers.Layer;
-import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

@@ -1,7 +1,5 @@
 package org.hcjf.errors;
 
-import org.hcjf.utils.Strings;
-
 public class HCJFSecurityException extends TaggedException {
 
     private static final String SECURITY_TAG = "SECURITY";

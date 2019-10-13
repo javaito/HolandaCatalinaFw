@@ -1,6 +1,5 @@
 package org.hcjf.layers.query.model;
 
-import org.hcjf.layers.query.Query;
 import org.hcjf.utils.Strings;
 
 /**

@@ -9,7 +9,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 
 /**

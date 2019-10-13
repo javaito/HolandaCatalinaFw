@@ -3,7 +3,6 @@ package org.hcjf.layers.plugins;
 import org.hcjf.layers.Layer;
 import org.hcjf.utils.Version;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 

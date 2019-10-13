@@ -1,7 +1,6 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
-import org.hcjf.layers.query.model.QueryReturnField;
 import org.hcjf.properties.SystemProperties;
 
 import java.math.BigDecimal;

@@ -6,7 +6,6 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;

@@ -5,13 +5,13 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.MathIntrospection;
 
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.util.*;
-import java.util.function.BiFunction;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Locale;
 
 /**
  * This layer implements all the math functions to invoke from the query scope.

@@ -1,10 +1,5 @@
 package org.hcjf.io.process;
 
-import org.hcjf.utils.Strings;
-
-import java.io.IOException;
-import java.net.Socket;
-
 /**
  * @author Javier Quiroga.
  * @email javier.quiroga@sitrack.com
