@@ -11,6 +11,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -328,12 +329,22 @@ public final class NetService extends Service<NetServiceConsumer> {
             localPort = ((SocketChannel) channel).socket().getLocalPort();
         } else if (channel instanceof DatagramChannel) {
             remoteHost = "";
-            if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_PACKAGE)) {
-                remoteHost = ((DatagramChannel) channel).socket().getInetAddress().getHostName();
+            remoteAddress ="";
+            remotePort = -1;
+            localPort = -1;
+            try {
+                Field field = channel.getClass().getDeclaredField("sender");
+                field.setAccessible(true);
+                InetSocketAddress socketAddress = (InetSocketAddress) field.get(channel);
+                if(SystemProperties.getBoolean(SystemProperties.Net.REMOTE_ADDRESS_INTO_NET_PACKAGE)) {
+                    remoteHost = socketAddress.getAddress().getHostName();
+                }
+                remoteAddress = socketAddress.getAddress().getHostAddress();
+                remotePort = socketAddress.getPort();
+                localPort = ((DatagramChannel) channel).socket().getLocalPort();
+            } catch (Exception ex){
+                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "createPackage method exception", ex);
             }
-            remoteAddress = ((DatagramChannel) channel).socket().getInetAddress().getHostAddress();
-            remotePort = ((DatagramChannel) channel).socket().getPort();
-            localPort = ((DatagramChannel) channel).socket().getLocalPort();
         } else {
             throw new IllegalArgumentException("Unknown channel type");
         }
@@ -1094,14 +1105,9 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                     if (address != null) {
                         NetPackage netPackage = createPackage(channel, readData.toByteArray(), NetPackage.ActionEvent.READ);
-
-                        NetSession session = sessionsByAddress.get(address);
-
-                        if (session != null) {
-                            //Here the session is linked with the current thread
-                            ((ServiceThread) Thread.currentThread()).setSession(session);
-
-                            netPackage.setSession(session);
+                        NetSession session;
+                        if(consumer instanceof NetClient) {
+                            session = sessionsByAddress.get(address);
                             if (addresses.containsKey(session)) {
                                 addresses.put(session, address);
                             }
@@ -1109,14 +1115,22 @@ public final class NetService extends Service<NetServiceConsumer> {
                             if (!channels.containsKey(session)) {
                                 channels.put(session, channel);
                             }
-                            if (!outputQueue.containsKey(channel)) {
-                                outputQueue.put(channel, new LinkedBlockingQueue<>());
-                                lastWrite.put(channel, System.currentTimeMillis());
-                            }
+                        } else {
+                            session = ((NetServer) consumer).createSession(netPackage);
+                        }
 
-                            if (readData.size() > 0) {
-                                onAction(netPackage, consumer);
-                            }
+                        //Here the session is linked with the current thread
+                        ((ServiceThread) Thread.currentThread()).setSession(session);
+
+                        netPackage.setSession(session);
+
+                        if (!outputQueue.containsKey(channel)) {
+                            outputQueue.put(channel, new LinkedBlockingQueue<>());
+                            lastWrite.put(channel, System.currentTimeMillis());
+                        }
+
+                        if (readData.size() > 0) {
+                            onAction(netPackage, consumer);
                         }
                     }
                 } catch (Exception ex) {
