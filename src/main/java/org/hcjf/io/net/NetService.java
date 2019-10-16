@@ -1,11 +1,11 @@
 package org.hcjf.io.net;
 
-import org.apache.commons.collections.map.LRUMap;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceThread;
+import org.hcjf.utils.LruMap;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -89,9 +89,9 @@ public final class NetService extends Service<NetServiceConsumer> {
         serverSocketChannelMap = Collections.synchronizedMap(new HashMap<>());
         channels = Collections.synchronizedMap(new TreeMap<>());
         sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
-        sessionsByAddress = Collections.synchronizedMap(new LRUMap(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_SESSIONS_SIZE)));
+        sessionsByAddress = Collections.synchronizedMap(new LruMap(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_SESSIONS_SIZE)));
         sslHelpers = Collections.synchronizedMap(new HashMap<>());
-        addresses = Collections.synchronizedMap(new LRUMap(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_ADDRESSES_SIZE)));
+        addresses = Collections.synchronizedMap(new LruMap<>(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_ADDRESSES_SIZE)));
 
         readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
         writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
