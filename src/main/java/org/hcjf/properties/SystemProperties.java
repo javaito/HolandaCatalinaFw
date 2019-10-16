@@ -142,6 +142,8 @@ public final class SystemProperties extends Properties {
         public static final String CONNECTION_TIMEOUT_AVAILABLE = "hcjf.net.connection.timeout.available";
         public static final String CONNECTION_TIMEOUT = "hcjf.net.connection.timeout";
         public static final String WRITE_TIMEOUT = "hcjf.net.write.timeout";
+        public static final String IO_UDP_LRU_SESSIONS_SIZE = "hcjf.net.io.udp.lru.sessions.size";
+        public static final String IO_UDP_LRU_ADDRESSES_SIZE = "hcjf.net.io.udp.lru.addresses.size";
         public static final String IO_QUEUE_SIZE = "hcjf.net.io.queue.size";
         public static final String IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
         public static final String IO_THREAD_POOL_NAME = "hcjf.net.io.thread.pool.name";
@@ -580,6 +582,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.CONNECTION_TIMEOUT, "30000");
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
         defaults.put(Net.WRITE_TIMEOUT, "100");
+        defaults.put(Net.IO_UDP_LRU_ADDRESSES_SIZE, "1000");
+        defaults.put(Net.IO_UDP_LRU_SESSIONS_SIZE, "1000");
         defaults.put(Net.IO_QUEUE_SIZE, "1000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "50");
