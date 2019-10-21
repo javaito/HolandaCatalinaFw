@@ -970,12 +970,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         eventMessage.setEvent(event);
         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
             if(!thisServiceEndPoint.getId().equals(serviceEndPoint.getId())) {
-                try {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending event to %s", serviceEndPoint.toString());
-                    invokeNetworkComponent(serviceEndPoint, eventMessage);
-                } catch (Exception ex) {
-                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Couldn't dispatch event %s", ex, serviceEndPoint.toString());
-                }
+                run(() -> {
+                    try {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending event to %s", serviceEndPoint.toString());
+                        invokeNetworkComponent(serviceEndPoint, eventMessage);
+                    } catch (Exception ex) {
+                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Couldn't dispatch event %s", ex, serviceEndPoint.toString());
+                    }
+                }, ServiceSession.getCurrentIdentity());
             }
         }
     }
