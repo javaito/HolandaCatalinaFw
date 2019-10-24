@@ -51,9 +51,6 @@ public final class NetService extends Service<NetServiceConsumer> {
     private boolean creationTimeoutAvailable;
     private long creationTimeout;
     private boolean shuttingDown;
-    private Queue<SelectionKey> readableKeys;
-    private Queue<SelectionKey> writableKeys;
-    private ThreadPoolExecutor ioExecutor;
 
     private NetService(String serviceName) {
         super(serviceName, 2);
@@ -92,32 +89,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         sessionsByAddress = Collections.synchronizedMap(new LruMap(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_SESSIONS_SIZE)));
         sslHelpers = Collections.synchronizedMap(new HashMap<>());
         addresses = Collections.synchronizedMap(new LruMap<>(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_ADDRESSES_SIZE)));
-
-        readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
-        writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
-
-        ioExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
-        ioExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
-        int corePoolSize = SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_CORE_SIZE);
-        if(corePoolSize < 8) {
-            corePoolSize = 8;
-        }
-        ioExecutor.setCorePoolSize(corePoolSize);
-        ioExecutor.setMaximumPoolSize(corePoolSize);
-
-        int count = 0;
-        while(true) {
-            count++;
-            fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
-            if(count >= ioExecutor.getCorePoolSize()) {
-                break;
-            }
-            count++;
-            fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), ioExecutor);
-            if(count >= ioExecutor.getCorePoolSize()) {
-                break;
-            }
-        }
     }
 
     /**
@@ -360,17 +331,8 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param netPackage Package.
      */
     private void writeWakeup(SelectableChannel channel, NetPackage netPackage) {
-        outputQueue.get(channel).add(netPackage);
-
-        SelectionKey key = channel.keyFor(selectors.get(netPackage.getSession().getConsumer()).getSelector());
-        synchronized (writableKeys) {
-            if (key.isValid() && !writableKeys.contains(key)) {
-                if (!writableKeys.offer(key)) {
-                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
-                }
-            }
-            writableKeys.notifyAll();
-        }
+        SelectorRunnable selectorRunnable = selectors.get(netPackage.getSession().getConsumer());
+        selectorRunnable.writeWakeup(channel, netPackage);
     }
 
     /**
@@ -536,94 +498,6 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * This class is a runnable that consume the readable keys queue and call the read method.
-     */
-    private class Reader implements Runnable {
-
-        @Override
-        public void run() {
-            while(!Thread.currentThread().isInterrupted()) {
-                SelectionKey key;
-                synchronized (readableKeys) {
-                    key = readableKeys.poll();
-                }
-                if (key != null) {
-                    try {
-                        NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
-                        SelectableChannel keyChannel = key.channel();
-                        if (keyChannel != null && key.channel().isOpen()) {
-                            synchronized (keyChannel) {
-                                try {
-                                    if (key.isValid()) {
-                                        read(keyChannel, consumer);
-                                    }
-                                } catch (Exception ex) {
-                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal read exception", ex);
-                                } finally {
-                                    ((ServiceThread) Thread.currentThread()).setSession(null);
-                                }
-                            }
-                        }
-                    } catch (Exception ex) {
-                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception, before to read process", ex);
-                    }
-                } else {
-                    try {
-                        synchronized (readableKeys) {
-                            readableKeys.wait();
-                        }
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * This class is a runnable that consume the writable keys queue and call the read method.
-     */
-    private class Writer implements Runnable {
-
-        @Override
-        public void run() {
-            while(!Thread.currentThread().isInterrupted()) {
-                SelectionKey key;
-                synchronized (writableKeys) {
-                    key = writableKeys.poll();
-                }
-                if (key != null) {
-                    try {
-                        NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
-                        SelectableChannel keyChannel = key.channel();
-                        if (keyChannel != null && key.channel().isOpen()) {
-                            synchronized (keyChannel) {
-                                try {
-                                    if (key.isValid()) {
-                                        write(keyChannel, consumer);
-                                    }
-                                } catch (Exception ex) {
-                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal write exception", ex);
-                                } finally {
-                                    ((ServiceThread) Thread.currentThread()).setSession(null);
-                                }
-                            }
-                        }
-                    } catch (Exception ex) {
-                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception, before to write process", ex);
-                    }
-                } else {
-                    try {
-                        synchronized (writableKeys) {
-                            writableKeys.wait();
-                        }
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * This runnable encapsulate all the components needing to the selection process.
      */
     private class SelectorRunnable implements Runnable {
@@ -633,6 +507,10 @@ public final class NetService extends Service<NetServiceConsumer> {
         private final Object monitor;
         private Boolean blocking;
         private Set<NetSession> sessions;
+        private final Queue<SelectionKey> readableKeys;
+        private final Queue<SelectionKey> writableKeys;
+        private final ThreadPoolExecutor readIoExecutor;
+        private final ThreadPoolExecutor writeIoExecutor;
 
         private SelectorRunnable(NetServiceConsumer consumer) {
             this.consumer = consumer;
@@ -644,6 +522,16 @@ public final class NetService extends Service<NetServiceConsumer> {
             } catch (IOException ex) {
                 throw new HCJFRuntimeException("Unable to create selector", ex);
             }
+
+            readableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+            writableKeys = new ArrayBlockingQueue<>(SystemProperties.getInteger(SystemProperties.Net.IO_QUEUE_SIZE));
+
+            readIoExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
+            readIoExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+            writeIoExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool(new NetIOThreadFactory());
+            writeIoExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
+            fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), readIoExecutor);
+            fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), writeIoExecutor);
         }
 
         /**
@@ -705,6 +593,20 @@ public final class NetService extends Service<NetServiceConsumer> {
             synchronized (monitor) {
                 channel.register(getSelector(), operation, attach);
                 wakeup();
+            }
+        }
+
+        private void writeWakeup(SelectableChannel channel, NetPackage netPackage) {
+            outputQueue.get(channel).add(netPackage);
+
+            SelectionKey key = channel.keyFor(getSelector());
+            synchronized (writableKeys) {
+                if (key.isValid() && !writableKeys.contains(key)) {
+                    if (!writableKeys.offer(key)) {
+                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
+                    }
+                }
+                writableKeys.notifyAll();
             }
         }
 
@@ -837,7 +739,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                             selectorCounter++;
                             if(selectorCounter > selectorCounterLimit) {
                                 selectorCounter = 0;
-                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector recreated!!!");
+                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Fixing selector loop");
                             }
                         }
                     } else {
@@ -911,7 +813,106 @@ public final class NetService extends Service<NetServiceConsumer> {
                 Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
             }
 
+
+            readIoExecutor.shutdownNow();
+            writeIoExecutor.shutdownNow();
             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector stopped");
+        }
+
+        /**
+         * This class is a runnable that consume the readable keys queue and call the read method.
+         */
+        private class Reader implements Runnable {
+
+            @Override
+            public void run() {
+                while(!Thread.currentThread().isInterrupted()) {
+                    SelectionKey key;
+                    synchronized (readableKeys) {
+                        key = readableKeys.poll();
+                    }
+                    if (key != null) {
+                        try {
+                            NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
+                            SelectableChannel keyChannel = key.channel();
+                            if (keyChannel != null && key.channel().isOpen()) {
+                                synchronized (keyChannel) {
+                                    try {
+                                        if (key.isValid()) {
+                                            read(keyChannel, consumer);
+                                        }
+                                    } catch (Exception ex) {
+                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal read exception", ex);
+                                    } finally {
+                                        ((ServiceThread) Thread.currentThread()).setSession(null);
+                                    }
+                                }
+                            }
+                        } catch (Exception ex) {
+                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception, before to read process", ex);
+                        }
+                    } else {
+                        try {
+                            if(readableKeys.isEmpty()) {
+                                synchronized (readableKeys) {
+                                    readableKeys.wait();
+                                }
+                            }
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                    }
+                }
+                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Reader finished");
+            }
+        }
+
+        /**
+         * This class is a runnable that consume the writable keys queue and call the read method.
+         */
+        private class Writer implements Runnable {
+
+            @Override
+            public void run() {
+                while(!Thread.currentThread().isInterrupted()) {
+                    SelectionKey key;
+                    synchronized (writableKeys) {
+                        key = writableKeys.poll();
+                    }
+                    if (key != null) {
+                        try {
+                            NetServiceConsumer consumer = (NetServiceConsumer) key.attachment();
+                            SelectableChannel keyChannel = key.channel();
+                            if (keyChannel != null && key.channel().isOpen()) {
+                                synchronized (keyChannel) {
+                                    try {
+                                        if (key.isValid()) {
+                                            write(keyChannel, consumer);
+                                        }
+                                    } catch (Exception ex) {
+                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal write exception", ex);
+                                    } finally {
+                                        ((ServiceThread) Thread.currentThread()).setSession(null);
+                                    }
+                                }
+                            }
+                        } catch (Exception ex) {
+                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Internal IO thread exception, before to write process", ex);
+                        }
+                    } else {
+                        try {
+                            if(writableKeys.isEmpty()) {
+                                synchronized (writableKeys) {
+                                    writableKeys.wait();
+                                }
+                            }
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                    }
+                }
+                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Writer finished");
+            }
         }
     }
 
@@ -1067,6 +1068,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     if (totalSize == -1) {
                         destroyChannel(channel);
                     } else if (totalSize > 0) {
+                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Total size read: %d", totalSize);
                         byte[] data = new byte[inputBuffer.position()];
                         inputBuffer.rewind();
                         inputBuffer.get(data);

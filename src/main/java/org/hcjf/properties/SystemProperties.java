@@ -147,7 +147,6 @@ public final class SystemProperties extends Properties {
         public static final String IO_QUEUE_SIZE = "hcjf.net.io.queue.size";
         public static final String IO_THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.io.thread.pool.keep.alive.time";
         public static final String IO_THREAD_POOL_NAME = "hcjf.net.io.thread.pool.name";
-        public static final String IO_THREAD_POOL_CORE_SIZE = "hcjf.net.io.thread.pool.core.size";
         public static final String DEFAULT_INPUT_BUFFER_SIZE = "hcjf.net.default.input.buffer.size";
         public static final String DEFAULT_OUTPUT_BUFFER_SIZE = "hcjf.net.default.output.buffer.size";
         public static final String IO_THREAD_DIRECT_ALLOCATE_MEMORY = "hcjf.net.io.thread.direct.allocate.memory";
@@ -586,10 +585,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.IO_UDP_LRU_SESSIONS_SIZE, "1000");
         defaults.put(Net.IO_QUEUE_SIZE, "1000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
-        defaults.put(Net.IO_THREAD_POOL_CORE_SIZE, "50");
         defaults.put(Net.IO_THREAD_POOL_NAME, "IoThreadPool");
-        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
-        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
+        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "204800");
+        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "204800");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
         defaults.put(Net.PORT_PROVIDER_TIME_WINDOWS_SIZE, "15000");
