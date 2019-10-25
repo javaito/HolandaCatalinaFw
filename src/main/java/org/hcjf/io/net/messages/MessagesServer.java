@@ -7,7 +7,6 @@ import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
-import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Cryptography;
 import org.hcjf.utils.bson.BsonParcelable;
@@ -36,6 +35,11 @@ public abstract class MessagesServer<S extends NetSession> extends NetServer<S, 
         super(port, protocol, multiSession, disconnectAndRemove);
         this.buffersBySession = new HashMap<>();
         this.cryptography = cryptography;
+        if(SystemProperties.getBoolean(SystemProperties.Net.Messages.SERVER_DECOUPLED_IO_ACTION)) {
+            decoupleIoAction(
+                    SystemProperties.getInteger(SystemProperties.Net.Messages.SERVER_IO_QUEUE_SIZE),
+                    SystemProperties.getInteger(SystemProperties.Net.Messages.SERVER_IO_WORKERS));
+        }
     }
 
     /**
@@ -109,12 +113,7 @@ public abstract class MessagesServer<S extends NetSession> extends NetServer<S, 
     protected final void onRead(S session, MessageBuffer payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
             for(Message message : payLoad.getMessages()) {
-                try {
-                    onRead(session, isEncrypted() ? decrypt((EncryptedMessage) message) : message);
-                } catch (ClassCastException ex) {
-                    Log.w(SystemProperties.get(SystemProperties.Net.Messages.LOG_TAG),
-                            "Incoming not encrypted message and the server has a cryptography policy");
-                }
+                addDecoupledAction(() -> onRead(session, isEncrypted() ? decrypt((EncryptedMessage) message) : message));
             }
         }
     }

@@ -645,7 +645,9 @@ public final class Strings {
                 trimmedStringValue = trimmedStringValue.substring(1, trimmedStringValue.length() - 1);
 
                 try {
-                    result = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).parse(trimmedStringValue);
+                    synchronized (SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)) {
+                        result = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).parse(trimmedStringValue);
+                    }
                 } catch (Exception ex) {
                     result = trimmedStringValue;
                 }
@@ -664,20 +666,26 @@ public final class Strings {
                 }
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
                 try {
-                    result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT).parse(trimmedStringValue);
+                    synchronized (SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT)) {
+                        result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT).parse(trimmedStringValue);
+                    }
                 } catch (ParseException e) {
                     result = trimmedStringValue;
                 }
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
                 try {
-                    result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT).parse(trimmedStringValue);
+                    synchronized (SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT)) {
+                        result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT).parse(trimmedStringValue);
+                    }
                 } catch (ParseException e) {
                     result = trimmedStringValue;
                 }
             } else {
                 try {
-                    //Verify again if the string is not a date
-                    result = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).parse(trimmedStringValue);
+                    synchronized (SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)) {
+                        //Verify again if the string is not a date
+                        result = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).parse(trimmedStringValue);
+                    }
                 } catch (Exception ex) {
                     result = trimmedStringValue;
                 }

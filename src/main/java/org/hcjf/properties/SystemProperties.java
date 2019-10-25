@@ -42,7 +42,6 @@ public final class SystemProperties extends Properties {
         public static final String DEFAULT_LOCALE = "hcjf.default.locale";
         public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION_CLASS_NAME = "hcjf.default.locale.layer.implementation.class.name";
         public static final String DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME = "hcjf.default.locale.layer.implementation.name";
-
     }
 
     public static final class Layer {
@@ -205,6 +204,9 @@ public final class SystemProperties extends Properties {
 
         public static final class Messages {
             public static final String LOG_TAG = "hcjf.net.messages.log.tag";
+            public static final String SERVER_DECOUPLED_IO_ACTION = "hcjf.net.messages.server.decoupled.io.action";
+            public static final String SERVER_IO_QUEUE_SIZE = "hcjf.net.messages.server.io.queue.size";
+            public static final String SERVER_IO_WORKERS = "hcjf.net.messages.server.io.workers";
         }
 
         public static final class Http {
@@ -227,6 +229,9 @@ public final class SystemProperties extends Properties {
             public static final String ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH = "hcjf.net.http.enable.automatic.response.content.length";
             public static final String AUTOMATIC_CONTENT_LENGTH_SKIP_CODES = "hcjf.net.http.automatic.content.length.skip.codes";
             public static final String MAX_PACKAGE_SIZE = "hcjf.net.http.max.package.size";
+            public static final String SERVER_DECOUPLED_IO_ACTION = "hcjf.net.http.server.decoupled.io.action";
+            public static final String SERVER_IO_QUEUE_SIZE = "hcjf.net.http.server.io.queue.size";
+            public static final String SERVER_IO_WORKERS = "hcjf.net.http.server.io.workers";
 
             public static final class Http2Settings {
                 public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.settings.header.table.size";
@@ -633,6 +638,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Ssl.ENGINE_THREAD_NAME, "SslEngineThread");
 
         defaults.put(Net.Messages.LOG_TAG, "MESSAGES");
+        defaults.put(Net.Messages.SERVER_DECOUPLED_IO_ACTION, "true");
+        defaults.put(Net.Messages.SERVER_IO_QUEUE_SIZE, "100000");
+        defaults.put(Net.Messages.SERVER_IO_WORKERS, "5");
 
         defaults.put(Net.Http.INPUT_LOG_ENABLED, "false");
         defaults.put(Net.Http.OUTPUT_LOG_ENABLED, "false");
@@ -653,6 +661,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH, "true");
         defaults.put(Net.Http.AUTOMATIC_CONTENT_LENGTH_SKIP_CODES, "[304]");
         defaults.put(Net.Http.MAX_PACKAGE_SIZE, Integer.toString(20 * 1024 * 1024));
+        defaults.put(Net.Http.SERVER_DECOUPLED_IO_ACTION, "true");
+        defaults.put(Net.Http.SERVER_IO_QUEUE_SIZE, "100000");
+        defaults.put(Net.Http.SERVER_IO_WORKERS, "5");
 
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");

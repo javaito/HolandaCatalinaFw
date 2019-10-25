@@ -1,14 +1,18 @@
 package org.hcjf.io.net;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
 import org.hcjf.service.ServiceConsumer;
+import org.hcjf.service.ServiceSession;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.SocketOption;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This consumer provide an interface for the net service.
@@ -23,14 +27,79 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     private final NetService.TransportLayerProtocol protocol;
     private NetService service;
     private long writeWaitForTimeout;
-    private final Map<S, Thread> waitForMap;
+    private Boolean decoupledIoAction;
+    private Queue<DecoupledAction> actionsQueue;
 
     public NetServiceConsumer(Integer port, NetService.TransportLayerProtocol protocol) {
         this.port = port;
         this.protocol = protocol;
         writeWaitForTimeout = SystemProperties.getLong(SystemProperties.Net.WRITE_TIMEOUT);
-        waitForMap = new HashMap<>();
         name = String.format(NAME_TEMPLATE, getClass().getName(), protocol.toString(), port);
+        decoupledIoAction = false;
+    }
+
+    public final Boolean isDecoupledIoAction() {
+        return decoupledIoAction;
+    }
+
+    /**
+     * This method activate the decoupled io actions.
+     * @param actionQueueSize Size of the actions queue.
+     * @param workersNumber Number of workers to execute the actions.
+     */
+    public final void decoupleIoAction(Integer actionQueueSize, Integer workersNumber) {
+
+        if(actionQueueSize <= 10) {
+            throw new HCJFRuntimeException("The actions queue size can't be smaller than 11 places");
+        }
+
+        if(workersNumber <= 0) {
+            throw new HCJFRuntimeException("The decoupled function must have at least one worker");
+        }
+
+        decoupledIoAction = true;
+        actionsQueue = new ArrayBlockingQueue<>(actionQueueSize);
+        for (int i = 0; i < workersNumber; i++) {
+            Service.run(() -> {
+                DecoupledAction decoupledAction;
+                while (!Thread.currentThread().isInterrupted()) {
+                    synchronized (actionsQueue) {
+                        decoupledAction = actionsQueue.poll();
+                    }
+
+                    if(decoupledAction != null) {
+                        try {
+                            decoupledAction.onAction();
+                        } catch (Throwable throwable) {
+                            Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Decoupled action error", throwable);
+                        }
+                    } else {
+                        try {
+                            synchronized (actionsQueue) {
+                                actionsQueue.wait();
+                            }
+                        } catch (Exception ex) {
+                            break;
+                        }
+                    }
+                }
+            }, ServiceSession.getSystemSession());
+        }
+    }
+
+    /**
+     * Add a new decoupled action into the queue.
+     * @param decoupledAction Decoupled action instance.
+     */
+    protected final void addDecoupledAction(DecoupledAction decoupledAction) {
+        if(isDecoupledIoAction()) {
+            synchronized (actionsQueue) {
+                actionsQueue.add(decoupledAction);
+                actionsQueue.notifyAll();
+            }
+        } else {
+            decoupledAction.onAction();
+        }
     }
 
     /**
@@ -326,4 +395,10 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
         return null;
     }
 
+    /**
+     * Interface to decoupled the read action.
+     */
+    public interface DecoupledAction {
+        void onAction();
+    }
 }

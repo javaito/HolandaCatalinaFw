@@ -47,6 +47,11 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         contexts = new ArrayList<>();
         accessControlMap = new HashMap<>();
         httpProtocol = sslProtocol ? HttpPackage.HttpProtocol.HTTPS : HttpPackage.HttpProtocol.HTTP;
+        if(SystemProperties.getBoolean(SystemProperties.Net.Http.SERVER_DECOUPLED_IO_ACTION)) {
+            decoupleIoAction(
+                    SystemProperties.getInteger(SystemProperties.Net.Http.SERVER_IO_QUEUE_SIZE),
+                    SystemProperties.getInteger(SystemProperties.Net.Http.SERVER_IO_WORKERS));
+        }
     }
 
     public static void create(Integer port, Context... contexts) {
@@ -233,154 +238,159 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
-
-            //Flag to pipe line.
-            boolean connectionKeepAlive = false;
-
             //Remove the http buffer because the payload is complete.
             requestBuffers.remove(session);
+            addDecoupledAction(() -> processRequest(session, (HttpRequest) payLoad));
+        }
+    }
 
-            //Value to calculate the request execution time
-            long time = System.currentTimeMillis();
+    /**
+     * Process the request object.
+     * @param session Http session instance.
+     * @param request Http request instance.
+     */
+    private void processRequest(HttpSession session, HttpRequest request) {
+        //Flag to pipe line.
+        boolean connectionKeepAlive = false;
 
-            HttpResponse response = null;
-            HttpRequest request = (HttpRequest) payLoad;
+        //Value to calculate the request execution time
+        long time = System.currentTimeMillis();
 
-            if(SystemProperties.getBoolean(SystemProperties.Net.Http.INPUT_LOG_ENABLED)) {
-                Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
-            }
-            try {
-                if(netPackage.getSession().isChecked()) {
-                    HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
-                    if(upgrade != null) {
-                        HttpHeader connection = request.getHeader(HttpHeader.CONNECTION);
-                        HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
+        HttpResponse response = null;
+        if(SystemProperties.getBoolean(SystemProperties.Net.Http.INPUT_LOG_ENABLED)) {
+            Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
+        }
+        try {
+            if(session.isChecked()) {
+                HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
+                if(upgrade != null) {
+                    HttpHeader connection = request.getHeader(HttpHeader.CONNECTION);
+                    HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
 
-                        if(upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
-                            session.setStream(new Stream(new StreamSettings()));
-                            response = new HttpResponse();
-                            response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
-                            response.addHeader(upgrade);
-                        } else {
-                            throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
-                        }
+                    if(upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
+                        session.setStream(new Stream(new StreamSettings()));
+                        response = new HttpResponse();
+                        response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
+                        response.addHeader(upgrade);
                     } else {
-                        ContextMatcher contextMatcher = findContext(request.getContext());
-                        if (contextMatcher != null) {
-                            Context context = contextMatcher.getContext();
-                            HttpHeader originHeader = request.getHeader(HttpHeader.ORIGIN);
-                            try {
-                                request.setMatcher(contextMatcher.getMatcher());
-                                Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
-                                if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
-                                    URL url = new URL(originHeader.getHeaderValue());
-                                    response = new HttpResponse();
-                                    if (accessControlMap.containsKey(url.getHost())) {
-                                        AccessControl accessControl = accessControlMap.get(url.getHost());
-                                        response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.maxAge.toString()));
-                                        if (!accessControl.getAllowMethods().isEmpty()) {
-                                            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
-                                                    Strings.join(accessControl.getAllowMethods(), Strings.ARGUMENT_SEPARATOR)));
-                                        }
-                                        if (!accessControl.getAllowHeaders().isEmpty()) {
-                                            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS,
-                                                    Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
-                                        }
-                                    }
-                                } else {
-                                    if (context.getTimeout() > 0) {
-                                        response = Service.call(() -> context.onContext(request),
-                                                ServiceSession.getCurrentIdentity(), context.getTimeout());
-                                    } else {
-                                        response = context.onContext(request);
-                                    }
-                                    if(originHeader != null){
-                                        URL url = new URL(originHeader.getHeaderValue());
-                                        if (accessControlMap.containsKey(url.getHost())) {
-                                            AccessControl accessControl = accessControlMap.get(url.getHost());
-                                            if (!accessControl.getExposeHeaders().isEmpty()) {
-                                                response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
-                                                        Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
-                                            }
-                                        }
-                                    }
-                                }
-                                if (request.containsHeader(HttpHeader.CONNECTION)) {
-                                    if (request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
-                                        Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
-                                        connectionKeepAlive = true;
-                                    }
-                                }
-                            } catch (Throwable throwable) {
-                                Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
-                                response = context.onError(request, throwable);
-                                if (response == null) {
-                                    response = createDefaultErrorResponse(throwable);
-                                }
-                            }
-                        } else {
-                            response = onContextNotFound(request);
-                        }
-
-                        if (response == null) {
-                            response = onUnresponsiveContext(request);
-                        }
-
-                        response.addHeader(new HttpHeader(HttpHeader.DATE,
-                                SystemProperties.getDateFormat(
-                                        SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
-                        response.addHeader(new HttpHeader(HttpHeader.SERVER,
-                                SystemProperties.get(SystemProperties.Net.Http.SERVER_NAME)));
+                        throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
                     }
                 } else {
-                    response = onNotCheckedSession(request);
-                }
-            } catch (Throwable throwable) {
-                response = createDefaultErrorResponse(throwable);
-            }
-
-            response = addOriginHeader(request, response);
-
-            try {
-                response.setProtocol(httpProtocol);
-                if(isContentLengthRequired(response)) {
-                    Integer length = response.getBody() == null ? 0 : response.getBody().length;
-                    response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, length.toString()));
-                }
-
-                if(response instanceof HttpPipelineResponse) {
-                    connectionKeepAlive = true;
-                    final HttpResponse finalResponse = response;
-                    Service.run(() -> {
-                        HttpPipelineResponse pipelineResponse = (HttpPipelineResponse) finalResponse;
-                        pipelineResponse.onStart();
-                        while(pipelineResponse.read() >= 0) {
-                            try {
-                                write(session, finalResponse, false);
-                            } catch (IOException e) {
-                                Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", e);
-                                break;
+                    ContextMatcher contextMatcher = findContext(request.getContext());
+                    if (contextMatcher != null) {
+                        Context context = contextMatcher.getContext();
+                        HttpHeader originHeader = request.getHeader(HttpHeader.ORIGIN);
+                        try {
+                            request.setMatcher(contextMatcher.getMatcher());
+                            Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
+                            if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
+                                URL url = new URL(originHeader.getHeaderValue());
+                                response = new HttpResponse();
+                                if (accessControlMap.containsKey(url.getHost())) {
+                                    AccessControl accessControl = accessControlMap.get(url.getHost());
+                                    response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.maxAge.toString()));
+                                    if (!accessControl.getAllowMethods().isEmpty()) {
+                                        response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
+                                                Strings.join(accessControl.getAllowMethods(), Strings.ARGUMENT_SEPARATOR)));
+                                    }
+                                    if (!accessControl.getAllowHeaders().isEmpty()) {
+                                        response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS,
+                                                Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
+                                    }
+                                }
+                            } else {
+                                if (context.getTimeout() > 0) {
+                                    response = Service.call(() -> context.onContext(request),
+                                            ServiceSession.getCurrentIdentity(), context.getTimeout());
+                                } else {
+                                    response = context.onContext(request);
+                                }
+                                if(originHeader != null){
+                                    URL url = new URL(originHeader.getHeaderValue());
+                                    if (accessControlMap.containsKey(url.getHost())) {
+                                        AccessControl accessControl = accessControlMap.get(url.getHost());
+                                        if (!accessControl.getExposeHeaders().isEmpty()) {
+                                            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
+                                                    Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
+                                        }
+                                    }
+                                }
+                            }
+                            if (request.containsHeader(HttpHeader.CONNECTION)) {
+                                if (request.getHeader(HttpHeader.CONNECTION).getHeaderValue().equalsIgnoreCase(HttpHeader.KEEP_ALIVE)) {
+                                    Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection keep alive");
+                                    connectionKeepAlive = true;
+                                }
+                            }
+                        } catch (Throwable throwable) {
+                            Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Exception on context %s", throwable, context.getContextRegex());
+                            response = context.onError(request, throwable);
+                            if (response == null) {
+                                response = createDefaultErrorResponse(throwable);
                             }
                         }
-                        pipelineResponse.onEnd();
-                        disconnect(session, "Http request end.");
-                    }, ServiceSession.getCurrentIdentity());
-                } else {
-                    write(session, response, false);
-                }
+                    } else {
+                        response = onContextNotFound(request);
+                    }
 
-                if(SystemProperties.getBoolean(SystemProperties.Net.Http.OUTPUT_LOG_ENABLED)) {
-                    Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
-                            (System.currentTimeMillis() - time), response.toString());
+                    if (response == null) {
+                        response = onUnresponsiveContext(request);
+                    }
+
+                    response.addHeader(new HttpHeader(HttpHeader.DATE,
+                            SystemProperties.getDateFormat(
+                                    SystemProperties.Net.Http.RESPONSE_DATE_HEADER_FORMAT_VALUE).format(new Date())));
+                    response.addHeader(new HttpHeader(HttpHeader.SERVER,
+                            SystemProperties.get(SystemProperties.Net.Http.SERVER_NAME)));
                 }
-            } catch (Throwable throwable) {
-                Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
-                connectionKeepAlive = false;
-            } finally {
-                if(!connectionKeepAlive) {
+            } else {
+                response = onNotCheckedSession(request);
+            }
+        } catch (Throwable throwable) {
+            response = createDefaultErrorResponse(throwable);
+        }
+
+        response = addOriginHeader(request, response);
+
+        try {
+            response.setProtocol(httpProtocol);
+            if(isContentLengthRequired(response)) {
+                Integer length = response.getBody() == null ? 0 : response.getBody().length;
+                response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, length.toString()));
+            }
+
+            if(response instanceof HttpPipelineResponse) {
+                connectionKeepAlive = true;
+                final HttpResponse finalResponse = response;
+                Service.run(() -> {
+                    HttpPipelineResponse pipelineResponse = (HttpPipelineResponse) finalResponse;
+                    pipelineResponse.onStart();
+                    while(pipelineResponse.read() >= 0) {
+                        try {
+                            write(session, finalResponse, false);
+                        } catch (IOException e) {
+                            Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", e);
+                            break;
+                        }
+                    }
+                    pipelineResponse.onEnd();
                     disconnect(session, "Http request end.");
-                    Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
-                }
+                }, ServiceSession.getCurrentIdentity());
+            } else {
+                write(session, response, false);
+            }
+
+            if(SystemProperties.getBoolean(SystemProperties.Net.Http.OUTPUT_LOG_ENABLED)) {
+                Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
+                        (System.currentTimeMillis() - time), response.toString());
+            }
+        } catch (Throwable throwable) {
+            Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
+            connectionKeepAlive = false;
+        } finally {
+            if(!connectionKeepAlive) {
+                disconnect(session, "Http request end.");
+                Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
             }
         }
     }
