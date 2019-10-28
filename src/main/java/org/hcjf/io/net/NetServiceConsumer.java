@@ -69,7 +69,9 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
 
                     if(decoupledAction != null) {
                         try {
+                            ServiceSession.getCurrentSession().addIdentity(decoupledAction.getServiceSession());
                             decoupledAction.onAction();
+                            ServiceSession.getCurrentSession().removeIdentity();
                         } catch (Throwable throwable) {
                             Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Decoupled action error", throwable);
                         }
@@ -398,7 +400,18 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
     /**
      * Interface to decoupled the read action.
      */
-    public interface DecoupledAction {
-        void onAction();
+    public static abstract class DecoupledAction {
+
+        public final ServiceSession serviceSession;
+
+        public DecoupledAction(ServiceSession serviceSession) {
+            this.serviceSession = serviceSession;
+        }
+
+        public ServiceSession getServiceSession() {
+            return serviceSession;
+        }
+
+        public abstract void onAction();
     }
 }

@@ -113,7 +113,12 @@ public abstract class MessagesServer<S extends NetSession> extends NetServer<S, 
     protected final void onRead(S session, MessageBuffer payLoad, NetPackage netPackage) {
         if(payLoad.isComplete()) {
             for(Message message : payLoad.getMessages()) {
-                addDecoupledAction(() -> onRead(session, isEncrypted() ? decrypt((EncryptedMessage) message) : message));
+                addDecoupledAction(new DecoupledAction(session) {
+                    @Override
+                    public void onAction() {
+                        onRead(session, isEncrypted() ? decrypt((EncryptedMessage) message) : message);
+                    }
+                });
             }
         }
     }

@@ -240,7 +240,12 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         if(payLoad.isComplete()) {
             //Remove the http buffer because the payload is complete.
             requestBuffers.remove(session);
-            addDecoupledAction(() -> processRequest(session, (HttpRequest) payLoad));
+            addDecoupledAction(new DecoupledAction(session) {
+                @Override
+                public void onAction() {
+                    processRequest(session, (HttpRequest) payLoad);
+                }
+            });
         }
     }
 
@@ -257,17 +262,17 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         long time = System.currentTimeMillis();
 
         HttpResponse response = null;
-        if(SystemProperties.getBoolean(SystemProperties.Net.Http.INPUT_LOG_ENABLED)) {
+        if (SystemProperties.getBoolean(SystemProperties.Net.Http.INPUT_LOG_ENABLED)) {
             Log.in(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request\r\n%s", request.toString());
         }
         try {
-            if(session.isChecked()) {
+            if (session.isChecked()) {
                 HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
-                if(upgrade != null) {
+                if (upgrade != null) {
                     HttpHeader connection = request.getHeader(HttpHeader.CONNECTION);
                     HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
 
-                    if(upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
+                    if (upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
                         session.setStream(new Stream(new StreamSettings()));
                         response = new HttpResponse();
                         response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
@@ -305,7 +310,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                 } else {
                                     response = context.onContext(request);
                                 }
-                                if(originHeader != null){
+                                if (originHeader != null) {
                                     URL url = new URL(originHeader.getHeaderValue());
                                     if (accessControlMap.containsKey(url.getHost())) {
                                         AccessControl accessControl = accessControlMap.get(url.getHost());
@@ -354,18 +359,18 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
         try {
             response.setProtocol(httpProtocol);
-            if(isContentLengthRequired(response)) {
+            if (isContentLengthRequired(response)) {
                 Integer length = response.getBody() == null ? 0 : response.getBody().length;
                 response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, length.toString()));
             }
 
-            if(response instanceof HttpPipelineResponse) {
+            if (response instanceof HttpPipelineResponse) {
                 connectionKeepAlive = true;
                 final HttpResponse finalResponse = response;
                 Service.run(() -> {
                     HttpPipelineResponse pipelineResponse = (HttpPipelineResponse) finalResponse;
                     pipelineResponse.onStart();
-                    while(pipelineResponse.read() >= 0) {
+                    while (pipelineResponse.read() >= 0) {
                         try {
                             write(session, finalResponse, false);
                         } catch (IOException e) {
@@ -380,7 +385,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 write(session, response, false);
             }
 
-            if(SystemProperties.getBoolean(SystemProperties.Net.Http.OUTPUT_LOG_ENABLED)) {
+            if (SystemProperties.getBoolean(SystemProperties.Net.Http.OUTPUT_LOG_ENABLED)) {
                 Log.out(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Response -> [Time: %d ms] \r\n%s",
                         (System.currentTimeMillis() - time), response.toString());
             }
@@ -388,7 +393,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
             connectionKeepAlive = false;
         } finally {
-            if(!connectionKeepAlive) {
+            if (!connectionKeepAlive) {
                 disconnect(session, "Http request end.");
                 Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
             }

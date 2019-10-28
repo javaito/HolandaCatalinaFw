@@ -367,6 +367,10 @@ public class QueryRunningTest {
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonAddresses.size() - 1);
 
+        query = Query.compile("SELECT name, count(character.name), address.street, concat(name), stringJoin('@', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonAddresses.size() - 1);
+
         query = Query.compile("SELECT * FROM character RIGHT JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());

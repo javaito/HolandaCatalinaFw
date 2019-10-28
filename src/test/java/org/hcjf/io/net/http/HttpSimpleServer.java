@@ -12,12 +12,12 @@ public class HttpSimpleServer {
             }
         });
 
-        HttpServer.create(8080, new Context(".*") {
-            @Override
-            public HttpResponse onContext(HttpRequest httpRequest) {
-                return response;
-            }
-        });
+//        HttpServer.create(8080, new Context(".*") {
+//            @Override
+//            public HttpResponse onContext(HttpRequest httpRequest) {
+//                return response;
+//            }
+//        });
     }
 
 }
