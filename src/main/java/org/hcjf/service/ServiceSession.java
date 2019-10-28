@@ -147,12 +147,8 @@ public class ServiceSession implements Comparable {
     public final Map<String, Object> getProperties() {
         Map<String, Object> result = null;
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            if (properties.containsKey(Thread.currentThread().getId())) {
-                result = Collections.unmodifiableMap(properties.get(Thread.currentThread().getId()));
-            }
-        } else {
-            result = ServiceSession.getCurrentSession().getProperties();
+        if (ServiceSession.getCurrentSession().properties.containsKey(Thread.currentThread().getId())) {
+            result = Collections.unmodifiableMap(ServiceSession.getCurrentSession().properties.get(Thread.currentThread().getId()));
         }
         return result;
     }
@@ -163,11 +159,7 @@ public class ServiceSession implements Comparable {
      */
     public final void putAll(Map<String, Object> properties) {
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            this.properties.get(Thread.currentThread().getId()).putAll(properties);
-        } else {
-            ServiceSession.getCurrentSession().putAll(properties);
-        }
+        ServiceSession.getCurrentSession().properties.get(Thread.currentThread().getId()).putAll(properties);
     }
 
     /**
@@ -177,11 +169,7 @@ public class ServiceSession implements Comparable {
      */
     public final void put(String propertyName, Object propertyValue) {
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
-        } else {
-            ServiceSession.getCurrentSession().put(propertyName, propertyValue);
-        }
+        ServiceSession.getCurrentSession().properties.get(Thread.currentThread().getId()).put(propertyName, propertyValue);
     }
 
     /**
@@ -191,14 +179,8 @@ public class ServiceSession implements Comparable {
      * @return Session value.
      */
     public final <O extends Object> O get(String propertyName) {
-        O result;
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            result = (O) properties.get(Thread.currentThread().getId()).get(propertyName);
-        } else {
-            result = ServiceSession.getCurrentSession().get(propertyName);
-        }
-        return result;
+        return (O)ServiceSession.getCurrentSession().properties.get(Thread.currentThread().getId()).get(propertyName);
     }
 
     /**
@@ -208,14 +190,7 @@ public class ServiceSession implements Comparable {
      * @return Session value removed.
      */
     public final <O extends Object> O remove(String propertyName) {
-        O result;
-        //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            return (O) properties.get(Thread.currentThread().getId()).remove(propertyName);
-        } else {
-            result = ServiceSession.getCurrentSession().remove(propertyName);
-        }
-        return result;
+        return (O)ServiceSession.getCurrentSession().properties.remove(propertyName);
     }
 
     /**
@@ -224,11 +199,7 @@ public class ServiceSession implements Comparable {
      */
     public final void putLayer(LayerStackElement element) {
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            layerStack.get(Thread.currentThread().getId()).add(0, element);
-        } else {
-            ServiceSession.getCurrentSession().putLayer(element);
-        }
+        ServiceSession.getCurrentSession().layerStack.get(Thread.currentThread().getId()).add(0, element);
     }
 
     /**
@@ -236,11 +207,7 @@ public class ServiceSession implements Comparable {
      */
     public final void removeLayer() {
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            layerStack.get(Thread.currentThread().getId()).remove(0);
-        } else {
-            ServiceSession.getCurrentSession().removeLayer();
-        }
+        ServiceSession.getCurrentSession().layerStack.get(Thread.currentThread().getId()).remove(0);
     }
 
     /**
@@ -248,14 +215,9 @@ public class ServiceSession implements Comparable {
      * @return Layer stack.
      */
     public final Collection<LayerStackElement> getLayerStack() {
-        Collection<LayerStackElement> result;
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            result = Collections.unmodifiableCollection(layerStack.get(Thread.currentThread().getId()));
-        } else {
-            result = ServiceSession.getCurrentSession().getLayerStack();
-        }
-        return result;
+
+        return Collections.unmodifiableCollection(ServiceSession.getCurrentSession().layerStack.get(Thread.currentThread().getId()));
     }
 
     /**
@@ -265,13 +227,9 @@ public class ServiceSession implements Comparable {
     public final LayerStackElement getCurrentLayer() {
         LayerStackElement result = null;
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            if (layerStack.containsKey(Thread.currentThread().getId()) &&
-                    layerStack.get(Thread.currentThread().getId()).size() > 0) {
-                result = layerStack.get(Thread.currentThread().getId()).get(0);
-            }
-        } else {
-            result = ServiceSession.getCurrentSession().getCurrentLayer();
+        if (ServiceSession.getCurrentSession().layerStack.containsKey(Thread.currentThread().getId()) &&
+                ServiceSession.getCurrentSession().layerStack.get(Thread.currentThread().getId()).size() > 0) {
+            result = ServiceSession.getCurrentSession().layerStack.get(Thread.currentThread().getId()).get(0);
         }
         return result;
     }
@@ -283,12 +241,8 @@ public class ServiceSession implements Comparable {
     public final LayerStackElement getInvokerLayer() {
         LayerStackElement result = null;
         //Verify if this instance is a current session of is a identity
-        if(ServiceSession.getCurrentSession().equals(this)) {
-            if (layerStack.get(Thread.currentThread().getId()).size() > 1) {
-                result = layerStack.get(Thread.currentThread().getId()).get(1);
-            }
-        } else {
-            result = ServiceSession.getCurrentSession().getInvokerLayer();
+        if (ServiceSession.getCurrentSession().layerStack.get(Thread.currentThread().getId()).size() > 1) {
+            result = ServiceSession.getCurrentSession().layerStack.get(Thread.currentThread().getId()).get(1);
         }
         return result;
     }
