@@ -69,7 +69,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
 
                     if(decoupledAction != null) {
                         try {
-                            ServiceSession.getCurrentSession().addIdentity(decoupledAction.getServiceSession());
+                            ServiceSession.getCurrentSession().addIdentity(decoupledAction.getServiceSession().currentIdentity());
                             decoupledAction.onAction();
                             ServiceSession.getCurrentSession().removeIdentity();
                         } catch (Throwable throwable) {
