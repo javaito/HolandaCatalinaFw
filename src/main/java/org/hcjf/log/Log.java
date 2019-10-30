@@ -365,9 +365,7 @@ public final class Log extends Service<LogPrinter> {
          * @param record Record to print.
          */
         private void writeRecord(LogRecord record) {
-            ServiceSession serviceSession = ServiceSession.getCurrentIdentity();
-            serviceSession.addIdentity(record.getCurrentSession());
-            try {
+            ServiceSession.runAs(() -> {
                 if (record.getGroup().getOrder() >= SystemProperties.getInteger(SystemProperties.Log.LEVEL)) {
                     printers.forEach(printer -> printer.print(record));
 
@@ -392,9 +390,7 @@ public final class Log extends Service<LogPrinter> {
                         }
                     }
                 }
-            } finally {
-                serviceSession.removeIdentity();
-            }
+            }, record.getCurrentSession());
         }
     }
 

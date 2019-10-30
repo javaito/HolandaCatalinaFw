@@ -1196,7 +1196,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                     writtenData += ((SocketChannel) channel).write(ioThread.getOutputBuffer());
                                                 }
                                             } else if (channel instanceof DatagramChannel) {
-                                                    SocketAddress address = addresses.get(netPackage.getSession());
+                                                SocketAddress address = addresses.get(netPackage.getSession());
                                                 if (sessionsByAddress.get(address).equals(netPackage.getSession())) {
                                                     ((DatagramChannel) channel).send(ioThread.getOutputBuffer(), address);
                                                 }
@@ -1424,12 +1424,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         private final ByteBuffer destUnwrap;
 
         private SSLHelper.SSLHelperStatus status;
-
-        private final Object writeSemaphore;
-        private final Object readSemaphore;
-        private ByteBuffer decryptedPlace;
-        private boolean read;
-        private boolean written;
+        private ByteArrayOutputStream decryptedPlace;
 
         /**
          * SSL Helper default constructor.
@@ -1456,10 +1451,6 @@ public final class NetService extends Service<NetServiceConsumer> {
             //SSL Helper first status
             status = SSLHelper.SSLHelperStatus.WAITING;
 
-            //IO Semaphores
-            readSemaphore = new Object();
-            writeSemaphore = new Object();
-
             ioName = String.format(IO_NAME_TEMPLATE, consumer.getName());
             engineName = String.format(ENGINE_NAME_TEMPLATE, consumer.getName());
 
@@ -1476,11 +1467,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             byte[] decryptedArray = new byte[decrypted.limit()];
             decrypted.get(decryptedArray);
             if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
-                synchronized (readSemaphore) {
-                    read = true;
-                    decryptedPlace = ByteBuffer.wrap(decryptedArray);
-                    readSemaphore.notifyAll();
-                }
+                decryptedPlace.writeBytes(decryptedArray);
             }
         }
 
@@ -1498,12 +1485,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
             } catch (IOException ex) {
                 throw new RuntimeException("", ex);
-            }
-            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
-                synchronized (writeSemaphore) {
-                    written = true;
-                    writeSemaphore.notifyAll();
-                }
             }
         }
 
@@ -1556,25 +1537,15 @@ public final class NetService extends Service<NetServiceConsumer> {
          * @return Net package.
          */
         public synchronized NetPackage write(NetPackage netPackage) {
-            instance.fork(() -> {
-                srcWrap.put(netPackage.getPayload());
-                SSLHelper.this.run();
-            }, ioName, ioExecutor);
-
+            srcWrap.put(netPackage.getPayload());
+            SSLHelper.this.run();
             DefaultNetPackage defaultNetPackage = null;
             if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
-                synchronized (writeSemaphore) {
-                    try {
-                        if (!written) {
-                            readSemaphore.wait();
-                            defaultNetPackage = new DefaultNetPackage("", "",
-                                    0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.READ);
-                            defaultNetPackage.setSession(netPackage.getSession());
-                        }
-                    } catch (Exception ex) {
-                    } finally {
-                        written = false;
-                    }
+                try {
+                    defaultNetPackage = new DefaultNetPackage("", "",
+                            0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.WRITE);
+                    defaultNetPackage.setSession(netPackage.getSession());
+                } catch (Exception ex) {
                 }
             }
 
@@ -1588,28 +1559,28 @@ public final class NetService extends Service<NetServiceConsumer> {
          * @return Input data.
          */
         public synchronized NetPackage read(NetPackage netPackage) {
-            instance.fork(() -> {
-                srcUnwrap.put(netPackage.getPayload());
-                SSLHelper.this.run();
-            }, ioName, ioExecutor);
+            decryptedPlace = new ByteArrayOutputStream();
+            srcUnwrap.put(netPackage.getPayload());
+            SSLHelper.this.run();
 
-            DefaultNetPackage defaultNetPackage = null;
+            byte[] arrayResult = new byte[0];
             if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
-                synchronized (readSemaphore) {
+                try {
+                    arrayResult = decryptedPlace.toByteArray();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    decryptedPlace.reset();
                     try {
-                        if (!read) {
-                            readSemaphore.wait();
-                        }
-                        defaultNetPackage = new DefaultNetPackage("", "",
-                                0, consumer.getPort(), decryptedPlace.array(), NetPackage.ActionEvent.READ);
-                        defaultNetPackage.setSession(netPackage.getSession());
-                    } catch (InterruptedException e) {
-                    } finally {
-                        read = false;
-                    }
+                        decryptedPlace.close();
+                    } catch (IOException e) { }
+                    decryptedPlace = null;
                 }
             }
 
+            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
+                    0, consumer.getPort(), arrayResult, NetPackage.ActionEvent.READ);
+            defaultNetPackage.setSession(netPackage.getSession());
             return defaultNetPackage;
         }
 

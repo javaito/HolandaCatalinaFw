@@ -38,6 +38,14 @@ public class HttpsServer extends HttpServer {
         sslProtocol = SystemProperties.get(SystemProperties.Net.Ssl.DEFAULT_PROTOCOL);
     }
 
+    public static void create(Integer port, Context... contexts) {
+        HttpsServer server = new HttpsServer(port);
+        for(Context context : contexts) {
+            server.addContext(context);
+        }
+        server.start();
+    }
+
     /**
      * Creates the SSL engine.
      * @return SSL engine instance.

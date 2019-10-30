@@ -1,5 +1,6 @@
 package org.hcjf.service;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.security.Grants;
@@ -7,6 +8,7 @@ import org.hcjf.service.security.Grants;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.*;
+import java.util.concurrent.Callable;
 
 /**
  * This class must be implemented for all implementation
@@ -49,19 +51,63 @@ public class ServiceSession implements Comparable {
     }
 
     /**
+     * Run the runnable instance in the same thread but in the scope of other identity, when the runnable code ends
+     * the identity is removed automatically no matter how it's finished.
+     * @param runnable Runnable instance.
+     * @param newIdentity Identity to run the runnable code.
+     */
+    public static void runAs(Runnable runnable, ServiceSession newIdentity) {
+        boolean addIdentity = ServiceSession.getCurrentSession().addIdentity(newIdentity);
+        try {
+            runnable.run();
+        } finally {
+            if(addIdentity) {
+                ServiceSession.getCurrentSession().removeIdentity();
+            }
+        }
+    }
+
+    /**
+     * Run the callable instance in the same thread but in the scope of other identity, when the callable code ends
+     * the identity is removed automatically no matter how it's finished.
+     * @param callable Callable instance.
+     * @param newIdentity Identity to run the callable.
+     * @param <O> Expected return type.
+     * @return Returns the same value of the callable instance.
+     */
+    public static <O extends Object> O callAs(Callable<O> callable, ServiceSession newIdentity) {
+        boolean addIdentity = ServiceSession.getCurrentSession().addIdentity(newIdentity);
+        try {
+            return callable.call();
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("Call as exception", ex);
+        } finally {
+            if(addIdentity) {
+                ServiceSession.getCurrentSession().removeIdentity();
+            }
+        }
+    }
+
+    /**
      * Add a new identity to the service session.
      * @param serviceSession New identity.
+     * @return Return true if the new identity was added and false in the otherwise.
      */
-    public final void addIdentity(ServiceSession serviceSession) {
+    private final boolean addIdentity(ServiceSession serviceSession) {
+        boolean result = false;
         if(serviceSession != null) {
-            identities.add(0, serviceSession);
+            if(!serviceSession.equals(getCurrentIdentity())) {
+                identities.add(0, serviceSession);
+                return true;
+            }
         }
+        return result;
     }
 
     /**
      * Remove the last added identity to the session.
      */
-    public final void removeIdentity() {
+    private final void removeIdentity() {
         synchronized (identities) {
             if (!identities.isEmpty()) {
                 identities.remove(0);
@@ -492,7 +538,19 @@ public class ServiceSession implements Comparable {
      * @return Serializable instance.
      */
     public Map<String,Object> getBody() {
-        return Map.of();
+        Map<String,Object> result = Map.of();
+        Boolean next = false;
+        for(ServiceSession serviceSession : getCurrentSession().identities) {
+            if(next) {
+                result = serviceSession.getBody();
+                break;
+            } else {
+                if (serviceSession.equals(this)) {
+                    next = true;
+                }
+            }
+        }
+        return result;
     }
 
     public static final class LayerStackElement {

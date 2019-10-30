@@ -78,23 +78,15 @@ public abstract class ConsoleServer extends MessagesServer<ConsoleSession> {
                 responseMessage.setValue(sessionMetadata);
             } else if (message instanceof EvaluateQueryableMessage) {
                 ServiceSession serviceSession = ServiceSession.findSession(message.getSessionId());
-                try {
-                    ServiceSession.getCurrentIdentity().addIdentity(serviceSession);
-                    responseMessage.setValue(evaluate(((EvaluateQueryableMessage) message).getQueryable()));
-                } finally {
-                    ServiceSession.getCurrentIdentity().removeIdentity();
-                }
+                ServiceSession.runAs(() -> responseMessage.setValue(evaluate(((EvaluateQueryableMessage) message).getQueryable())), serviceSession);
             } else if (message instanceof ExecuteMessage) {
                 ServiceSession serviceSession = ServiceSession.findSession(message.getSessionId());
-                try {
-                    ServiceSession.getCurrentIdentity().addIdentity(serviceSession);
+                ServiceSession.runAs(() -> {
                     ConsoleCommandLayerInterface consoleCommandLayerInterface = Layers.get(
                             ConsoleCommandLayerInterface.class,
                             ((ExecuteMessage) message).getCommandName());
                     responseMessage.setValue(consoleCommandLayerInterface.execute(((ExecuteMessage) message).getParameters()));
-                } finally {
-                    ServiceSession.getCurrentIdentity().removeIdentity();
-                }
+                }, serviceSession);
             }
         } catch (Exception ex) {
             responseMessage.setThrowable(ex);

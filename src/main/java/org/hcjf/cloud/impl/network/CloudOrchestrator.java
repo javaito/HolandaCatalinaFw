@@ -1079,12 +1079,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(invokers.size() == 1) {
             LayerInterface layer = Layers.get(layerInterface, distributedLayer.getLayerName());
             try {
+                ServiceSession newIdentity;
                 if(sessionBean != null && !sessionBean.isEmpty()) {
-                    ServiceSession.getCurrentSession().addIdentity(ServiceSession.findSession(sessionBean));
+                    newIdentity = ServiceSession.findSession(sessionBean);
                 } else {
-                    ServiceSession.getCurrentSession().addIdentity(ServiceSession.findSession(sessionId));
+                    newIdentity = ServiceSession.findSession(sessionId);
                 }
-                result = invokers.values().iterator().next().invoke(layer, parameters);
+                result = ServiceSession.callAs(() -> invokers.values().iterator().next().invoke(layer, parameters), newIdentity);
             } catch (Exception ex) {
                 throw new HCJFRuntimeException("Remote method invocation fail, %s", ex, methodName);
             }
