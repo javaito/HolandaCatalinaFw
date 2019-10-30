@@ -89,14 +89,6 @@ public class ServiceSession implements Comparable {
     }
 
     /**
-     * Change the identity of the session. In this case the new identity is not removable.
-     * @param newIdentity New identity instance.
-     */
-    public static void changeIdentity(ServiceSession newIdentity) {
-        ServiceSession.getCurrentSession().addIdentity(newIdentity);
-    }
-
-    /**
      * Add a new identity to the service session.
      * @param serviceSession New identity.
      * @return Return true if the new identity was added and false in the otherwise.
