@@ -742,8 +742,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
                                         "Recreating selector for %s consumer",
                                         consumer instanceof NetServer ? "server" : "client");
-                                createSelector();
+                                if(SystemProperties.getBoolean(SystemProperties.Net.RECREATE_SELECTOR)) {
+                                    createSelector();
+                                }
                             }
+                        } else {
+                            selectorCounter = 0;
                         }
                     } else {
                         selectorCounter = 0;
