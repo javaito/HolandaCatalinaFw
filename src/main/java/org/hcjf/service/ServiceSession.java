@@ -538,17 +538,29 @@ public class ServiceSession implements Comparable {
      * @return Serializable instance.
      */
     public Map<String,Object> getBody() {
-        Map<String,Object> result = Map.of();
+        Map<String,Object> result = null;
         Boolean next = false;
-        for(ServiceSession serviceSession : getCurrentSession().identities) {
-            if(next) {
-                result = serviceSession.getBody();
-                break;
-            } else {
-                if (serviceSession.equals(this)) {
-                    next = true;
+        //If the current session is this instance then the body must be empty.
+        if(!getCurrentSession().equals(this)) {
+            for (ServiceSession serviceSession : getCurrentSession().identities) {
+                if (next) {
+                    result = serviceSession.getBody();
+                    break;
+                } else {
+                    //Identify into the current stack in which place is the current instance in order to call the same
+                    // method in the next instance
+                    if (serviceSession.equals(this)) {
+                        next = true;
+                    }
                 }
             }
+            //If the result still null is because the current instance is the last identity, then it's call the same
+            //method into the current session to verify if the body is present into the current session.
+            if(result == null) {
+                result = getCurrentSession().getBody();
+            }
+        } else {
+            result = Map.of();
         }
         return result;
     }
