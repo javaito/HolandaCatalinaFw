@@ -739,7 +739,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                             selectorCounter++;
                             if(selectorCounter > selectorCounterLimit) {
                                 selectorCounter = 0;
-                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Fixing selector loop");
+                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                        "Recreating selector for %s consumer",
+                                        consumer instanceof NetServer ? "server" : "client");
+                                createSelector();
                             }
                         }
                     } else {
@@ -1182,8 +1185,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Empty write data");
                                         }
                                         int begin = 0;
-                                        int length = (byteData.length - begin) > ioThread.getOutputBufferSize() ?
-                                                ioThread.getOutputBufferSize() : byteData.length - begin;
+                                        int length = Math.min((byteData.length - begin), ioThread.getOutputBufferSize());
 
                                         while (begin < byteData.length) {
                                             ioThread.getOutputBuffer().limit(length);
@@ -1204,8 +1206,7 @@ public final class NetService extends Service<NetServiceConsumer> {
 
                                             ioThread.getOutputBuffer().rewind();
                                             begin += length;
-                                            length = (byteData.length - begin) > ioThread.getOutputBufferSize() ?
-                                                    ioThread.getOutputBufferSize() : byteData.length - begin;
+                                            length = Math.min((byteData.length - begin), ioThread.getOutputBufferSize());
                                         }
                                     }
                                 }
