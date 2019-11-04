@@ -23,6 +23,7 @@ public final class Introspection {
     private static final Pattern SETTER_METHODS_PATTERN = Pattern.compile("^(set)([1,A-Z]|[1,0-9])(.*)");
 
     private static final String PATH_SEPARATOR = "\\.";
+    private static final String SETTER_PREFIX = "set";
 
     private static final int SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP = 2;
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
@@ -92,6 +93,52 @@ public final class Introspection {
         return (O) result;
     }
 
+    public static void set(Object instance, String path, Object value) {
+        Object bean = instance;
+
+        int separatorIndex = path.lastIndexOf(Strings.CLASS_SEPARATOR);
+        if (separatorIndex != -1) {
+            String beanPath = path.substring(0, separatorIndex);
+            bean = resolve(instance, beanPath);
+
+            path = path.substring(separatorIndex + 1);
+        }
+
+        if(bean instanceof Map) {
+            ((Map) bean).put(path, value);
+        } else if(bean instanceof List) {
+            try {
+                Integer index = Integer.parseInt(path);
+                ((List)bean).set(index, value);
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to access to list value [" + path + "]");
+            }
+        } else if(bean.getClass().isArray()) {
+            try {
+                Integer index = Integer.parseInt(path);
+                Array.set(bean, index, value);
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to access to array value [" + path + "]");
+            }
+        } else {
+            try {
+                String setterName = SETTER_PREFIX + Character.toUpperCase(path.charAt(0)) + path.substring(1);
+                Method setter = null;
+                for (Method method : bean.getClass().getMethods()) {
+                    if (method.getName().equals(setterName) && method.getParameterCount() == 1 &&
+                        method.getParameters()[0].getType().isAssignableFrom(value.getClass())) {
+                        setter = method;
+                        break;
+                    }
+                }
+
+                setValue(bean, new Setter(bean.getClass(), path, setter), value);
+            } catch (Exception e) {
+                throw new RuntimeException("Unable to access to field '" + path + "'");
+            }
+        }
+    }
+
     /**
      * Return the value that is the result of invoke the specific getter method.
      * @param instance Instance to invoke the getter method.
@@ -119,6 +166,29 @@ public final class Introspection {
             result.add(get(instance, getter));
         }
         return result;
+    }
+
+    private static void setValue(Object instance, Setter setter, Object value) throws InstantiationException, IllegalAccessException {
+        if(value instanceof Number) {
+            if (Byte.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).byteValue());
+            } else if (Short.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).shortValue());
+            } else if (Integer.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).intValue());
+            } else if (Long.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).longValue());
+            } else if (Float.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).floatValue());
+            } else if (Double.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).doubleValue());
+            }
+        } else if(Map.class.isAssignableFrom(value.getClass()) &&
+                !Map.class.isAssignableFrom(setter.getParameterType())) {
+            setter.set(instance, toInstance((Map<String, Object>) value, setter.getParameterType()));
+        } else {
+            setter.set(instance, value);
+        }
     }
 
     /**
@@ -193,22 +263,7 @@ public final class Introspection {
                 try {
                     currentSetter = setters.get(name);
                     currentValue = map.get(name);
-                    if(currentValue instanceof Number) {
-                        if (Byte.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).byteValue());
-                        } else if (Short.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).shortValue());
-                        } else if (Integer.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).intValue());
-                        } else if (Long.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).longValue());
-                        }
-                    } else if(Map.class.isAssignableFrom(currentValue.getClass()) &&
-                            !Map.class.isAssignableFrom(currentSetter.getParameterType())) {
-                        currentSetter.set(result, toInstance((Map<String, Object>) currentValue, currentSetter.getParameterType()));
-                    } else {
-                        currentSetter.set(result, map.get(name));
-                    }
+                    setValue(result, currentSetter, currentValue);
                 } catch (Exception ex){}
             }
         }
