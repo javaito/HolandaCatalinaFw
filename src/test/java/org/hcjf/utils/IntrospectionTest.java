@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,12 +57,61 @@ public class IntrospectionTest {
         }
     }
 
+    @Test
+    public void testToInstance() {
+        try {
+            Map<String, Object> map = new HashMap<>();
+            map.put("integer", 67);
+            map.put("decimal", 0.6);
+            TestEntity entity = Introspection.toInstance(map, TestEntity.class);
+            Assert.assertNotNull(entity);
+            Assert.assertNotEquals(0.0, entity.getDecimal());
+            Assert.assertNotEquals(Integer.valueOf(0), entity.getInteger());
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+    }
+
+    @Test
+    public void testSet() {
+        try {
+            NestedTestEntity entity = new NestedTestEntity();
+            Introspection.set(entity, "entity", new TestEntity());
+            Introspection.set(entity, "entity.integer", 3);
+            Introspection.set(entity, "entity.decimal", 3.5);
+            Introspection.set(entity, "entity.map1", new HashMap<>(Map.of("name", "nombre", "key", "clave")));
+            Introspection.set(entity, "entity.map1.id", "23456");
+
+            Assert.assertEquals(entity.getEntity().getInteger(), Integer.valueOf(3));
+            Assert.assertEquals(entity.getEntity().getDecimal(), Double.valueOf(3.5));
+            Assert.assertEquals(entity.getEntity().getMap1().get("id"), "23456");
+        } catch (Exception ex) {
+            Assert.fail(ex.getMessage());
+        }
+    }
+
+    private static class NestedTestEntity {
+        private TestEntity entity;
+
+        public TestEntity getEntity() {
+            return entity;
+        }
+
+        public void setEntity(TestEntity entity) {
+            this.entity = entity;
+        }
+    }
+
     private static class TestEntity extends InheritanceTestEntity<String, Integer> {
 
         private Integer integer;
         private Map<String, String> map1;
         private Map<String, Set<String>> map2;
         private Collection<String> collection1;
+        private Double decimal;
+
+        public TestEntity() {
+        }
 
         public Integer getInteger() {
             return integer;
@@ -93,6 +143,14 @@ public class IntrospectionTest {
 
         public void setCollection1(Collection<String> collection1) {
             this.collection1 = collection1;
+        }
+
+        public Double getDecimal() {
+            return decimal;
+        }
+
+        public void setDecimal(Double decimal) {
+            this.decimal = decimal;
         }
 
         @Override
