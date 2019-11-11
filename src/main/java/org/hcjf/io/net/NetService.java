@@ -20,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class implements a service that provide an
@@ -502,6 +503,13 @@ public final class NetService extends Service<NetServiceConsumer> {
      */
     private class SelectorRunnable implements Runnable {
 
+        private final class SelectorAction {
+            private static final String ALL = "ALL";
+            private static final String EMPTY = "EMPTY";
+            private static final String READ = "READ";
+            private static final String WRITE = "WRITE";
+        }
+
         private final NetServiceConsumer consumer;
         private Selector selector;
         private final Object monitor;
@@ -511,6 +519,11 @@ public final class NetService extends Service<NetServiceConsumer> {
         private final Queue<SelectionKey> writableKeys;
         private final ThreadPoolExecutor readIoExecutor;
         private final ThreadPoolExecutor writeIoExecutor;
+        private AtomicInteger selectorEmptyCounter;
+        private AtomicInteger selectorReadCounter;
+        private AtomicInteger selectorWriteCounter;
+        private Long selectorMinWaitTime;
+        private Integer selectorCounterLimit;
 
         private SelectorRunnable(NetServiceConsumer consumer) {
             this.consumer = consumer;
@@ -719,11 +732,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                 } catch (SecurityException ex) {
                 }
 
-                long selectorMinWaitTime = SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
-                int selectorCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
-                int selectorCounter = 0;
+                selectorMinWaitTime = SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
+                selectorCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
+                selectorEmptyCounter = new AtomicInteger(0);
+                selectorReadCounter = new AtomicInteger(0);
+                selectorWriteCounter = new AtomicInteger(0);
                 long selectionStartPeriod;
-                long selectionPeriod;
                 int selectionSize;
                 Iterator<SelectionKey> selectedKeys;
                 SelectionKey key;
@@ -734,30 +748,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                     selectionSize = select();
 
                     if(selectionSize == 0) {
-                        selectionPeriod = System.currentTimeMillis() - selectionStartPeriod;
-                        if(selectionPeriod < selectorMinWaitTime) {
-                            selectorCounter++;
-                            if(selectorCounter > selectorCounterLimit) {
-                                selectorCounter = 0;
-                                Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
-                                        "Recreating selector for %s consumer",
-                                        consumer instanceof NetServer ? "server" : "client");
-                                if(consumer instanceof NetClient) {
-                                    if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
-                                        getSelector().close();
-                                        break;
-                                    }
-                                } else {
-                                    if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
-                                        createSelector();
-                                    }
-                                }
-                            }
-                        } else {
-                            selectorCounter = 0;
+                        if(checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.EMPTY)) {
+                            break;
                         }
                     } else {
-                        selectorCounter = 0;
                         selectedKeys = getSelector().selectedKeys().iterator();
                         while (selectedKeys.hasNext()) {
                             key = selectedKeys.next();
@@ -777,6 +771,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             connect(key.channel(), (NetClient) consumer);
                                         } else if (key.isReadable()) {
                                             synchronized (readableKeys) {
+                                                if(checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.READ)) {
+                                                    break;
+                                                }
                                                 if (key.isValid() && !readableKeys.contains(key)) {
                                                     if (!readableKeys.offer(key)) {
                                                         Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add readable key!!!!");
@@ -786,6 +783,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             }
                                         } else if (key.isWritable()) {
                                             synchronized (writableKeys) {
+                                                if(checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.WRITE)) {
+                                                    break;
+                                                }
                                                 if (key.isValid() && !writableKeys.contains(key)) {
                                                     if (!writableKeys.offer(key)) {
                                                         Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
@@ -831,6 +831,82 @@ public final class NetService extends Service<NetServiceConsumer> {
             readIoExecutor.shutdownNow();
             writeIoExecutor.shutdownNow();
             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector stopped");
+        }
+
+        /**
+         * This method checks the selector behavior in order to recreate or close the runaway selector depends of the
+         * net server consumer implementation.
+         * @param selectionStartPeriod Timestamp of the moment that the selection process starts.
+         * @param action Action to check the behavior.
+         * @return Returns true if the elector is closed.
+         * @throws Exception
+         */
+        private boolean checkBehaviorOfSelector(Long selectionStartPeriod, String action) throws Exception {
+            boolean result = false;
+            Long selectionPeriod = System.currentTimeMillis() - selectionStartPeriod;
+            if(selectionPeriod < selectorMinWaitTime) {
+                incrementActionCounter(action);
+                if (getActionCounter(action) > selectorCounterLimit) {
+                    resetActionCounter(action);
+                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                            "Runaway selector detected for net %s on action %s",
+                            consumer instanceof NetServer ? "server" : "client", action);
+                    if (consumer instanceof NetClient) {
+                        if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
+                            getSelector().close();
+                            result = true;
+                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                    "Net client selector closed on action %s", action);
+                        }
+                    } else {
+                        if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
+                            Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                    "Net server selector dangerous behavior on action %s", action);
+                        }
+                    }
+                }
+            } else {
+                resetActionCounter(action);
+            }
+            return result;
+        }
+
+        /**
+         * Increments the counter of the action, all the others counters are reset.
+         * @param action Name of the action.
+         */
+        private void incrementActionCounter(String action) {
+            switch (action) {
+                case SelectorAction.EMPTY: selectorEmptyCounter.incrementAndGet(); selectorReadCounter.set(0); selectorWriteCounter.set(0); break;
+                case SelectorAction.READ: selectorReadCounter.incrementAndGet(); selectorEmptyCounter.set(0); selectorWriteCounter.set(0); break;
+                case SelectorAction.WRITE: selectorWriteCounter.incrementAndGet(); selectorEmptyCounter.set(0); selectorReadCounter.set(0); break;
+            }
+        }
+
+        /**
+         * Reset the counter of the action.
+         * @param action Action name.
+         */
+        private void resetActionCounter(String action) {
+            switch (action) {
+                case SelectorAction.EMPTY: selectorEmptyCounter.set(0); break;
+                case SelectorAction.READ: selectorReadCounter.set(0); break;
+                case SelectorAction.WRITE: selectorWriteCounter.set(0);; break;
+            }
+        }
+
+        /**
+         * Returns the value of the action counter.
+         * @param action Action name.
+         * @return Value of the action counter.
+         */
+        private int getActionCounter(String action) {
+            switch (action) {
+                case SelectorAction.EMPTY: return selectorEmptyCounter.get();
+                case SelectorAction.READ: return selectorReadCounter.get();
+                case SelectorAction.WRITE: return selectorWriteCounter.get();
+                default: throw new HCJFRuntimeException("Unknown action %s", action);
+            }
         }
 
         /**
