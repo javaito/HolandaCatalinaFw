@@ -407,6 +407,12 @@ public final class NetService extends Service<NetServiceConsumer> {
                     if(session.getConsumer() != null) {
                         session.getConsumer().onDisconnect(session, null);
                     }
+
+                    if(session.getConsumer() instanceof NetClient) {
+                        SelectorRunnable selectorRunnable = selectors.remove(session.getConsumer());
+                        selectorRunnable.shutdown(ShutdownStage.START);
+                        selectorRunnable.shutdown(ShutdownStage.END);
+                    }
                 }
 
                 if (channel.isConnected()) {
@@ -414,12 +420,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 }
             } catch (Exception ex) {
                 Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Destroy method exception", ex);
-            }
-
-            if(session.getConsumer() instanceof NetClient) {
-                SelectorRunnable selectorRunnable = selectors.remove(session.getConsumer());
-                selectorRunnable.shutdown(ShutdownStage.START);
-                selectorRunnable.shutdown(ShutdownStage.END);
             }
         }
     }
@@ -522,6 +522,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         private AtomicInteger selectorEmptyCounter;
         private AtomicInteger selectorReadCounter;
         private AtomicInteger selectorWriteCounter;
+        private String lastKey;
         private Long selectorMinWaitTime;
         private Integer selectorCounterLimit;
 
@@ -742,20 +743,29 @@ public final class NetService extends Service<NetServiceConsumer> {
                 Iterator<SelectionKey> selectedKeys;
                 SelectionKey key;
 
+                AtomicInteger repeatedKeyCounter = new AtomicInteger(0);
+                Integer repeatedKeyCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_REPEATED_KEY_COUNTER_LIMIT);
+                boolean dangerousBehaviorDetected = false;
                 while (!Thread.currentThread().isInterrupted()) {
                     //Select the next schedule key or sleep if the aren't any key to select.
                     selectionStartPeriod = System.currentTimeMillis();
                     selectionSize = select();
 
                     if(selectionSize == 0) {
-                        if(checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.EMPTY)) {
-                            break;
-                        }
+                        dangerousBehaviorDetected = checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.EMPTY);
                     } else {
                         selectedKeys = getSelector().selectedKeys().iterator();
                         while (selectedKeys.hasNext()) {
                             key = selectedKeys.next();
                             selectedKeys.remove();
+                            if(lastKey != null) {
+                                if(lastKey.equals(key.toString())) {
+                                    repeatedKeyCounter.incrementAndGet();
+                                } else {
+                                    repeatedKeyCounter.set(0);
+                                }
+                            }
+                            lastKey = key.toString();
 
                             if (key.isValid()) {
                                 try {
@@ -771,27 +781,25 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             connect(key.channel(), (NetClient) consumer);
                                         } else if (key.isReadable()) {
                                             synchronized (readableKeys) {
-                                                if(checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.READ)) {
-                                                    break;
-                                                }
                                                 if (key.isValid() && !readableKeys.contains(key)) {
                                                     if (!readableKeys.offer(key)) {
                                                         Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add readable key!!!!");
                                                     }
                                                 }
                                                 readableKeys.notifyAll();
+                                                dangerousBehaviorDetected = checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.READ) &&
+                                                        repeatedKeyCounter.get() > repeatedKeyCounterLimit;
                                             }
                                         } else if (key.isWritable()) {
                                             synchronized (writableKeys) {
-                                                if(checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.WRITE)) {
-                                                    break;
-                                                }
                                                 if (key.isValid() && !writableKeys.contains(key)) {
                                                     if (!writableKeys.offer(key)) {
                                                         Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add writable key!!!!");
                                                     }
                                                 }
                                                 writableKeys.notifyAll();
+                                                dangerousBehaviorDetected = checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.WRITE) &&
+                                                        repeatedKeyCounter.get() > repeatedKeyCounterLimit;
                                             }
                                         }
                                     } else {
@@ -801,6 +809,24 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
                                 } catch (Exception ex) {
                                     Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service main thread exception", ex);
+                                }
+                            }
+                        }
+
+                        if(dangerousBehaviorDetected) {
+                            dangerousBehaviorDetected = false;
+                            if (consumer instanceof NetClient) {
+                                if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
+                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                            "Net client selector closed for dangerous behavior");
+                                    break;
+                                }
+                            } else {
+                                if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
+                                    System.out.println(repeatedKeyCounter);
+                                    createSelector();
+                                    Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                            "Net server selector recreated for dangerous behavior");
                                 }
                             }
                         }
@@ -848,22 +874,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                 incrementActionCounter(action);
                 if (getActionCounter(action) > selectorCounterLimit) {
                     resetActionCounter(action);
-                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
-                            "Runaway selector detected for net %s on action %s",
-                            consumer instanceof NetServer ? "server" : "client", action);
-                    if (consumer instanceof NetClient) {
-                        if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
-                            getSelector().close();
-                            result = true;
-                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
-                                    "Net client selector closed on action %s", action);
-                        }
-                    } else {
-                        if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
-                            Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
-                                    "Net server selector dangerous behavior on action %s", action);
-                        }
-                    }
+                    result = true;
                 }
             } else {
                 resetActionCounter(action);
