@@ -10,6 +10,7 @@ import java.util.Objects;
 public class ObjectQueryFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
     private static final String IS_NOT_NULL = "isNotNull";
+    private static final String IS_NULL = "isNull";
     private static final String IS_COLLECTION = "isCollection";
     private static final String IS_MAP = "isMap";
     private static final String IS_DATE = "isDate";
@@ -24,6 +25,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         super(SystemProperties.get(SystemProperties.Query.Function.OBJECT_FUNCTION_NAME));
 
         addFunctionName(IS_NOT_NULL);
+        addFunctionName(IS_NULL);
         addFunctionName(IS_COLLECTION);
         addFunctionName(IS_MAP);
         addFunctionName(IS_DATE);
@@ -44,6 +46,17 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 for(Object parameter : parameters) {
                     booleanValue = parameter != null;
                     if(!booleanValue) {
+                        break;
+                    }
+                }
+                result = booleanValue;
+                break;
+            }
+            case(IS_NULL): {
+                boolean booleanValue = false;
+                for(Object parameter : parameters) {
+                    booleanValue = parameter == null;
+                    if(booleanValue) {
                         break;
                     }
                 }

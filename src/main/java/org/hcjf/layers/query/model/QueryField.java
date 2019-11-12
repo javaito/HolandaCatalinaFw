@@ -25,18 +25,18 @@ public class QueryField extends QueryParameter {
         if(instance instanceof JoinableMap && ((JoinableMap) instance).getResources().size() > 1) {
             if(getResource().equals(QueryResource.ANY)) {
                 for(String resourceName : ((JoinableMap)instance).getResources()) {
-                    result = Introspection.resolve(((JoinableMap) instance).
+                    result = Introspection.silentResolve(((JoinableMap) instance).
                             getResourceModel(resourceName), getFieldPath());
                     if(result != null) {
                         break;
                     }
                 }
             } else {
-                result = Introspection.resolve(((JoinableMap) instance).
+                result = Introspection.silentResolve(((JoinableMap) instance).
                         getResourceModel(getResource().getResourceName()), getFieldPath());
             }
         } else {
-            result = Introspection.resolve(instance, getFieldPath());
+            result = Introspection.silentResolve(instance, getFieldPath());
         }
         return (R) result;
     }
