@@ -799,14 +799,15 @@ public final class NetService extends Service<NetServiceConsumer> {
                 //This loop is to register all the channels of the previous keys into the new selector.
                 for (SelectionKey key : selector.keys()) {
                     try {
-                        SelectableChannel ch = key.channel();
+                        SocketChannel socketChannel = (SocketChannel) key.channel();
                         int ops = key.interestOps();
                         Object att = key.attachment();
                         // Cancel the old key
                         key.cancel();
 
                         // Register the channel with the new selector
-                        ch.register(newSelector, ops, att);
+//                        ch.register(newSelector, ops, att);
+                        destroyChannel(socketChannel);
                     } catch (Exception ex){}
                 }
                 try {
