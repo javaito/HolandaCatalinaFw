@@ -154,10 +154,11 @@ public final class SystemProperties extends Properties {
         public static final String PORT_PROBE_CONNECTION_TIMEOUT = "hcjf.net.port.probe.connection.timeout";
         public static final String REMOTE_ADDRESS_INTO_NET_PACKAGE = "hcjf.net.remote.address.into.net.package";
         public static final String REMOTE_ADDRESS_INTO_NET_SESSION = "hcjf.net.remote.address.into.net.session";
-        public static final String NIO_SELECTOR_MIN_WAIT_TIME = "hcjf.net.nio.selector.min.wait.time";
-        public static final String NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT = "hcjf.net.nio.selector.min.wait.counter.limit";
-        public static final String NIO_SELECTOR_REPEATED_KEY_COUNTER_LIMIT = "hcjf.net.nio.selector.repeated.key.counter.limit";
-        public static final String RECREATE_OR_DESTROY_SELECTOR = "hcjf.net.recreate.or.destroy.selector";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_RUNNING_TIME = "hcjf.net.nio.selector.health.checker.running.time";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_SAMPLE_TIME = "hcjf.net.nio.selector.health.checker.sample.time";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_THRESHOLD = "hcjf.net.nio.selector.health.checker.dangerous.threshold";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS = "hcjf.net.nio.selector.health.checker.dangerous.repeats";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION = "hcjf.net.nio.selector.health.checker.dangerous.action";
 
         public static final class Broadcast {
             public static final String SERVICE_NAME = "hcjf.net.broadcast.service.name";
@@ -590,7 +591,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.WRITE_TIMEOUT, "100");
         defaults.put(Net.IO_UDP_LRU_ADDRESSES_SIZE, "1000");
         defaults.put(Net.IO_UDP_LRU_SESSIONS_SIZE, "1000");
-        defaults.put(Net.IO_QUEUE_SIZE, "1000000");
+        defaults.put(Net.IO_QUEUE_SIZE, "10000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_NAME, "IoThreadPool");
         defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "204800");
@@ -601,10 +602,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.PORT_PROBE_CONNECTION_TIMEOUT, "1000");
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_PACKAGE, "false");
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_SESSION, "false");
-        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_TIME, "10");
-        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT, "20000");
-        defaults.put(Net.NIO_SELECTOR_REPEATED_KEY_COUNTER_LIMIT, "50");
-        defaults.put(Net.RECREATE_OR_DESTROY_SELECTOR, "true");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_RUNNING_TIME, "1000");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_SAMPLE_TIME, "2000");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_THRESHOLD, "60");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS, "5");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION, "RECREATE_SELECTOR"); //Valid values [RECREATE_SELECTOR, SHUTDOWN, VOID]
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");

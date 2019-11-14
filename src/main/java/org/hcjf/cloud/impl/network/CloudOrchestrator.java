@@ -966,12 +966,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     public void dispatchEvent(DistributedEvent event) {
-        EventMessage eventMessage = new EventMessage(UUID.randomUUID());
-        eventMessage.setEvent(event);
         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
             if(!thisServiceEndPoint.getId().equals(serviceEndPoint.getId())) {
                 run(() -> {
                     try {
+                        EventMessage eventMessage =
+                                new EventMessage(UUID.randomUUID());
+                        eventMessage.setEvent(event);
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending event to %s", serviceEndPoint.toString());
                         invokeNetworkComponent(serviceEndPoint, eventMessage);
                     } catch (Exception ex) {

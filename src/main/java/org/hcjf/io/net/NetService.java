@@ -12,6 +12,7 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.management.*;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -48,6 +49,7 @@ public final class NetService extends Service<NetServiceConsumer> {
     private Map<NetSession, SSLHelper> sslHelpers;
     private Map<NetServiceConsumer,SelectorRunnable> selectors;
     private Map<NetServiceConsumer,Future> tasks;
+    private SelectorHealthChecker selectorHealthChecker;
     private Timer timer;
     private boolean creationTimeoutAvailable;
     private long creationTimeout;
@@ -90,6 +92,8 @@ public final class NetService extends Service<NetServiceConsumer> {
         sessionsByAddress = Collections.synchronizedMap(new LruMap(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_SESSIONS_SIZE)));
         sslHelpers = Collections.synchronizedMap(new HashMap<>());
         addresses = Collections.synchronizedMap(new LruMap<>(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_ADDRESSES_SIZE)));
+        selectorHealthChecker = new SelectorHealthChecker();
+        fork(selectorHealthChecker);
     }
 
     /**
@@ -499,16 +503,143 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
+     * This runnable check all the time the state of all the selector threads in order to found if some of this
+     * thread begins with a rogue state behavior.
+     */
+    private class SelectorHealthChecker implements Runnable {
+
+        private final class Actions {
+            private static final String RECREATE_SELECTOR = "RECREATE_SELECTOR";
+            private static final String SHUTDOWN = "SHUTDOWN";
+        }
+
+        private final ThreadMXBean threadMxBean;
+        private final Map<Long,AtomicInteger> dangerousBehaviorCounter;
+        private final Map<Long,SelectorRunnable> selectors;
+
+        public SelectorHealthChecker() {
+            threadMxBean = ManagementFactory.getThreadMXBean();
+            dangerousBehaviorCounter = new HashMap<>();
+            selectors = new HashMap<>();
+        }
+
+        @Override
+        public void run() {
+            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Starting selector health checker");
+            Long[] threadIds;
+            while(!Thread.currentThread().isInterrupted()) {
+                try {
+                    if (!selectors.isEmpty()) {
+                        synchronized (selectors) {
+                            threadIds = selectors.keySet().toArray(new Long[]{});
+                        }
+
+                        //Safe the timestamp of the lapse start.
+                        Long time = System.currentTimeMillis();
+                        //Safe the cpu time for each thread into the array at lapse starts
+                        Map<Long, Long> threadInitialCPU = new HashMap<>();
+                        for (Long id : threadIds) {
+                            threadInitialCPU.put(id, threadMxBean.getThreadCpuTime(id));
+                        }
+
+                        //Sleep the time configured as a sample time.
+                        try {
+                            Thread.sleep(SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_HEALTH_CHECKER_SAMPLE_TIME));
+                        } catch (InterruptedException e) {
+                        }
+
+                        //Safe the lapse time between the start lapse and the end
+                        time = System.currentTimeMillis() - time;
+                        //Safe the cpu time for each thread into the array at lapse ends
+                        Map<Long, Long> threadCurrentCPU = new HashMap<>();
+                        for (Long id : threadIds) {
+                            threadCurrentCPU.put(id, threadMxBean.getThreadCpuTime(id));
+                        }
+
+                        //Calculate the percentage of the cpu usage for the lapse for each thread into the array.
+                        for (Long id : threadIds) {
+                            try {
+                                long elapsedCpu = threadCurrentCPU.get(id) - threadInitialCPU.get(id);
+                                float oneCpuUsage = (elapsedCpu / (time * 1000f * 1000f)) * 100f;
+                                float totalCpuUsage = oneCpuUsage / Runtime.getRuntime().availableProcessors();
+
+                                AtomicInteger counter = dangerousBehaviorCounter.get(id);
+                                SelectorRunnable selectorRunnable = selectors.get(id);
+                                if (counter != null && selectorRunnable != null) {
+                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                            "Health check trace: Description: %s, Cpu Usage: %f%%, Total Cpu Usage: %f%%, DC: %d",
+                                            selectorRunnable.getDescription(), oneCpuUsage, totalCpuUsage, counter.get());
+                                    //System.out.printf("Health check trace: Description: %s, Cpu Usage: %f%%, Total Cpu Usage: %f%%, DC: %d\r\n",
+                                    //        selectorRunnable.getDescription(), oneCpuUsage, totalCpuUsage, counter.get());
+
+                                    //Verify if the cpu usage of the lapse is bigger than the dangerous threshold value.
+                                    if (oneCpuUsage >
+                                            SystemProperties.getDouble(SystemProperties.Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_THRESHOLD)) {
+                                        //If the cpu usage is bigger than the dangerous threshold then the counter is incremented.
+                                        counter.incrementAndGet();
+                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                                "Dangerous threshold overcome for thread %s, value: %f%%, current dangerous counter: %d",
+                                                selectorRunnable.getDescription(), oneCpuUsage, counter.get());
+                                        //System.out.printf("Dangerous threshold overcome for thread %s, value: %f%%, current dangerous counter: %d\r\n",
+                                        //        selectorRunnable.getDescription(), oneCpuUsage, counter.get());
+                                    } else {
+                                        //If the cpu usage is smaller than the dangerous threshold then the counter is reset.
+                                        counter.set(0);
+                                    }
+
+                                    if (counter.get() >
+                                            SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS)) {
+                                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                                "Rogue state detected for thread %s, %f%%, %d", selectorRunnable.getDescription(), oneCpuUsage, counter.get());
+                                        //System.out.printf("Rogue state detected for thread %s, %f%%, %d\r\n", selectorRunnable.getDescription(), oneCpuUsage, counter.get());
+                                        //If the dangerous counter is bigger than the dangerous repeats then the selector is rogue state.
+                                        selectorRunnable.setRogueState();
+                                        counter.set(0);
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                //This catch is to guaranty that all the thread evaluates the health
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                }
+                try {
+                    Thread.sleep(SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_HEALTH_CHECKER_RUNNING_TIME));
+                } catch (InterruptedException e) {
+                }
+            }
+            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Finishing selector health checker");
+        }
+
+        /**
+         * Add a new selector runnable indexed by his thread id.
+         * @param threadId Thread id.
+         * @param selectorRunnable Selector runnable instance.
+         */
+        public void addSelector(Long threadId, SelectorRunnable selectorRunnable) {
+            synchronized (selectors) {
+                selectors.put(threadId, selectorRunnable);
+                dangerousBehaviorCounter.put(threadId, new AtomicInteger(0));
+            }
+        }
+
+        /**
+         * Removes the selector runnable associated to the thread id.
+         * @param threadId Thread id.
+         */
+        public void removeSelector(Long threadId) {
+            synchronized (selectors) {
+                selectors.remove(threadId);
+                dangerousBehaviorCounter.remove(threadId);
+            }
+        }
+    }
+
+    /**
      * This runnable encapsulate all the components needing to the selection process.
      */
     private class SelectorRunnable implements Runnable {
-
-        private final class SelectorAction {
-            private static final String ALL = "ALL";
-            private static final String EMPTY = "EMPTY";
-            private static final String READ = "READ";
-            private static final String WRITE = "WRITE";
-        }
 
         private final NetServiceConsumer consumer;
         private Selector selector;
@@ -519,18 +650,14 @@ public final class NetService extends Service<NetServiceConsumer> {
         private final Queue<SelectionKey> writableKeys;
         private final ThreadPoolExecutor readIoExecutor;
         private final ThreadPoolExecutor writeIoExecutor;
-        private AtomicInteger selectorEmptyCounter;
-        private AtomicInteger selectorReadCounter;
-        private AtomicInteger selectorWriteCounter;
-        private String lastKey;
-        private Long selectorMinWaitTime;
-        private Integer selectorCounterLimit;
+        private Boolean rogueState;
 
         private SelectorRunnable(NetServiceConsumer consumer) {
             this.consumer = consumer;
             this.monitor = new Object();
             this.blocking = false;
             this.sessions = new TreeSet<>();
+            this.rogueState = false;
             try {
                 createSelector();
             } catch (IOException ex) {
@@ -546,6 +673,13 @@ public final class NetService extends Service<NetServiceConsumer> {
             writeIoExecutor.setKeepAliveTime(SystemProperties.getInteger(SystemProperties.Net.IO_THREAD_POOL_KEEP_ALIVE_TIME), TimeUnit.SECONDS);
             fork(new Reader(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), readIoExecutor);
             fork(new Writer(), SystemProperties.get(SystemProperties.Net.IO_THREAD_POOL_NAME), writeIoExecutor);
+        }
+
+        /**
+         * Set the rogue state into the selector.
+         */
+        public void setRogueState() {
+            rogueState = true;
         }
 
         /**
@@ -655,8 +789,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         /**
          * Creates a new instance of a selector, if there are a previous instance then the previous keys are registered into
          * the new selector instance.
-         * @return Returns the new instance of a selector
-         * @throws IOException
+         * @throws IOException Throws io exception if the creation of the selector fail
          */
         private void createSelector() throws IOException {
             Selector newSelector = Selector.open();
@@ -721,51 +854,50 @@ public final class NetService extends Service<NetServiceConsumer> {
             }
         }
 
+        private String getDescription() {
+            return consumer.getName();
+        }
+
         /**
          * This method run continuously the selection process.
          */
         @Override
         public void run() {
             try {
+                selectorHealthChecker.addSelector(Thread.currentThread().getId(), this);
                 try {
                     Thread.currentThread().setName(SystemProperties.get(SystemProperties.Net.LOG_TAG));
                     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
                 } catch (SecurityException ex) {
                 }
 
-                selectorMinWaitTime = SystemProperties.getLong(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_TIME);
-                selectorCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT);
-                selectorEmptyCounter = new AtomicInteger(0);
-                selectorReadCounter = new AtomicInteger(0);
-                selectorWriteCounter = new AtomicInteger(0);
-                long selectionStartPeriod;
                 int selectionSize;
                 Iterator<SelectionKey> selectedKeys;
                 SelectionKey key;
-
-                AtomicInteger repeatedKeyCounter = new AtomicInteger(0);
-                Integer repeatedKeyCounterLimit = SystemProperties.getInteger(SystemProperties.Net.NIO_SELECTOR_REPEATED_KEY_COUNTER_LIMIT);
-                boolean dangerousBehaviorDetected = false;
                 while (!Thread.currentThread().isInterrupted()) {
                     //Select the next schedule key or sleep if the aren't any key to select.
-                    selectionStartPeriod = System.currentTimeMillis();
                     selectionSize = select();
 
-                    if(selectionSize == 0) {
-                        dangerousBehaviorDetected = checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.EMPTY);
-                    } else {
+                    if(rogueState) {
+                        String action = SystemProperties.get(SystemProperties.Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION);
+                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                "Executing action %s for rogue state in server %s", action, getDescription());
+                        if(consumer instanceof NetServer) {
+                            switch (action) {
+                                case SelectorHealthChecker.Actions.SHUTDOWN: System.exit(1); break;
+                                case SelectorHealthChecker.Actions.RECREATE_SELECTOR: createSelector(); break;
+                            }
+                        } else {
+                            break;
+                        }
+                        rogueState = false;
+                    }
+
+                    if(selectionSize > 0) {
                         selectedKeys = getSelector().selectedKeys().iterator();
                         while (selectedKeys.hasNext()) {
                             key = selectedKeys.next();
                             selectedKeys.remove();
-                            if(lastKey != null) {
-                                if(lastKey.equals(key.toString())) {
-                                    repeatedKeyCounter.incrementAndGet();
-                                } else {
-                                    repeatedKeyCounter.set(0);
-                                }
-                            }
-                            lastKey = key.toString();
 
                             if (key.isValid()) {
                                 try {
@@ -787,8 +919,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                     }
                                                 }
                                                 readableKeys.notifyAll();
-                                                dangerousBehaviorDetected = checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.READ) &&
-                                                        repeatedKeyCounter.get() > repeatedKeyCounterLimit;
                                             }
                                         } else if (key.isWritable()) {
                                             synchronized (writableKeys) {
@@ -798,8 +928,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                                     }
                                                 }
                                                 writableKeys.notifyAll();
-                                                dangerousBehaviorDetected = checkBehaviorOfSelector(selectionStartPeriod, SelectorAction.WRITE) &&
-                                                        repeatedKeyCounter.get() > repeatedKeyCounterLimit;
                                             }
                                         }
                                     } else {
@@ -809,24 +937,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                                     Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Cancelled key");
                                 } catch (Exception ex) {
                                     Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Net service main thread exception", ex);
-                                }
-                            }
-                        }
-
-                        if(dangerousBehaviorDetected) {
-                            dangerousBehaviorDetected = false;
-                            if (consumer instanceof NetClient) {
-                                if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
-                                    Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
-                                            "Net client selector closed for dangerous behavior");
-                                    break;
-                                }
-                            } else {
-                                if (SystemProperties.getBoolean(SystemProperties.Net.RECREATE_OR_DESTROY_SELECTOR)) {
-                                    System.out.println(repeatedKeyCounter);
-                                    createSelector();
-                                    Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
-                                            "Net server selector recreated for dangerous behavior");
                                 }
                             }
                         }
@@ -853,71 +963,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                 Log.e(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unexpected error", ex);
             }
 
-
+            selectorHealthChecker.removeSelector(Thread.currentThread().getId());
             readIoExecutor.shutdownNow();
             writeIoExecutor.shutdownNow();
             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Selector stopped");
-        }
-
-        /**
-         * This method checks the selector behavior in order to recreate or close the runaway selector depends of the
-         * net server consumer implementation.
-         * @param selectionStartPeriod Timestamp of the moment that the selection process starts.
-         * @param action Action to check the behavior.
-         * @return Returns true if the elector is closed.
-         * @throws Exception
-         */
-        private boolean checkBehaviorOfSelector(Long selectionStartPeriod, String action) throws Exception {
-            boolean result = false;
-            Long selectionPeriod = System.currentTimeMillis() - selectionStartPeriod;
-            if(selectionPeriod < selectorMinWaitTime) {
-                incrementActionCounter(action);
-                if (getActionCounter(action) > selectorCounterLimit) {
-                    resetActionCounter(action);
-                    result = true;
-                }
-            } else {
-                resetActionCounter(action);
-            }
-            return result;
-        }
-
-        /**
-         * Increments the counter of the action, all the others counters are reset.
-         * @param action Name of the action.
-         */
-        private void incrementActionCounter(String action) {
-            switch (action) {
-                case SelectorAction.EMPTY: selectorEmptyCounter.incrementAndGet(); selectorReadCounter.set(0); selectorWriteCounter.set(0); break;
-                case SelectorAction.READ: selectorReadCounter.incrementAndGet(); selectorEmptyCounter.set(0); selectorWriteCounter.set(0); break;
-                case SelectorAction.WRITE: selectorWriteCounter.incrementAndGet(); selectorEmptyCounter.set(0); selectorReadCounter.set(0); break;
-            }
-        }
-
-        /**
-         * Reset the counter of the action.
-         * @param action Action name.
-         */
-        private void resetActionCounter(String action) {
-            switch (action) {
-                case SelectorAction.EMPTY: selectorEmptyCounter.set(0); break;
-                case SelectorAction.READ: selectorReadCounter.set(0); break;
-                case SelectorAction.WRITE: selectorWriteCounter.set(0);; break;
-            }
-        }
-
-        /**
-         * Returns the value of the action counter.
-         * @param action Action name.
-         * @return Value of the action counter.
-         */
-        private int getActionCounter(String action) {
-            switch (action) {
-                case SelectorAction.EMPTY: return selectorEmptyCounter.get();
-                case SelectorAction.READ: return selectorReadCounter.get();
-                case SelectorAction.WRITE: return selectorWriteCounter.get();
-                default: throw new HCJFRuntimeException("Unknown action %s", action);
-            }
         }
 
         /**
