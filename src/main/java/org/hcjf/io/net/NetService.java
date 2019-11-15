@@ -570,7 +570,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                             "Health check trace: Description: %s, Cpu Usage: %f%%, Total Cpu Usage: %f%%, DC: %d",
                                             selectorRunnable.getDescription(), oneCpuUsage, totalCpuUsage, counter.get());
                                     //System.out.printf("Health check trace: Description: %s, Cpu Usage: %f%%, Total Cpu Usage: %f%%, DC: %d\r\n",
-                                    //        selectorRunnable.getDescription(), oneCpuUsage, totalCpuUsage, counter.get());
+                                    //       selectorRunnable.getDescription(), oneCpuUsage, totalCpuUsage, counter.get());
 
                                     //Verify if the cpu usage of the lapse is bigger than the dangerous threshold value.
                                     if (oneCpuUsage >
@@ -802,14 +802,21 @@ public final class NetService extends Service<NetServiceConsumer> {
                         SelectableChannel selectableChannel = key.channel();
                         if(selectableChannel instanceof  ServerSocketChannel) {
                             int ops = key.interestOps();
-                            Object att = key.attachment();
-                            // Register the channel with the new selector
-                            selectableChannel.register(newSelector, ops, att);
+                            if(ops == SelectionKey.OP_ACCEPT) {
+                                Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                        "Key accept key registered: %s", key.toString());
+                                Object att = key.attachment();
+                                // Register the channel with the new selector
+                                selectableChannel.register(newSelector, ops, att);
+                            } else {
+                                key.cancel();
+                            }
                         } else {
                             destroyChannel((SocketChannel) selectableChannel);
                         }
                     } catch (Exception ex){
-                        Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing channel fail", ex);
+                        Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                "Selection key clean process fail: %s", ex, key.toString());
                     }
                 }
                 try {
