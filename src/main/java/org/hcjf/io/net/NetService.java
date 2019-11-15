@@ -800,18 +800,17 @@ public final class NetService extends Service<NetServiceConsumer> {
                 for (SelectionKey key : selector.keys()) {
                     try {
                         SelectableChannel selectableChannel = key.channel();
-
-                        int ops = key.interestOps();
-                        Object att = key.attachment();
-                        // Cancel the old key
-                        key.cancel();
                         if(selectableChannel instanceof  ServerSocketChannel) {
+                            int ops = key.interestOps();
+                            Object att = key.attachment();
                             // Register the channel with the new selector
                             selectableChannel.register(newSelector, ops, att);
                         } else {
                             destroyChannel((SocketChannel) selectableChannel);
                         }
-                    } catch (Exception ex){}
+                    } catch (Exception ex){
+                        Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Closing channel fail", ex);
+                    }
                 }
                 try {
                     selector.close();
