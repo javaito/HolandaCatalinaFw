@@ -894,11 +894,9 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 "Executing action %s for rogue state in server %s", action, getDescription());
                         if(consumer instanceof NetServer) {
                             switch (action) {
-                                case SelectorHealthChecker.Actions.SHUTDOWN: System.exit(1); break;
-                                case SelectorHealthChecker.Actions.RECREATE_SELECTOR: createSelector(); break;
+                                case SelectorHealthChecker.Actions.SHUTDOWN: {System.exit(1); break;}
+                                case SelectorHealthChecker.Actions.RECREATE_SELECTOR: {createSelector(); break;}
                             }
-                        } else {
-                            break;
                         }
                         rogueState = false;
                     }
