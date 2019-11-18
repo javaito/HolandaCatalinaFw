@@ -897,6 +897,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 case SelectorHealthChecker.Actions.SHUTDOWN: {System.exit(1); break;}
                                 case SelectorHealthChecker.Actions.RECREATE_SELECTOR: {createSelector(); break;}
                             }
+                        } else {
+                            break;
                         }
                         rogueState = false;
                     }
