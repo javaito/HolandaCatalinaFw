@@ -11,6 +11,8 @@ import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.events.Events;
 import org.hcjf.events.RemoteEvent;
+import org.hcjf.io.net.NetClient;
+import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
@@ -526,8 +528,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 //    }
 
     public void incomingMessage(CloudSession session, Message message) {
+        String from = session.getConsumer() instanceof NetServer ?
+                session.getConsumer().getName() : ((NetClient)session.getConsumer()).getHost();
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                "Incoming '%s' message from '%s': %s", message.getClass(), session.getNode().toString(), message.getId());
+                "Incoming '%s' message from '%s': %s", message.getClass(), from, message.getId());
         Message responseMessage = null;
         if(message instanceof ServiceDefinitionMessage) {
             try {
