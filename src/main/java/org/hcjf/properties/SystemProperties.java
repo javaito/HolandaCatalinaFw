@@ -591,7 +591,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.WRITE_TIMEOUT, "100");
         defaults.put(Net.IO_UDP_LRU_ADDRESSES_SIZE, "1000");
         defaults.put(Net.IO_UDP_LRU_SESSIONS_SIZE, "1000");
-        defaults.put(Net.IO_QUEUE_SIZE, "10000000");
+        defaults.put(Net.IO_QUEUE_SIZE, "1000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_NAME, "IoThreadPool");
         defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "204800");

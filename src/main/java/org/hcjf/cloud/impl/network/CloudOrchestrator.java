@@ -331,7 +331,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
                 try {
                     invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
-                    break;
                 } catch (Exception ex) {
                     Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
                     try {
@@ -340,7 +339,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     } catch (InterruptedException e) {
                         break;
                     }
-                    continue;
                 }
             } catch (Exception ex){
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Fail to trying publish the service", ex);
@@ -529,10 +527,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     public void incomingMessage(CloudSession session, Message message) {
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                "Incoming '%s' message: %s", message.getClass(), message.getId());
+                "Incoming '%s' message from '%s': %s", message.getClass(), session.getNode().toString(), message.getId());
         Message responseMessage = null;
         if(message instanceof ServiceDefinitionMessage) {
             try {
+                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                        "SERVICE DEFINITION MESSAGE!! From %s", session.getNode().toString());
                 responseMessage = new ServiceDefinitionResponseMessage(message);
                 ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
             } catch (Exception ex) {
@@ -829,7 +829,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     }
                     result = responseListener.getResponse(message);
                 } else {
-                    throw new HCJFRuntimeException("Connection timeout with service: " + networkComponent.getName());
+                    throw new HCJFRuntimeException("Connection timeout with service: %s", networkComponent.getName());
                 }
             } finally {
                 try {
