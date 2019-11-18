@@ -69,7 +69,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private Map<UUID, ServiceEndPoint> endPoints;
     private Map<String,ServiceEndPoint> endPointsByGatewayId;
     private Object publishMeMonitor;
-    private Boolean publishMeFlag;
 
     private Object wagonMonitor;
     private Long lastVisit;
@@ -133,7 +132,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         endPointsByGatewayId = new HashMap<>();
 
         publishMeMonitor = new Object();
-        publishMeFlag = false;
 
         wagonMonitor = new Object();
         lastVisit = System.currentTimeMillis();
@@ -312,16 +310,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
      */
     private void initServicePublication(ServiceEndPoint serviceEndPoint) {
         while(!Thread.currentThread().isInterrupted()) {
-
-            synchronized (publishMeMonitor) {
-                if(!publishMeFlag) {
-                    try {
-                        publishMeMonitor.wait();
-                    } catch (InterruptedException e) { }
-                    continue;
-                }
-            }
-
             try {
                 Collection<Message> messages = createServicePublicationCollection();
                 ServiceDefinitionMessage serviceDefinitionMessage = new ServiceDefinitionMessage();
@@ -342,6 +330,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         break;
                     }
                 }
+
+                synchronized (publishMeMonitor) {
+                    try {
+                        publishMeMonitor.wait();
+                    } catch (InterruptedException e) { }
+                }
             } catch (Exception ex){
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Fail to trying publish the service", ex);
             }
@@ -350,7 +344,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     public final void publishMe() {
         synchronized (publishMeMonitor) {
-            publishMeFlag = true;
             publishMeMonitor.notifyAll();
         }
     }
