@@ -536,7 +536,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(message instanceof ServiceDefinitionMessage) {
             try {
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                        "SERVICE DEFINITION MESSAGE!! From %s", session.getNode().toString());
+                        "SERVICE DEFINITION MESSAGE!! From %s", from);
                 responseMessage = new ServiceDefinitionResponseMessage(message);
                 ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
             } catch (Exception ex) {
