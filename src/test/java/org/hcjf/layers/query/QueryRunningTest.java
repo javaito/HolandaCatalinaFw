@@ -240,6 +240,13 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void subQueryAsParam() {
+        Query query = Query.compile("SELECT * FROM character WHERE addressId = (SELECT addressId FROM address where street like 'Evergreen')");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        System.out.println();
+    }
+
+    @Test
     public void aggregateFunction() {
         Query query = Query.compile("SELECT addressId, aggregateProduct(weight) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
@@ -614,6 +621,63 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
 
         System.out.println();
+    }
+
+    @Test
+    public void testToStringFunction() {
+        Query query = Query.compile("SELECT toString(name) FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT toString(number) FROM address");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM (SELECT number as A_NUMBER FROM address) as add WHERE toString(A_NUMBER) = '2321'");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testCollectionFunctions() {
+        Query query = Query.compile("SELECT *, aggregateContext(sort(name)) as sortedNames FROM character GROUP BY addressId");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        for(JoinableMap row : resultSet) {
+            if(((Collection)row.get("sortedNames")).size() > 1) {
+                Assert.assertEquals(((Collection)row.get("sortedNames")).stream().findFirst().get(), "Bartolomeo Jay");
+            }
+        }
+
+        query = Query.compile("SELECT *, aggregateContext(first(sort(name))) as firstSortedName FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        for(JoinableMap row : resultSet) {
+            Assert.assertTrue(row.get("firstSortedName") instanceof String);
+        }
+
+        query = Query.compile("SELECT *, aggregateContext(last(sort(name))) as firstSortedName FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        for(JoinableMap row : resultSet) {
+            Assert.assertTrue(row.get("firstSortedName") instanceof String);
+        }
+
+        query = Query.compile("SELECT *, aggregateContext(limit(name, 3)) as limitedNames FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        for(JoinableMap row : resultSet) {
+            Assert.assertTrue(row.get("limitedNames") instanceof Collection);
+            Assert.assertTrue(((Collection)row.get("limitedNames")).size() <= 3);
+        }
+
+        query = Query.compile("SELECT *, aggregateContext(skip(name, 3)) as limitedNames FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        for(JoinableMap row : resultSet) {
+            Assert.assertTrue(row.get("limitedNames") instanceof Collection);
+        }
+
+        query = Query.compile("SELECT *, aggregateContext(limit(skip(sort(name), 2), 1)) as limitedNames FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        for(JoinableMap row : resultSet) {
+            Assert.assertTrue(row.get("limitedNames") instanceof Collection);
+        }
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
