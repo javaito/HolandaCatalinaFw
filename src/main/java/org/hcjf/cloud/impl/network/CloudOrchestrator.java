@@ -186,7 +186,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     pod -> {
                         Map<String,String> expectedLabels = SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.POD_LABELS);
                         Map<String,String> labels = pod.getMetadata().getLabels();
-                        return verifyLabels(expectedLabels, labels);
+                        return SystemProperties.getList(SystemProperties.Cloud.Orchestrator.Kubernetes.ALLOW_PHASES).contains(pod.getStatus().getPhase()) &&
+                                verifyLabels(expectedLabels, labels);
                     },
                     service -> {
                         Map<String,String> expectedLabels = SystemProperties.getMap(SystemProperties.Cloud.Orchestrator.Kubernetes.SERVICE_LABELS);

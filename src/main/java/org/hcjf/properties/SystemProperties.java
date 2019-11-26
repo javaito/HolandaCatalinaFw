@@ -424,6 +424,7 @@ public final class SystemProperties extends Properties {
                 public static final String SERVICE_NAME = "hcjf.cloud.orchestrator.kubernetes.service.name";
                 public static final String SERVICE_LABELS = "hcjf.cloud.orchestrator.kubernetes.service.labels";
                 public static final String SERVICE_PORT_NAME = "hcjf.cloud.orchestrator.kubernetes.service.port.name";
+                public static final String ALLOW_PHASES = "hcjf.cloud.orchestrator.kubernetes.allow.phases";
             }
 
             public static final class ThisNode {
@@ -836,6 +837,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.Kubernetes.POD_LABELS, "[]");
         defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_LABELS, "[]");
         defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_PORT_NAME, "hcjf-k8s-port");
+        defaults.put(Cloud.Orchestrator.Kubernetes.ALLOW_PHASES, "[Running]");
+
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "10000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");
