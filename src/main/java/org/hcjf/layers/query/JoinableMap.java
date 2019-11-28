@@ -443,7 +443,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
      * into the groupable object is because the groupable object was grouped
      * whit other instance or the set is domains information.
      */
-    public static final class GroupableSet extends HashSet<Object> {}
+    public static final class GroupableSet extends ArrayList<Object> {}
 
     public static final class JoinableEntry<K, V> implements Map.Entry<K, V> {
         private final K key;
