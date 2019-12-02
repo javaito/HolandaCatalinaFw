@@ -4,6 +4,7 @@ import org.hcjf.cloud.Cloud;
 import org.hcjf.errors.Errors;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +95,9 @@ public final class Events extends Service<EventListener> {
 
     private void dispatchLocalEvent(Event event) {
         for (EventListener listener : getListeners(event)) {
-            fork(() -> listener.onEventReceived(event));
+            try {
+                run(() -> listener.onEventReceived(event), ServiceSession.getCurrentIdentity());
+            } catch(Exception ex){}
         }
     }
 

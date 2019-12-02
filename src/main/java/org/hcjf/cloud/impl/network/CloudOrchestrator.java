@@ -685,7 +685,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             distributedSignalAll(signalAllMessage.getLockName(), signalAllMessage.getConditionName());
         } else if(message instanceof EventMessage) {
             EventMessage eventMessage = (EventMessage) message;
-            distributedDispatchEvent(eventMessage.getEvent());
+            distributedDispatchEvent(eventMessage.getEvent(), eventMessage.getSessionBean(), eventMessage.getSessionId());
             responseMessage = new ResponseMessage(eventMessage);
             ((ResponseMessage)responseMessage).setValue(true);
         } else if(message instanceof PublishLayerMessage) {
@@ -968,8 +968,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             if(!thisServiceEndPoint.getId().equals(serviceEndPoint.getId())) {
                 run(() -> {
                     try {
-                        EventMessage eventMessage =
-                                new EventMessage(UUID.randomUUID());
+                        EventMessage eventMessage = new EventMessage(UUID.randomUUID());
+                        eventMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
+                        eventMessage.setSessionBean(ServiceSession.getCurrentIdentity().getBody());
                         eventMessage.setEvent(event);
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending event to %s", serviceEndPoint.toString());
                         invokeNetworkComponent(serviceEndPoint, eventMessage);
@@ -981,9 +982,15 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
     }
 
-    private void distributedDispatchEvent(DistributedEvent event) {
+    private void distributedDispatchEvent(DistributedEvent event, Map<String,Object> sessionBean, UUID sessionId) {
+        ServiceSession newIdentity;
+        if(sessionBean != null && !sessionBean.isEmpty()) {
+            newIdentity = ServiceSession.findSession(sessionBean);
+        } else {
+            newIdentity = ServiceSession.findSession(sessionId);
+        }
         RemoteEvent remoteEvent = new RemoteEvent(event);
-        Events.sendEvent(remoteEvent);
+        ServiceSession.runAs(() -> Events.sendEvent(remoteEvent), newIdentity);
     }
 
     private DistributedLayer getDistributedLayer(boolean local, Object... path) {
