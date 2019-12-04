@@ -283,6 +283,9 @@ public class QueryRunningTest {
         Query query5 = Query.compile("SELECT field1 FROM (SELECT *, bsonParse(body) AS bodyDecoded  FROM character where isNotNull(body)).bodyDecoded as body");
         Collection<JoinableMap> resultSet5 = Query.evaluate(query5);
         Assert.assertEquals(resultSet5.stream().findFirst().get().size(), 1);
+        Query query6 = Query.compile("SELECT * FROM character JOIN (select * from address) as add ON add.addressId = character.addressId WHERE weight > 16");
+        Collection<JoinableMap> resultSet6 = Query.evaluate(query6);
+        System.out.println();
     }
 
     @Test
@@ -324,6 +327,10 @@ public class QueryRunningTest {
         Query query = Query.compile("SELECT lastName, distinct(lastName) FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 5);
+
+        query = Query.compile("SELECT count(lastName) as value1, distinct(lastName), count(lastName) as value2 FROM character group by a");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test

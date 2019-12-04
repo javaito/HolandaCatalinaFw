@@ -678,11 +678,10 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Result set.
      */
     private Collection<JoinableMap> resolveDynamicResource(QueryDynamicResource resource) {
-        QueryDynamicResource queryDynamicResource = (QueryDynamicResource) getResource();
-        Collection<JoinableMap> data = Query.evaluate(queryDynamicResource.getQuery());
+        Collection<JoinableMap> data = Query.evaluate(resource.getQuery());
 
-        if(queryDynamicResource.getPath() != null && !queryDynamicResource.getPath().isBlank()) {
-            Collection resultPath = resolveResourcePath(data, queryDynamicResource.getPath());
+        if(resource.getPath() != null && !resource.getPath().isBlank()) {
+            Collection resultPath = resolveResourcePath(data, resource.getPath());
             data = new ArrayList<>();
             for(Object dataObject : resultPath) {
                 data.add(new JoinableMap(Introspection.toMap(dataObject)));
