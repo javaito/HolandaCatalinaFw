@@ -548,10 +548,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     }
                 }
 
-                endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setName(
-                        ((ServiceDefinitionMessage) message).getServiceName());
-                endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setDistributedEventListener(
-                        ((ServiceDefinitionMessage) message).getEventListener());
+                try {
+                    endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setName(
+                            ((ServiceDefinitionMessage) message).getServiceName());
+                    endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setDistributedEventListener(
+                            ((ServiceDefinitionMessage) message).getEventListener());
+                } catch (Exception ex){}
 
                 //Sent the message for all the replicas
                 if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
