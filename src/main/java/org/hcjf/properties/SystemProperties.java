@@ -447,6 +447,7 @@ public final class SystemProperties extends Properties {
                 public static final String GATEWAY_ADDRESS = "hcjf.cloud.orchestrator.this.service.end.point.gateway.address";
                 public static final String GATEWAY_PORT = "hcjf.cloud.orchestrator.this.service.end.point.gateway.port";
                 public static final String PUBLICATION_TIMEOUT = "hcjf.cloud.orchestrator.this.service.end.point.publication.timeout";
+                public static final String DISTRIBUTED_EVENT_LISTENER = "hcjf.cloud.orchestrator.this.service.end.point.distributed.event.listener";
             }
 
             public static final class Broadcast {
@@ -828,6 +829,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "18080");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_service");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "3600000");
+        defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.DISTRIBUTED_EVENT_LISTENER, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");

@@ -67,7 +67,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     private ServiceEndPoint thisServiceEndPoint;
     private Map<UUID, ServiceEndPoint> endPoints;
-    private Map<String,ServiceEndPoint> endPointsByGatewayId;
+    private Map<String, ServiceEndPoint> endPointsByGatewayId;
     private Object publishMeMonitor;
 
     private Object wagonMonitor;
@@ -127,6 +127,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         thisServiceEndPoint.setName(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.NAME));
         thisServiceEndPoint.setGatewayAddress(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS));
         thisServiceEndPoint.setGatewayPort(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_PORT));
+        thisServiceEndPoint.setDistributedEventListener(SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.DISTRIBUTED_EVENT_LISTENER));
 
         endPoints = new HashMap<>();
         endPointsByGatewayId = new HashMap<>();
@@ -318,6 +319,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 serviceDefinitionMessage.setMessages(messages);
                 serviceDefinitionMessage.setServiceId(thisServiceEndPoint.getId());
                 serviceDefinitionMessage.setServiceName(thisServiceEndPoint.getName());
+                serviceDefinitionMessage.setEventListener(thisServiceEndPoint.isDistributedEventListener());
                 serviceDefinitionMessage.setBroadcasting(true);
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
                 try {
@@ -548,6 +550,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
                 endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setName(
                         ((ServiceDefinitionMessage) message).getServiceName());
+                endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setDistributedEventListener(
+                        ((ServiceDefinitionMessage) message).getEventListener());
 
                 //Sent the message for all the replicas
                 if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
@@ -965,7 +969,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     public void dispatchEvent(DistributedEvent event) {
         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
-            if(!thisServiceEndPoint.getId().equals(serviceEndPoint.getId())) {
+            if(!thisServiceEndPoint.getId().equals(serviceEndPoint.getId()) && serviceEndPoint.isDistributedEventListener()) {
                 run(() -> {
                     try {
                         EventMessage eventMessage = new EventMessage(UUID.randomUUID());

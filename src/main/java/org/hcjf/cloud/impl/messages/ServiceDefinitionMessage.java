@@ -9,6 +9,7 @@ public class ServiceDefinitionMessage extends MessageCollection {
     private UUID serviceId;
     private String serviceName;
     private Boolean broadcasting;
+    private Boolean eventListener;
 
     public UUID getServiceId() {
         return serviceId;
@@ -32,5 +33,13 @@ public class ServiceDefinitionMessage extends MessageCollection {
 
     public void setBroadcasting(Boolean broadcasting) {
         this.broadcasting = broadcasting;
+    }
+
+    public Boolean getEventListener() {
+        return eventListener;
+    }
+
+    public void setEventListener(Boolean eventListener) {
+        this.eventListener = eventListener;
     }
 }
