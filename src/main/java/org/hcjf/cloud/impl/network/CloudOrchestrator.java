@@ -33,6 +33,7 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.Introspection;
+import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 
 import java.io.IOException;
@@ -48,6 +49,12 @@ import java.util.*;
  */
 public final class CloudOrchestrator extends Service<NetworkComponent> {
 
+    private static final class OriginDataFields {
+        private static final String NODE = "node";
+        private static final String SERVICE = "service";
+        private static final String UNKNOWN = "unknown";
+    }
+
     public static final CloudOrchestrator instance;
 
     static {
@@ -58,6 +65,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     private Node thisNode;
+    private Map<String,Object> thisNodeMap;
     private Map<UUID,Node> nodes;
     private Map<String, Node> nodesByLanId;
     private Map<String, Node> nodesByWanId;
@@ -66,6 +74,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private Map<UUID, ResponseListener> responseListeners;
 
     private ServiceEndPoint thisServiceEndPoint;
+    private Map<String,Object> thisServiceEndPointMap;
     private Map<UUID, ServiceEndPoint> endPoints;
     private Map<String, ServiceEndPoint> endPointsByGatewayId;
     private Object publishMeMonitor;
@@ -238,6 +247,27 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 }
             });
         }
+    }
+
+    private synchronized Map<String,Object> getThisNodeMap() {
+        if(thisNodeMap == null) {
+            thisNodeMap = Introspection.toMap(thisNode);
+        }
+        return thisNodeMap;
+    }
+
+    private synchronized Map<String,Object> getThisServiceEndPointMap(){
+        if(thisServiceEndPointMap == null) {
+            thisServiceEndPointMap = Introspection.toMap(thisServiceEndPoint);
+        }
+        return thisServiceEndPointMap;
+    }
+
+    private synchronized Map<String,Object> getOriginData() {
+        Map<String,Object> result = new HashMap<>();
+        result.put(OriginDataFields.NODE, getThisNodeMap());
+        result.put(OriginDataFields.SERVICE, getThisServiceEndPointMap());
+        return result;
     }
 
     /**
@@ -524,15 +554,15 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 //    }
 
     public void incomingMessage(CloudSession session, Message message) {
-        String from = session.getConsumer() instanceof NetServer ?
-                session.getConsumer().getName() : ((NetClient)session.getConsumer()).getHost();
+        String from = OriginDataFields.UNKNOWN;
+        if(message.getOriginData() != null) {
+            from = JsonUtils.toJsonTree(message.getOriginData()).toString();
+        }
         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                 "Incoming '%s' message from '%s': %s", message.getClass(), from, message.getId());
         Message responseMessage = null;
         if(message instanceof ServiceDefinitionMessage) {
             try {
-                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                        "SERVICE DEFINITION MESSAGE!! From %s", from);
                 responseMessage = new ServiceDefinitionResponseMessage(message);
                 ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
             } catch (Exception ex) {
@@ -542,11 +572,19 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             try {
                 //This king of messages contains all the information about a service.
                 ServiceDefinitionMessage serviceDefinitionMessage = (ServiceDefinitionMessage) message;
-                if (serviceDefinitionMessage.getMessages() != null) {
-                    for (Message innerMessage : serviceDefinitionMessage.getMessages()) {
-                        processMessage(session, innerMessage);
+                fork(() -> {
+                    if (serviceDefinitionMessage.getMessages() != null) {
+                        for (Message innerMessage : serviceDefinitionMessage.getMessages()) {
+                            try {
+                                processMessage(session, innerMessage);
+                            } catch (Exception ex) {
+                                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                        "Unable to process one message of the service publication collection: %s",
+                                        innerMessage.getClass().toString());
+                            }
+                        }
                     }
-                }
+                });
 
                 try {
                     endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setName(
@@ -555,18 +593,21 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                             ((ServiceDefinitionMessage) message).getEventListener());
                 } catch (Exception ex){}
 
-                //Sent the message for all the replicas
-                if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
-                    serviceDefinitionMessage.setBroadcasting(false);
-                    for (Node node : nodes.values()) {
-                        try {
-                            invokeNetworkComponent(node, serviceDefinitionMessage);
-                        } catch (Exception ex) {
-                            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                                    "Unable to notify node: %s", node.toString());
+                fork(() -> {
+                    //Sent the message for all the replicas
+                    if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
+                        serviceDefinitionMessage.setBroadcasting(false);
+                        for (Node node : nodes.values()) {
+                            try {
+                                invokeNetworkComponent(node, serviceDefinitionMessage,
+                                        SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT));
+                            } catch (Exception ex) {
+                                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                        "Unable to notify node: %s", node.toString());
+                            }
                         }
                     }
-                }
+                });
             } catch (Exception ex){
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                         "Exception processing publication message: %s", ex, message.getId().toString());
@@ -805,6 +846,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         if(message.getId() == null) {
             message.setId(UUID.randomUUID());
         }
+        message = populateOriginData(message);
 
         if(networkComponent != null) {
             CloudClient client;
@@ -826,10 +868,13 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     registerListener(message, responseListener);
                     try {
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                                "Sending invoke service message: '%s' %s", message.getClass().getName(), message.getId().toString());
+                                "Sending to %s invoke service message: '%s' %s",
+                                networkComponent.getName(),
+                                message.getClass().getName(),
+                                message.getId().toString());
                         client.send(message);
                     } catch (Exception ex) {
-                        throw new HCJFRuntimeException("Unable to send message", ex);
+                        throw new HCJFRuntimeException("Unable to send message to %s", ex, networkComponent.getName());
                     }
                     result = responseListener.getResponse(message);
                 } else {
@@ -844,6 +889,16 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             throw new HCJFRuntimeException("Service end point not found (" + networkComponent.getId() + ")");
         }
         return result;
+    }
+
+    private Message populateOriginData(Message message) {
+        if(message instanceof MessageCollection) {
+            for(Message innerMessage : ((MessageCollection)message).getMessages()) {
+                populateOriginData(innerMessage);
+            }
+        }
+        message.setOriginData(getOriginData());
+        return message;
     }
 
     private void registerListener(Message message, ResponseListener listener) {

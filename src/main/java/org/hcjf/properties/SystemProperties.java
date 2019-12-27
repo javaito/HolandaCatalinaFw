@@ -416,6 +416,7 @@ public final class SystemProperties extends Properties {
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
+            public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT = "hcjf.cloud.orchestrator.service.publication.broadcasting.timeout";
 
             public static final class Kubernetes {
                 public static final String ENABLED = "hcjf.cloud.orchestrator.kubernetes.enabled";
@@ -821,6 +822,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.SERVICE_END_POINTS, "[]");
+        defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_node");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
