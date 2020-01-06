@@ -54,7 +54,6 @@ public class ServiceSession implements Comparable {
         this.id = serviceSession.id;
         this.sessionName = serviceSession.sessionName;
         this.properties = new HashMap<>();
-        this.properties.putAll(serviceSession.properties);
         layerStack = Collections.synchronizedMap(new HashMap<>());
         systemTimeByThread = new HashMap<>();
         threadMXBean = ManagementFactory.getThreadMXBean();
