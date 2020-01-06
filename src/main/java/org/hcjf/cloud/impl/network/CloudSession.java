@@ -18,6 +18,12 @@ public class CloudSession extends NetSession {
         super(UUID.randomUUID(), consumer);
     }
 
+    protected CloudSession(CloudSession cloudSession) {
+        super(cloudSession);
+        this.ackMessage = cloudSession.ackMessage;
+        this.node = cloudSession.node;
+    }
+
     public AckMessage getAckMessage() {
         return ackMessage;
     }

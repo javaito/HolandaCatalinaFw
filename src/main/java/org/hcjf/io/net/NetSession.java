@@ -20,6 +20,14 @@ public abstract class NetSession extends ServiceSession {
         this.consumer = consumer;
     }
 
+    protected NetSession(NetSession netSession) {
+        super(netSession);
+        this.consumer = netSession.consumer;
+        this.remoteHost = netSession.remoteHost;
+        this.remotePort = netSession.remotePort;
+        this.checked = netSession.checked;
+    }
+
     /**
      * Return the consumer.
      * @return Consumer.
