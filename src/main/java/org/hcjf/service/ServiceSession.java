@@ -50,6 +50,18 @@ public class ServiceSession implements Comparable {
         grants = new HashSet<>();
     }
 
+    protected ServiceSession(ServiceSession serviceSession) {
+        this.id = serviceSession.id;
+        this.sessionName = serviceSession.sessionName;
+        this.properties = new HashMap<>(serviceSession.properties);
+        layerStack = Collections.synchronizedMap(new HashMap<>());
+        systemTimeByThread = new HashMap<>();
+        threadMXBean = ManagementFactory.getThreadMXBean();
+        this.locale = serviceSession.locale;
+        identities = new ArrayList<>();
+        this.grants = new HashSet<>(serviceSession.grants);
+    }
+
     /**
      * Run the runnable instance in the same thread but in the scope of other identity, when the runnable code ends
      * the identity is removed automatically no matter how it's finished.
@@ -412,6 +424,14 @@ public class ServiceSession implements Comparable {
             result = ((ServiceSession)obj).getId().equals(getId());
         }
         return result;
+    }
+
+    /**
+     * This method returns a clone of a session. The default implementation return a same instance.
+     * @return Clone instance of the session.
+     */
+    public ServiceSession getClone() {
+        return new ServiceSession(this);
     }
 
     /**
