@@ -53,13 +53,15 @@ public class ServiceSession implements Comparable {
     protected ServiceSession(ServiceSession serviceSession) {
         this.id = serviceSession.id;
         this.sessionName = serviceSession.sessionName;
-        this.properties = new HashMap<>(serviceSession.properties);
+        this.properties = new HashMap<>();
+        this.properties.putAll(serviceSession.properties);
         layerStack = Collections.synchronizedMap(new HashMap<>());
         systemTimeByThread = new HashMap<>();
         threadMXBean = ManagementFactory.getThreadMXBean();
         this.locale = serviceSession.locale;
         identities = new ArrayList<>();
-        this.grants = new HashSet<>(serviceSession.grants);
+        this.grants = new HashSet<>();
+        this.grants.addAll(serviceSession.grants);
     }
 
     /**

@@ -77,14 +77,14 @@ public class LayerSecurityTest {
                 SecurityTestLayer.INVOKE_2_PERMISSION_NAME));
         try {
             Service.run(() -> {
-                serviceSession.addGrant(Grants.getGrant(SecurityTestLayer.class,
+                ServiceSession.getCurrentIdentity().addGrant(Grants.getGrant(SecurityTestLayer.class,
                         SecurityTestLayer.INVOKE_LAZY_PERMISSION_NAME));
                 SecurityTestLayerInterface li = Layers.get(SecurityTestLayerInterface.class, "test");
                 int i = li.invoke(0);
                 Assert.assertEquals(i, 50);
                 i = li.invoke(1);
                 Assert.assertEquals(i, 101);
-                serviceSession.addGrant(Grants.getGrant(SecurityTestLayer.class,
+                ServiceSession.getCurrentIdentity().addGrant(Grants.getGrant(SecurityTestLayer.class,
                         SecurityTestLayer.INVOKE_ACTION_LAZY_PERMISSION_NAME));
                 i = li.invoke(0);
                 Assert.assertEquals(i, 250);
@@ -93,6 +93,7 @@ public class LayerSecurityTest {
             }, serviceSession, true, Long.MAX_VALUE);
             Assert.assertTrue(true);
         } catch (Exception ex) {
+            ex.printStackTrace();
             Assert.fail();
         }
     }
