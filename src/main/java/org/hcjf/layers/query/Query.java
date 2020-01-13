@@ -1880,18 +1880,22 @@ public class Query extends EvaluatorCollection implements Queryable {
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
             result = UUID.fromString(trimmedStringValue);
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
-            result = Long.parseLong(trimmedStringValue);
+            try {
+                result = Long.parseLong(trimmedStringValue);
+            } catch (Exception ex) {
+                result = trimmedStringValue;
+            }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.DECIMAL_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
-                throw new HCJFRuntimeException("Unable to parse decimal number");
+                result = trimmedStringValue;
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.SCIENTIFIC_NOTATION_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
-                throw new HCJFRuntimeException("Unable to parse scientific number");
+                result = trimmedStringValue;
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
