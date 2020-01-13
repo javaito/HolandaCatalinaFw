@@ -679,15 +679,19 @@ public final class Strings {
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
                 result = UUID.fromString(trimmedStringValue);
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
-                long longValue = Long.parseLong(trimmedStringValue);
-                if (longValue == (byte) longValue) {
-                    result = (byte) longValue;
-                } else if (longValue == (short) longValue) {
-                    result = (short) longValue;
-                } else if (longValue == (int) longValue) {
-                    result = (int) longValue;
-                } else {
-                    result = longValue;
+                try {
+                    long longValue = Long.parseLong(trimmedStringValue);
+                    if (longValue == (byte) longValue) {
+                        result = (byte) longValue;
+                    } else if (longValue == (short) longValue) {
+                        result = (short) longValue;
+                    } else if (longValue == (int) longValue) {
+                        result = (int) longValue;
+                    } else {
+                        result = longValue;
+                    }
+                } catch (Exception ex) {
+                    result = trimmedStringValue;
                 }
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
                 try {
