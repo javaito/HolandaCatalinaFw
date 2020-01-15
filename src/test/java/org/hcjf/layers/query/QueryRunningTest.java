@@ -609,6 +609,14 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void isNullTest() {
+        Query query = Query.compile("SELECT isNull(noField) as n FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+        Assert.assertTrue(Introspection.resolve(resultSet.stream().findFirst().get(), "n"));
+    }
+
+    @Test
     public void testOrder() {
         Query query = Query.compile("SELECT * FROM character ORDER BY name limit 1");
         Collection<JoinableMap> resultSet = Query.evaluate(query);

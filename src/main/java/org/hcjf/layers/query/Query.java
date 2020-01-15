@@ -1969,7 +1969,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                 originalValue = trimmedStringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
                 functionParameters = new ArrayList<>();
                 for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                    if(!param.isBlank()) {
+                        functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                    }
                 }
                 originalValue = Strings.reverseRichTextGrouping(originalValue, richTexts);
                 function = true;
