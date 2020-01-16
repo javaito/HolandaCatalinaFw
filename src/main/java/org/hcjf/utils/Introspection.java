@@ -83,31 +83,95 @@ public final class Introspection {
                     Integer index = Integer.parseInt(element);
                     result = ((List)result).get(index);
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to list value [" + element + "]");
+                    throw new HCJFRuntimeException("Unable to access to list value [" + element + "]");
                 }
             } else if(result instanceof Collection) {
                 try {
                     Integer index = Integer.parseInt(element);
                     result = ((Collection)result).stream().skip(index-1).findFirst().get();
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to collection value [" + element + "]");
+                    throw new HCJFRuntimeException("Unable to access to collection value [" + element + "]");
                 }
             } else if(result.getClass().isArray()) {
                 try {
                     Integer index = Integer.parseInt(element);
                     result = Array.get(result, index);
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to array value [" + element + "]");
+                    throw new HCJFRuntimeException("Unable to access to array value [" + element + "]");
                 }
             } else {
                 try {
                     result = get(result, element);
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to field '" + element + "'");
+                    throw new HCJFRuntimeException("Unable to access to field '" + element + "'");
                 }
             }
         }
         return (O) result;
+    }
+
+    /**
+     * This method creates a new map instance and then put a value into the last element of the path, if the path
+     * doesn't exists then it's created.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O createAndPut(Object value, String path) {
+        return put(null, value, path);
+    }
+
+    /**
+     * This method creates a new map instance and then put a value into the last element of the path, if the path
+     * doesn't exists then it's created.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O createAndPut(Object value, String... path) {
+        return put(null, value, path);
+    }
+
+    /**
+     * This method put a value into the finale element of the path, if the path doesn't exists then it's created, this
+     * method works over any updatable instance and only creates other maps if the path is incomplete.
+     * @param instance Map instance.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O put(O instance, Object value, String path) {
+        String[] pathElements = path.split(PATH_SEPARATOR);
+        return put(instance, value, pathElements);
+    }
+
+    /**
+     * This method put a value into the finale element of the path, if the path doesn't exists then it's created, this
+     * method works over any updatable instance and only creates other maps if the path is incomplete.
+     * @param instance Map instance.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O put(O instance, Object value, String... path) {
+        if(instance == null) {
+            instance = (O) new HashMap<String,Object>();
+        }
+        Object currentInstance = instance;
+        Object nextInstance;
+        if(path != null && path.length > 0) {
+            for (int i = 0; i < path.length; i++) {
+                if(i + 1 == path.length) {
+                    set(currentInstance, path[i], value);
+                } else {
+                    nextInstance = resolve(currentInstance, path[i]);
+                    if(nextInstance == null) {
+                        nextInstance = new HashMap<>();
+                        set(currentInstance, path[i], nextInstance);
+                    }
+                    currentInstance = nextInstance;
+                }
+            }
+        } else {
+            throw new HCJFRuntimeException("The path to put a value can't be empty");
+        }
+        return instance;
     }
 
     public static void set(Object instance, String path, Object value) {
@@ -128,14 +192,14 @@ public final class Introspection {
                 Integer index = Integer.parseInt(path);
                 ((List)bean).set(index, value);
             } catch (Exception e) {
-                throw new RuntimeException("Unable to access to list value [" + path + "]");
+                throw new HCJFRuntimeException("Unable to access to list value [" + path + "]");
             }
         } else if(bean.getClass().isArray()) {
             try {
                 Integer index = Integer.parseInt(path);
                 Array.set(bean, index, value);
             } catch (Exception e) {
-                throw new RuntimeException("Unable to access to array value [" + path + "]");
+                throw new HCJFRuntimeException("Unable to access to array value [" + path + "]");
             }
         } else {
             try {
@@ -151,7 +215,7 @@ public final class Introspection {
 
                 setValue(bean, new Setter(bean.getClass(), path, setter), value);
             } catch (Exception e) {
-                throw new RuntimeException("Unable to access to field '" + path + "'");
+                throw new HCJFRuntimeException("Unable to access to field '" + path + "'");
             }
         }
     }
@@ -268,9 +332,9 @@ public final class Introspection {
         try {
             result = clazz.getConstructor().newInstance();
         } catch (InvocationTargetException e) {
-            throw new IllegalArgumentException("Unable to create instance", e);
+            throw new HCJFRuntimeException("Unable to create instance", e);
         } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("Default constructor not found", e);
+            throw new HCJFRuntimeException("Default constructor not found", e);
         }
         Map<String, Setter> setters = getSetters(clazz);
         Object currentValue;
