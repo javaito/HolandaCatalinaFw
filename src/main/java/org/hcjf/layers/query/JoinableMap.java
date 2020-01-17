@@ -228,7 +228,8 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
      * @return Part of the model.
      */
     public Map<String,Object> getResourceModel(String resourceName) {
-        return Collections.unmodifiableMap(mapInstanceByResource.get(resourceName));
+        return Collections.unmodifiableMap(mapInstanceByResource.get(resourceName) != null ?
+                mapInstanceByResource.get(resourceName) : new HashMap<>());
     }
 
     /**
