@@ -376,6 +376,16 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void debug() {
+        Query query = Query.compile("" +
+                "SELECT address.street, lastName, concat(name), stringJoin('@', name), sum(weight), addressId FROM character " +
+                "JOIN address on address.addressId = character.addressId " +
+                "WHERE character.lastName like 'simp'");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void join() {
         Query query = Query.compile("SELECT address.street, concat(name), stringJoin('@', name), sum(weight), addressId FROM character JOIN address ON address.addressId = character.addressId GROUP BY addressId");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);

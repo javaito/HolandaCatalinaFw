@@ -418,6 +418,14 @@ public final class SystemProperties extends Properties {
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
             public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT = "hcjf.cloud.orchestrator.service.publication.broadcasting.timeout";
 
+            public static final class Events {
+                public static final String LOG_TAG = "hcjf.cloud.orchestrator.events.log.tag";
+                public static final String TIMEOUT = "hcjf.cloud.orchestrator.events.timeout";
+                public static final String ATTEMPTS = "hcjf.cloud.orchestrator.events.attempts";
+                public static final String SLEEP_PERIOD_BETWEEN_ATTEMPTS = "hcjf.cloud.orchestrator.events.sleep.period.between.attempts";
+                public static final String STORE_STRATEGY = "hcjf.cloud.orchestrator.events.store.strategy";
+            }
+
             public static final class Kubernetes {
                 public static final String ENABLED = "hcjf.cloud.orchestrator.kubernetes.enabled";
                 public static final String POD_LABELS = "hcjf.cloud.orchestrator.kubernetes.pod.labels";
@@ -842,6 +850,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_LABELS, "[]");
         defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_PORT_NAME, "hcjf-k8s-port");
         defaults.put(Cloud.Orchestrator.Kubernetes.ALLOW_PHASES, "[Running]");
+        defaults.put(Cloud.Orchestrator.Events.LOG_TAG, "DISTRIBUTED_EVENT");
+        defaults.put(Cloud.Orchestrator.Events.TIMEOUT, "3000");
+        defaults.put(Cloud.Orchestrator.Events.ATTEMPTS, "5");
+        defaults.put(Cloud.Orchestrator.Events.SLEEP_PERIOD_BETWEEN_ATTEMPTS, "3000");
+        defaults.put(Cloud.Orchestrator.Events.STORE_STRATEGY, "default");
 
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "10000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");

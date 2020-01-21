@@ -11,6 +11,7 @@ import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.events.Events;
 import org.hcjf.events.RemoteEvent;
+import org.hcjf.events.StoreStrategyLayerInterface;
 import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
@@ -1028,15 +1029,37 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         for (ServiceEndPoint serviceEndPoint : endPoints.values()) {
             if(!thisServiceEndPoint.getId().equals(serviceEndPoint.getId()) && serviceEndPoint.isDistributedEventListener()) {
                 run(() -> {
-                    try {
-                        EventMessage eventMessage = new EventMessage(UUID.randomUUID());
-                        eventMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
-                        eventMessage.setSessionBean(ServiceSession.getCurrentIdentity().getBody());
-                        eventMessage.setEvent(event);
-                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending event to %s", serviceEndPoint.toString());
-                        invokeNetworkComponent(serviceEndPoint, eventMessage);
-                    } catch (Exception ex) {
-                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Couldn't dispatch event %s", ex, serviceEndPoint.toString());
+                    Integer attempts = SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.Events.ATTEMPTS);
+                    Long sleepTime = SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.Events.SLEEP_PERIOD_BETWEEN_ATTEMPTS);
+                    Boolean success = false;
+                    for (int i = 1; i <= attempts; i++) {
+                        try {
+                            EventMessage eventMessage = new EventMessage(UUID.randomUUID());
+                            eventMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
+                            eventMessage.setSessionBean(ServiceSession.getCurrentIdentity().getBody());
+                            eventMessage.setEvent(event);
+                            Log.i(System.getProperty(SystemProperties.Cloud.Orchestrator.Events.LOG_TAG), "Sending event to %s, attempt %d", serviceEndPoint.toString(), i);
+                            invokeNetworkComponent(serviceEndPoint, eventMessage);
+                            success = true;
+                            break;
+                        } catch (Exception ex) {
+                            Log.w(System.getProperty(SystemProperties.Cloud.Orchestrator.Events.LOG_TAG), "Couldn't dispatch event %s, attempt %d", ex, serviceEndPoint.toString(), i);
+                        }
+                        try {
+                            Thread.sleep(sleepTime);
+                        } catch (Exception ex) {
+                            break;
+                    }
+                    }
+                    if(!success) {
+                        try {
+                            StoreStrategyLayerInterface storeStrategyLayerInterface = Layers.get(StoreStrategyLayerInterface.class,
+                                    SystemProperties.get(SystemProperties.Cloud.Orchestrator.Events.STORE_STRATEGY));
+                            storeStrategyLayerInterface.storeEvent(event);
+                            Log.i(System.getProperty(SystemProperties.Cloud.Orchestrator.Events.LOG_TAG), "Event stored");
+                        } catch (Exception ex) {
+                            Log.w(System.getProperty(SystemProperties.Cloud.Orchestrator.Events.LOG_TAG), "Event discarded");
+                        }
                     }
                 }, ServiceSession.getCurrentIdentity());
             }
