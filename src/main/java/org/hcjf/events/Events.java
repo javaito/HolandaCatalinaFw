@@ -2,6 +2,7 @@ package org.hcjf.events;
 
 import org.hcjf.cloud.Cloud;
 import org.hcjf.errors.Errors;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
@@ -97,7 +98,9 @@ public final class Events extends Service<EventListener> {
         for (EventListener listener : getListeners(event)) {
             try {
                 run(() -> listener.onEventReceived(event), ServiceSession.getCurrentIdentity());
-            } catch(Exception ex){}
+            } catch(Exception ex){
+                Log.e(SystemProperties.get(SystemProperties.Event.LOG_TAG), "Unable to dispatch event", ex);
+            }
         }
     }
 

@@ -71,6 +71,7 @@ public final class SystemProperties extends Properties {
     }
 
     public static final class Event {
+        public static final String LOG_TAG = "hcjf.event.log.tag";
         public static final String SERVICE_NAME = "hcjf.event.service.name";
         public static final String SERVICE_PRIORITY = "hcjf.event.service.priority";
     }
@@ -550,6 +551,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.MAX_ALLOCATED_MEMORY_FOR_THREAD, "15");
         defaults.put(Service.MAX_EXECUTION_TIME_FOR_THREAD, Long.toString(10*1000*1000*1000));
 
+        defaults.put(Event.LOG_TAG, "EVENTS");
         defaults.put(Event.SERVICE_NAME, "Events");
         defaults.put(Event.SERVICE_PRIORITY, "0");
 
