@@ -1,12 +1,12 @@
 package org.hcjf.layers.query.functions;
 
+import io.kubernetes.client.proto.V1;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author javaito
@@ -20,6 +20,11 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
     private static final String CONTAINS_KEY = "containsKey";
     private static final String CONTAINS_ALL_KEYS = "containsAllKeys";
     private static final String KEYS = "keys";
+    private static final String SORT = "sort";
+    private static final String FIRST = "first";
+    private static final String LAST = "last";
+    private static final String SKIP = "skip";
+    private static final String LIMIT = "limit";
 
     public CollectionQueryFunction() {
         super(SystemProperties.get(SystemProperties.Query.Function.COLLECTION_FUNCTION_NAME));
@@ -31,6 +36,11 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
         addFunctionName(CONTAINS_KEY);
         addFunctionName(CONTAINS_ALL_KEYS);
         addFunctionName(KEYS);
+        addFunctionName(SORT);
+        addFunctionName(FIRST);
+        addFunctionName(LAST);
+        addFunctionName(SKIP);
+        addFunctionName(LIMIT);
     }
 
     @Override
@@ -129,6 +139,69 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 }
 
                 result = map.keySet();
+                break;
+            }
+            case SORT: {
+                Set<Object> set = new TreeSet<>((comparable1, comparable2) -> {
+                    int compareResult;
+                    if (comparable1 == null ^ comparable2 == null) {
+                        compareResult = (comparable1 == null) ? -1 : 1;
+                    } else if (comparable1 == null && comparable2 == null) {
+                        compareResult = 0;
+                    } else {
+                        if(comparable1 instanceof Comparable && comparable2 instanceof Comparable) {
+                            compareResult = ((Comparable)comparable1).compareTo(comparable2);
+                        } else {
+                            compareResult = comparable1.hashCode() - comparable2.hashCode();
+                        }
+                    }
+                    return compareResult;
+                });
+                if(getParameter(0, parameters) instanceof  Collection) {
+                    set.addAll(getParameter(0, parameters));
+                } else {
+                    set.add(getParameter(0, parameters));
+                }
+                result = set;
+                break;
+            }
+            case FIRST: {
+                if(getParameter(0, parameters) instanceof  Collection) {
+                    result = ((Collection)getParameter(0, parameters)).stream().findFirst().orElse(null);
+                } else {
+                    result = getParameter(0, parameters);
+                }
+                break;
+            }
+            case LAST: {
+                if(getParameter(0, parameters) instanceof  Collection) {
+                    Collection collection = getParameter(0, parameters);
+                    if(collection.size() > 0) {
+                        result = ((Collection) getParameter(0, parameters)).stream().skip(collection.size() - 1).findFirst().orElse(null);
+                    } else {
+                        result = null;
+                    }
+                } else {
+                    result = getParameter(0, parameters);
+                }
+                break;
+            }
+            case SKIP: {
+                if(getParameter(0, parameters) instanceof  Collection) {
+                    result = ((Collection)getParameter(0, parameters)).stream().skip(getParameter(1, parameters)).collect(Collectors.toList());
+                } else {
+                    result = new ArrayList<>();
+                }
+                break;
+            }
+            case LIMIT : {
+                if(getParameter(0, parameters) instanceof  Collection) {
+                    result = ((Collection)getParameter(0, parameters)).stream().limit(getParameter(1, parameters)).collect(Collectors.toList());
+                } else {
+                    List<Object> list = new ArrayList<>();
+                    list.add(getParameter(0, parameters));
+                    result = list;
+                }
                 break;
             }
         }

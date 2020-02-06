@@ -71,6 +71,7 @@ public final class SystemProperties extends Properties {
     }
 
     public static final class Event {
+        public static final String LOG_TAG = "hcjf.event.log.tag";
         public static final String SERVICE_NAME = "hcjf.event.service.name";
         public static final String SERVICE_PRIORITY = "hcjf.event.service.priority";
     }
@@ -154,9 +155,11 @@ public final class SystemProperties extends Properties {
         public static final String PORT_PROBE_CONNECTION_TIMEOUT = "hcjf.net.port.probe.connection.timeout";
         public static final String REMOTE_ADDRESS_INTO_NET_PACKAGE = "hcjf.net.remote.address.into.net.package";
         public static final String REMOTE_ADDRESS_INTO_NET_SESSION = "hcjf.net.remote.address.into.net.session";
-        public static final String NIO_SELECTOR_MIN_WAIT_TIME = "hcjf.net.nio.selector.min.wait.time";
-        public static final String NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT = "hcjf.net.nio.selector.min.wait.counter.limit";
-        public static final String RECREATE_OR_DESTROY_SELECTOR = "hcjf.net.recreate.or.destroy.selector";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_RUNNING_TIME = "hcjf.net.nio.selector.health.checker.running.time";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_SAMPLE_TIME = "hcjf.net.nio.selector.health.checker.sample.time";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_THRESHOLD = "hcjf.net.nio.selector.health.checker.dangerous.threshold";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS = "hcjf.net.nio.selector.health.checker.dangerous.repeats";
+        public static final String NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION = "hcjf.net.nio.selector.health.checker.dangerous.action";
 
         public static final class Broadcast {
             public static final String SERVICE_NAME = "hcjf.net.broadcast.service.name";
@@ -414,6 +417,15 @@ public final class SystemProperties extends Properties {
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
+            public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT = "hcjf.cloud.orchestrator.service.publication.broadcasting.timeout";
+
+            public static final class Events {
+                public static final String LOG_TAG = "hcjf.cloud.orchestrator.events.log.tag";
+                public static final String TIMEOUT = "hcjf.cloud.orchestrator.events.timeout";
+                public static final String ATTEMPTS = "hcjf.cloud.orchestrator.events.attempts";
+                public static final String SLEEP_PERIOD_BETWEEN_ATTEMPTS = "hcjf.cloud.orchestrator.events.sleep.period.between.attempts";
+                public static final String STORE_STRATEGY = "hcjf.cloud.orchestrator.events.store.strategy";
+            }
 
             public static final class Kubernetes {
                 public static final String ENABLED = "hcjf.cloud.orchestrator.kubernetes.enabled";
@@ -422,6 +434,7 @@ public final class SystemProperties extends Properties {
                 public static final String SERVICE_NAME = "hcjf.cloud.orchestrator.kubernetes.service.name";
                 public static final String SERVICE_LABELS = "hcjf.cloud.orchestrator.kubernetes.service.labels";
                 public static final String SERVICE_PORT_NAME = "hcjf.cloud.orchestrator.kubernetes.service.port.name";
+                public static final String ALLOW_PHASES = "hcjf.cloud.orchestrator.kubernetes.allow.phases";
             }
 
             public static final class ThisNode {
@@ -444,6 +457,7 @@ public final class SystemProperties extends Properties {
                 public static final String GATEWAY_ADDRESS = "hcjf.cloud.orchestrator.this.service.end.point.gateway.address";
                 public static final String GATEWAY_PORT = "hcjf.cloud.orchestrator.this.service.end.point.gateway.port";
                 public static final String PUBLICATION_TIMEOUT = "hcjf.cloud.orchestrator.this.service.end.point.publication.timeout";
+                public static final String DISTRIBUTED_EVENT_LISTENER = "hcjf.cloud.orchestrator.this.service.end.point.distributed.event.listener";
             }
 
             public static final class Broadcast {
@@ -537,6 +551,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Service.MAX_ALLOCATED_MEMORY_FOR_THREAD, "15");
         defaults.put(Service.MAX_EXECUTION_TIME_FOR_THREAD, Long.toString(10*1000*1000*1000));
 
+        defaults.put(Event.LOG_TAG, "EVENTS");
         defaults.put(Event.SERVICE_NAME, "Events");
         defaults.put(Event.SERVICE_PRIORITY, "0");
 
@@ -600,9 +615,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.PORT_PROBE_CONNECTION_TIMEOUT, "1000");
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_PACKAGE, "false");
         defaults.put(Net.REMOTE_ADDRESS_INTO_NET_SESSION, "false");
-        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_TIME, "10");
-        defaults.put(Net.NIO_SELECTOR_MIN_WAIT_COUNTER_LIMIT, "1000");
-        defaults.put(Net.RECREATE_OR_DESTROY_SELECTOR, "true");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_RUNNING_TIME, "1000");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_SAMPLE_TIME, "2000");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_THRESHOLD, "60");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS, "5");
+        defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION, "RECREATE_SELECTOR"); //Valid values [RECREATE_SELECTOR, SHUTDOWN, VOID]
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
@@ -815,6 +832,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.SERVICE_END_POINTS, "[]");
+        defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_node");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
@@ -823,6 +841,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.ThisNode.LAN_PORT, "18080");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_service");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "3600000");
+        defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.DISTRIBUTED_EVENT_LISTENER, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");
@@ -832,6 +851,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.Kubernetes.POD_LABELS, "[]");
         defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_LABELS, "[]");
         defaults.put(Cloud.Orchestrator.Kubernetes.SERVICE_PORT_NAME, "hcjf-k8s-port");
+        defaults.put(Cloud.Orchestrator.Kubernetes.ALLOW_PHASES, "[Running]");
+        defaults.put(Cloud.Orchestrator.Events.LOG_TAG, "DISTRIBUTED_EVENT");
+        defaults.put(Cloud.Orchestrator.Events.TIMEOUT, "3000");
+        defaults.put(Cloud.Orchestrator.Events.ATTEMPTS, "5");
+        defaults.put(Cloud.Orchestrator.Events.SLEEP_PERIOD_BETWEEN_ATTEMPTS, "3000");
+        defaults.put(Cloud.Orchestrator.Events.STORE_STRATEGY, "default");
+
         defaults.put(Cloud.TimerTask.MIN_VALUE_OF_DELAY, "10000");
         defaults.put(Cloud.TimerTask.MAP_NAME, "hcjf.cloud.timer.task.map");
         defaults.put(Cloud.TimerTask.MAP_SUFFIX_NAME, "hcjf.cloud.timer.task.map.");

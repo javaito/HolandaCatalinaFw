@@ -415,8 +415,21 @@ public final class Strings {
      * @return List with all the groups.
      */
     public static List<String> group(String value) {
-        Set<Integer> startIndexes = allIndexOf(value, START_GROUP);
-        Set<Integer> endIndexes = allIndexOf(value, END_GROUP);
+        return group(value, START_GROUP, END_GROUP);
+    }
+
+    /**
+     * Return the list with all the groups and sub groups of the value.
+     * A group is the char sequence between the start group character '('
+     * and the end group character ')'
+     * @param value Groupable value.
+     * @param startGroupCharacter Starting character
+     * @param endGroupCharacter Ending character
+     * @return List with all the groups.
+     */
+    public static List<String> group(String value, String startGroupCharacter, String endGroupCharacter) {
+        Set<Integer> startIndexes = allIndexOf(value, startGroupCharacter);
+        Set<Integer> endIndexes = allIndexOf(value, endGroupCharacter);
 
         if(startIndexes.size() != endIndexes.size()) {
             throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
@@ -547,13 +560,25 @@ public final class Strings {
      * @return Reverted value.
      */
     public static String reverseGrouping(String value, List<String> groups) {
+        return reverseGrouping(value, groups, START_GROUP, END_GROUP);
+    }
+
+    /**
+     * Reverts the grouping action over the specific value.
+     * @param value Value to revert.
+     * @param groups Group lists.
+     * @param startGroupCharacter Starting character.
+     * @param endGroupCharacter Ending character.
+     * @return Reverted value.
+     */
+    public static String reverseGrouping(String value, List<String> groups, String startGroupCharacter, String endGroupCharacter) {
         String result = value;
         String groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
         Integer index;
         while(groupIndex != null) {
             index = Integer.parseInt(groupIndex.replace(REPLACEABLE_GROUP, EMPTY_STRING));
             result = result.replace(groupIndex,
-                    START_GROUP + groups.get(index) + END_GROUP);
+                    startGroupCharacter + groups.get(index) + endGroupCharacter);
             groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
         }
         return result;
@@ -654,15 +679,19 @@ public final class Strings {
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
                 result = UUID.fromString(trimmedStringValue);
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
-                long longValue = Long.parseLong(trimmedStringValue);
-                if (longValue == (byte) longValue) {
-                    result = (byte) longValue;
-                } else if (longValue == (short) longValue) {
-                    result = (short) longValue;
-                } else if (longValue == (int) longValue) {
-                    result = (int) longValue;
-                } else {
-                    result = longValue;
+                try {
+                    long longValue = Long.parseLong(trimmedStringValue);
+                    if (longValue == (byte) longValue) {
+                        result = (byte) longValue;
+                    } else if (longValue == (short) longValue) {
+                        result = (short) longValue;
+                    } else if (longValue == (int) longValue) {
+                        result = (int) longValue;
+                    } else {
+                        result = longValue;
+                    }
+                } catch (Exception ex) {
+                    result = trimmedStringValue;
                 }
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
                 try {

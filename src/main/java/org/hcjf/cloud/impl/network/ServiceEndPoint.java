@@ -9,6 +9,7 @@ public class ServiceEndPoint extends NetworkComponent {
     private Integer gatewayPort;
     private String gatewayId;
     private Long lastServicePublication;
+    private boolean distributedEventListener;
 
     public String getGatewayAddress() {
         return gatewayAddress;
@@ -39,5 +40,17 @@ public class ServiceEndPoint extends NetworkComponent {
 
     public void setLastServicePublication(Long lastServicePublication) {
         this.lastServicePublication = lastServicePublication;
+    }
+
+    public void setGatewayId(String gatewayId) {
+        this.gatewayId = gatewayId;
+    }
+
+    public Boolean isDistributedEventListener() {
+        return distributedEventListener;
+    }
+
+    public void setDistributedEventListener(Boolean distributedEventListener) {
+        this.distributedEventListener = distributedEventListener;
     }
 }

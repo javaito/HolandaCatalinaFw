@@ -23,12 +23,30 @@ public final class Introspection {
     private static final Pattern SETTER_METHODS_PATTERN = Pattern.compile("^(set)([1,A-Z]|[1,0-9])(.*)");
 
     private static final String PATH_SEPARATOR = "\\.";
+    private static final String SETTER_PREFIX = "set";
 
     private static final int SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP = 2;
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
 
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
     private static final Map<Class, Map<String, Accessors>> accessorsCache = new HashMap<>();
+
+    /**
+     * This method resolve the path using introspection to navigate into the instance finding each element of the path.
+     * The path is a set of elements that represents a field, key or index each one.
+     * This is a path example: field.0.field.field.1
+     * @param instance Object to navigate.
+     * @param path Path to navigate the instance.
+     * @return Returns the value that point the path.
+     */
+    public static <O extends Object> O silentResolve(Object instance, String path) {
+        O result = null;
+        try {
+            String[] pathElements = path.split(PATH_SEPARATOR);
+            result = resolve(instance, pathElements);
+        } catch (Exception ex){}
+        return  result;
+    }
 
     /**
      * This method resolve the path using introspection to navigate into the instance finding each element of the path.
@@ -65,31 +83,141 @@ public final class Introspection {
                     Integer index = Integer.parseInt(element);
                     result = ((List)result).get(index);
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to list value [" + element + "]");
+                    throw new HCJFRuntimeException("Unable to access to list value [" + element + "]");
                 }
             } else if(result instanceof Collection) {
                 try {
                     Integer index = Integer.parseInt(element);
                     result = ((Collection)result).stream().skip(index-1).findFirst().get();
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to collection value [" + element + "]");
+                    throw new HCJFRuntimeException("Unable to access to collection value [" + element + "]");
                 }
             } else if(result.getClass().isArray()) {
                 try {
                     Integer index = Integer.parseInt(element);
                     result = Array.get(result, index);
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to array value [" + element + "]");
+                    throw new HCJFRuntimeException("Unable to access to array value [" + element + "]");
                 }
             } else {
                 try {
                     result = get(result, element);
                 } catch (Exception e) {
-                    throw new RuntimeException("Unable to access to field '" + element + "'");
+                    throw new HCJFRuntimeException("Unable to access to field '" + element + "'");
                 }
             }
         }
         return (O) result;
+    }
+
+    /**
+     * This method creates a new map instance and then put a value into the last element of the path, if the path
+     * doesn't exists then it's created.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O createAndPut(Object value, String path) {
+        return put(null, value, path);
+    }
+
+    /**
+     * This method creates a new map instance and then put a value into the last element of the path, if the path
+     * doesn't exists then it's created.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O createAndPut(Object value, String... path) {
+        return put(null, value, path);
+    }
+
+    /**
+     * This method put a value into the finale element of the path, if the path doesn't exists then it's created, this
+     * method works over any updatable instance and only creates other maps if the path is incomplete.
+     * @param instance Map instance.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O put(O instance, Object value, String path) {
+        String[] pathElements = path.split(PATH_SEPARATOR);
+        return put(instance, value, pathElements);
+    }
+
+    /**
+     * This method put a value into the finale element of the path, if the path doesn't exists then it's created, this
+     * method works over any updatable instance and only creates other maps if the path is incomplete.
+     * @param instance Map instance.
+     * @param value Value to put into the map.
+     * @param path Path to resolve.
+     */
+    public static <O extends Object> O put(O instance, Object value, String... path) {
+        if(instance == null) {
+            instance = (O) new HashMap<String,Object>();
+        }
+        Object currentInstance = instance;
+        Object nextInstance;
+        if(path != null && path.length > 0) {
+            for (int i = 0; i < path.length; i++) {
+                if(i + 1 == path.length) {
+                    set(currentInstance, path[i], value);
+                } else {
+                    nextInstance = resolve(currentInstance, path[i]);
+                    if(nextInstance == null) {
+                        nextInstance = new HashMap<>();
+                        set(currentInstance, path[i], nextInstance);
+                    }
+                    currentInstance = nextInstance;
+                }
+            }
+        } else {
+            throw new HCJFRuntimeException("The path to put a value can't be empty");
+        }
+        return instance;
+    }
+
+    public static void set(Object instance, String path, Object value) {
+        Object bean = instance;
+
+        int separatorIndex = path.lastIndexOf(Strings.CLASS_SEPARATOR);
+        if (separatorIndex != -1) {
+            String beanPath = path.substring(0, separatorIndex);
+            bean = resolve(instance, beanPath);
+
+            path = path.substring(separatorIndex + 1);
+        }
+
+        if(bean instanceof Map) {
+            ((Map) bean).put(path, value);
+        } else if(bean instanceof List) {
+            try {
+                Integer index = Integer.parseInt(path);
+                ((List)bean).set(index, value);
+            } catch (Exception e) {
+                throw new HCJFRuntimeException("Unable to access to list value [" + path + "]");
+            }
+        } else if(bean.getClass().isArray()) {
+            try {
+                Integer index = Integer.parseInt(path);
+                Array.set(bean, index, value);
+            } catch (Exception e) {
+                throw new HCJFRuntimeException("Unable to access to array value [" + path + "]");
+            }
+        } else {
+            try {
+                String setterName = SETTER_PREFIX + Character.toUpperCase(path.charAt(0)) + path.substring(1);
+                Method setter = null;
+                for (Method method : bean.getClass().getMethods()) {
+                    if (method.getName().equals(setterName) && method.getParameterCount() == 1 &&
+                        method.getParameters()[0].getType().isAssignableFrom(value.getClass())) {
+                        setter = method;
+                        break;
+                    }
+                }
+
+                setValue(bean, new Setter(bean.getClass(), path, setter), value);
+            } catch (Exception e) {
+                throw new HCJFRuntimeException("Unable to access to field '" + path + "'");
+            }
+        }
     }
 
     /**
@@ -119,6 +247,29 @@ public final class Introspection {
             result.add(get(instance, getter));
         }
         return result;
+    }
+
+    private static void setValue(Object instance, Setter setter, Object value) throws InstantiationException, IllegalAccessException {
+        if(value instanceof Number) {
+            if (Byte.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).byteValue());
+            } else if (Short.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).shortValue());
+            } else if (Integer.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).intValue());
+            } else if (Long.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).longValue());
+            } else if (Float.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).floatValue());
+            } else if (Double.class.isAssignableFrom(setter.getParameterType())) {
+                setter.set(instance, ((Number) value).doubleValue());
+            }
+        } else if(Map.class.isAssignableFrom(value.getClass()) &&
+                !Map.class.isAssignableFrom(setter.getParameterType())) {
+            setter.set(instance, toInstance((Map<String, Object>) value, setter.getParameterType()));
+        } else {
+            setter.set(instance, value);
+        }
     }
 
     /**
@@ -181,9 +332,9 @@ public final class Introspection {
         try {
             result = clazz.getConstructor().newInstance();
         } catch (InvocationTargetException e) {
-            throw new IllegalArgumentException("Unable to create instance", e);
+            throw new HCJFRuntimeException("Unable to create instance", e);
         } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("Default constructor not found", e);
+            throw new HCJFRuntimeException("Default constructor not found", e);
         }
         Map<String, Setter> setters = getSetters(clazz);
         Object currentValue;
@@ -193,22 +344,7 @@ public final class Introspection {
                 try {
                     currentSetter = setters.get(name);
                     currentValue = map.get(name);
-                    if(currentValue instanceof Number) {
-                        if (Byte.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).byteValue());
-                        } else if (Short.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).shortValue());
-                        } else if (Integer.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).intValue());
-                        } else if (Long.class.isAssignableFrom(currentSetter.getParameterType())) {
-                            currentSetter.set(result, ((Number) map.get(name)).longValue());
-                        }
-                    } else if(Map.class.isAssignableFrom(currentValue.getClass()) &&
-                            !Map.class.isAssignableFrom(currentSetter.getParameterType())) {
-                        currentSetter.set(result, toInstance((Map<String, Object>) currentValue, currentSetter.getParameterType()));
-                    } else {
-                        currentSetter.set(result, map.get(name));
-                    }
+                    setValue(result, currentSetter, currentValue);
                 } catch (Exception ex){}
             }
         }

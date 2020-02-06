@@ -24,6 +24,12 @@ public class HttpSession extends NetSession {
         super(id, consumer);
     }
 
+    protected HttpSession(HttpSession httpSession) {
+        super(httpSession);
+        this.request = httpSession.request;
+        this.stream = httpSession.stream;
+    }
+
     /**
      * Set the request for the session.
      * @param request Http request.

@@ -268,7 +268,7 @@ public abstract class Service<C extends ServiceConsumer> {
      * @param timeout Wait time out, if this value is lower than 0 then the timeout is infinite.
      */
     public static final void run(Runnable runnable, ServiceSession session, boolean waitFor, long timeout) {
-        RunnableWrapper serviceRunnable = new RunnableWrapper(runnable, session);
+        RunnableWrapper serviceRunnable = new RunnableWrapper(runnable, session.getClone());
         Future future = SystemServices.instance.serviceExecutor.submit(serviceRunnable);
         if(waitFor) {
             try {
@@ -307,7 +307,7 @@ public abstract class Service<C extends ServiceConsumer> {
      */
     public static final <O extends Object> O call(Callable<O> callable, ServiceSession serviceSession, long timeout) {
         O result;
-        CallableWrapper callableWrapper = new CallableWrapper(callable, serviceSession);
+        CallableWrapper callableWrapper = new CallableWrapper(callable, serviceSession.getClone());
         Future<O> future = SystemServices.instance.serviceExecutor.submit(callableWrapper);
         try {
             if (timeout > 0) {

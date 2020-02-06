@@ -154,18 +154,14 @@ public interface Queryable extends BsonParcelable {
                         } else {
                             QueryFunction innerFunction = (QueryFunction) currentParameter;
                             value = resolveFunction(innerFunction, instance, dataSource);
-                            if (value != null) {
-                                parameterValues.add(value);
-                            }
+                            parameterValues.add(value);
                         }
                     } else if (currentParameter instanceof QueryParameter) {
                         if(function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
                            parameterValues.add(currentParameter);
                         } else {
                             value = get((O) instance, ((QueryParameter) currentParameter), dataSource);
-                            if (value != null) {
-                                parameterValues.add(value);
-                            }
+                            parameterValues.add(value);
                         }
                     } else if (currentParameter instanceof FieldEvaluator.UnprocessedValue) {
                         parameterValues.add(((FieldEvaluator.UnprocessedValue)currentParameter).

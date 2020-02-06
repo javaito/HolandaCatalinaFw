@@ -13,6 +13,7 @@ public abstract class Message implements BsonParcelable {
     private UUID id;
     private Long timestamp;
     private UUID sessionId;
+    private Map<String,Object> originData;
     private Map<String,Object> sessionBean;
 
     public Message() {
@@ -69,6 +70,22 @@ public abstract class Message implements BsonParcelable {
      */
     public final void setSessionId(UUID sessionId) {
         this.sessionId = sessionId;
+    }
+
+    /**
+     * Returns the object that contains all the information about of the origin where the message was created.
+     * @return Origin node instance.
+     */
+    public Map<String, Object> getOriginData() {
+        return originData;
+    }
+
+    /**
+     * Set the origin data of the message.
+     * @param originData Origin data instance.
+     */
+    public void setOriginData(Map<String, Object> originData) {
+        this.originData = originData;
     }
 
     /**

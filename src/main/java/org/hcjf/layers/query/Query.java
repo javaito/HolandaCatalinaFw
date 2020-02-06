@@ -678,11 +678,10 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Result set.
      */
     private Collection<JoinableMap> resolveDynamicResource(QueryDynamicResource resource) {
-        QueryDynamicResource queryDynamicResource = (QueryDynamicResource) getResource();
-        Collection<JoinableMap> data = Query.evaluate(queryDynamicResource.getQuery());
+        Collection<JoinableMap> data = Query.evaluate(resource.getQuery());
 
-        if(queryDynamicResource.getPath() != null && !queryDynamicResource.getPath().isBlank()) {
-            Collection resultPath = resolveResourcePath(data, queryDynamicResource.getPath());
+        if(resource.getPath() != null && !resource.getPath().isBlank()) {
+            Collection resultPath = resolveResourcePath(data, resource.getPath());
             data = new ArrayList<>();
             for(Object dataObject : resultPath) {
                 data.add(new JoinableMap(Introspection.toMap(dataObject)));
@@ -1881,18 +1880,22 @@ public class Query extends EvaluatorCollection implements Queryable {
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
             result = UUID.fromString(trimmedStringValue);
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
-            result = Long.parseLong(trimmedStringValue);
+            try {
+                result = Long.parseLong(trimmedStringValue);
+            } catch (Exception ex) {
+                result = trimmedStringValue;
+            }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.DECIMAL_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
-                throw new HCJFRuntimeException("Unable to parse decimal number");
+                result = trimmedStringValue;
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.SCIENTIFIC_NOTATION_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
-                throw new HCJFRuntimeException("Unable to parse scientific number");
+                result = trimmedStringValue;
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
@@ -1966,7 +1969,9 @@ public class Query extends EvaluatorCollection implements Queryable {
                 originalValue = trimmedStringValue.replace(replaceValue, Strings.START_GROUP + group + Strings.END_GROUP);
                 functionParameters = new ArrayList<>();
                 for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                    if(!param.isBlank()) {
+                        functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                    }
                 }
                 originalValue = Strings.reverseRichTextGrouping(originalValue, richTexts);
                 function = true;
