@@ -1115,7 +1115,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     public void publishDistributedLayer(String regex, Object... path) {
         DistributedLayer distributedLayer = getDistributedLayer(true, path);
         distributedLayer.setRegex(regex);
-        System.out.println();
     }
 
     public void publishPlugin(byte[] jarFile) {

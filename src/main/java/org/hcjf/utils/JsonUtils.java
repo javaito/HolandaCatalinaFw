@@ -70,9 +70,9 @@ public class JsonUtils {
 
             //This control is to save the case when the value into the json file is marked with quotes
             if (Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
-                value = value.toString();
+                value = element.getAsString();
             }
-        }else if(element instanceof JsonNull) {
+        } else if(element instanceof JsonNull) {
             value = null;
         } else {
             value = Strings.deductInstance(element.getAsString());
