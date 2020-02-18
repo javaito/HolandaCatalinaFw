@@ -3,6 +3,7 @@ package org.hcjf.utils;
 import com.google.gson.*;
 import org.hcjf.properties.SystemProperties;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +13,8 @@ public class JsonUtils {
 
     private static final JsonParser jsonParser;
     private static final Gson gson;
+    public static final String DATE_FORMAT_ARG = "dateFormatArgument";
+    public static final String ADAPTERS_ARG = "adaptersArgument";
 
     static {
         jsonParser = new JsonParser();
@@ -84,5 +87,26 @@ public class JsonUtils {
 
     public static JsonElement toJsonTree(Object object) {
         return gson.toJsonTree(object);
+    }
+
+    public static JsonElement toJsonTree(Object object, Map<String, Object> formatOptions) {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        formatOptions.forEach((key,value) -> {
+            switch (key){
+                case DATE_FORMAT_ARG : {
+                    gsonBuilder.setPrettyPrinting().setDateFormat(value.toString());
+                    break;
+                }
+                case ADAPTERS_ARG: {
+                    Map<Type, Object> adapters = (Map<Type, Object>) value;
+                    adapters.forEach((type, adapter) ->{
+                        gsonBuilder.setPrettyPrinting().registerTypeAdapter(type, adapter);
+                    });
+                    break;
+                }
+                default:{break;}
+            }
+        });
+        return gsonBuilder.create().toJsonTree(object);
     }
 }
