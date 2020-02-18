@@ -61,10 +61,10 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                 break;
             }
             case GET: {
-                if(getParameter(0, parameters) instanceof Collection && parameters[1] instanceof Integer) {
-                    result = Array.get(((Collection)parameters[0]).toArray(), (Integer)parameters[1]);
-                } else if(getParameter(0, parameters).getClass().isArray() && parameters[1] instanceof Integer) {
-                    result = Array.get(parameters[0], (Integer)parameters[1]);
+                if(getParameter(0, parameters) instanceof Collection) {
+                    result = Array.get(((Collection)parameters[0]).toArray(), ((Number)parameters[1]).intValue());
+                } else if(getParameter(0, parameters).getClass().isArray()) {
+                    result = Array.get(parameters[0], ((Number)parameters[1]).intValue());
                 } else if(getParameter(0, parameters) instanceof Map) {
                     result = ((Map)parameters[0]).get(parameters[1]);
                 }
@@ -188,7 +188,8 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
             }
             case SKIP: {
                 if(getParameter(0, parameters) instanceof  Collection) {
-                    result = ((Collection)getParameter(0, parameters)).stream().skip(getParameter(1, parameters)).collect(Collectors.toList());
+                    result = ((Collection)getParameter(0, parameters)).stream().skip(
+                            ((Number)getParameter(1, parameters)).longValue()).collect(Collectors.toList());
                 } else {
                     result = new ArrayList<>();
                 }
@@ -196,7 +197,8 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
             }
             case LIMIT : {
                 if(getParameter(0, parameters) instanceof  Collection) {
-                    result = ((Collection)getParameter(0, parameters)).stream().limit(getParameter(1, parameters)).collect(Collectors.toList());
+                    result = ((Collection)getParameter(0, parameters)).stream().limit(
+                            ((Number)getParameter(1, parameters)).longValue()).collect(Collectors.toList());
                 } else {
                     List<Object> list = new ArrayList<>();
                     list.add(getParameter(0, parameters));

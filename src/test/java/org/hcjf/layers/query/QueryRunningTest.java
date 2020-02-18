@@ -652,15 +652,23 @@ public class QueryRunningTest {
     public void testToStringFunction() {
         Query query = Query.compile("SELECT toString(name) FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
-        System.out.println();
 
-        query = Query.compile("SELECT toString(number) FROM address");
+        query = Query.compile("SELECT toString(number) as numberAsString FROM address");
         resultSet = query.evaluate(dataSource);
-        System.out.println();
+        for(Map<String,Object> obj : resultSet) {
+            Assert.assertEquals(obj.get("numberAsString").getClass(), String.class);
+        }
 
         query = Query.compile("SELECT * FROM (SELECT number as A_NUMBER FROM address) as add WHERE toString(A_NUMBER) = '2321'");
         resultSet = query.evaluate(dataSource);
-        System.out.println();
+
+        query = Query.compile("SELECT toString(name) as NAME, indexOf(name, 'a') as whereIsA, subString(name, 1) as subString1, subString(name, 1, 3) as subString2 FROM character");
+        resultSet = query.evaluate(dataSource);
+        for(Map<String,Object> obj : resultSet) {
+            Assert.assertEquals(((String)obj.get("NAME")).indexOf("a"), ((Number)obj.get("whereIsA")).intValue());
+            Assert.assertEquals(((String)obj.get("NAME")).substring(1), obj.get("subString1"));
+            Assert.assertEquals(((String)obj.get("NAME")).substring(1, 3), obj.get("subString2"));
+        }
     }
 
     @Test

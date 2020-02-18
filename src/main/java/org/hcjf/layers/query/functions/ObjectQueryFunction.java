@@ -75,7 +75,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                     condition = getParameter(0, parameters);
                     ifValue = getParameter(1, parameters);
                 }
-                if(condition) {
+                if(condition != null && condition) {
                     result = ifValue;
                 } else {
                     result = elseValue;
