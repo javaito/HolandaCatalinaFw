@@ -1,11 +1,12 @@
 package org.hcjf.utils;
 
+import com.google.gson.JsonElement;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.UUID;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class JsonUtilsTest {
 
@@ -32,6 +33,20 @@ public class JsonUtilsTest {
         Assert.assertEquals(map.get("stringBoolean").getClass(), String.class);
         Assert.assertEquals(map.get("boolean").getClass(), Boolean.class);
         Assert.assertEquals(map.get("uuid").getClass(), UUID.class);
+    }
+
+    @Test
+    public void testJsonTree() throws ParseException {
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSX");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        Map jsonMAp = Map.of("date",dateFormat.parse("2020-02-18 16:34:28.123+00:00"));
+
+        JsonElement element = JsonUtils.toJsonTree(jsonMAp);
+        Assert.assertEquals("\"2020-02-18 13:34:28\"", element.getAsJsonObject().get("date").toString());
+
+        JsonElement elementConfig = JsonUtils.toJsonTree(jsonMAp,Map.of(JsonUtils.DATE_FORMAT_ARG,"yyyy-MM-dd'T'HH:mm:ss.SSS"));
+        Assert.assertEquals("\"2020-02-18T13:34:28.123\"",elementConfig.getAsJsonObject().get("date").toString());
     }
 
 }
