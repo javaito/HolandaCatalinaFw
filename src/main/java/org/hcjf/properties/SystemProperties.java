@@ -520,7 +520,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_INTEGER_NUMBER_REGEX, "^[-]?[0-9]{1,}$");
         defaults.put(HCJF_DECIMAL_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
         defaults.put(HCJF_SCIENTIFIC_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}E[-]?[0-9]{1,}$");
-        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([-+/*\\^%=<>!]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
+        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([¿\\-+/*\\^%=<>!]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
         defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/%=<>!].*");
         defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))|(?=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))");
         defaults.put(HCJF_DEFAULT_LRU_MAP_SIZE, "1000");

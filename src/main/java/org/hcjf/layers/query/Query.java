@@ -1864,11 +1864,14 @@ public class Query extends EvaluatorCollection implements Queryable {
             } else {
                 throw new HCJFRuntimeException("Expecting string en delimiter, near %s", trimmedStringValue);
             }
-        } else if(trimmedStringValue.startsWith(Strings.REPLACEABLE_GROUP)) {
+        } else if(trimmedStringValue.matches(Strings.REPLACEABLE_EXPRESSION_REGEX)) {
             Integer index = Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 result = new FieldEvaluator.QueryValue(Query.compile(groups, richTexts, index));
+            } else if(group.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
+                    group.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
+                result = processStringValue(query, groups, richTexts, group, placesIndex, parameterClass, presentFields);
             } else {
                 //If the string value start with "(" and end with ")" then the value is a collection.
                 Collection<Object> collection = new ArrayList<>();

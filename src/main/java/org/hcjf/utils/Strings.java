@@ -125,6 +125,7 @@ public final class Strings {
     public static final String ALL = "*";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
+    public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]{1,}";
 
     /**
      * This method trim the first and the last value if this values are equals that the parameter.

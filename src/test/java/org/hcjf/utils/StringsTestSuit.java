@@ -16,11 +16,6 @@ import java.util.*;
 public class StringsTestSuit {
 
     @Test
-    public void testGroup() {
-
-    }
-
-    @Test
     public void testGroupRichText() {
         String value = "Hello 'world'";
         List<String> richTexts = Strings.groupRichText(value);
@@ -189,6 +184,17 @@ public class StringsTestSuit {
 
         nearOffValue = Strings.getNearFrom(value, value.length(), 4);
         Assert.assertEquals(nearOffValue, "lina");
+    }
+
+    @Test
+    public void testGroup() {
+        String s = "(lalalal) / la";
+        List<String> groups = Strings.replaceableGroup(s);
+        System.out.println();
+
+        s = "(100 - 20) / 50";
+        groups = Strings.replaceableGroup(s);
+        System.out.println();
     }
 
     public static void main(String[] args) {

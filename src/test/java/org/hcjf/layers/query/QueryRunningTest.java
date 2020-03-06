@@ -217,6 +217,13 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void functionInWhere() {
+        Query query = Query.compile("SELECT * FROM character WHERE parseDate('yyyy-MM-dd HH:mm:ss', dateFormat(birthday, 'yyyy-MM-dd 00:00:00')) < '2020-01-01 00:00:00'");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        System.out.println();
+    }
+
+    @Test
     public void innerQuery() {
         Query query = Query.compile("SELECT * FROM character WHERE (SELECT name FROM character2 WHERE name like 'Homer') like name");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
@@ -542,6 +549,7 @@ public class QueryRunningTest {
         }
 
         resultSet = parameterizedQuery.add(40).add(80).evaluate(dataSource);
+        resultSet = parameterizedQuery.add(40).add(80).evaluate(dataSource);
         for(JoinableMap row : resultSet){
             Assert.assertTrue((double)row.get("weight") > 40 && (double)row.get("weight") < 80);
         }
@@ -619,6 +627,13 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void mathExpression() {
+        Query query = Query.compile("SELECT *, (100 - 2) / 50 as value FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void isNullTest() {
         Query query = Query.compile("SELECT isNull(noField) as n FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
@@ -669,6 +684,47 @@ public class QueryRunningTest {
             Assert.assertEquals(((String)obj.get("NAME")).substring(1), obj.get("subString1"));
             Assert.assertEquals(((String)obj.get("NAME")).substring(1, 3), obj.get("subString2"));
         }
+    }
+
+    @Test
+    public void arithmeticTest() {
+        Query query = Query.compile("SELECT * FROM (SELECT *, getMillisecondUnixEpoch(now()), getMillisecondUnixEpoch(birthday), getMillisecondUnixEpoch(now()) - getMillisecondUnixEpoch(birthday) as ageMillis FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson') as ch WHERE weight > 16");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testDateFunctions() {
+        Query query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as newDate FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01T00:25:12') as newDate, parseDate('yyyy-MM-dd\\'T\\'HH:mm:ss', '2020-03-01T00:25:12') as parseDate FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        String s = "{\n" +
+                "    \"endDate\": 1582724862291,\n" +
+                "    \"events\": [],\n" +
+                "    \"loginCode\": \"359459076768998\",\n" +
+                "    \"odometerEnd\": 792.8828323183975,\n" +
+                "    \"odometerStart\": 0,\n" +
+                "    \"processId\": \"0a259971-ca87-4175-b3dd-b0c3235ec828\",\n" +
+                "    \"propertyId\": \"1\",\n" +
+                "    \"propertyName\": \"Finca Bodega Salentein SRL\",\n" +
+                "    \"startDate\": 1582724839702,\n" +
+                "    \"trackingCoords\": [\n" +
+                "        -65.25090605020523,\n" +
+                "        -26.873189827241074,\n" +
+                "        -65.25777423681663,\n" +
+                "        -26.873070930388632,\n" +
+                "        -65.25792522077234,\n" +
+                "        -26.874055487787768\n" +
+                "    ],\n" +
+                "    \"trackingDistance\": 0.7928828323183975\n" +
+                "}";
+        Object obj =  JsonUtils.createObject(s);
+        System.out.println();
     }
 
     @Test
