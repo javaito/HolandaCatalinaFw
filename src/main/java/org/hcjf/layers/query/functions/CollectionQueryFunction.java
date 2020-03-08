@@ -82,6 +82,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
                         result = 1;
                     }
                 }
+                break;
             }
             case GET: {
                 if(getParameter(0, parameters) instanceof Collection) {
