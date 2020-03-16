@@ -585,6 +585,17 @@ public class QueryRunningTest {
             Assert.assertNotNull(map.get("es"));
         }
 
+        query = Query.compile("SELECT name, if(weight + 10 > 0, 'gordo', size(null)) AS es FROM character");
+        resultSet = query.evaluate(dataSource);
+
+        try {
+            query = Query.compile("SELECT name, if(weight + 10 > 0, size(null), 'flaco') AS es FROM character");
+            resultSet = query.evaluate(dataSource);
+            Assert.fail();
+        } catch (Exception ex) {
+            Assert.assertTrue(true);
+        }
+
         query = Query.compile("SELECT name, if(equals(name, 'Homer Jay'), 'gordo', 'flaco') AS es FROM character");
         resultSet = query.evaluate(dataSource);
 

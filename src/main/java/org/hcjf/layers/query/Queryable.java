@@ -153,7 +153,11 @@ public interface Queryable extends BsonParcelable {
                             parameterValues.add(currentParameter);
                         } else {
                             QueryFunction innerFunction = (QueryFunction) currentParameter;
-                            value = resolveFunction(innerFunction, instance, dataSource);
+                            try {
+                                value = resolveFunction(innerFunction, instance, dataSource);
+                            } catch (Exception ex) {
+                                value = ex;
+                            }
                             parameterValues.add(value);
                         }
                     } else if (currentParameter instanceof QueryParameter) {

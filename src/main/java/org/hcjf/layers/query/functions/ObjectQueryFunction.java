@@ -64,21 +64,13 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 break;
             }
             case(IF): {
-                Boolean condition;
-                Object ifValue;
-                Object elseValue = null;
-                if(parameters.length == 3) {
-                    condition = getParameter(0, parameters);
-                    ifValue = getParameter(1, parameters);
-                    elseValue = getParameter(2, parameters);
-                } else {
-                    condition = getParameter(0, parameters);
-                    ifValue = getParameter(1, parameters);
-                }
+                Boolean condition = getParameter(0, parameters);
                 if(condition != null && condition) {
-                    result = ifValue;
+                    result = getParameter(1, parameters);
                 } else {
-                    result = elseValue;
+                    if(parameters.length == 3) {
+                        result = getParameter(2, parameters);
+                    }
                 }
                 break;
             }

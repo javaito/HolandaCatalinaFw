@@ -153,6 +153,19 @@ public class StringsTestSuit {
     }
 
     @Test
+    public void replaceFirst() {
+        String value = "Javier Roman Quiroga, Javier 8652314978kdjf!%$&$%&/(&(=/=()¡";
+        String valueReplaced1 = Strings.replaceFirst(value, "Javier", "javaito");
+        Assert.assertEquals("javaito Roman Quiroga, Javier 8652314978kdjf!%$&$%&/(&(=/=()¡", valueReplaced1);
+        String valueReplaced2 = Strings.replaceFirst(valueReplaced1, "Javier", "javaito");
+        Assert.assertEquals("javaito Roman Quiroga, javaito 8652314978kdjf!%$&$%&/(&(=/=()¡", valueReplaced2);
+        String valueReplaced3 = Strings.replaceFirst(valueReplaced2, "=()¡", "~");
+        Assert.assertEquals("javaito Roman Quiroga, javaito 8652314978kdjf!%$&$%&/(&(=/~", valueReplaced3);
+
+        System.out.println();
+    }
+
+    @Test
     public void testDeductDate() {
         String value = "2030-02-19 00:00:00";
         Object deductedValue = Strings.deductInstance(value);

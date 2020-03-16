@@ -2,9 +2,11 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.model.QueryDynamicResource;
+import org.hcjf.utils.Strings;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -71,6 +73,42 @@ public class QueryCompileTest {
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }
+    }
+;
+    @Test
+    public void testWhereFunctions(){
+        String q = "select * from store.dynamic.ccu.planning where fecFacturacion = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat('2020-02-20 03:00:00','yyyy-MM-dd 00:00:00'))";
+        Query query = Query.compile(q);
+        System.out.println(query.toString());
+        System.out.println();
+    }
+
+    @Test
+    public void testTwoIfs() {
+        String q = "select periodInMinutes(_lastUpdate, if(isNotNull(checkInDate), checkInDate, now())) as period,checkinTime,\n" +
+                "if(isNotNull(checkInDate), checkInDate, '') as ingreso, checkInDate, _lastUpdate as checkOutDate,\n" +
+                "if(isNotNull(photo1Id),concat(concat('<a href=\"',photo1Id),'\" target=\"_blank\"> ##image </a>'),'') as Foto1,\n" +
+                "if(isNotNull(photo2Id),concat(concat('<a href=\"',photo2Id),'\" target=\"_blank\"> ##image </a>'),'') as Foto2,\n" +
+                "consulta.CD as CD, planilla,patente,\n" +
+                "consulta.codCamion as codCamion,consulta.codCarga as codCarga,\n" +
+                "dateFormat('America/Santiago', _lastUpdate, 'dd/MM/yyyy HH:mm:ss') as horario,\n" +
+                "if(plateManualEntry,'##keyboard','') as ingresoPatente,\n" +
+                "if(planningManualEntry,'##keyboard','') as ingresoPlanilla,\n" +
+                "if(isNotNull(platePhotoId),concat(concat('<a href=\"',platePhotoId),'\" target=\"_blank\"> ##image </a>'),'') as FotoPatente,\n" +
+                "store.dynamic.ccu.checkout.loginCode as IMEI\n" +
+                "from store.dynamic.ccu.checkout JOIN (select centroDistribucion as CD,\n" +
+                "codCamion, codCarga, planilla as stringPlanilla\n" +
+                "from store.dynamic.ccu.planilla\n" +
+                "where centroDistribucion = 7 and _creationDate >= '2020-03-09 03:00:00' and _creationDate <= '2020-03-10 02:59:59') as consulta ON store.dynamic.ccu.checkout.planilla = consulta.stringPlanilla\n" +
+                "left join\n" +
+                "(select getMillisecondUnixEpoch(_creationDate) as checkinTime,\n" +
+                "_creationDate as checkInDate,\n" +
+                "planilla as checkinPlanilla\n" +
+                "from store.dynamic.ccu.checkin where _creationDate >= '2020-03-09 03:00:00' and _creationDate <= '2020-03-10 02:59:59') as consultachkin on planilla = checkinPlanilla\n" +
+                "where _creationDate >= '2020-03-09 03:00:00' and _creationDate <= '2020-03-10 02:59:59' order by _creationDate desc";
+
+        Query query = Query.compile(q);
+        System.out.println();
     }
 
     @Test()

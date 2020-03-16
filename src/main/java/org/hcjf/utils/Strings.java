@@ -483,29 +483,28 @@ public final class Strings {
      * @param value String to group.
      * @return List with groups.
      */
-    public static final List<String> replaceableGroup(String value) {
+    public static List<String> replaceableGroup(String value) {
         List<String> groups = Strings.group(value);
-        List<Integer> withSubGroups = new ArrayList<>();
-        Iterator<Integer> iterator;
         String replacedValue = value;
-        Integer groupIndex;
         String group;
-        String groupCopy;
-        for (int j = groups.size() -1; j >= 0; j--) {
+        String nextGroup;
+        Integer occurrence;
+        String newSegment;
+        for (int j = 0; j < groups.size(); j++) {
+            occurrence = 0;
             group = groups.get(j);
-            replacedValue = replacedValue.replace(START_GROUP+group+END_GROUP, REPLACEABLE_GROUP+j);
-            iterator = withSubGroups.iterator();
-            while(iterator.hasNext()) {
-                groupIndex = iterator.next();
-                groupCopy = groups.remove(groupIndex.intValue()).replace(START_GROUP+group+END_GROUP, REPLACEABLE_GROUP+j);
-                groups.add(groupIndex, groupCopy);
-                if(!groupCopy.contains(Strings.END_GROUP)) {
-                    iterator.remove();
+            newSegment = START_GROUP + group + END_GROUP;
+            replacedValue = replaceLast(replacedValue,newSegment, REPLACEABLE_GROUP+j);
+            for(int k = j + 1; k < groups.size(); k++) {
+                nextGroup = groups.get(k);
+                if(nextGroup.equals(group)) {
+                    occurrence += 1;
+                } else if(nextGroup.contains(Strings.START_GROUP)) {
+                    if(occurrence < occurrenceSize(nextGroup, newSegment)) {
+                        nextGroup = replaceLast(nextGroup, newSegment, REPLACEABLE_GROUP + j);
+                        groups.set(k, nextGroup);
+                    }
                 }
-            }
-
-            if(group.contains(Strings.END_GROUP)) {
-                withSubGroups.add(j);
             }
         }
         groups.add(replacedValue);
@@ -581,6 +580,65 @@ public final class Strings {
             result = result.replace(groupIndex,
                     startGroupCharacter + groups.get(index) + endGroupCharacter);
             groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
+        }
+        return result;
+    }
+
+    /**
+     * This method count the number of occurrence of founded segment into the value.
+     * @param value Value to count.
+     * @param foundedSegment Segment of string.
+     * @return Returns the number of occurrences.
+     */
+    public static Integer occurrenceSize(String value, String foundedSegment) {
+        Integer result = 0;
+        Integer index = 0;
+        do {
+            index = value.indexOf(foundedSegment, index);
+            if(index >= 0) {
+                result += 1;
+                index += 1;
+            }
+        } while (index >= 0);
+        return result;
+    }
+
+    /**
+     * Replace only the first occurrence of the replace segment value and returns the value with the new segment into
+     * the original string value. If the replace segment value is not founded into the original value then the return
+     * value is the same that the original.
+     * @param value Value that contains the segment to be replaced.
+     * @param replaceSegment Replace segment value.
+     * @param newSegment New segment.
+     * @return Value replaced.
+     */
+    public static String replaceFirst(String value, String replaceSegment, String newSegment) {
+        String result = value;
+        int indexOf = value.indexOf(replaceSegment);
+        if(indexOf >= 0) {
+            String firstValue = value.substring(0, indexOf);
+            String lastValue = value.substring(indexOf + replaceSegment.length());
+            result = Strings.join(List.of(firstValue, newSegment, lastValue), Strings.EMPTY_STRING);
+        }
+        return result;
+    }
+
+    /**
+     * Replace only the last occurrence of the replace segment value and returns the value with the new segment into
+     * the original string value. If the replace segment value is not founded into the original value then the return
+     * value is the same that the original.
+     * @param value Value that contains the segment to be replaced.
+     * @param replaceSegment Replace segment value.
+     * @param newSegment New segment.
+     * @return Value replaced.
+     */
+    public static String replaceLast(String value, String replaceSegment, String newSegment) {
+        String result = value;
+        int indexOf = value.lastIndexOf(replaceSegment);
+        if(indexOf >= 0) {
+            String firstValue = value.substring(0, indexOf);
+            String lastValue = value.substring(indexOf + replaceSegment.length());
+            result = Strings.join(List.of(firstValue, newSegment, lastValue), Strings.EMPTY_STRING);
         }
         return result;
     }
