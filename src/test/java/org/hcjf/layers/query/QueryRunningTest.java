@@ -455,6 +455,13 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testIf() {
+        Query query = Query.compile("SELECT * FROM (SELECT *, if(equals(weight, 82),'si','no') as mmm FROM character) AS ch where mmm = 'si'");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+    }
+
+    @Test
     public void select() {
         SystemProperties.get(SystemProperties.Service.SYSTEM_SESSION_NAME);
 

@@ -2,6 +2,7 @@ package org.hcjf.layers.query.functions;
 
 import org.hcjf.properties.SystemProperties;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -109,7 +110,16 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 break;
             }
             case(EQUALS): {
-                result = Objects.equals(getParameter(0, parameters), getParameter(1, parameters));
+                Object parameter1 = getParameter(0, parameters);
+                Object parameter2 = getParameter(1, parameters);
+
+                if(parameter1 instanceof Number && parameter2 instanceof Number) {
+                    BigDecimal bigDecimal1 = BigDecimal.valueOf(((Number) parameter1).doubleValue());
+                    BigDecimal bigDecimal2 = BigDecimal.valueOf(((Number) parameter2).doubleValue());
+                    result = bigDecimal1.equals(bigDecimal2);
+                } else {
+                    result = Objects.equals(parameter1, parameter2);
+                }
                 break;
             }
             case(NEW): {
