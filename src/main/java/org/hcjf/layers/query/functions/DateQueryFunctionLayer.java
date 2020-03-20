@@ -186,8 +186,8 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         if(parameters.length == 1) {
             result = ZonedDateTime.ofInstant(((Date)getParameter(0, parameters)).toInstant(), ZoneId.systemDefault());
         } else if(parameters.length == 2) {
-            ZoneId zoneId = ZoneId.of(getParameter(0, parameters));
-            result = ZonedDateTime.ofInstant(((Date)getParameter(1, parameters)).toInstant(), zoneId);
+            ZoneId zoneId = ZoneId.of(getParameter(1, parameters));
+            result = ZonedDateTime.ofInstant(((Date)getParameter(0, parameters)).toInstant(), zoneId);
         } else {
             throw new HCJFRuntimeException("Illegal parameters length");
         }

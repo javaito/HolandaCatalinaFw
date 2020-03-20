@@ -462,6 +462,13 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testArithmetic() {
+        Query query = Query.compile("SELECT *, weight * 2 as wt FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void select() {
         SystemProperties.get(SystemProperties.Service.SYSTEM_SESSION_NAME);
 
@@ -647,6 +654,13 @@ public class QueryRunningTest {
     @Test
     public void mathExpression() {
         Query query = Query.compile("SELECT *, (100 - 2) / 50 as value FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void dateTimeZone() {
+        Query query = Query.compile("SELECT dateFormat(birthday, 'GMT', 'yyyy/MM/dd HH:mm:ssZ') as gmt, dateFormat(birthday, 'America/Santiago', 'yyyy/MM/dd HH:mm:ssZ') as santiago FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
     }
