@@ -659,8 +659,48 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testSize() {
+        Query query = Query.compile("SELECT aggregateContext(size(name)) as names FROM character group by a");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM character join address on address.addressId = character.addressId group by a");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT name, aggregateContext(size(name)) as names FROM character left join address on address.addressId = character.addressId group by a");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("names"), 7);
+
+        query = Query.compile("SELECT size(name) as names FROM (SELECT name FROM character left join address on address.addressId = character.addressId group by a) as date");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("names"), 7);
+
+        query = Query.compile("SELECT aggregateContext(size(name)) as names FROM character right join address on address.addressId = character.addressId group by a");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("names"), 6);
+
+        query = Query.compile("SELECT aggregateContext(size(name)) as names FROM character left join address on address.addressId = character.addressId group by addressId");
+        resultSet = query.evaluate(dataSource);
+    }
+
+    @Test
+    public void alwaysTrue() {
+        Query query = Query.compile("SELECT * FROM character WHERE true");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+    }
+
+    @Test
     public void dateTimeZone() {
         Query query = Query.compile("SELECT dateFormat(birthday, 'GMT', 'yyyy/MM/dd HH:mm:ssZ') as gmt, dateFormat(birthday, 'America/Santiago', 'yyyy/MM/dd HH:mm:ssZ') as santiago FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void toDate() {
+        Query query = Query.compile("SELECT birthday, toDate(plusDays(birthday,1)) as birthdayPlusOne FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
     }

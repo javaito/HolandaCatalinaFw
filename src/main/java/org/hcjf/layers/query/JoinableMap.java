@@ -190,7 +190,8 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
             if(mapInstanceByResource.size() > 1) {
                 result.mapInstanceByResource.putAll(mapInstanceByResource);
             } else {
-                result.mapInstanceByResource.put(leftResource, mapInstance);
+                Map<String,Object> mapInstanceCopy = new HashMap<>(mapInstance);
+                result.mapInstanceByResource.put(leftResource, mapInstanceCopy);
             }
         } else {
             result = new JoinableMap(leftResource);
@@ -248,19 +249,51 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
         GroupableSet groupSet;
 
         for(String key : groupable.keySet()) {
+
+            String resource = null;
+            if(key.contains(Strings.CLASS_SEPARATOR)) {
+                String candidateResource = key.split("\\.")[0];
+                if(getResources().contains(candidateResource)) {
+                    resource = candidateResource;
+                }
+            }
+            if(resource == null) {
+                for(String candidateResource : getResources()) {
+                    if(getResourceModel(candidateResource).containsKey(key)) {
+                        resource = candidateResource;
+                        break;
+                    }
+                }
+            }
+            if(resource == null && resources != null && !resources.isEmpty()) {
+                resource = getResources().stream().findFirst().get();
+            }
+
             if(containsKey(key)) {
                 instanceValue = get(key);
                 groupableValue = groupable.get(key);
                 if(instanceValue instanceof GroupableSet) {
                     ((GroupableSet)instanceValue).add(groupableValue);
+                    if(resource != null) {
+                        ((GroupableSet) mapInstanceByResource.get(resource).get(key.replace(resource, Strings.EMPTY_STRING))).add(groupableValue);
+                    }
                 } else if(!get(key).equals(groupable.get(key))) {
                     groupSet = new GroupableSet();
                     groupSet.add(instanceValue);
                     groupSet.add(groupableValue);
                     put(key, groupSet);
+                    if(resource != null) {
+                        groupSet = new GroupableSet();
+                        groupSet.add(instanceValue);
+                        groupSet.add(groupableValue);
+                        mapInstanceByResource.get(resource).put(key.replace(resource, Strings.EMPTY_STRING), groupSet);
+                    }
                 }
             } else {
                 put(key, groupable.get(key));
+                if(resource != null) {
+                    mapInstanceByResource.get(resource).put(key, groupable.get(key));
+                }
             }
         }
 

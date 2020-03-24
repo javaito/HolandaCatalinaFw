@@ -138,7 +138,17 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             case PERIOD_IN_MINUTES: result = getDuration(parameters).toMinutes(); break;
             case PERIOD_IN_HOURS: result = getDuration(parameters).toHours(); break;
             case PERIOD_IN_DAYS: result = getDuration(parameters).toDays(); break;
-            case TO_DATE: result = new Date(((Number)parameters[0]).longValue()); break;
+            case TO_DATE: {
+                Object param = getParameter(0, parameters);
+                if(param instanceof Number) {
+                    result = new Date(((Number) param).longValue());
+                } else if(param instanceof ZonedDateTime){
+                    result = Date.from(((ZonedDateTime)param).toInstant());
+                } else {
+                    throw new HCJFRuntimeException("Illegal argument for 'toDate' function");
+                }
+                break;
+            }
             case PARSE_DATE: {
                 if(parameters.length >= 2) {
                     try {
