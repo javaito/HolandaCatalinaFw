@@ -880,6 +880,9 @@ public class Query extends EvaluatorCollection implements Queryable {
             query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             for (Evaluator evaluator : optimizeJoin(leftData, join)) {
                 query.addEvaluator(evaluator);
+                if(join.getResource() instanceof QueryDynamicResource) {
+                    ((QueryDynamicResource)join.getResource()).getQuery().addEvaluator(evaluator);
+                }
             }
             for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
                 query.addEvaluator(evaluator);
@@ -937,7 +940,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                             key = (QueryField) equals.getLeftValue();
                         }
                         if(foreignKey != null) {
-                            Collection reducerList = new HashSet();
+                            Collection<Object> reducerList = new HashSet<>();
                             for(Object currentObject : leftData) {
                                 Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getFieldPath());
                                 if(foreignKeyValue != null) {
