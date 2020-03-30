@@ -7,6 +7,8 @@ import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.cloud.impl.objects.*;
+import org.hcjf.errors.HCJFRemoteException;
+import org.hcjf.errors.HCJFRemoteInvocationTimeoutException;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.events.Events;
@@ -273,8 +275,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     /**
      *
-     * @param expectedLabels
-     * @param labels
+     * @param expectedLabels expected labels
+     * @param labels labels
      * @return
      */
     public boolean verifyLabels(Map<String,String> expectedLabels, Map<String,String> labels) {
@@ -1414,12 +1416,12 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
             if(responseMessage != null) {
                 if(responseMessage.getThrowable() != null) {
-                    throw new HCJFRuntimeException("Remote exception", responseMessage.getThrowable());
+                    throw new HCJFRemoteException("Remote exception", responseMessage.getThrowable());
                 } else {
                     result = responseMessage.getValue();
                 }
             } else {
-                throw new HCJFRuntimeException("Remote invocation timeout, message id: " + message.getId().toString());
+                throw new HCJFRemoteInvocationTimeoutException("Remote invocation timeout, message id: " + message.getId().toString());
             }
             responseListeners.remove(message.getId());
             return result;
