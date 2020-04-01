@@ -756,6 +756,9 @@ public final class Strings {
                 try {
                     synchronized (SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT)) {
                         result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT).parse(trimmedStringValue);
+                        if(result instanceof Long) {
+                            result = ((Long) result).doubleValue();
+                        }
                     }
                 } catch (ParseException e) {
                     result = trimmedStringValue;
