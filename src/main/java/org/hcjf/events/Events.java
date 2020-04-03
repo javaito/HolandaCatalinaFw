@@ -104,8 +104,11 @@ public final class Events extends Service<EventListener> {
         }
     }
 
+    /**
+     * Dispatch a distributed event instance only for the cloud singleton.
+     * @param distributedEvent Distributed event.
+     */
     private void dispatchDistributedEvent(DistributedEvent distributedEvent) {
-        dispatchLocalEvent(distributedEvent);
         Cloud.dispatchEvent(distributedEvent);
     }
 
