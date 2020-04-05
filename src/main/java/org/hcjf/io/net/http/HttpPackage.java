@@ -285,41 +285,49 @@ public abstract class HttpPackage {
                 writeBody(data);
             } else {
                 String line;
-                for (int i = 0; i < data.length - 1; i++) {
-                    if (data[i] == LINE_SEPARATOR_CR && data[i + 1] == LINE_SEPARATOR_LF) {
-                        if (currentBuffer.size() == 0) {
-
-                            for(int j = 1; j < lines.size(); j++) {
-                                addHeader(new HttpHeader(lines.get(j)));
-                            }
-
-                            HttpHeader transferEncodingHeader = getHeader(HttpHeader.TRANSFER_ENCODING);
-                            if(transferEncodingHeader != null && transferDecodingLayer == null) {
-                                try {
-                                    transferDecodingLayer = Layers.get(TransferDecodingLayerInterface.class, transferEncodingHeader.getHeaderValue());
-                                } catch (Exception ex) {
-                                    Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
-                                            "Transfer decoding layer not found", ex);
-                                }
-                            }
-
-                            //The previous line is empty
-                            //Start body, because there are two CRLF together
-                            currentBuffer.reset();
-                            writeBody(data, i + 2, data.length - (i + 2));
-                            onBody = true;
-                            break;
-                        } else {
-                            //The current body is a new line
-                            line = new String(currentBuffer.toByteArray()).trim();
-                            if(!line.isEmpty()) {
-                                lines.add(line);
-                            }
-                            currentBuffer.reset();
-                            i++;
+                for (int i = 0; i < data.length; i++) {
+                    if (i+1 == data.length) {
+                        //Verify if the last byte into the data array is not '\n' then this byte is part of the message
+                        //payload, this case is common when the headers are very large.
+                        if(data[i] != LINE_SEPARATOR_LF) {
+                            currentBuffer.write(data[i]);
                         }
                     } else {
-                        currentBuffer.write(data[i]);
+                        if (data[i] == LINE_SEPARATOR_CR && data[i + 1] == LINE_SEPARATOR_LF) {
+                            if (currentBuffer.size() == 0) {
+
+                                for (int j = 1; j < lines.size(); j++) {
+                                    addHeader(new HttpHeader(lines.get(j)));
+                                }
+
+                                HttpHeader transferEncodingHeader = getHeader(HttpHeader.TRANSFER_ENCODING);
+                                if (transferEncodingHeader != null && transferDecodingLayer == null) {
+                                    try {
+                                        transferDecodingLayer = Layers.get(TransferDecodingLayerInterface.class, transferEncodingHeader.getHeaderValue());
+                                    } catch (Exception ex) {
+                                        Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                                                "Transfer decoding layer not found", ex);
+                                    }
+                                }
+
+                                //The previous line is empty
+                                //Start body, because there are two CRLF together
+                                currentBuffer.reset();
+                                writeBody(data, i + 2, data.length - (i + 2));
+                                onBody = true;
+                                break;
+                            } else {
+                                //The current body is a new line
+                                line = new String(currentBuffer.toByteArray()).trim();
+                                if (!line.isEmpty()) {
+                                    lines.add(line);
+                                }
+                                currentBuffer.reset();
+                                i++;
+                            }
+                        } else {
+                            currentBuffer.write(data[i]);
+                        }
                     }
                 }
             }
