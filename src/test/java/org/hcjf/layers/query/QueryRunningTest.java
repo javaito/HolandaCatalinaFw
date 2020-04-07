@@ -15,6 +15,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -529,6 +530,13 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT weight, -2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
         resultSet = query.evaluate(dataSource);
+        for(Joinable obj : resultSet) {
+            Double dweight = Introspection.resolve(obj, "weight");
+            dweight = -2 * dweight;
+            BigDecimal weight = new BigDecimal(dweight);
+            BigDecimal superWeight = Introspection.resolve(obj, "superWeight");
+            Assert.assertEquals(superWeight, weight);
+        }
 
         query = Query.compile("SELECT name FROM character");
         resultSet = query.evaluate(dataSource);

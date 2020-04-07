@@ -15,6 +15,21 @@ import java.util.UUID;
 public class QueryCompileTest {
 
     @Test
+    public void testInWhereOneValue() {
+        String queryAsString = "SELECT * FROM resource WHERE id IN (774cb3ea-c372-4fb3-b00d-8b7a9648a321)";
+        Query query = Query.compile(queryAsString);
+        System.out.println();
+
+        queryAsString = "SELECT * FROM resource WHERE id IN ('hola-mundo+3456')";
+        query = Query.compile(queryAsString);
+        System.out.println();
+
+        queryAsString = "SELECT * FROM resource WHERE id IN (36589)";
+        query = Query.compile(queryAsString);
+        System.out.println();
+    }
+
+    @Test
     public void dynamicResourceCompile() {
         try {
             Query query = Query.compile("SELECT * FROM (SELECT * FROM resource limit 10) as resource");
