@@ -10,10 +10,10 @@ public class TaggedException extends RuntimeException {
     }
 
     public TaggedException(String tag, String message, Throwable cause, Object... params) {
-        super(Strings.createTaggedMessage(String.format(message, params), tag, getServiceTag()), cause);
+        super(Strings.createTaggedMessage(String.format(message, params), tag, getNodeNameTag()), cause);
     }
 
-    protected static String getServiceTag() {
-        return SystemProperties.get(SystemProperties.Net.SERVICE_NAME).toUpperCase();
+    protected static String getNodeNameTag() {
+        return SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisNode.NAME).toUpperCase();
     }
 }
