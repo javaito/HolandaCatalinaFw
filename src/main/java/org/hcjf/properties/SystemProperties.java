@@ -306,6 +306,7 @@ public final class SystemProperties extends Properties {
         public static final String JOIN_DYNAMIC_RESOURCE_INDEX = "hcjf.query.join.dynamic.resource.index";
         public static final String JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX = "hcjf.query.join.dynamic.resource.alias.index";
         public static final String JOIN_CONDITIONAL_BODY_INDEX = "hcjf.query.join.conditional.body.index";
+        public static final String UNION_REGULAR_EXPRESSION = "hcjf.query.union.regular.expression";
         public static final String AS_REGULAR_EXPRESSION = "hcjf.query.as.regular.expression";
         public static final String DESC_REGULAR_EXPRESSION = "hcjf.query.desc.regular.expression";
         public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
@@ -330,6 +331,7 @@ public final class SystemProperties extends Properties {
             public static final String SELECT = "hcjf.query.select.reserved.word";
             public static final String FROM = "hcjf.query.from.reserved.word";
             public static final String JOIN = "hcjf.query.join.reserved.word";
+            public static final String UNION = "hcjf.query.union.reserved.word";
             public static final String FULL = "hcjf.query.full.reserved.word";
             public static final String INNER = "hcjf.query.inner.join.reserved.word";
             public static final String LEFT = "hcjf.query.left.join.reserved.word";
@@ -733,6 +735,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.JOIN_DYNAMIC_RESOURCE_INDEX, "dynamicResource");
         defaults.put(Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX, "dynamicResourceAlias");
         defaults.put(Query.JOIN_CONDITIONAL_BODY_INDEX, "conditionalBody");
+        defaults.put(Query.UNION_REGULAR_EXPRESSION, "(?i)((?<=( union ))|(?=( union )))");
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
         defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)((?<=( desc| asc))|(?=( desc| asc)))");
         defaults.put(Query.SELECT_GROUP_INDEX, "select");
@@ -755,6 +758,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");
+        defaults.put(Query.ReservedWord.UNION, "UNION");
         defaults.put(Query.ReservedWord.FULL, "FULL");
         defaults.put(Query.ReservedWord.INNER, "INNER");
         defaults.put(Query.ReservedWord.LEFT, "LEFT");

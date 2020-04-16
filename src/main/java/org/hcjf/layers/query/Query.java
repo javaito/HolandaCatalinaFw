@@ -46,7 +46,6 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
     private boolean returnAll;
-    //private String stringRepresentation;
 
     static {
         //Init query compiler cache
@@ -1412,20 +1411,6 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return Collections of joinable map instances.
      */
     public static Collection<JoinableMap> evaluate(Queryable queryable) {
-        Collection<JoinableMap> result;
-        Query query;
-        if(queryable instanceof  Query) {
-            query = (Query) queryable;
-        } else {
-            query = ((ParameterizedQuery)queryable).getQuery();
-        }
-
-        //if(query.getJoins().isEmpty() && query.getOrderParameters().isEmpty()) {
-        //    result = Layers.get(ReadRowsLayerInterface.class, queryable.getResourceName()).readRows(queryable);
-        //} else {
-        //    result = queryable.evaluate(new Queryable.ReadableDataSource());
-        //}
-        //return result;
         return queryable.evaluate(new Queryable.ReadableDataSource());
     }
 
