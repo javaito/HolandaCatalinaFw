@@ -2,6 +2,7 @@ package org.hcjf.events;
 
 import org.hcjf.cloud.Cloud;
 import org.hcjf.errors.Errors;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -105,6 +106,36 @@ public final class Events extends Service<EventListener> {
     }
 
     /**
+     * Dispatch the event to all the listeners and wait that the all listeners finish.
+     * @param event Event to dispatch.
+     */
+    private void synchronousDispatchEvent(Event event) {
+        if(event != null) {
+            if(event instanceof DistributedEvent) {
+                throw new HCJFRuntimeException("Unable to use synchronous dispatch for distributed events");
+            } else if(event instanceof RemoteEvent) {
+                synchronousDispatchLocalEvent(((RemoteEvent)event).getEvent());
+            } else {
+                synchronousDispatchLocalEvent(event);
+            }
+        }
+    }
+
+    /**
+     * Dispatch the event to all the listeners and wait that the all listeners finish.
+     * @param event Event to dispatch.
+     */
+    private void synchronousDispatchLocalEvent(Event event) {
+        for (EventListener listener : getListeners(event)) {
+            try {
+                listener.onEventReceived(event);
+            } catch(Exception ex){
+                Log.e(SystemProperties.get(SystemProperties.Event.LOG_TAG), "Unable to dispatch event", ex);
+            }
+        }
+    }
+
+    /**
      * Dispatch a distributed event instance only for the cloud singleton.
      * @param distributedEvent Distributed event.
      */
@@ -113,11 +144,19 @@ public final class Events extends Service<EventListener> {
     }
 
     /**
-     * Send event.
-     * @param event Event to send.
+     * Dispatch the event and return control immediately
+     * @param event Event to dispatch.
      */
     public static void sendEvent(Event event) {
         instance.dispatchEvent(event);
+    }
+
+    /**
+     * Dispatch the event and wait all the listeners process the event.
+     * @param event Event to dispatch
+     */
+    public static void processEvent(Event event) {
+        instance.synchronousDispatchEvent(event);
     }
 
     /**
