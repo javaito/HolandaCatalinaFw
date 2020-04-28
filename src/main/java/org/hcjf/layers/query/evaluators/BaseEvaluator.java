@@ -172,7 +172,7 @@ public abstract class BaseEvaluator implements Evaluator {
             Object result;
             Collection collection;
             if(subQueryResult == null) {
-                subQueryResult = Query.evaluate(query);
+                subQueryResult = query.evaluate(dataSource, consumer);
             }
             if(query.getReturnParameters().size() == 1){
                 List<Object> listResult = new ArrayList<>();
