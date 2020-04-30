@@ -277,7 +277,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
                     if(resource != null) {
                         ((GroupableSet) mapInstanceByResource.get(resource).get(key.replace(resource, Strings.EMPTY_STRING))).add(groupableValue);
                     }
-                } else if(!get(key).equals(groupable.get(key))) {
+                } else {
                     groupSet = new GroupableSet();
                     groupSet.add(instanceValue);
                     groupSet.add(groupableValue);

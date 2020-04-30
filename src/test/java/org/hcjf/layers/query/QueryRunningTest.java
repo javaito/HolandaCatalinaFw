@@ -849,6 +849,113 @@ public class QueryRunningTest {
         }
     }
 
+    @Test
+    public void testGroupByAndCount() {
+        String json = "[\n" +
+                "  {\n" +
+                "    \"fechaEvento\": \"2020-04-29 00:00:00\",\n" +
+                "    \"fletero\": 96263,\n" +
+                "    \"secuenciaPlanificada\": 26,\n" +
+                "    \"descripcionRechazo\": \"PRODUCTOS EN MAL ESTADO\",\n" +
+                "    \"centroDistribucion\": 7,\n" +
+                "    \"nroPedido\": 274683090291,\n" +
+                "    \"_updateAccount\": \"ea0bffc7-40f3-5252-bbd8-61ce1d0c220d\",\n" +
+                "    \"nombreUen\": \"COMERCIAL CCU S.A.\",\n" +
+                "    \"idCliente\": 780476,\n" +
+                "    \"codCamion\": \"020\",\n" +
+                "    \"horaEvento\": \"2020-04-29 19:02:41\",\n" +
+                "    \"id\": \"070a5528-4c30-4129-aa63-ca7ac5942421\",\n" +
+                "    \"estadoEntrega\": \"2\",\n" +
+                "    \"uen\": 96,\n" +
+                "    \"lineas\": [\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1007,\n" +
+                "        \"cantidad\": 1,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1600,\n" +
+                "        \"cantidad\": 0,\n" +
+                "        \"codigoRechazo\": 180\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1603,\n" +
+                "        \"cantidad\": 0,\n" +
+                "        \"codigoRechazo\": 180\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1728,\n" +
+                "        \"cantidad\": 1,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 2,\n" +
+                "        \"producto\": 870206,\n" +
+                "        \"cantidad\": 2,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 953,\n" +
+                "        \"cantidad\": 1,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      }\n" +
+                "    ],\n" +
+                "    \"codRechazo\": 180,\n" +
+                "    \"numeroFactura\": 107008125,\n" +
+                "    \"planilla\": 7770646,\n" +
+                "    \"_creationDate\": \"2020-04-29 23:02:54\",\n" +
+                "    \"_eventTracking\": {\n" +
+                "      \"dispatchDate\": \"2020-04-29 23:02:54\",\n" +
+                "      \"eventTriggerId\": \"74b2b470-23b1-4c8e-a105-619227b5a2de\",\n" +
+                "      \"from\": {\n" +
+                "        \"path\": \"/event/flow/conditional\",\n" +
+                "        \"headers\": {\n" +
+                "          \"Authorization\": \"Apikey 7e388459f3994390b4b9fc2eb03346aa\",\n" +
+                "          \"Accept-Charset\": \"big5, big5-hkscs, euc-jp, euc-kr, gb18030, gb2312, gbk, ibm-thai, ibm00858, ibm01140, ibm01141, ibm01142, ibm01143, ibm01144, ibm01145, ibm01146, ibm01147, ibm01148, ibm01149, ibm037, ibm1026, ibm1047, ibm273, ibm277, ibm278, ibm280, ibm284, ibm285, ibm290, ibm297, ibm420, ibm424, ibm437, ibm500, ibm775, ibm850, ibm852, ibm855, ibm857, ibm860, ibm861, ibm862, ibm863, ibm864, ibm865, ibm866, ibm868, ibm869, ibm870, ibm871, ibm918, iso-2022-cn, iso-2022-jp, iso-2022-jp-2, iso-2022-kr, iso-8859-1, iso-8859-13, iso-8859-15, iso-8859-2, iso-8859-3, iso-8859-4, iso-8859-5, iso-8859-6, iso-8859-7, iso-8859-8, iso-8859-9, jis_x0201, jis_x0212-1990, koi8-r, koi8-u, shift_jis, tis-620, us-ascii, utf-16, utf-16be, utf-16le, utf-32, utf-32be, utf-32le, utf-8, windows-1250, windows-1251, windows-1252, windows-1253, windows-1254, windows-1255, windows-1256, windows-1257, windows-1258, windows-31j, x-big5-hkscs-2001, x-big5-solaris, x-compound_text, x-euc-jp-linux, x-euc-tw, x-eucjp-open, x-ibm1006, x-ibm1025, x-ibm1046, x-ibm1097, x-ibm1098, x-ibm1112, x-ibm1122, x-ibm1123, x-ibm1124, x-ibm1166, x-ibm1364, x-ibm1381, x-ibm1383, x-ibm300, x-ibm33722, x-ibm737, x-ibm833, x-ibm834, x-ibm856, x-ibm874, x-ibm875, x-ibm921, x-ibm922, x-ibm930, x-ibm933, x-ibm935, x-ibm937, x-ibm939, x-ibm942, x-ibm942c, x-ibm943, x-ibm943c, x-ibm948, x-ibm949, x-ibm949c, x-ibm950, x-ibm964, x-ibm970, x-iscii91, x-iso-2022-cn-cns, x-iso-2022-cn-gb, x-iso-8859-11, x-jis0208, x-jisautodetect, x-johab, x-macarabic, x-maccentraleurope, x-maccroatian, x-maccyrillic, x-macdingbat, x-macgreek, x-machebrew, x-maciceland, x-macroman, x-macromania, x-macsymbol, x-macthai, x-macturkish, x-macukraine, x-ms932_0213, x-ms950-hkscs, x-ms950-hkscs-xp, x-mswin-936, x-pck, x-sjis_0213, x-utf-16le-bom, x-utf-32be-bom, x-utf-32le-bom, x-windows-50220, x-windows-50221, x-windows-874, x-windows-949, x-windows-950, x-windows-iso2022jp\",\n" +
+                "          \"X-Cloud-Trace-Context\": \"fdaf2e7b43098c68ba4c4df048704bd1/11180262256834346684\",\n" +
+                "          \"Accept\": \"text/plain, application/json, application/*+json, */*\",\n" +
+                "          \"User-Agent\": \"Java1.7.0_131\",\n" +
+                "          \"X-Forwarded-Proto\": \"http\",\n" +
+                "          \"Connection\": \"Keep-Alive\",\n" +
+                "          \"X-Forwarded-For\": \"200.111.67.30, 34.95.78.57\",\n" +
+                "          \"Host\": \"api.sitrack.io\",\n" +
+                "          \"Content-Length\": \"901\",\n" +
+                "          \"Content-Type\": \"application/json; charset=utf-8\",\n" +
+                "          \"Via\": \"1.1 google\"\n" +
+                "        },\n" +
+                "        \"protocol\": \"HTTP\",\n" +
+                "        \"method\": \"POST\",\n" +
+                "        \"parameters\": {}\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"fechaReparto\": \"2020-04-29 00:00:00\",\n" +
+                "    \"_creationAccount\": \"ea0bffc7-40f3-5252-bbd8-61ce1d0c220d\",\n" +
+                "    \"usuarioCamion\": 0,\n" +
+                "    \"_lastUpdate\": \"2020-04-29 23:02:54\",\n" +
+                "    \"_permissions\": [],\n" +
+                "    \"_id\": \"070a5528-4c30-4129-aa63-ca7ac5942421\",\n" +
+                "    \"codCarga\": 1,\n" +
+                "    \"referencia\": 7770646\n" +
+                "  }\n" +
+                "]";
+
+        Collection<Map<String,Object>> data = (Collection<Map<String, Object>>) JsonUtils.createObject(json);
+        Query query = Query.compile("select aggregateSum(cantidadFacturada) as totalFacturado, aggregateSum(cantidad) as totalEntregado, aggregateContext(cantidadFacturada) as facturado, aggregateContext(cantidad) as entregado from (select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125).lineas as data group by a");
+
+        Collection<Map<String,Object>> resultSet = query.evaluate(data);
+        Map<String,Object> firstObject = resultSet.stream().findFirst().get();
+        Assert.assertEquals(((Collection)firstObject.get("facturado")).size(), 6);
+        Assert.assertEquals(((Collection)firstObject.get("entregado")).size(), 6);
+
+        Assert.assertEquals(((BigDecimal)firstObject.get("totalFacturado")).intValue(), 7);
+        Assert.assertEquals(((BigDecimal)firstObject.get("totalEntregado")).intValue(), 5);
+    }
+
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
         public CustomFunction() {
