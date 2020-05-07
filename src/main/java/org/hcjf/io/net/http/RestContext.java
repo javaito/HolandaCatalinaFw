@@ -104,7 +104,13 @@ public class RestContext extends Context {
                 jsonElement = gson.toJsonTree(readLayerInterface.read(id));
             }
         } else if(method.equals(HttpMethod.POST)) {
-            RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
+            JsonElement body = jsonParser.parse(new String(request.getBody()));
+            RequestModel requestModel;
+            if (body.isJsonObject()) {
+                requestModel = new RequestModel((JsonObject) body);
+            } else {
+                requestModel = new RequestModel((JsonArray) body);
+            }
             if(requestModel.getBody() == null) {
                 // If the method is post and the body object is null then the request attempt to create a parameterized
                 // query instance or a group of queryable instances.
@@ -133,7 +139,7 @@ public class RestContext extends Context {
             UpdateLayerInterface updateLayerInterface = Layers.get(UpdateLayerInterface.class, resourceName);
             RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
             if(id != null) {
-                requestModel.getBody().put(Fields.ID_URL_FIELD, id);
+                ((Map<String,Object>) requestModel.getBody()).put(Fields.ID_URL_FIELD, id);
                 jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
             } else {
                 jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));
@@ -229,11 +235,14 @@ public class RestContext extends Context {
      */
     private static class RequestModel {
 
-        private Map<String,Object> body;
+        private Object body;
         private Queryable queryable;
         private Map<String,Queryable> queryables;
         private Map<String,Object> requestConfig;
 
+        public RequestModel(JsonArray jsonArray) {
+            body = JsonUtils.createList(jsonArray);
+        }
         public RequestModel(JsonObject jsonObject) {
             if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&
                     !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)) &&
@@ -284,7 +293,7 @@ public class RestContext extends Context {
          * Returns the body of the request.
          * @return Body of the request.
          */
-        public Map<String, Object> getBody() {
+        public Object getBody() {
             return body;
         }
 
