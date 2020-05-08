@@ -352,25 +352,29 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 serviceDefinitionMessage.setBroadcasting(true);
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
                 try {
-                    ServiceDefinitionResponseMessage definitionResponse = (ServiceDefinitionResponseMessage) invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
-                    fork(() -> {
-                        if (definitionResponse.getMessages() != null) {
-                            for (Message innerMessage : definitionResponse.getMessages()) {
-                                try {
-                                    processMessage(null, innerMessage);
-                                } catch (Exception ex) {
-                                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                                            "Unable to process one message of the service publication collection: %s",
-                                            innerMessage.getClass().toString());
+                    Object responseObject = invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
+                    if(responseObject != null) {
+                        ServiceDefinitionResponseMessage definitionResponse = (ServiceDefinitionResponseMessage) responseObject;
+                        fork(() -> {
+                            if (definitionResponse.getMessages() != null) {
+                                for (Message innerMessage : definitionResponse.getMessages()) {
+                                    try {
+                                        processMessage(null, innerMessage);
+                                    } catch (Exception ex) {
+                                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                                "Unable to process one message of the service publication collection: %s",
+                                                innerMessage.getClass().toString());
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
 
-                    try {
-                        endPoints.get(definitionResponse.getServiceId()).setName(definitionResponse.getServiceName());
-                        endPoints.get(definitionResponse.getServiceId()).setDistributedEventListener(definitionResponse.getEventListener());
-                    } catch (Exception ex){}
+                        try {
+                            endPoints.get(definitionResponse.getServiceId()).setName(definitionResponse.getServiceName());
+                            endPoints.get(definitionResponse.getServiceId()).setDistributedEventListener(definitionResponse.getEventListener());
+                        } catch (Exception ex) {
+                        }
+                    }
                 } catch (Exception ex) {
                     Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
                     try {
