@@ -1,26 +1,48 @@
 package org.hcjf.cloud.impl.messages;
 
-import org.hcjf.io.net.messages.Message;
-import org.hcjf.io.net.messages.ResponseMessage;
+import org.hcjf.io.net.messages.MessageCollection;
 
-import java.util.Collection;
+import java.util.UUID;
 
-public class ServiceDefinitionResponseMessage extends ResponseMessage {
+public class ServiceDefinitionResponseMessage extends MessageCollection {
 
-    private Collection<Message> messages;
+    private UUID serviceId;
+    private String serviceName;
+    private Boolean broadcasting;
+    private Boolean eventListener;
 
     public ServiceDefinitionResponseMessage() {
     }
 
-    public ServiceDefinitionResponseMessage(Message message) {
-        super(message);
+    public UUID getServiceId() {
+        return serviceId;
     }
 
-    public Collection<Message> getMessages() {
-        return messages;
+    public void setServiceId(UUID serviceId) {
+        this.serviceId = serviceId;
     }
 
-    public void setMessages(Collection<Message> messages) {
-        this.messages = messages;
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
+    }
+
+    public Boolean getBroadcasting() {
+        return broadcasting;
+    }
+
+    public void setBroadcasting(Boolean broadcasting) {
+        this.broadcasting = broadcasting;
+    }
+
+    public Boolean getEventListener() {
+        return eventListener;
+    }
+
+    public void setEventListener(Boolean eventListener) {
+        this.eventListener = eventListener;
     }
 }
