@@ -19,6 +19,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Implementation of the net service that provides the http protocol server.
@@ -291,8 +292,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
                                 URL url = new URL(originHeader.getHeaderValue());
                                 response = new HttpResponse();
-                                if (accessControlMap.containsKey(url.getHost())) {
-                                    AccessControl accessControl = accessControlMap.get(url.getHost());
+                                AccessControl accessControl;
+                                if ((accessControl = getAccessControl(url.getHost())) != null) {
                                     response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.maxAge.toString()));
                                     if (!accessControl.getAllowMethods().isEmpty()) {
                                         response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
@@ -312,8 +313,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                 }
                                 if (originHeader != null) {
                                     URL url = new URL(originHeader.getHeaderValue());
-                                    if (accessControlMap.containsKey(url.getHost())) {
-                                        AccessControl accessControl = accessControlMap.get(url.getHost());
+                                    AccessControl accessControl;
+                                    if ((accessControl = getAccessControl(url.getHost())) != null) {
                                         if (!accessControl.getExposeHeaders().isEmpty()) {
                                             response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
                                                     Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
@@ -398,6 +399,20 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
             }
         }
+    }
+
+    private AccessControl getAccessControl (String host) {
+        String startChar = SystemProperties.get(SystemProperties.Net.Http.HOST_ACCESS_CONTROL_REGEX_START_CHAR);
+        for(String accessHost : accessControlMap.keySet()) {
+            if(accessHost.startsWith(startChar)) {
+                if(Pattern.matches(accessHost.substring(startChar.length()),host)) {
+                    return accessControlMap.get(accessHost);
+                }
+            } else if (accessHost.equals(host)) {
+                return accessControlMap.get(accessHost);
+            }
+        }
+        return null;
     }
 
     /**
