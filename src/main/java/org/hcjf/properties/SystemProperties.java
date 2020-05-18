@@ -236,6 +236,7 @@ public final class SystemProperties extends Properties {
             public static final String SERVER_DECOUPLED_IO_ACTION = "hcjf.net.http.server.decoupled.io.action";
             public static final String SERVER_IO_QUEUE_SIZE = "hcjf.net.http.server.io.queue.size";
             public static final String SERVER_IO_WORKERS = "hcjf.net.http.server.io.workers";
+            public static final String HOST_ACCESS_CONTROL_REGEX_START_CHAR = "hcjf.net.http.host.access.control.regex.start.char";
 
             public static final class Http2Settings {
                 public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.settings.header.table.size";
@@ -622,6 +623,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_THRESHOLD, "60");
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS, "5");
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION, "RECREATE_SELECTOR"); //Valid values [RECREATE_SELECTOR, SHUTDOWN, VOID]
+        defaults.put(Net.Http.HOST_ACCESS_CONTROL_REGEX_START_CHAR,"^");
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
