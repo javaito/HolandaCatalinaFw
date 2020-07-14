@@ -7,13 +7,16 @@ import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.ServiceThread;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
@@ -39,6 +42,9 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     private HttpSession session;
     private HttpPackage.HttpProtocol httpProtocol;
     private Boolean httpsInsecureConnection;
+    private HttpResponseHandler responseHandler;
+    private final Object connectionMonitor = new Object();
+    private final Object readMonitor = new Object();
 
     public HttpClient(URL url) {
         super(url.getHost(), url.getPort() != -1 ? url.getPort() :
@@ -72,6 +78,14 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         request.setBody(new byte[0]);
         request.addHeader(new HttpHeader(HttpHeader.HOST, url.getHost()));
         request.addHeader(new HttpHeader(HttpHeader.USER_AGENT, HttpHeader.DEFAULT_USER_AGENT));
+    }
+
+    public HttpResponseHandler getResponseHandler() {
+        return responseHandler;
+    }
+
+    public void setResponseHandler(HttpResponseHandler responseHandler) {
+        this.responseHandler = responseHandler;
     }
 
     /**
@@ -274,6 +288,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         if(response == null) {
             response = new HttpResponse();
             response.setProtocol(httpProtocol);
+            response.setTransferDecodingLayer(responseHandler);
         }
         response.addData(netPackage.getPayload());
         return response;
@@ -296,11 +311,22 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     @Override
     protected void onConnect(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
+        synchronized (connectionMonitor) {
+            if(status == Status.CONNECTING) {
+                status = Status.CONNECTED;
+                connectionMonitor.notifyAll();
+            }
+        }
+    }
+
+    @Override
+    protected void onDisconnect(HttpSession session, NetPackage netPackage) {
         synchronized (this) {
-            status = Status.CONNECTED;
             notifyAll();
         }
     }
+
+    private static int index = 0;
 
     /**
      *
@@ -310,10 +336,13 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        if(response.isComplete()) {
-            synchronized (this) {
-                status = Status.DONE;
-                notifyAll();
+        System.out.println("Index: " + ++index);
+        if(getResponseHandler() == null) {
+            if (response.isComplete()) {
+                synchronized (readMonitor) {
+                    status = Status.DONE;
+                    readMonitor.notifyAll();
+                }
             }
         }
     }
@@ -326,22 +355,35 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     public final HttpResponse request() {
         long time = System.currentTimeMillis();
-        session = new HttpSession(UUID.randomUUID(), this);
-        session.setRequest(request);
-        session.setSessionName(SESSION_NAME);
         Integer errorCode = null;
 
         //Connection block
         status = Status.CONNECTING;
-        synchronized (this) {
-            connect();
-            if (status == Status.CONNECTING) {
-                try {
-                    wait(getConnectTimeout());
-                } catch (InterruptedException e) {}
+        synchronized (connectionMonitor) {
+            for (int i = 0; i < 3; i++) {
+                session = new HttpSession(UUID.randomUUID(), this);
+                session.setRequest(request);
+                session.setSessionName(SESSION_NAME);
+                connect();
+                if (status == Status.CONNECTING) {
+                    try {
+                        connectionMonitor.wait(getConnectTimeout());
+                    } catch (InterruptedException e) {
+                    }
+                }
+
+                if (status == Status.CONNECTING) {
+                    try {
+                        disconnect(getSession(), DISCONNECTION_MESSAGE);
+                        destroySession(getSession());
+                    } catch (Exception ex){}
+                } else {
+                    break;
+                }
             }
 
-            if (status == Status.CONNECTING) {
+            if(status == Status.CONNECTING) {
+                System.out.println("Timeout connecting");
                 status = Status.ERROR;
                 errorCode = HttpResponseCode.REQUEST_TIMEOUT;
             }
@@ -351,25 +393,29 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         if(status != Status.ERROR) {
             status = Status.WRITING;
 
-            synchronized (this) {
-                Log.out(HTTP_CLIENT_LOG_TAG, "Request\r\n%s", request.toString());
-                try {
-                    write(getSession(), request, false);
-                } catch (Exception ex) {
-                    status = Status.ERROR;
-                    errorCode = HttpResponseCode.BAD_REQUEST;
-                }
+            Log.out(HTTP_CLIENT_LOG_TAG, "Request\r\n%s", request.toString());
+            try {
+                write(getSession(), request, true);
+            } catch (Exception ex) {
+                System.out.println("Error writing");
+                status = Status.ERROR;
+                errorCode = HttpResponseCode.BAD_REQUEST;
+            }
 
-                if (status == Status.WRITING) {
-                    try {
-                        wait(getReadTimeout());
-                    } catch (InterruptedException e) {
+            if(getResponseHandler() == null) {
+                synchronized (readMonitor) {
+                    if (status == Status.WRITING) {
+                        try {
+                            readMonitor.wait(getWriteTimeout());
+                        } catch (InterruptedException e) {
+                        }
                     }
-                }
 
-                if (status == Status.WRITING) {
-                    status = Status.ERROR;
-                    errorCode = HttpResponseCode.REQUEST_TIMEOUT;
+                    if (status == Status.WRITING) {
+                        System.out.println("Timeout reading");
+                        status = Status.ERROR;
+                        errorCode = HttpResponseCode.REQUEST_TIMEOUT;
+                    }
                 }
             }
         }
@@ -383,11 +429,19 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             response = this.response;
         }
 
-        disconnect(getSession(), DISCONNECTION_MESSAGE);
+        if(getResponseHandler() == null) {
+            disconnect(getSession(), DISCONNECTION_MESSAGE);
+        }
 
         Log.in(HTTP_CLIENT_LOG_TAG, "Response -> [Time: %d ms]\r\n%s",
                 (System.currentTimeMillis() - time), response.toString());
         return response;
+    }
+
+    public final HttpResponse asyncRequest(HttpResponseHandler responseHandler) {
+        setResponseHandler(responseHandler);
+
+        return request();
     }
 
     /**

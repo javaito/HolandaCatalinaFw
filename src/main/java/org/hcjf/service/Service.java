@@ -1,5 +1,7 @@
 package org.hcjf.service;
 
+import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.errors.HCJFServiceTimeoutException;
 import org.hcjf.log.Log;
 import org.hcjf.log.debug.Agent;
 import org.hcjf.log.debug.Agents;
@@ -279,9 +281,9 @@ public abstract class Service<C extends ServiceConsumer> {
                 }
             } catch (TimeoutException ex) {
                 future.cancel(true);
-                throw new RuntimeException(ex);
+                throw new HCJFServiceTimeoutException("Service run timout", ex);
             } catch (Exception ex) {
-                throw new RuntimeException(ex);
+                throw new HCJFRuntimeException("Service run fail", ex);
             }
         }
     }
@@ -317,9 +319,9 @@ public abstract class Service<C extends ServiceConsumer> {
             }
         } catch (TimeoutException ex) {
             future.cancel(true);
-            throw new RuntimeException(ex);
+            throw new HCJFServiceTimeoutException("Service call timout", ex);
         } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            throw new HCJFRuntimeException("Service call fail", ex);
         }
         return result;
     }

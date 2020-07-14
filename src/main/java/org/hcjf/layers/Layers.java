@@ -13,6 +13,7 @@ import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
+import org.hcjf.layers.scripting.JavaCodeEvaluator;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.security.LazyPermission;
@@ -56,6 +57,9 @@ public final class Layers {
         //Publish a read rows layer implementation in order to publish a list af all the layer of the system.
         Layers.publishLayer(SystemLayerReadableImplementation.class);
         Layers.publishLayer(SystemResourceReadableImplementation.class);
+
+        //Publish a code evaluator implementations
+        Layers.publishLayer(JavaCodeEvaluator.class);
     }
 
     private final Map<Class<? extends Layer>, Object> initialInstances;

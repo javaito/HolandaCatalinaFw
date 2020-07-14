@@ -161,15 +161,40 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected final HttpPackage decode(NetPackage netPackage) {
-        HttpRequest request = requestBuffers.get(netPackage.getSession());
-        if(request == null){
-            synchronized (requestBuffers) {
-                request = new HttpRequest();
-                request.setProtocol(httpProtocol);
-                requestBuffers.put(netPackage.getSession(), request);
+        HttpRequest request = null;
+        if(((HttpSession)netPackage.getSession()).getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
+            byte[] data = netPackage.getPayload();
+            String httpClientPreface = new String(data, 0, 24);
+            Integer length = (data[26] & 0xFF) | ((data[25] & 0xFF) << 8) | ((data[24] & 0x0F) << 16);
+            Byte type = data[27];
+            Byte flags = data[28];
+            Integer id = (data[32] & 0xFF) | ((data[31] & 0xFF) << 8) | ((data[30] & 0xFF) << 16) | ((data[29] & 0x0F) << 24);
+
+            Integer settingId1 = (data[34] & 0xFF) | ((data[33] & 0x0F) << 8);
+            Integer settingValue1 = (data[38] & 0xFF) | ((data[37] & 0xFF) << 8) | ((data[36] & 0xFF) << 16) | ((data[35] & 0x0F) << 24);
+            Integer settingId2 = (data[40] & 0xFF) | ((data[39] & 0x0F) << 8);
+            Integer settingValue2 = (data[44] & 0xFF) | ((data[43] & 0xFF) << 8) | ((data[42] & 0xFF) << 16) | ((data[41] & 0x0F) << 24);
+            Integer settingId3 = (data[46] & 0xFF) | ((data[45] & 0x0F) << 8);
+            Integer settingValue3 = (data[50] & 0xFF) | ((data[49] & 0xFF) << 8) | ((data[48] & 0xFF) << 16) | ((data[47] & 0x0F) << 24);
+
+            Integer length2 = (data[53] & 0xFF) | ((data[52] & 0xFF) << 8) | ((data[51] & 0x0F) << 16);
+            Byte type2 = data[54];
+            Byte flags2 = data[55];
+            Integer id2 = (data[59] & 0xFF) | ((data[58] & 0xFF) << 8) | ((data[57] & 0xFF) << 16) | ((data[56] & 0x0F) << 24);
+            Integer windowsSize = (data[63] & 0xFF) | ((data[62] & 0xFF) << 8) | ((data[61] & 0xFF) << 16) | ((data[60] & 0x0F) << 24);
+
+            System.out.println(new String(data, 60, data.length - 60));
+        } else {
+            request = requestBuffers.get(netPackage.getSession());
+            if (request == null) {
+                synchronized (requestBuffers) {
+                    request = new HttpRequest();
+                    request.setProtocol(httpProtocol);
+                    requestBuffers.put(netPackage.getSession(), request);
+                }
             }
+            request.addData(netPackage.getPayload());
         }
-        request.addData(netPackage.getPayload());
         return request;
     }
 
@@ -256,6 +281,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @param request Http request instance.
      */
     private void processRequest(HttpSession session, HttpRequest request) {
+        session.setHttpVersion(request.getHttpVersion());
+
         //Flag to pipe line.
         boolean connectionKeepAlive = false;
 
@@ -269,15 +296,16 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         try {
             if (session.isChecked()) {
                 HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
-                if (upgrade != null) {
+                if (upgrade != null && upgrade.getHeaderValue().equals(HttpHeader.HTTP2_REQUEST)) {
+                    session.setHttpVersion(HttpVersion.VERSION_2_0);
                     HttpHeader connection = request.getHeader(HttpHeader.CONNECTION);
                     HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
 
                     if (upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
-                        session.setStream(new Stream(new StreamSettings()));
-                        response = new HttpResponse();
-                        response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
-                        response.addHeader(upgrade);
+//                        session.setStream(new Stream(new StreamSettings()));
+//                        response = new HttpResponse();
+//                        response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
+//                        response.addHeader(upgrade);
                     } else {
                         throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
                     }
@@ -394,7 +422,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
             connectionKeepAlive = false;
         } finally {
-            if (!connectionKeepAlive) {
+            if (!connectionKeepAlive && !session.getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
                 disconnect(session, "Http request end.");
                 Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
             }

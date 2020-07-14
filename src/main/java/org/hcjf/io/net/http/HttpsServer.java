@@ -186,7 +186,8 @@ public class HttpsServer extends HttpServer {
      * @throws Exception Key managers creation exception
      */
     protected KeyManager[] createKeyManagers() throws Exception {
-        KeyStore keyStore = getProvider() == null ? KeyStore.getInstance(getKeyType()) : KeyStore.getInstance(getKeyType(), getProvider());
+        KeyStore keyStore = getProvider() == null ?
+                KeyStore.getInstance(getKeyType()) : KeyStore.getInstance(getKeyType(), getProvider());
         InputStream keyStoreIS = new FileInputStream(getKeystoreFilePath().toFile());
         try {
             keyStore.load(keyStoreIS, getKeystorePassword().toCharArray());

@@ -341,6 +341,16 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
+     * This method notify to all the readers.
+     * @param channel Channel to write the package.
+     * @param session Net session instance.
+     */
+    private void readWakeup(SelectableChannel channel, NetSession session) {
+        SelectorRunnable selectorRunnable = selectors.get(session.getConsumer());
+        selectorRunnable.readWakeup(channel);
+    }
+
+    /**
      * This method put a net package on the output queue of the session.
      *
      * @param session Net session.
@@ -360,6 +370,19 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         return netPackage;
+    }
+
+    /**
+     * This method force the selector wakeup in order to read information from channel.
+     * @param session Session instance.
+     */
+    public final void readData(NetSession session) throws IOException {
+        SelectableChannel channel = channels.get(session);
+        if(channel != null) {
+            readWakeup(channel, session);
+        } else {
+            throw new IOException("Unknown session");
+        }
     }
 
     /**
@@ -742,6 +765,18 @@ public final class NetService extends Service<NetServiceConsumer> {
                 channel.register(getSelector(), operation, attach);
                 wakeup();
             }
+        }
+
+        private void readWakeup(SelectableChannel channel) {
+            SelectionKey key = channel.keyFor(getSelector());
+            synchronized (readableKeys) {
+                if (key.isValid() && !writableKeys.contains(key)) {
+                    if(!readableKeys.offer(key)) {
+                        Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Unable to add readable key!!!!");
+                    }
+                }
+            }
+            writableKeys.notifyAll();
         }
 
         private void writeWakeup(SelectableChannel channel, NetPackage netPackage) {
@@ -1695,10 +1730,19 @@ public final class NetService extends Service<NetServiceConsumer> {
          * @return Net package.
          */
         public synchronized NetPackage write(NetPackage netPackage) {
-            srcWrap.put(netPackage.getPayload());
-            SSLHelper.this.run();
             DefaultNetPackage defaultNetPackage = null;
-            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
+            if(netPackage.getPayload() != null) {
+                srcWrap.put(netPackage.getPayload());
+                SSLHelper.this.run();
+                if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
+                    try {
+                        defaultNetPackage = new DefaultNetPackage("", "",
+                                0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.WRITE);
+                        defaultNetPackage.setSession(netPackage.getSession());
+                    } catch (Exception ex) {
+                    }
+                }
+            } else {
                 try {
                     defaultNetPackage = new DefaultNetPackage("", "",
                             0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.WRITE);
@@ -1706,7 +1750,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 } catch (Exception ex) {
                 }
             }
-
             return defaultNetPackage;
         }
 
@@ -1732,7 +1775,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                     try {
                         decryptedPlace.close();
                     } catch (IOException e) { }
-                    decryptedPlace = null;
                 }
             }
 

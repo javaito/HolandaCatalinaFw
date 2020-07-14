@@ -3,10 +3,7 @@ package org.hcjf.utils;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author javaito
@@ -88,6 +85,82 @@ public class IntrospectionTest {
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }
+    }
+
+    @Test
+    public void testWildCardCharacter() {
+        Map<String,Object> body = new HashMap<>();
+        Collection<Map<String,Object>> collection = new ArrayList<>();
+        body.put("collection", collection);
+        for (int i = 0; i < 10; i++) {
+            Map<String,Object> mapIntoCollection = new HashMap<>();
+            mapIntoCollection.put("i", i);
+            mapIntoCollection.put("module", i%2);
+            mapIntoCollection.put("moduleToString", Objects.toString(i%2));
+            Map<String,Object> innerMap = new HashMap<>();
+            innerMap.put("inner_i", i);
+            innerMap.put("inner_module", i%2);
+            innerMap.put("inner_moduleToString", Objects.toString(i%2));
+            mapIntoCollection.put("innerMap", innerMap);
+            Collection<Map<String,Object>> innerCollection = new ArrayList<>();
+            mapIntoCollection.put("innerCollection", innerCollection);
+            for (int j = 0; j < 10; j++) {
+                Map<String,Object> j_mapIntoCollection = new HashMap<>();
+                j_mapIntoCollection.put("j", j);
+                j_mapIntoCollection.put("module", j%2);
+                j_mapIntoCollection.put("moduleToString", Objects.toString(j%2));
+                Map<String,Object> j_innerMap = new HashMap<>();
+                j_innerMap.put("inner_j", j);
+                j_innerMap.put("inner_module", j%2);
+                j_innerMap.put("inner_moduleToString", Objects.toString(j%2));
+                j_mapIntoCollection.put("innerMap", j_innerMap);
+                innerCollection.add(j_mapIntoCollection);
+            }
+            collection.add(mapIntoCollection);
+        }
+
+        Collection<Collection> scc = new ArrayList<>();
+        body.put("scc", collection);
+        for (int j = 0; j < 10; j++) {
+            Collection<Map<String, Object>> cc = new ArrayList<>();
+            scc.add(cc);
+            for (int i = 0; i < 10; i++) {
+                Map<String, Object> mapIntoCollection = new HashMap<>();
+                mapIntoCollection.put("i", i);
+                mapIntoCollection.put("module", i % 2);
+                mapIntoCollection.put("moduleToString", Objects.toString(i % 2));
+                Map<String, Object> innerMap = new HashMap<>();
+                innerMap.put("inner_i", i);
+                innerMap.put("inner_module", i % 2);
+                innerMap.put("inner_moduleToString", Objects.toString(i % 2));
+                mapIntoCollection.put("innerMap", innerMap);
+                cc.add(mapIntoCollection);
+            }
+        }
+
+        Object o = Introspection.resolve(body, "planilla.factura.**|.cliente.nombre collection.**.module");
+        System.out.println(o);
+
+        Object o1 = Introspection.resolve(body, "collection.*.module");
+        System.out.println(o1);
+
+        Object o2 = Introspection.resolve(body, "collection.**.innerCollection.**.module");
+        System.out.println(o2);
+
+        Object o3 = Introspection.resolve(body, "collection.**|.innerCollection.**.module");
+        System.out.println(o3);
+
+        Object o4 = Introspection.resolve(body, "collection.*|.innerCollection.**.module");
+        System.out.println(o4);
+
+        Object o5 = Introspection.resolve(body, "collection.**.innerMap.inner_module");
+        System.out.println(o5);
+
+        Object o6 = Introspection.resolve(body, "scc.**.**.module");
+        System.out.println(o6);
+
+        Object o7 = Introspection.resolve(body, "scc.**|.**.module");
+        System.out.println(o7);
     }
 
     private static class NestedTestEntity {

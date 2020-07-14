@@ -85,6 +85,10 @@ public final class SystemProperties extends Properties {
         public static final String CLOUD_TIMER_TASK_NAME = "hcjf.collector.cloud.timer.task.name";
     }
 
+    public static final class CodeEvaluator {
+        public static final String JAVA_CACHE_SIZE = "hcjf.code.evaluator.java.cache.size";
+        public static final String JAVA_CACHE_TIMEOUT = "hcjf.code.evaluator.java.cache.timeout";
+    }
 
     public static final class Cryptography{
 
@@ -237,6 +241,7 @@ public final class SystemProperties extends Properties {
             public static final String SERVER_IO_QUEUE_SIZE = "hcjf.net.http.server.io.queue.size";
             public static final String SERVER_IO_WORKERS = "hcjf.net.http.server.io.workers";
             public static final String HOST_ACCESS_CONTROL_REGEX_START_CHAR = "hcjf.net.http.host.access.control.regex.start.char";
+            public static final String CLIENT_RESPONSE_HANDLER_QUEUE_SIZE = "hcjf.net.http.client.response.handler.queue.size";
 
             public static final class Http2Settings {
                 public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.settings.header.table.size";
@@ -420,6 +425,7 @@ public final class SystemProperties extends Properties {
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
+            public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED = "hcjf.cloud.orchestrator.service.publication.broadcasting.enabled";
             public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT = "hcjf.cloud.orchestrator.service.publication.broadcasting.timeout";
 
             public static final class Events {
@@ -565,6 +571,9 @@ public final class SystemProperties extends Properties {
         defaults.put(Collector.CLOUD_SAVE_MODE, "false");
         defaults.put(Collector.CLOUD_TIMER_TASK_NAME, "CollectorsFlushCycle");
 
+        defaults.put(CodeEvaluator.JAVA_CACHE_SIZE, "3");
+        defaults.put(CodeEvaluator.JAVA_CACHE_TIMEOUT, "5000");
+
         defaults.put(Cryptography.KEY,"71324dccdb58966a04507b0fe2008632940b87c6dc5cea5f4bdf0d0089524c8e");
         defaults.put(Cryptography.ALGORITHM,"AES");
         defaults.put(Cryptography.OPERATION_MODE,"GCM");
@@ -599,8 +608,8 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Net.SERVICE_NAME, "Net service");
         defaults.put(Net.LOG_TAG, "NET_SERVICE");
-        defaults.put(Net.INPUT_BUFFER_SIZE, "102400");
-        defaults.put(Net.OUTPUT_BUFFER_SIZE, "102400");
+        defaults.put(Net.INPUT_BUFFER_SIZE, "20240000");
+        defaults.put(Net.OUTPUT_BUFFER_SIZE, "20240000");
         defaults.put(Net.CONNECTION_TIMEOUT_AVAILABLE, "true");
         defaults.put(Net.CONNECTION_TIMEOUT, "30000");
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
@@ -610,8 +619,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.IO_QUEUE_SIZE, "1000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_NAME, "IoThreadPool");
-        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "204800");
-        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "204800");
+        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "20480000");
+        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "20480000");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
         defaults.put(Net.PORT_PROVIDER_TIME_WINDOWS_SIZE, "15000");
@@ -624,6 +633,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS, "5");
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION, "RECREATE_SELECTOR"); //Valid values [RECREATE_SELECTOR, SHUTDOWN, VOID]
         defaults.put(Net.Http.HOST_ACCESS_CONTROL_REGEX_START_CHAR,"^");
+        defaults.put(Net.Http.CLIENT_RESPONSE_HANDLER_QUEUE_SIZE, "1000");
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
@@ -838,6 +848,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.SERVICE_END_POINTS, "[]");
+        defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED, "true");
         defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_node");
@@ -968,6 +979,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as boolean, or null if the property is not found.
      */
     public static Boolean getBoolean(String propertyName) {
+        return getBoolean(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as boolean.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as boolean, or null if the property is not found.
+     */
+    public static Boolean getBoolean(String propertyName, Boolean defaultValue) {
         Boolean result = null;
 
         synchronized (instance.instancesCache) {
@@ -985,6 +1006,9 @@ public final class SystemProperties extends Properties {
                 }
             }
         }
+        if(result == null) {
+            result = defaultValue;
+        }
 
         return result;
     }
@@ -995,6 +1019,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as integer, or null if the property is not found.
      */
     public static Integer getInteger(String propertyName) {
+        return getInteger(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as integer.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as integer, or null if the property is not found.
+     */
+    public static Integer getInteger(String propertyName, Integer defaultValue) {
         Integer result = null;
 
         synchronized (instance.instancesCache) {
@@ -1012,6 +1046,9 @@ public final class SystemProperties extends Properties {
                 }
             }
         }
+        if(result == null) {
+            result = defaultValue;
+        }
 
         return result;
     }
@@ -1022,6 +1059,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as long, or null if the property is not found.
      */
     public static Long getLong(String propertyName) {
+        return getLong(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as long.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as long, or null if the property is not found.
+     */
+    public static Long getLong(String propertyName, Long defaultValue) {
         Long result = null;
 
         synchronized (instance.instancesCache) {
@@ -1039,6 +1086,9 @@ public final class SystemProperties extends Properties {
                 }
             }
         }
+        if(result == null) {
+            result = defaultValue;
+        }
 
         return result;
     }
@@ -1049,6 +1099,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as double, or null if the property is not found.
      */
     public static Double getDouble(String propertyName) {
+        return getDouble(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as double.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as double, or null if the property is not found.
+     */
+    public static Double getDouble(String propertyName, Double defaultValue) {
         Double result = null;
 
         synchronized (instance.instancesCache) {
@@ -1065,6 +1125,9 @@ public final class SystemProperties extends Properties {
                             + propertyName + ":" + propertyValue + "'", ex);
                 }
             }
+        }
+        if(result == null) {
+            result = defaultValue;
         }
 
         return result;

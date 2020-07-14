@@ -592,6 +592,27 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                     name = function.getAlias();
                                     value = consumer.resolveFunction(function, enlargedObject, dataSource);
+                                } else if (returnParameter instanceof QueryReturnUnprocessedValue) {
+                                    QueryReturnUnprocessedValue queryReturnUnprocessedValue = (QueryReturnUnprocessedValue) returnParameter;
+                                    BaseEvaluator.UnprocessedValue unprocessedValue = queryReturnUnprocessedValue.getUnprocessedValue();
+                                    DataSource unprocessedDataSource = dataSource;
+                                    if(unprocessedValue instanceof BaseEvaluator.QueryValue) {
+                                        String resourceName = ((BaseEvaluator.QueryValue)unprocessedValue).getQuery().resource.getResourceName();
+                                        Object dataset = Introspection.resolve(object, resourceName);
+                                        if(dataset != null) {
+                                            if (dataset instanceof Collection) {
+                                                unprocessedDataSource = queryable -> (Collection) dataset;
+                                            } else if (dataset instanceof Map) {
+                                                Collection collection = new ArrayList();
+                                                collection.add(dataset);
+                                                unprocessedDataSource = queryable -> collection;
+                                            } else {
+                                                throw new HCJFRuntimeException("The resource path of query into a return values must point ot the collection value");
+                                            }
+                                        }
+                                    }
+                                    value = unprocessedValue.process(unprocessedDataSource, consumer);
+                                    name = queryReturnUnprocessedValue.getAlias();
                                 }
                                 if(name != null && value != null) {
                                     presentFields.add(name);
@@ -1461,7 +1482,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         if(result == null) {
             List<String> richTexts = Strings.groupRichText(sql);
             List<String> groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() - 1)));
-            result = compile(groups, richTexts, groups.size() - 1);
+            result = compile(groups, richTexts, groups.size() - 1, new AtomicInteger(0));
             if(!ignoreCache) {
                 cache.put(sql, result);
             }
@@ -1475,7 +1496,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param startGroup
      * @return Query instance.
      */
-    private static Query compile(List<String> groups, List<String> richTexts, Integer startGroup) {
+    private static Query compile(List<String> groups, List<String> richTexts, Integer startGroup, AtomicInteger placesIndex) {
         Query query;
         Pattern pattern = SystemProperties.getPattern(SystemProperties.Query.SELECT_REGULAR_EXPRESSION);
         Matcher matcher = pattern.matcher(groups.get(startGroup));
@@ -1532,21 +1553,21 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                         Join join = new Join(query, joinResource, type);
                         query.getResources().add(join.getResource());
-                        completeEvaluatorCollection(query, joinConditionalBody, groups, richTexts, join, 0, new AtomicInteger(0));
+                        completeEvaluatorCollection(query, joinConditionalBody, groups, richTexts, join, 0, placesIndex);
                         query.addJoin(join);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE))) {
-                        completeEvaluatorCollection(query, elementValue, groups, richTexts, query, 0, new AtomicInteger(0));
+                        completeEvaluatorCollection(query, elementValue, groups, richTexts, query, 0, placesIndex);
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addOrderParameter((QueryOrderParameter)
-                                    processStringValue(query, groups, richTexts, orderField, null, QueryOrderParameter.class, new ArrayList<>()));
+                                    processStringValue(query, groups, richTexts, orderField, placesIndex, QueryOrderParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addGroupField((QueryReturnParameter)
-                                    processStringValue(query, groups, richTexts, orderField, null, QueryReturnParameter.class, new ArrayList<>()));
+                                    processStringValue(query, groups, richTexts, orderField, placesIndex, QueryReturnParameter.class, new ArrayList<>()));
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         if(elementValue == null || elementValue.isBlank()) {
@@ -1597,7 +1618,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             for(String returnField : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                 query.addReturnField((QueryReturnParameter)
-                        processStringValue(query, groups, richTexts, returnField, null, QueryReturnParameter.class, new ArrayList<>()));
+                        processStringValue(query, groups, richTexts, returnField, placesIndex, QueryReturnParameter.class, new ArrayList<>()));
             }
         } else {
             String value = groups.get(startGroup);
@@ -1855,7 +1876,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             Integer index = Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
-                result = new FieldEvaluator.QueryValue(Query.compile(groups, richTexts, index));
+                result = new FieldEvaluator.QueryValue(Query.compile(groups, richTexts, index, placesIndex));
             } else if(!group.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX)) &&
                     group.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                     group.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
@@ -1952,20 +1973,26 @@ public class Query extends EvaluatorCollection implements Queryable {
             String group = null;
             List<Object> functionParameters = null;
             Boolean function = false;
+            Boolean unprocessedValue = false;
             if(trimmedStringValue.contains(Strings.REPLACEABLE_GROUP)) {
                 //If the string contains a replaceable group character then the parameter is a function.
                 replaceValue = Strings.getGroupIndex(trimmedStringValue, Strings.REPLACEABLE_GROUP);
                 group = groups.get(Integer.parseInt(replaceValue.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING)));
                 functionName = trimmedStringValue.substring(0, trimmedStringValue.indexOf(Strings.REPLACEABLE_GROUP));
-                originalValue = Strings.reverseGrouping(trimmedStringValue, groups);
-                functionParameters = new ArrayList<>();
-                for(String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                    if(!param.isBlank()) {
-                        functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                if(functionName == null || functionName.isBlank()) {
+                    originalValue = Strings.reverseGrouping(trimmedStringValue, groups);
+                    unprocessedValue = true;
+                } else {
+                    originalValue = Strings.reverseGrouping(trimmedStringValue, groups);
+                    functionParameters = new ArrayList<>();
+                    for (String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
+                        if (!param.isBlank()) {
+                            functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                        }
                     }
+                    originalValue = Strings.reverseRichTextGrouping(originalValue, richTexts);
+                    function = true;
                 }
-                originalValue = Strings.reverseRichTextGrouping(originalValue, richTexts);
-                function = true;
             } else {
                 originalValue = trimmedStringValue;
             }
@@ -1976,7 +2003,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 if(function) {
                     result = new QueryFunction(query, originalValue, functionName, functionParameters);
                 } else {
-                    result = new QueryField(query, trimmedStringValue);
+                    result = new QueryField(query, originalValue);
                 }
             } else if(parameterClass.equals(QueryReturnParameter.class)) {
                 //If the parameter class is the QueryReturnParameter.class then the result will be a
@@ -1990,6 +2017,18 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                 if(function) {
                     result = new QueryReturnFunction(query, originalValue, functionName, functionParameters, alias);
+                } else if(unprocessedValue) {
+                    if(alias == null) {
+                        throw new HCJFRuntimeException("Unable to create a unprocessed value without alias");
+                    }
+                    Object newValue = processStringValue(query, groups, richTexts, replaceValue, placesIndex, parameterClass, presentFields);
+                    if(newValue instanceof QueryReturnParameter) {
+                        result = newValue;
+                    } else if(newValue instanceof BaseEvaluator.UnprocessedValue) {
+                        result = new QueryReturnUnprocessedValue(query, originalValue, alias, (BaseEvaluator.UnprocessedValue) newValue);
+                    } else {
+                        result = new QueryReturnField(query, (String) newValue, alias);
+                    }
                 } else {
                     result = new QueryReturnField(query, originalValue, alias);
                 }

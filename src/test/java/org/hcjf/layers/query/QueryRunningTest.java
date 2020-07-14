@@ -409,6 +409,9 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT * FROM character LEFT JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
+
+        resultSet.stream().findFirst().get().get("street");
+
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
         query = Query.compile("SELECT * FROM character FULL JOIN address ON address.addressId = character.addressId");
@@ -442,6 +445,10 @@ public class QueryRunningTest {
         query = Query.compile("SELECT * FROM character JOIN character2 ON character.id = character2.id LEFT JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
+        query = Query.compile("SELECT * FROM character JOIN character2 ON character.id = character2.id LEFT JOIN address ON address.addressId = character.addressId where character2.name like 'Home'");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 1);
 
         query = Query.compile("SELECT * FROM character JOIN character2 ON character.lastName like character2.lastName JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
@@ -850,6 +857,21 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testReplaceableValues() {
+        Query query = Query.compile("SELECT * FROM character WHERE lastName like ?");
+        ParameterizedQuery parameterizedQuery = query.getParameterizedQuery();
+        parameterizedQuery.add("simp");
+        Collection<JoinableMap> resultSet = parameterizedQuery.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 5);
+
+        query = Query.compile("SELECT * FROM character WHERE lastName like ?");
+        parameterizedQuery = query.getParameterizedQuery();
+        parameterizedQuery.add("simp");
+        resultSet = parameterizedQuery.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 5);
+    }
+
+    @Test
     public void testGroupByAndCount() {
         String json = "[\n" +
                 "  {\n" +
@@ -944,7 +966,14 @@ public class QueryRunningTest {
                 "  }\n" +
                 "]";
 
+
+
+
         Collection<Map<String,Object>> data = (Collection<Map<String, Object>>) JsonUtils.createObject(json);
+
+        Query query1 = Query.compile("select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125");
+        Collection<Map<String,Object>> resultSet1 = query1.evaluate(data);
+
         Query query = Query.compile("select aggregateSum(cantidadFacturada) as totalFacturado, aggregateSum(cantidad) as totalEntregado, aggregateContext(cantidadFacturada) as facturado, aggregateContext(cantidad) as entregado from (select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125).lineas as data group by a");
 
         Collection<Map<String,Object>> resultSet = query.evaluate(data);

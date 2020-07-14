@@ -5,6 +5,7 @@ package org.hcjf.io.net.http.http2;
  */
 public class Stream {
 
+    private final Integer streamId;
     private final Integer headerTableSize;
     private final Boolean enablePush;
     private final Integer maxConcurrentStream;
@@ -12,13 +13,18 @@ public class Stream {
     private final Integer maxFrameSize;
     private final Integer maxHeaderListSize;
 
-    public Stream(StreamSettings settings) {
+    public Stream(Integer streamId, StreamSettings settings) {
+        this.streamId = streamId;
         headerTableSize = settings.getHeaderTableSize();
         enablePush = settings.getEnablePush();
         maxConcurrentStream = settings.getMaxConcurrentStream();
         initialWindowSize = settings.getInitialWindowSize();
         maxFrameSize = settings.getMaxFrameSize();
         maxHeaderListSize = settings.getMaxHeaderListSize();
+    }
+
+    public Integer getStreamId() {
+        return streamId;
     }
 
     public Integer getHeaderTableSize() {

@@ -104,11 +104,13 @@ public final class Strings {
     public static final String END_SUB_GROUP = "]";
     public static final String START_OBJECT = "{";
     public static final String END_OBJECT = "}";
-    public static final String OBJETC_FIELD_SEPARATOR = ":";
+    public static final String OBJECT_FIELD_SEPARATOR = ":";
     public static final String REPLACEABLE_GROUP = "¿";
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";
     public static final String CLASS_SEPARATOR = ".";
+    public static final String CLASS_SEPARATOR_WITH_SCAPE_CHARACTER = "\\.";
+    public static final String UNDERSCORE = "_";
     public static final String CASE_INSENSITIVE_REGEX_FLAG = "(?i)";
     public static final String ARGUMENT_SEPARATOR = ",";
     public static final String ARGUMENT_SEPARATOR_2 = ";";

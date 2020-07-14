@@ -516,6 +516,24 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     endPoints.get(((ServiceDefinitionMessage) message).getServiceId()).setDistributedEventListener(
                             ((ServiceDefinitionMessage) message).getEventListener());
                 } catch (Exception ex){}
+
+                if(SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED)) {
+                    fork(() -> {
+                        //Sent the message for all the replicas
+                        if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
+                            serviceDefinitionMessage.setBroadcasting(false);
+                            for (Node node : nodes.values()) {
+                                try {
+                                    invokeNetworkComponent(node, serviceDefinitionMessage,
+                                            SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT));
+                                } catch (Exception ex) {
+                                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                            "Unable to notify node: %s", node.toString());
+                                }
+                            }
+                        }
+                    });
+                }
             } catch (Exception ex){
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                         "Exception processing publication message: %s", ex, message.getId().toString());

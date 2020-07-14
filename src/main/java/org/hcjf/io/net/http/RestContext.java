@@ -138,8 +138,10 @@ public class RestContext extends Context {
             // This method call to update layer interface implementation.
             UpdateLayerInterface updateLayerInterface = Layers.get(UpdateLayerInterface.class, resourceName);
             RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
-            if(id != null) {
-                ((Map<String,Object>) requestModel.getBody()).put(Fields.ID_URL_FIELD, id);
+            if(requestModel.getQueryable() == null) {
+                if(id != null) {
+                    ((Map<String, Object>) requestModel.getBody()).put(Fields.ID_URL_FIELD, id);
+                }
                 jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
             } else {
                 jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));

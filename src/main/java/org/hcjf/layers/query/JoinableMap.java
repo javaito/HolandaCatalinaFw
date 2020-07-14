@@ -137,18 +137,11 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
      */
     @Override
     public Object get(String fieldName) {
-        Object result = null;
-        if(!fieldName.contains(Strings.CLASS_SEPARATOR)) {
-            for(String resource : resources) {
-                result = mapInstance.get(String.join(Strings.CLASS_SEPARATOR, resource, fieldName));
-                if(result != null) {
-                    break;
-                }
-            }
-
-            if(result == null) {
-                result = mapInstance.get(fieldName);
-            }
+        Object result;
+        String resourceName = getResourceNameForPath(fieldName);
+        if(resourceName != null) {
+            String fieldWithoutResource = getFieldWithoutResource(resourceName, fieldName);
+            result = mapInstanceByResource.get(resourceName).get(fieldWithoutResource);
         } else {
             result = mapInstance.get(fieldName);
         }
@@ -158,7 +151,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     public void setResource(String resourceName) {
         if(!containsResource(resourceName)) {
             resources.add(resourceName);
-            mapInstanceByResource.put(resourceName, mapInstance);
+            mapInstanceByResource.put(resourceName, new HashMap<>(mapInstance));
         }
     }
 
@@ -233,6 +226,32 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
                 mapInstanceByResource.get(resourceName) : new HashMap<>());
     }
 
+    public final String getResourceNameForPath(String path) {
+        String result = null;
+
+        if(path.contains(Strings.CLASS_SEPARATOR)) {
+            for(String resource : resources) {
+                if(path.startsWith(resource)) {
+                    String possibleResource = resource;
+                    if(result == null) {
+                        result = possibleResource;
+                    } else {
+                        if(result.length() < possibleResource.length()) {
+                            result = possibleResource;
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public final String getFieldWithoutResource(String resourceName, String path) {
+        return resourceName == null || resourceName.isBlank() ? path :
+                path.replace(resourceName + Strings.CLASS_SEPARATOR, Strings.EMPTY_STRING);
+    }
+
     /**
      * Returns the set of resources.
      * @return Set of resources.
@@ -250,13 +269,8 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
 
         for(String key : groupable.keySet()) {
 
-            String resource = null;
-            if(key.contains(Strings.CLASS_SEPARATOR)) {
-                String candidateResource = key.split("\\.")[0];
-                if(getResources().contains(candidateResource)) {
-                    resource = candidateResource;
-                }
-            }
+            String resource = getResourceNameForPath(key);
+            String keyWithoutResource = getFieldWithoutResource(resource, key);
             if(resource == null) {
                 for(String candidateResource : getResources()) {
                     if(getResourceModel(candidateResource).containsKey(key)) {
@@ -275,7 +289,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
                 if(instanceValue instanceof GroupableSet) {
                     ((GroupableSet)instanceValue).add(groupableValue);
                     if(resource != null) {
-                        ((GroupableSet) mapInstanceByResource.get(resource).get(key.replace(resource, Strings.EMPTY_STRING))).add(groupableValue);
+                        ((GroupableSet) mapInstanceByResource.get(resource).get(keyWithoutResource)).add(groupableValue);
                     }
                 } else {
                     groupSet = new GroupableSet();
@@ -286,13 +300,13 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
                         groupSet = new GroupableSet();
                         groupSet.add(instanceValue);
                         groupSet.add(groupableValue);
-                        mapInstanceByResource.get(resource).put(key.replace(resource, Strings.EMPTY_STRING), groupSet);
+                        mapInstanceByResource.get(resource).put(keyWithoutResource, groupSet);
                     }
                 }
             } else {
                 put(key, groupable.get(key));
                 if(resource != null) {
-                    mapInstanceByResource.get(resource).put(key, groupable.get(key));
+                    mapInstanceByResource.get(resource).put(keyWithoutResource, groupable.get(key));
                 }
             }
         }
@@ -329,18 +343,10 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     public boolean containsKey(Object key) {
         boolean result = false;
         String fieldName = (String) key;
-
-        if(!fieldName.contains(Strings.CLASS_SEPARATOR)) {
-            for(String resource : resources) {
-                result = mapInstance.containsKey(resource + Strings.CLASS_SEPARATOR + fieldName);
-                if(result) {
-                    break;
-                }
-            }
-
-            if(!result) {
-                result = mapInstance.containsKey(fieldName);
-            }
+        String resourceName = getResourceNameForPath(fieldName);
+        if(resourceName != null) {
+            String fieldNameWithoutResource = getFieldWithoutResource(resourceName, fieldName);
+            result = mapInstanceByResource.get(resourceName).containsKey(fieldNameWithoutResource);
         } else {
             result = mapInstance.containsKey(fieldName);
         }
@@ -359,9 +365,12 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
 
     @Override
     public Object put(String key, Object value) {
-        if(key.contains(Strings.CLASS_SEPARATOR)) {
-            resources.add(key.substring(0, key.lastIndexOf(Strings.CLASS_SEPARATOR)));
+        String resourceName = getResourceNameForPath(key);
+        if(resourceName != null) {
+            String keyWithoutResource = getFieldWithoutResource(resourceName, key);
+            mapInstanceByResource.get(resourceName).put(keyWithoutResource, value);
         }
+
         if(staticFields != null && staticFields.contains(key)) {
             staticFieldsMap.put(key, value);
         }

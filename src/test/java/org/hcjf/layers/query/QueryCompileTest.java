@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 
 /**
@@ -372,4 +373,40 @@ public class QueryCompileTest {
         Assert.assertNull(query.getLimit());
     }
 
+    @Test
+    public void testReplaceValues() {
+        Query query = Query.compile("select if(isNull(store.dynamic.ccu.checkin._creationDate),0,periodInMilliseconds(store.dynamic.ccu.checkin._creationDate, ?)/3600000) as tiempo " +
+                "from store.dynamic.ccu.checkin where patente = ? and" +
+                " parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(store.dynamic.ccu.checkin._creationDate,'yyyy-MM-dd 00:00:00')) = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(?,'yyyy-MM-dd 00:00:00')) and" +
+                " store.dynamic.ccu.checkin._creationDate < ? order by store.dynamic.ccu.checkin._creationDate desc limit ,1");
+        System.out.println();
+    }
+
+    @Test
+    public void testUnprocessedValuesIntoSelect() {
+        Query query = Query.compile("SELECT field1, (SELECT * FROM field WHERE id = 1) as something FROM Resource");
+        System.out.println();
+    }
+
+    @Test
+    public void testLongCompilation() {
+        Query query = Query.compile("select * from (select data2.checkOutDate as checkOutDate, data2.checkInDate as checkInDate, data2.phoneMatch as phoneMatch, vueltasRealizadas, fecha, new(18) as zoom, lat, lng, data3.vueltasProgramadas as vueltasProgramadas, zonaRiesgo,  CD, baseTransportista, " +
+                "concat(vueltasRealizadas,'/',vueltasProgramadas) as vueltas, if(isNull(fecha),true,false) as estado, data2.codCamion as codCamion, distinct(store.dynamic.ccu.checkout.planilla), data2.codCarga as codCarga, " +
+                "store.dynamic.ccu.checkout.planilla as planilla, store.dynamic.ccu.checkout.patente as patente, data4.zonaPeligrosa as zonaPeligrosa, " +
+                "data2.celularConductor as celularConductor, if(isNotNull(data2.checkOutDate), dateFormat(data2.checkOutDate,'America/Santiago','HH:mm:ss'),'') as salida, " +
+                "if(isNull(data4.clientesVisitados),concat('0/',data4.numeroClientes),concat(data4.clientesVisitados,'/',data4.numeroClientes)) as numeroClientes, " +
+                "numberFormat('#0.00',periodInMilliseconds(data2.checkOutDate,now())/3600000) as duracion " +
+                "from store.dynamic.ccu.checkout " +
+                "join (select aggregateContext(first(patente)) as plate,aggregateContext(size(patente)) as vueltasRealizadas from store.dynamic.ccu.checkout where _creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 00:00:00')) and centroDistribucion=8 group by patente) as data1 on store.dynamic.ccu.checkout.patente = data1.plate " +
+                "join (select checkOutDate, checkInDate, phoneMatch, codCamion, codCarga, celularConductor, planilla as planillaId from store.dynamic.ccu.planilla where _creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and isNull(rollbackDate) and centroDistribucion=8 and isNull(checkInDate)) as data2 on store.dynamic.ccu.checkout.planilla=data2.planillaId " +
+                "left join (select aggregateContext(first(codCamion)) as codigoCamion,aggregateContext(size(codCamion)) as vueltasProgramadas from store.dynamic.ccu.lastplanilla where fecFacturacion > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(toDate(minusDays(now(),2)),'America/Santiago','yyyy-MM-dd 00:00:00')) and centroDistribucion=8 group by codCamion) as data3 on data2.codCamion = data3.codigoCamion " +
+                "left join (select numeroClientes, clientesVisitados, numeroClientesZonaPeligrosa, concat(numeroClientesZonaPeligrosa,'-',numberFormat('#0.0',doubleValue(numeroClientesZonaPeligrosa)/doubleValue(numeroClientes)*doubleValue(100)),'%') as zonaPeligrosa, if(isNull(data4.clientesVisitados),concat('0/',data4.numeroClientes),concat(data4.clientesVisitados,'/',data4.numeroClientes)) as zp, planilla from store.dynamic.ccu.lastplanilla where planilla in (select planilla from store.dynamic.ccu.checkout where centroDistribucion=8 and _creationDate>parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')))) as data4 on store.dynamic.ccu.checkout.planilla=data4.planilla " +
+                "left join (select lat, lng, num_plate, dateFormat(time,'America/Santiago','HH:mm:ss') as fecha, if(isNull(nameZonaRiesgo), false,true) as zonaRiesgo, if(isNull(nameCentroDistribucion), false,true) as CD, if(isNull(nameBaseTransportista), false,true) as baseTransportista FROM time.series.dynamic.ccu.report where periodStart = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and " +
+                "periodEnd = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(toDate(plusDays(now(),1)),'America/Santiago','yyyy-MM-dd 04:00:00')) and periodGroupedBy = 'num_plate' and onlyLastGroup = true) as data5 " +
+                "on store.dynamic.ccu.checkout.patente=data5.num_plate " +
+                "where store.dynamic.ccu.checkout._creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and store.dynamic.ccu.checkout.centroDistribucion=8" +
+                "order by store.dynamic.ccu.checkout._creationDate desc) as data");
+
+        System.out.println();
+    }
 }

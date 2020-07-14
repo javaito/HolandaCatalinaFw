@@ -117,6 +117,14 @@ public abstract class HttpPackage {
         return complete;
     }
 
+    public TransferDecodingLayerInterface getTransferDecodingLayer() {
+        return transferDecodingLayer;
+    }
+
+    public void setTransferDecodingLayer(TransferDecodingLayerInterface transferDecodingLayer) {
+        this.transferDecodingLayer = transferDecodingLayer;
+    }
+
     /**
      * Add a new header into a package.
      * @param header New header.
@@ -359,17 +367,24 @@ public abstract class HttpPackage {
      * This method store the fragment information into the specific
      * decoder implementation
      * @param data Fragment information.
-     * @param off Start index into the array.
-     * @param len End index into the array.
+     * @param offset Start index into the array.
+     * @param length End index into the array.
      */
-    private void writeBody(byte[] data, int off, int len) {
+    private void writeBody(byte[] data, int offset, int length) {
         if(transferDecodingLayer == null) {
-            currentBuffer.write(data, off, len);
+            currentBuffer.write(data, offset, length);
             if(currentBuffer.size() > SystemProperties.getInteger(SystemProperties.Net.Http.MAX_PACKAGE_SIZE)) {
                 throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_PACKAGE_OVERFLOW));
             }
         } else {
-            transferDecodingLayer.add(ByteBuffer.wrap(data, off, len));
+            byte[] fragment;
+            if(offset == 0 && length == data.length) {
+                fragment = data;
+            } else {
+                fragment = new byte[length];
+                System.arraycopy(data, offset, fragment, 0, length);
+            }
+            transferDecodingLayer.add(ByteBuffer.wrap(fragment));
         }
     }
 

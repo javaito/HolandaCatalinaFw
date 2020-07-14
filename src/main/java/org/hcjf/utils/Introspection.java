@@ -25,6 +25,10 @@ public final class Introspection {
     private static final String PATH_SEPARATOR = "\\.";
     private static final String SETTER_PREFIX = "set";
 
+    private static final String GROUP_AS_LIST_CHARACTER = "**";
+    private static final String GROUP_AS_SET_CHARACTER = "*";
+    private static final String CONCAT_GROUP_CHARACTER = "|";
+
     private static final int SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP = 2;
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
 
@@ -71,8 +75,16 @@ public final class Introspection {
      */
     public static <O extends Object> O resolve(Object instance, String... path) {
         Object result = instance;
+        Integer currentElement = 0;
         for(String element : path) {
             if(result == null) {
+                break;
+            }
+
+            if(element.startsWith(GROUP_AS_SET_CHARACTER)) {
+                result = resolvePathAndJoin(result, currentElement,
+                        !element.startsWith(GROUP_AS_LIST_CHARACTER),
+                        element.endsWith(CONCAT_GROUP_CHARACTER), path);
                 break;
             }
 
@@ -106,8 +118,46 @@ public final class Introspection {
                     throw new HCJFRuntimeException("Unable to access to field '" + element + "'");
                 }
             }
+            currentElement++;
         }
         return (O) result;
+    }
+
+    private static <O extends Object> Collection<O> resolvePathAndJoin(Object instance
+            , Integer currenElement, boolean onlyDistinct, boolean concat, String... path) {
+        Collection<O> result;
+        Collection collectionInstance;
+        if(instance.getClass().isArray()) {
+            collectionInstance = Arrays.asList(instance);
+        } else if(instance instanceof Collection) {
+            collectionInstance = (Collection) instance;
+        } else {
+            collectionInstance = List.of(instance);
+        }
+
+        if(currenElement < path.length - 1) {
+            if(onlyDistinct == true) {
+                result = new TreeSet<>();
+            } else {
+                result = new ArrayList<>();
+            }
+            Integer newLength = path.length-currenElement-1;
+            String[] newPath = new String[newLength];
+            System.arraycopy(path, currenElement+1, newPath, 0, newLength);
+            for(Object subInstance : collectionInstance) {
+                Object introspectionResult = resolve(subInstance, newPath);
+                if(introspectionResult != null) {
+                    if (concat && introspectionResult instanceof Collection) {
+                        result.addAll((Collection)introspectionResult);
+                    } else {
+                        result.add((O) introspectionResult);
+                    }
+                }
+            }
+        } else {
+            result = collectionInstance;
+        }
+        return result;
     }
 
     /**

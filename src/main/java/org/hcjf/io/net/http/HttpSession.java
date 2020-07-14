@@ -14,6 +14,7 @@ public class HttpSession extends NetSession {
 
     private HttpRequest request;
     private Stream stream;
+    private String httpVersion;
 
     /**
      * Constructor with id and consumer.
@@ -22,6 +23,7 @@ public class HttpSession extends NetSession {
      */
     public HttpSession(UUID id, NetServiceConsumer consumer) {
         super(id, consumer);
+        this.httpVersion = HttpVersion.VERSION_1_1;
     }
 
     protected HttpSession(HttpSession httpSession) {
@@ -60,5 +62,21 @@ public class HttpSession extends NetSession {
      */
     public final void setStream(Stream stream) {
         this.stream = stream;
+    }
+
+    /**
+     * Set the http protocol version that the session use.
+     * @return Http version of the session.
+     */
+    public final String getHttpVersion() {
+        return httpVersion;
+    }
+
+    /**
+     * Returns the http protocol version that the session use.
+     * @param httpVersion Protocol version of the session.
+     */
+    public final void setHttpVersion(String httpVersion) {
+        this.httpVersion = httpVersion;
     }
 }
