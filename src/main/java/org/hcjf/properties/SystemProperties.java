@@ -608,8 +608,8 @@ public final class SystemProperties extends Properties {
 
         defaults.put(Net.SERVICE_NAME, "Net service");
         defaults.put(Net.LOG_TAG, "NET_SERVICE");
-        defaults.put(Net.INPUT_BUFFER_SIZE, "20240000");
-        defaults.put(Net.OUTPUT_BUFFER_SIZE, "20240000");
+        defaults.put(Net.INPUT_BUFFER_SIZE, "102400");
+        defaults.put(Net.OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.CONNECTION_TIMEOUT_AVAILABLE, "true");
         defaults.put(Net.CONNECTION_TIMEOUT, "30000");
         defaults.put(Net.DISCONNECT_AND_REMOVE, "true");
@@ -619,8 +619,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.IO_QUEUE_SIZE, "1000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_NAME, "IoThreadPool");
-        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "20480000");
-        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "20480000");
+        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
+        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
         defaults.put(Net.PORT_PROVIDER_TIME_WINDOWS_SIZE, "15000");
