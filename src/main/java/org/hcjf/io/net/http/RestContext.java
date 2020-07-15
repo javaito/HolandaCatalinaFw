@@ -153,7 +153,11 @@ public class RestContext extends Context {
                 jsonElement = gson.toJsonTree(deleteLayerInterface.delete(id));
             } else {
                 RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
-                jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
+                if(requestModel.getQueryable() != null) {
+                    jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
+                } else {
+                    jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getBody()));
+                }
             }
         } else {
             throw new HCJFRuntimeException("Unsupported http method: %s", method.toString());
