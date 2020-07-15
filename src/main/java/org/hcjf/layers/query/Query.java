@@ -45,6 +45,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
     private final List<Join> joins;
+    private final List<Queryable> unions;
     private boolean returnAll;
 
     static {
@@ -85,6 +86,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         this.resource = resource;
         this.resources = new ArrayList<>();
         this.resources.add(this.resource);
+        this.unions = new ArrayList<>();
     }
 
     public Query(String resource) {
@@ -112,6 +114,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         this.groupParameters.addAll(source.groupParameters);
         this.joins = new ArrayList<>();
         this.joins.addAll(source.joins);
+        this.unions = new ArrayList<>();
+        this.unions.addAll(source.unions);
     }
 
     private QueryParameter checkQueryParameter(QueryParameter queryParameter) {
@@ -173,6 +177,14 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     public List<Join> getJoins() {
         return Collections.unmodifiableList(joins);
+    }
+
+    /**
+     * Returns the list of unions.
+     * @return Unions.
+     */
+    public List<Queryable> getUnions() {
+        return Collections.unmodifiableList(unions);
     }
 
     /**
@@ -380,6 +392,18 @@ public class Query extends EvaluatorCollection implements Queryable {
             if(join == null) {
                 throw new NullPointerException("Null join instance");
             }
+        }
+    }
+
+    /**
+     * Add a union instance to the query.
+     * @param queryable Union instance.
+     */
+    public final void addUnion(Queryable queryable) {
+        if(queryable != null) {
+            unions.add(queryable);
+        } else {
+            throw new HCJFRuntimeException("Null union value");
         }
     }
 
@@ -688,6 +712,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                     presentFields,
                     result);
             result = resultSet;
+
+            for(Queryable queryable : unions) {
+                result.addAll(queryable.evaluate(dataSource, consumer));
+            }
         }
 
         return result;
@@ -1220,10 +1248,10 @@ public class Query extends EvaluatorCollection implements Queryable {
         if (groupParameters.size() > 0) {
             resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
             for (QueryReturnParameter groupParameter : groupParameters) {
-                resultBuilder.append(groupParameter, SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR);
+                resultBuilder.append(groupParameter, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
             }
-            resultBuilder.append(Strings.WHITE_SPACE);
             resultBuilder.cleanBuffer();
+            resultBuilder.append(Strings.WHITE_SPACE);
         }
 
         if (orderParameters.size() > 0) {
@@ -1261,6 +1289,14 @@ public class Query extends EvaluatorCollection implements Queryable {
             }
             resultBuilder.append(Strings.ARGUMENT_SEPARATOR).append(getUnderlyingLimit());
         }
+
+        for(Queryable queryable : unions) {
+            resultBuilder.append(Strings.WHITE_SPACE);
+            resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.UNION));
+            resultBuilder.append(Strings.WHITE_SPACE);
+            resultBuilder.append(queryable.toString());
+        }
+
         return resultBuilder.toString();
     }
 
@@ -1498,8 +1534,11 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     private static Query compile(List<String> groups, List<String> richTexts, Integer startGroup, AtomicInteger placesIndex) {
         Query query;
+
+        String[] unions = groups.get(startGroup).split(SystemProperties.get(SystemProperties.Query.UNION_REGULAR_EXPRESSION));
+        String queryDefinition = unions[0].trim();
         Pattern pattern = SystemProperties.getPattern(SystemProperties.Query.SELECT_REGULAR_EXPRESSION);
-        Matcher matcher = pattern.matcher(groups.get(startGroup));
+        Matcher matcher = pattern.matcher(queryDefinition);
 
         if(matcher.matches()) {
             String selectBody = matcher.group(SystemProperties.get(SystemProperties.Query.SELECT_GROUP_INDEX));
@@ -1621,10 +1660,15 @@ public class Query extends EvaluatorCollection implements Queryable {
                         processStringValue(query, groups, richTexts, returnField, placesIndex, QueryReturnParameter.class, new ArrayList<>()));
             }
         } else {
-            String value = groups.get(startGroup);
-            int place = Strings.getNoMatchPlace(matcher, groups.get(startGroup));
+            String value = queryDefinition;
+            int place = Strings.getNoMatchPlace(matcher, queryDefinition);
             String nearFrom = Strings.getNearFrom(value, place, 5);
             throw new HCJFRuntimeException("Query match fail near from ( '...%s...' ), query body: '%s'", nearFrom, value);
+        }
+
+        for (int i = 2; i < unions.length; i+=2) {
+            groups.set(groups.size() - 1, unions[i].trim());
+            query.addUnion(compile(groups, richTexts, startGroup, placesIndex));
         }
 
         return query;

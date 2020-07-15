@@ -460,6 +460,10 @@ public class QueryRunningTest {
         query = Query.compile("SELECT name, aggregateSum(weight) FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        query = Query.compile("SELECT name, aggregateSum(weight) FROM character GROUP BY addressId UNION SELECT name, aggregateSum(weight) FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test
