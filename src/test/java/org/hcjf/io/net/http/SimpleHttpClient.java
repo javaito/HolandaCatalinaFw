@@ -13,7 +13,7 @@ import java.nio.file.StandardOpenOption;
 
 public class SimpleHttpClient {
 
-    @Test
+//    @Test
     public void testHttpClient() {
         for (int i = 0; i < 1; i++) {
             try {
@@ -126,7 +126,7 @@ public class SimpleHttpClient {
         }
     }
 
-    @Test
+//    @Test
     public void testApiHttps() {
 
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");

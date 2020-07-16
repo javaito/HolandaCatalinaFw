@@ -24,7 +24,7 @@ public class Like extends FieldEvaluator {
             Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
             Object rightValue = getProcessedRightValue(object, dataSource, consumer);
 
-            if(leftValue == null) {
+            if(leftValue == null || rightValue == null) {
                 result = false;
             } else if(leftValue instanceof String) {
                 if(rightValue instanceof Pattern) {
