@@ -1,6 +1,7 @@
 package org.hcjf.layers.scripting;
 
 import jdk.jshell.JShell;
+import jdk.jshell.SnippetEvent;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
@@ -14,6 +15,7 @@ import org.hcjf.utils.Strings;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -134,7 +136,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             String bson = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(parameters)));
             jShell.eval(String.format(OVERRIDE_PARAMETERS_LINE, bson));
             jShell.eval(OVERRIDE_RESULT_LINE);
-            jShell.eval(script);
+            List<SnippetEvent> snippets = jShell.eval(script);
             jShell.eval(OVERRIDE_BSON_RESULT_LINE);
             String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(BSON_RESULT_VAR_NAME)).findFirst().get());
             bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
@@ -142,6 +144,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             result.put(OUT_FIELD, outStream.toString());
             result.put(ERR_FIELD, errorStream.toString());
             result.put(EVAL_TIME_FIELD, System.currentTimeMillis() - time);
+            snippets.forEach(S -> jShell.drop(S.snippet()));
             outStream.reset();
             errorStream.reset();
             return result;

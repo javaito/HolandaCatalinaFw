@@ -929,11 +929,11 @@ public class Query extends EvaluatorCollection implements Queryable {
             query = new Query(join.getResource());
             query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             for (Evaluator evaluator : optimizeJoin(leftData, join)) {
-//                if(join.getResource() instanceof QueryDynamicResource) {
-//                    ((QueryDynamicResource)join.getResource()).getQuery().addEvaluator(evaluator);
-//                } else {
+                if(join.getResource() instanceof QueryDynamicResource) {
+                    ((QueryDynamicResource)join.getResource()).getQuery().addEvaluator(evaluator);
+                } else {
                     query.addEvaluator(evaluator);
-//                }
+                }
             }
             for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
                 query.addEvaluator(evaluator);
