@@ -61,7 +61,12 @@ public final class Introspection {
      * @return Returns the value that point the path.
      */
     public static <O extends Object> O resolve(Object instance, String path) {
-        String[] pathElements = path.split(PATH_SEPARATOR);
+        String[] pathElements;
+        if(path.equals(Strings.CLASS_SEPARATOR)) {
+            pathElements = new String[]{};
+        } else {
+            pathElements = path.split(PATH_SEPARATOR);
+        }
         return resolve(instance, pathElements);
     }
 

@@ -408,6 +408,12 @@ public class QueryCompileTest {
                 "order by store.dynamic.ccu.checkout._creationDate desc) as data");
 
         System.out.println();
+
+        query = Query.compile("select * from (select replace(message,'dispositivo ','dispositivo:') as mensaje, replace(mensaje,'{\"message\":\"$@{IMPL,EDNA-KRABAPPEL}','::::::::EDNA-KRABAPPEL (notifique a proveedor):') as mensaje,\n" +
+                "replace(mensaje,'<',':') as mensaje, replace(mensaje,'>',':') as mensaje, split(mensaje,':') as mensaje, aggregateContext(if(size(mensaje)>3,mensaje.8,mensaje.0)) as mensaje \n" +
+                "from store.dynamic.ccu.error.report where _creationDate >= '2020-08-12 04:00:00' and _creationDate < parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(toDate(plusDays('2020-08-12 04:00:00',1)),'yyyy-MM-dd 04:00:00'))) as dat");
+
+        System.out.println();
     }
 
     @Test

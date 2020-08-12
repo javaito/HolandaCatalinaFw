@@ -340,6 +340,16 @@ public final class Strings {
     }
 
     /**
+     * This method wrap the value with the wrapper value.
+     * @param value Value to wrap.
+     * @param wrapper Wrapper instance.
+     * @return Wrapper value.
+     */
+    public static String wrap(String value, String wrapper) {
+        return wrapper + value + wrapper;
+    }
+
+    /**
      * Return all the index into the string value where found the specific founded value.
      * @param value Value to found the index.
      * @param foundedValue Founded value into the string.
@@ -549,7 +559,7 @@ public final class Strings {
         Integer index;
         while(groupIndex != null) {
             index = Integer.parseInt(groupIndex.replace(REPLACEABLE_RICH_TEXT, EMPTY_STRING));
-            result = result.replace(groupIndex, richTextGroups.get(index));
+            result = result.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), wrap(richTextGroups.get(index), Strings.RICH_TEXT_SEPARATOR));
             groupIndex = Strings.getGroupIndex(result, REPLACEABLE_RICH_TEXT);
         }
         return result;

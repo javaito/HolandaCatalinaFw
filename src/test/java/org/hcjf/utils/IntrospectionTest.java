@@ -161,6 +161,9 @@ public class IntrospectionTest {
 
         Object o7 = Introspection.resolve(body, "scc.**|.**.module");
         System.out.println(o7);
+
+        Object o8 = Introspection.resolve(body, ".");
+        System.out.println(o8);
     }
 
     private static class NestedTestEntity {
