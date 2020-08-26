@@ -389,6 +389,12 @@ public class QueryCompileTest {
     }
 
     @Test
+    public void testQueryWithoutFrom() {
+        Query query = Query.compile("SELECT * FROM __new__");
+        System.out.println();
+    }
+
+    @Test
     public void testLongCompilation() {
         Query query = Query.compile("select * from (select data2.checkOutDate as checkOutDate, data2.checkInDate as checkInDate, data2.phoneMatch as phoneMatch, vueltasRealizadas, fecha, new(18) as zoom, lat, lng, data3.vueltasProgramadas as vueltasProgramadas, zonaRiesgo,  CD, baseTransportista, " +
                 "concat(vueltasRealizadas,'/',vueltasProgramadas) as vueltas, if(isNull(fecha),true,false) as estado, data2.codCamion as codCamion, distinct(store.dynamic.ccu.checkout.planilla), data2.codCarga as codCarga, " +

@@ -707,6 +707,33 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void shellTest() {
+        Query query = Query.compile("SELECT java('name.toString().length() > 10',*) as var FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void newObjectTest() {
+        Query query = Query.compile("SELECT newMap('key', 'value', 'name', name) as var FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        for(JoinableMap map : resultSet) {
+            Assert.assertTrue(Introspection.resolve(map, "var") instanceof Map);
+        }
+        System.out.println();
+    }
+
+    @Test
+    public void newArrayTest() {
+        Query query = Query.compile("SELECT newArray('name', name) as var FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        for(JoinableMap map : resultSet) {
+            Assert.assertTrue(Introspection.resolve(map, "var") instanceof Collection);
+        }
+        System.out.println();
+    }
+
+    @Test
     public void alwaysTrue() {
         Query query = Query.compile("SELECT * FROM character WHERE true");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);

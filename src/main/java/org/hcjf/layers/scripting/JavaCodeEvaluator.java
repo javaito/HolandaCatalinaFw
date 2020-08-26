@@ -1,10 +1,12 @@
 package org.hcjf.layers.scripting;
 
 import jdk.jshell.JShell;
+import jdk.jshell.Snippet;
 import jdk.jshell.SnippetEvent;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.errors.HCJFServiceTimeoutException;
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
@@ -14,10 +16,7 @@ import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
 
@@ -29,12 +28,15 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             "import org.hcjf.utils.*;",
             "import org.hcjf.bson.*;"
     };
+
+    private static final String SCRIPT_STATEMENT = "%s\r\n";
     private static final String BSON_RESULT_VAR_NAME = "_bsonResult";
+    private static final String CREATE_VAR_STATEMENT = "var %s = parameters.get(\"%s\");\r\n";
     private static final String CREATE_PARAMETERS_LINE = "Map<String,Object> parameters = new HashMap<>(parameters);";
     private static final String CREATE_RESULT_LINE = "Map<String,Object> result = new HashMap<>(parameters);";
     private static final String CREATE_BSON_RESULT_LINE = "String _bsonResult = \"\";";
-    private static final String OVERRIDE_PARAMETERS_LINE = "parameters = BsonDecoder.decode(Strings.hexToBytes(\"%s\")).toMap();";
-    private static final String OVERRIDE_RESULT_LINE = "result = new HashMap<>(parameters);";
+    private static final String OVERRIDE_PARAMETERS_LINE = "parameters = BsonDecoder.decode(Strings.hexToBytes(\"%s\")).toMap();\r\n";
+    private static final String OVERRIDE_RESULT_LINE = "result = new HashMap<>(parameters);\r\n";
     private static final String OVERRIDE_BSON_RESULT_LINE = "_bsonResult = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(result)));";
     private static final String OUT_FIELD = "_out";
     private static final String ERR_FIELD = "_error";
@@ -134,10 +136,21 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
         public Map<String,Object> evaluate(String script, Map<String, Object> parameters) {
             Long time = System.currentTimeMillis();
             String bson = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(parameters)));
-            jShell.eval(String.format(OVERRIDE_PARAMETERS_LINE, bson));
-            jShell.eval(OVERRIDE_RESULT_LINE);
-            List<SnippetEvent> snippets = jShell.eval(script);
-            jShell.eval(OVERRIDE_BSON_RESULT_LINE);
+            List<SnippetEvent> snippets = new ArrayList<>();
+            StringBuilder codeLines = new StringBuilder();
+            codeLines.append(String.format(OVERRIDE_PARAMETERS_LINE, bson));
+            codeLines.append(OVERRIDE_RESULT_LINE);
+            for(String key : parameters.keySet()) {
+                codeLines.append(String.format(CREATE_VAR_STATEMENT, key, key));
+            }
+            codeLines.append(String.format(SCRIPT_STATEMENT, script));
+            codeLines.append(OVERRIDE_BSON_RESULT_LINE);
+            snippets.addAll(jShell.eval(codeLines.toString()));
+            for(SnippetEvent snippetEvent : snippets) {
+                if(!snippetEvent.status().equals(Snippet.Status.VALID)) {
+                    throw new HCJFRuntimeException("Invalid code, status: %s", snippetEvent.status());
+                }
+            }
             String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(BSON_RESULT_VAR_NAME)).findFirst().get());
             bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
             Map<String,Object> result = BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap();

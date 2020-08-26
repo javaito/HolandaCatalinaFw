@@ -10,6 +10,7 @@ import org.hcjf.layers.query.model.QueryFunction;
 import org.hcjf.layers.query.model.QueryParameter;
 import org.hcjf.layers.query.model.QueryReturnFunction;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.*;
@@ -165,7 +166,11 @@ public interface Queryable extends BsonParcelable {
                            parameterValues.add(currentParameter);
                         } else {
                             value = get((O) instance, ((QueryParameter) currentParameter), dataSource);
-                            parameterValues.add(value);
+                            if(value != null && value.equals(Strings.ALL)) {
+                                parameterValues.add(instance);
+                            } else{
+                                parameterValues.add(value);
+                            }
                         }
                     } else if (currentParameter instanceof FieldEvaluator.UnprocessedValue) {
                         parameterValues.add(((FieldEvaluator.UnprocessedValue)currentParameter).

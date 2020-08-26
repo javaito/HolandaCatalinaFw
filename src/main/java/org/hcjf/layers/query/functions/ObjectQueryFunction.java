@@ -3,10 +3,7 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.properties.SystemProperties;
 
 import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class ObjectQueryFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
@@ -17,10 +14,24 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
     private static final String IS_DATE = "isDate";
     private static final String IS_STRING = "isString";
     private static final String IS_NUMBER = "isNumber";
+    private static final String INSTANCE_OF = "instanceOf";
     private static final String IF = "if";
     private static final String CASE = "case";
     private static final String EQUALS = "equals";
     private static final String NEW = "new";
+    private static final String NEW_MAP = "newMap";
+    private static final String NEW_ARRAY = "newArray";
+
+    private static final class InstanceOfValues {
+        private static final String NULL = "NULL";
+        private static final String COLLECTION = "COLLECTION";
+        private static final String MAP = "MAP";
+        private static final String DATE = "DATE";
+        private static final String STRING = "STRING";
+        private static final String NUMBER = "NUMBER";
+        private static final Object UUID = "UUID";
+        private static final String OBJECT = "OBJECT";
+    }
 
     public ObjectQueryFunction() {
         super(SystemProperties.get(SystemProperties.Query.Function.OBJECT_FUNCTION_NAME));
@@ -32,10 +43,13 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         addFunctionName(IS_DATE);
         addFunctionName(IS_STRING);
         addFunctionName(IS_NUMBER);
+        addFunctionName(INSTANCE_OF);
         addFunctionName(IF);
         addFunctionName(CASE);
         addFunctionName(EQUALS);
         addFunctionName(NEW);
+        addFunctionName(NEW_MAP);
+        addFunctionName(NEW_ARRAY);
     }
 
     @Override
@@ -109,6 +123,30 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 result = getParameter(0, parameters) != null && getParameter(0, parameters) instanceof Number;
                 break;
             }
+            case(INSTANCE_OF): {
+                Object parameter = null;
+                if(parameters.length == 1) {
+                    parameter = parameters[0];
+                }
+                if(parameter == null) {
+                    result = InstanceOfValues.NULL;
+                } else if(parameter instanceof Collection) {
+                    result = InstanceOfValues.COLLECTION;
+                } else if(parameter instanceof Map) {
+                    result = InstanceOfValues.MAP;
+                } else if(parameter instanceof Date) {
+                    result = InstanceOfValues.DATE;
+                } else if(parameter instanceof String) {
+                    result = InstanceOfValues.STRING;
+                } else if(parameter instanceof Number) {
+                    result = InstanceOfValues.NUMBER;
+                } else if(parameter instanceof UUID) {
+                    result = InstanceOfValues.UUID;
+                } else {
+                    result = InstanceOfValues.OBJECT;
+                }
+                break;
+            }
             case(EQUALS): {
                 Object parameter1 = getParameter(0, parameters);
                 Object parameter2 = getParameter(1, parameters);
@@ -123,7 +161,32 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 break;
             }
             case(NEW): {
-                result = getParameter(0, parameters);
+                if(parameters.length == 1) {
+                    result = getParameter(0, parameters);
+                } else {
+                    result = null;
+                }
+                break;
+            }
+            case(NEW_MAP): {
+                Map<String,Object> map = new HashMap<>();
+                for (int i = 0; i < parameters.length; i+=2) {
+                    String key = parameters[i].toString();
+                    Object value = null;
+                    if(parameters.length > i+1) {
+                        value = parameters[i+1];
+                    }
+                    map.put(key, value);
+                }
+                result = map;
+                break;
+            }
+            case(NEW_ARRAY): {
+                Collection collection = new ArrayList();
+                for(Object parameter : parameters) {
+                    collection.add(parameter);
+                }
+                result = collection;
                 break;
             }
         }

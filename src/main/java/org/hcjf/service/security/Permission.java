@@ -14,6 +14,7 @@ import java.lang.annotation.*;
 @Repeatable(Permissions.class)
 public @interface Permission {
     String value();
+    String title() default Strings.EMPTY_STRING;
     String description() default Strings.EMPTY_STRING;
     String[] tags() default {};
 }

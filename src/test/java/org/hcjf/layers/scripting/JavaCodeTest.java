@@ -78,7 +78,20 @@ public class JavaCodeTest {
     @Test(timeout = 10000)
     public void testTimeout() {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
-        String script = "while(true);";
+        String script = "Thread.sleep(20000);";
+        Map<String,Object> parameters = new HashMap<>();
+        try {
+            Map<String, Object> result = codeEvaluator.evaluate(script, parameters);
+            Assert.fail();
+        } catch (Exception ex) {
+            Assert.assertTrue(true);
+        }
+    }
+
+    @Test
+    public void testInvalidCode() {
+        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
+        String script = "asdfasdfasdf";
         Map<String,Object> parameters = new HashMap<>();
         try {
             Map<String, Object> result = codeEvaluator.evaluate(script, parameters);
