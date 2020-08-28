@@ -149,7 +149,7 @@ public class RestContext extends Context {
         } else if(method.equals(HttpMethod.DELETE)) {
             // This method call to delete layer interface implementation.
             DeleteLayerInterface deleteLayerInterface = Layers.get(DeleteLayerInterface.class, resourceName);
-            if(id != null) {
+            if(id != null && (request.getBody() == null || request.getBody().length == 0)) {
                 jsonElement = gson.toJsonTree(deleteLayerInterface.delete(id));
             } else {
                 RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));

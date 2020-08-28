@@ -455,10 +455,10 @@ public final class Layers {
         while(!classToIntrospect.equals(Layer.class) && !classToIntrospect.equals(Object.class)) {
             for (Method method : classToIntrospect.getDeclaredMethods()) {
                 for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
-                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.description(), List.of(permission.tags()));
+                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
                 }
                 for (LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
-                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.description(), List.of(permission.tags()));
+                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
                 }
             }
             classToIntrospect = classToIntrospect.getSuperclass();
