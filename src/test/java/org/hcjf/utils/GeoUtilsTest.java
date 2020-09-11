@@ -51,6 +51,8 @@ public class GeoUtilsTest {
         OGCGeometry geometry2 = GeoUtils.createGeometry(json2);
 
         Assert.assertTrue(geometry.contains(geometry2));
+
+
     }
 
 }

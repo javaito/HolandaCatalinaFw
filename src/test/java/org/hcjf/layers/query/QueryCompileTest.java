@@ -124,6 +124,7 @@ public class QueryCompileTest {
                 "where _creationDate >= '2020-03-09 03:00:00' and _creationDate <= '2020-03-10 02:59:59' order by _creationDate desc";
 
         Query query = Query.compile(q);
+        Query query1 = Query.compile(query.toString());
         System.out.println();
     }
 
@@ -341,21 +342,6 @@ public class QueryCompileTest {
         } catch (Exception ex) {
             Assert.fail("Unable to decode UUID data type");
         }
-    }
-
-    @Test
-    public void testCompileCache() {
-        long startTime = System.currentTimeMillis();
-        Query query1 = Query.compile("SELECT * FROM resource50", false);
-        long firstTime = System.currentTimeMillis() - startTime;
-
-        startTime = System.currentTimeMillis();
-        Query query2 = Query.compile("SELECT * FROM resource50", false);
-        long secondTime = System.currentTimeMillis() - startTime;
-
-        System.out.printf("First time: %d \r\n", firstTime);
-        System.out.printf("Second time: %d \r\n", secondTime);
-        Assert.assertTrue(query1 == query2);
     }
 
     @Test

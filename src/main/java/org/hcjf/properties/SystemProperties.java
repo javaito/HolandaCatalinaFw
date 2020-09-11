@@ -21,6 +21,8 @@ import java.util.regex.Pattern;
 public final class SystemProperties extends Properties {
 
     public static final String HCJF_DEFAULT_DATE_FORMAT = "hcjf.default.date.format";
+    public static final String HCJF_DEFAULT_DATE_FORMAT_REGEX = "hcjf.default.date.format.regex";
+    public static final String HCJF_DEFAULT_LOCAL_DATE_FORMAT_REGEX = "hcjf.default.date.format.regex";
     public static final String HCJF_DEFAULT_NUMBER_FORMAT = "hcjf.default.number.format";
     public static final String HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT = "hcjf.default.scientific.number.format";
     public static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
@@ -332,6 +334,8 @@ public final class SystemProperties extends Properties {
         public static final String EVALUATOR_LEFT_VALUES_CACHE_NAME = "hcjf.query.evaluator.left.values.cache";
         public static final String EVALUATOR_RIGHT_VALUES_CACHE_NAME = "hcjf.query.evaluator.right.values.cache";
         public static final String COMPILER_CACHE_SIZE = "hcjf.query.compiler.cache.size";
+        public static final String DEFAULT_COMPILER = "hcjf.query.default.compiler";
+        public static final String DEFAULT_SERIALIZER = "hcjf.query.default.serializer";
 
         public static final class ReservedWord {
             public static final String SELECT = "hcjf.query.select.reserved.word";
@@ -520,6 +524,8 @@ public final class SystemProperties extends Properties {
         gson = new Gson();
 
         defaults.put(HCJF_DEFAULT_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(HCJF_DEFAULT_DATE_FORMAT_REGEX, "(19|20)\\d\\d([- /.])(0[1-9]|1[012])\\2(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]");
+        defaults.put(HCJF_DEFAULT_LOCAL_DATE_FORMAT_REGEX, "");
         defaults.put(HCJF_DEFAULT_NUMBER_FORMAT, "0.000");
         defaults.put(HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT, "0.00E00");
         defaults.put(HCJF_DEFAULT_DECIMAL_SEPARATOR, ".");
@@ -767,6 +773,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.EVALUATOR_LEFT_VALUES_CACHE_NAME, "__evaluator__left__values__cache__");
         defaults.put(Query.EVALUATOR_RIGHT_VALUES_CACHE_NAME, "__evaluator__right__values__cache__");
         defaults.put(Query.COMPILER_CACHE_SIZE, "1000");
+        defaults.put(Query.DEFAULT_COMPILER, "SQL");
+        defaults.put(Query.DEFAULT_SERIALIZER, "SQL");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");

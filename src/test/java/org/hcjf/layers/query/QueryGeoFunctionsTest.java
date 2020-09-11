@@ -1,5 +1,10 @@
 package org.hcjf.layers.query;
 
+import com.esri.core.geometry.GeometryEngine;
+import com.esri.core.geometry.Point;
+import com.esri.core.geometry.SpatialReference;
+import com.esri.core.geometry.ogc.OGCGeometry;
+import com.esri.core.geometry.ogc.OGCPoint;
 import org.hcjf.utils.GeoUtils;
 import org.hcjf.utils.JsonUtils;
 import org.junit.Test;
@@ -42,6 +47,31 @@ public class QueryGeoFunctionsTest {
         query = Query.compile("SELECT *, geoAggregateDistance(point, true, true) as distance FROM resource ORDER BY id");
         Collection<JoinableMap> resultSet3 = query.evaluate(resultSet);
         System.out.println();
+    }
+
+    @Test
+    public void distanceTest() {
+        //Saavedra 910
+        //San José, Mendoza
+        //-32.892190, -68.820792
+
+        //Necochea 321
+        //Mendoza
+        //-32.894325, -68.820910
+
+        OGCGeometry point1 = GeoUtils.createGeometry("POINT(-68.820792 -32.892190)");
+
+
+
+        point1.setSpatialReference(SpatialReference.create(4326));
+        OGCGeometry point2 = GeoUtils.createGeometry("POINT(-68.820910 -32.894325)");
+        point2.setSpatialReference(SpatialReference.create(4326));
+
+        System.out.println(GeometryEngine.geodesicDistanceOnWGS84(new Point(-68.820792, -32.892190), new Point(-68.820910, -32.894325)));
+
+        
+        System.out.println(point1.distance(point2));
+
     }
 
 }

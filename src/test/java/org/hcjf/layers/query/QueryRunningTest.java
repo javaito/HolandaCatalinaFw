@@ -20,6 +20,9 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -781,6 +784,10 @@ public class QueryRunningTest {
         query = Query.compile("SELECT name, new('hola') as gulf FROM character");
         resultSet = query.evaluate(dataSource);
 
+        query = Query.compile("SELECT geodesicDistance('POINT(-68.820792 -32.892190)', 'POINT(-68.820910 -32.894325)') FROM character WHERE true");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
         System.out.println();
     }
 
@@ -846,6 +853,35 @@ public class QueryRunningTest {
                 "}";
         Object obj =  JsonUtils.createObject(s);
         System.out.println();
+
+        query = Query.compile("SELECT *, dateFormat('2020-03-01 00:25:12','UTC','America/Santiago','yyyy/MM/dd HH:mm:ss') as newDate FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, dateFormat('2020-03-01 00:25:12','UTC','America/Santiago','yyyy/MM/dd HH:mm:ss') as newDate FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, dateTransition('2020-03-01 00:25:12','UTC','America/Santiago') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, dateTransition('2020-03-01 00:25:12','Asia/Ho_Chi_Minh','America/Santiago') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, toDate(dateTransition('2020-03-01 00:25:12','America/Santiago','Asia/Ho_Chi_Minh')) as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, now('Asia/Ho_Chi_Minh') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        System.out.println((ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME)));
+        System.out.println(ZonedDateTime.parse("2020-09-09T16:06:14.838904-03:00[America/Argentina/Buenos_Aires]", DateTimeFormatter.ISO_ZONED_DATE_TIME));
+        System.out.println(ZonedDateTime.parse("2020-09-09T16:06:14-03:00[America/Argentina/Buenos_Aires]", DateTimeFormatter.ISO_ZONED_DATE_TIME));
+        System.out.println(ZonedDateTime.parse("2020-09-09T16:06:14-03:00", DateTimeFormatter.ISO_ZONED_DATE_TIME));
     }
 
     @Test

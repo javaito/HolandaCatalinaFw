@@ -1,5 +1,6 @@
 package org.hcjf.utils;
 
+import com.esri.core.geometry.ogc.OGCGeometry;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -85,6 +86,14 @@ public class IntrospectionTest {
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }
+    }
+
+    @Test
+    public void testWithListAsRoot() {
+        List<Map<String,Object>> list = new ArrayList<>();
+        list.add(Map.of("key", "value1"));
+        list.add(Map.of("key", "value2"));
+        System.out.println(Introspection.resolve(list, "**.key").toString());
     }
 
     @Test

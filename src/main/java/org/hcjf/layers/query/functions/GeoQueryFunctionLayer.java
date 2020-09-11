@@ -1,5 +1,7 @@
 package org.hcjf.layers.query.functions;
 
+import com.esri.core.geometry.GeometryEngine;
+import com.esri.core.geometry.Point;
 import com.esri.core.geometry.ogc.OGCGeometry;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.utils.GeoUtils;
@@ -24,6 +26,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         private static final String GEO_DIFFERENCE = "geoDifference";
         private static final String GEO_DISJOINT = "geoDisjoint";
         private static final String GEO_DISTANCE = "geoDistance";
+        private static final String GEODESIC_DISTANCE = "geodesicDistance";
         private static final String GEO_ENVELOPE = "geoEnvelope";
         private static final String GEO_EQUALS = "geoEquals";
         private static final String GEO_TYPE = "geoType";
@@ -42,6 +45,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         private static final String GEO_TOUCHES = "geoTouches";
         private static final String GEO_UNION = "geoUnion";
         private static final String GEO_WITHIN = "geoWithin";
+        private static final String GEO_PROJECT = "geoProject";
     }
 
     public GeoQueryFunctionLayer() {
@@ -61,6 +65,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         addFunctionName(Functions.GEO_DIFFERENCE);
         addFunctionName(Functions.GEO_DISJOINT);
         addFunctionName(Functions.GEO_DISTANCE);
+        addFunctionName(Functions.GEODESIC_DISTANCE);
         addFunctionName(Functions.GEO_ENVELOPE);
         addFunctionName(Functions.GEO_EQUALS);
         addFunctionName(Functions.GEO_TYPE);
@@ -79,6 +84,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         addFunctionName(Functions.GEO_TOUCHES);
         addFunctionName(Functions.GEO_UNION);
         addFunctionName(Functions.GEO_WITHIN);
+        addFunctionName(Functions.GEO_PROJECT);
     }
 
     @Override
@@ -177,6 +183,12 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
             case Functions.GEO_WITHIN: {
                 checkNumberAndType(functionName, parameters, 2, Object.class, Object.class);
                 result = geometry.within(GeoUtils.createGeometry(parameters[1]));
+                break;
+            }
+            case Functions.GEODESIC_DISTANCE: {
+                checkNumberAndType(functionName, parameters, 2, Object.class, Object.class);
+                result = GeometryEngine.geodesicDistanceOnWGS84((Point) geometry.centroid().getEsriGeometry(),
+                        (Point) GeoUtils.createGeometry(parameters[1]).centroid().getEsriGeometry());
                 break;
             }
             default: throw new HCJFRuntimeException("Unrecognized get function: %s", functionName);
