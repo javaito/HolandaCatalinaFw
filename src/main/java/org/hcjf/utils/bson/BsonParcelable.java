@@ -55,13 +55,9 @@ public interface BsonParcelable {
         List keys = new ArrayList();
         List values = new ArrayList();
 
-        Object value;
         for(Object key : map.keySet()) {
-            value = map.get(key);
-            if(value != null) {
-                keys.add(key);
-                values.add(value);
-            }
+            keys.add(key);
+            values.add(map.get(key));
         }
 
         document.put(toBson(MAP_KEYS_FIELD_NAME, keys));
@@ -92,7 +88,9 @@ public interface BsonParcelable {
      */
     default BsonElement toBson(String name, Object value) {
         BsonElement result;
-        if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
+        if(value == null) {
+            result = new BsonPrimitive(name, null);
+        } else if(BsonParcelable.class.isAssignableFrom(value.getClass())) {
             BsonDocument document = ((BsonParcelable) value).toBson();
             document.setName(name);
             result = document;
@@ -219,7 +217,9 @@ public interface BsonParcelable {
         //Verify data type.
         expectedDataType = typeFromBson(expectedDataType, element);
 
-        if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
+        if(expectedDataType == null) {
+            result = null;
+        } else if (BsonParcelable.class.isAssignableFrom(expectedDataType) && element instanceof BsonDocument) {
             result = Builder.create((BsonDocument)element);
         } else if (Collection.class.isAssignableFrom(expectedDataType) && element instanceof BsonArray) {
             result = fromBson(collectionDataType, (BsonArray) element);
