@@ -78,7 +78,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             String resourceValue = matcher.group(SystemProperties.get(SystemProperties.Query.RESOURCE_VALUE_INDEX));
             String dynamicResource = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_INDEX));
             String dynamicResourceAlias = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_ALIAS_INDEX));
-            query = new Query(createResource(resourceValue, dynamicResource, dynamicResourceAlias, groups, richTexts));
+            query = new Query(createResource(resourceValue, dynamicResource, dynamicResourceAlias, groups, richTexts, placesIndex));
 
             if(conditionalBody != null) {
                 Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
@@ -107,7 +107,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                             String joinDynamicResource = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_DYNAMIC_RESOURCE_INDEX));
                             String joinResourceValue = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_RESOURCE_VALUE_INDEX));
                             String joinDynamicResourceAlias = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX));
-                            joinResource = createResource(joinResourceValue, joinDynamicResource, joinDynamicResourceAlias, groups, richTexts);
+                            joinResource = createResource(joinResourceValue, joinDynamicResource, joinDynamicResourceAlias, groups, richTexts, placesIndex);
                             joinConditionalBody = joinMatcher.group(SystemProperties.get(SystemProperties.Query.JOIN_CONDITIONAL_BODY_INDEX));
                             joinConditionalBody = Strings.reverseGrouping(joinConditionalBody, groups);
                             joinConditionalBody = Strings.reverseRichTextGrouping(joinConditionalBody, richTexts);
@@ -208,7 +208,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
      * @param richTexts Rich texts collection.
      * @return Returns the resource implementation.
      */
-    private QueryResource createResource(String resourceValue, String dynamicResource, String dynamicResourceAlias, List<String> groups, List<String> richTexts) {
+    private QueryResource createResource(String resourceValue, String dynamicResource, String dynamicResourceAlias, List<String> groups, List<String> richTexts, AtomicInteger placesIndex) {
         QueryResource result;
         if(dynamicResource.isBlank()) {
             result = new QueryResource(resourceValue.trim());
@@ -218,12 +218,13 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 path = resourceValue.substring(resourceValue.indexOf(Strings.CLASS_SEPARATOR) + 1).trim();
                 resourceValue = resourceValue.substring(0, resourceValue.indexOf(Strings.CLASS_SEPARATOR));
             }
+            Integer index = Integer.parseInt(resourceValue.trim().replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             resourceValue = Strings.reverseGrouping(resourceValue, groups);
             resourceValue = Strings.reverseRichTextGrouping(resourceValue, richTexts);
             resourceValue = resourceValue.substring(1, resourceValue.length() - 1);
             Query subQuery;
             if (resourceValue.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
-                subQuery = compile(resourceValue);
+                subQuery = compile(groups, richTexts, index, placesIndex);
             } else {
                 subQuery = compileSingleQuery(resourceValue);
             }

@@ -870,6 +870,10 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         System.out.println();
 
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, dateTransition(now(),'Asia/Ho_Chi_Minh','America/Santiago') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
         query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, toDate(dateTransition('2020-03-01 00:25:12','America/Santiago','Asia/Ho_Chi_Minh')) as date FROM character");
         resultSet = query.evaluate(dataSource);
         System.out.println();
@@ -924,6 +928,17 @@ public class QueryRunningTest {
         for(JoinableMap row : resultSet) {
             Assert.assertTrue(row.get("limitedNames") instanceof Collection);
         }
+    }
+
+    @Test
+    public void subParameterizedQueryTest() {
+        String sql = "SELECT * FROM (SELECT * FROM character WHERE name like ?) as hc where lastName like ?";
+        Query query = Query.compile(sql);
+        ParameterizedQuery parameterizedQuery = query.getParameterizedQuery();
+        parameterizedQuery.add("Homer");
+        parameterizedQuery.add("Simp");
+        Collection<JoinableMap> resultSet = parameterizedQuery.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test

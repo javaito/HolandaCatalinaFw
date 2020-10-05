@@ -445,4 +445,11 @@ public class QueryCompileTest {
 
         System.out.println();
     }
+
+    @Test
+    public void subParameterizedQueryTest() {
+        String sql = "SELECT * FROM (SELECT * FROM character WHERE name like ?) as hc where lastName like ?";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
 }
