@@ -247,8 +247,10 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             Instant now = Instant.now();
             ZoneOffset zoneOffsetFrom = firstZone.getRules().getOffset(now);
             ZoneOffset zoneOffsetTo = secondZone.getRules().getOffset(now);
+            //Fixing instance instance in order to set zero nano of seconds
+            Instant fixedInstant = instant.minusNanos(instant.getNano());
             ZoneOffsetTransition transition = ZoneOffsetTransition.of(
-                    LocalDateTime.ofInstant(instant, ZoneId.systemDefault()),
+                    LocalDateTime.ofInstant(fixedInstant, ZoneId.systemDefault()),
                     zoneOffsetFrom, zoneOffsetTo);
             result = ZonedDateTime.ofInstant(transition.getDateTimeBefore(), transition.getOffsetBefore(), secondZone);
         }
