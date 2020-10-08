@@ -32,6 +32,7 @@ public class QueryRunningTest {
 
     private static final String CHARACTER = "character";
     private static final String CHARACTER_2 = "character2";
+    private static final String Z_CHARACTER = "zCharacter";
     private static final String ADDRESS = "address";
 
     private static final String ID = "id";
@@ -203,6 +204,15 @@ public class QueryRunningTest {
                 }
                 case CHARACTER_2: {
                     for(JoinableMap map : simpsonCharacters2.values()) {
+                        result.add(new JoinableMap(map));
+                    }
+                    break;
+                }
+                case Z_CHARACTER: {
+                    Collection<JoinableMap> resultSet = simpsonCharacters.values();
+                    String json = JsonUtils.toJsonTree(resultSet).toString();
+                    Collection<Map<String,Object>> newResultSet = (Collection<Map<String, Object>>) JsonUtils.createObject(json);
+                    for(Map<String,Object> map : newResultSet) {
                         result.add(new JoinableMap(map));
                     }
                     break;
@@ -939,6 +949,28 @@ public class QueryRunningTest {
         parameterizedQuery.add("Simp");
         Collection<JoinableMap> resultSet = parameterizedQuery.evaluate(dataSource);
         System.out.println();
+
+
+        sql = "SELECT length, instanceOf(length) as instanceOf FROM (SELECT if(equals(length(name),0),'huy!','bah!') as length FROM zCharacter) as hc";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testEnlargedObjectWithJoin() {
+        String sql = "select if(equals(age,0),false,if(false,if(equals(name,'FJHG20'),false,true),if(equals(name,'FJHG20'),true,false))) as isDisabled, " +
+                " addressId, name, " +
+                " length(name) as l, " +
+                " toString(l) as sl, " +
+                " instanceOf(sl), " +
+                " if(equals(l,0), true, false) as eq, instanceOf(eq) as eqt, " +
+                " instanceOf(sl) as iosl, " +
+                " isDisabled, instanceOf(isDisabled) as ioid from character" +
+                " join address on character.addressId = address.addressId";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test
@@ -954,6 +986,19 @@ public class QueryRunningTest {
         parameterizedQuery.add("simp");
         resultSet = parameterizedQuery.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 5);
+    }
+
+    @Test
+    public void testConditionalValue() {
+        String sql = "SELECT (length(name) > 5 AND length(lastName) > 10) as two, name, lastName FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT if((length(name) > 5 AND length(lastName) > 10), 'son nombre largos ;)','no son nombres largos :(') as two, name, lastName FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test

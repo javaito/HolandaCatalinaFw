@@ -31,6 +31,9 @@ public class QueryField extends QueryParameter {
                         break;
                     }
                 }
+                if(result == null) {
+                    result = Introspection.silentResolve(instance, getFieldPath());
+                }
             } else {
                 result = Introspection.silentResolve(((JoinableMap) instance).
                         getResourceModel(getResource().getResourceName()), getFieldPath());

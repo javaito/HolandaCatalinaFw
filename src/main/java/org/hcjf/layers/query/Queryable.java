@@ -5,10 +5,7 @@ import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.functions.QueryAggregateFunctionLayerInterface;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
-import org.hcjf.layers.query.model.QueryField;
-import org.hcjf.layers.query.model.QueryFunction;
-import org.hcjf.layers.query.model.QueryParameter;
-import org.hcjf.layers.query.model.QueryReturnFunction;
+import org.hcjf.layers.query.model.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonParcelable;
@@ -215,11 +212,14 @@ public interface Queryable extends BsonParcelable {
             Object result = null;
             if(queryParameter instanceof QueryField) {
                 QueryField queryField = (QueryField) queryParameter;
-                if(queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
+                if (queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
                     result = SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL);
                 } else {
                     result = queryField.resolve(instance);
                 }
+            } else if(queryParameter instanceof QueryConditional) {
+                QueryConditional conditional = (QueryConditional) queryParameter;
+                result = conditional.getEvaluationQuery().verifyCondition(instance, dataSource, this);
             } else if(queryParameter instanceof QueryFunction) {
                 result = resolveFunction((QueryFunction) queryParameter, instance, dataSource);
             }

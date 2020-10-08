@@ -447,6 +447,15 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 result = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex));
+            } else if(group.toUpperCase().contains(Strings.wrap(SystemProperties.get(SystemProperties.Query.ReservedWord.AND), Strings.WHITE_SPACE))
+                    || group.toUpperCase().contains(Strings.wrap(SystemProperties.get(SystemProperties.Query.ReservedWord.OR), Strings.WHITE_SPACE))) {
+                if(parameterClass.equals(QueryReturnParameter.class)) {
+                    String conditionalBlock = Strings.reverseGrouping(trimmedStringValue, groups);
+                    conditionalBlock = Strings.reverseRichTextGrouping(conditionalBlock, richTexts);
+                    result = new QueryConditional.ConditionalValue(conditionalBlock);
+                } else {
+                    throw new HCJFRuntimeException("The conditional block is only for return values");
+                }
             } else if(!group.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX)) &&
                     group.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                     group.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
@@ -557,7 +566,13 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                     functionParameters = new ArrayList<>();
                     for (String param : group.split(SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                         if (!param.isBlank()) {
-                            functionParameters.add(processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields));
+                            Object processedParam = processStringValue(query, groups, richTexts, param, placesIndex, parameterClass, presentFields);
+                            if(processedParam instanceof QueryConditional.ConditionalValue) {
+                                String conditional = ((QueryConditional.ConditionalValue)processedParam).getValue();
+                                functionParameters.add(new QueryReturnConditional(query, conditional, conditional, null));
+                            } else {
+                                functionParameters.add(processedParam);
+                            }
                         }
                     }
                     originalValue = Strings.reverseRichTextGrouping(originalValue, richTexts);
@@ -596,6 +611,9 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                         result = newValue;
                     } else if(newValue instanceof BaseEvaluator.UnprocessedValue) {
                         result = new QueryReturnUnprocessedValue(query, originalValue, alias, (BaseEvaluator.UnprocessedValue) newValue);
+                    } else if(newValue instanceof QueryConditional.ConditionalValue) {
+                        String conditional = ((QueryConditional.ConditionalValue)newValue).getValue();
+                        result = new QueryReturnConditional(query, conditional, conditional, alias);
                     } else {
                         result = new QueryReturnField(query, (String) newValue, alias);
                     }

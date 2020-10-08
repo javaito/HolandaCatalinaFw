@@ -29,7 +29,8 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         private static final String DATE = "DATE";
         private static final String STRING = "STRING";
         private static final String NUMBER = "NUMBER";
-        private static final Object UUID = "UUID";
+        private static final String UUID = "UUID";
+        private static final String BOOLEAN = "BOOLEAN";
         private static final String OBJECT = "OBJECT";
     }
 
@@ -142,6 +143,8 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                     result = InstanceOfValues.NUMBER;
                 } else if(parameter instanceof UUID) {
                     result = InstanceOfValues.UUID;
+                } else if(parameter instanceof Boolean) {
+                    result = InstanceOfValues.BOOLEAN;
                 } else {
                     result = InstanceOfValues.OBJECT;
                 }

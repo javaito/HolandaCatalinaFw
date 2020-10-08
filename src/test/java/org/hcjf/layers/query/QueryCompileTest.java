@@ -451,5 +451,20 @@ public class QueryCompileTest {
         String sql = "SELECT * FROM (SELECT * FROM character WHERE name like ?) as hc where lastName like ?";
         Query query = Query.compile(sql);
         System.out.println();
+
+        sql = "select if(equals(isDisabled,true),'',patente) as suerte, instanceOf(isDisabled), * from (select distinct(store.dynamic.ccu.patente.patente), store.dynamic.ccu.patente.patente as patente,\n" +
+                "if(equals(store.dynamic.ccu.camion.fleteroAsignado,0),store.dynamic.ccu.patente.patente,if(false,if(equals(store.dynamic.ccu.camion.patente,'FJHG20'),store.dynamic.ccu.patente.patente,concat(store.dynamic.ccu.patente.patente,' - Asignada a ',fleteroAsignado)),concat(store.dynamic.ccu.patente.patente,' - Asignada a ',fleteroAsignado))) as patenteStatus,\n" +
+                "if(equals(store.dynamic.ccu.camion.fleteroAsignado,0),false,if(false,if(equals(store.dynamic.ccu.camion.patente,'FJHG20'),false,true),if(equals(store.dynamic.ccu.camion.patente,'FJHG20'),true,false))) as isDisabled\n" +
+                "from store.dynamic.ccu.patente join store.dynamic.ccu.camion on store.dynamic.ccu.patente.patente=store.dynamic.ccu.camion.patente \n" +
+                "where store.dynamic.ccu.patente.fletero=96022 and store.dynamic.ccu.patente.pallets=6 and store.dynamic.ccu.patente.patente like '') as data";
+        query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void conditionalReturnValue() {
+        String sql = "SELECT (equals(name,'javaito') and isNull(lastName)) as thisIsJavaito FROM (SELECT * FROM character WHERE name like ?) as hc where lastName like ?";
+        Query query = Query.compile(sql);
+        System.out.println();
     }
 }

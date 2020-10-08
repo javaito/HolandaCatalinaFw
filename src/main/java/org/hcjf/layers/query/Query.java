@@ -618,6 +618,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     QueryReturnField returnField = (QueryReturnField) returnParameter;
                                     name = returnField.getAlias();
                                     value = consumer.get((O) enlargedObject, returnField, dataSource);
+                                } else if (returnParameter instanceof QueryReturnConditional) {
+                                    QueryReturnConditional returnConditional = (QueryReturnConditional) returnParameter;
+                                    name = returnConditional.getAlias();
+                                    value = consumer.get((O) enlargedObject, returnConditional, dataSource);
                                 } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
                                     QueryReturnFunction function = (QueryReturnFunction) returnParameter;
                                     name = function.getAlias();
@@ -644,7 +648,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     value = unprocessedValue.process(unprocessedDataSource, consumer);
                                     name = queryReturnUnprocessedValue.getAlias();
                                 }
-                                if(name != null && value != null) {
+                                if(name != null) {
                                     presentFields.add(name);
                                     enlargedObject.put(name, value);
                                 }
@@ -799,7 +803,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param consumer Consumer.
      * @return Returns if the evaluation of conditions are true or false in the otherwise.
      */
-    private boolean verifyCondition(Object object, DataSource dataSource, Consumer consumer) {
+    public final boolean verifyCondition(Object object, DataSource dataSource, Consumer consumer) {
         Boolean result = true;
         for (Evaluator evaluator : getEvaluators()) {
             if (evaluator instanceof BooleanEvaluator &&
