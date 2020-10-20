@@ -4,10 +4,9 @@ import com.google.gson.*;
 import org.hcjf.properties.SystemProperties;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
 
 public class JsonUtils {
 
@@ -91,6 +90,11 @@ public class JsonUtils {
 
     public static JsonElement toJsonTree(Object object, Map<String, Object> formatOptions) {
         GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(JsonSerializer.class, (JsonSerializer<LocalDateTime>) (src, typeOfSrc, context) -> {
+            String value = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).format(Date.from(src.toInstant(ZoneOffset.UTC)));
+            JsonPrimitive jsonPrimitive = new JsonPrimitive(value);
+            return jsonPrimitive;
+        });
         formatOptions.forEach((key,value) -> {
             switch (key){
                 case DATE_FORMAT_ARG : {

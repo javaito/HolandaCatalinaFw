@@ -274,7 +274,7 @@ public class QueryRunningTest {
     public void aggregateFunction() {
         Query query = Query.compile("SELECT addressId, aggregateProduct(weight) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
-        query = Query.compile("SELECT addressId, aggregateSum(weight) as aggregateWeight, aggregateSum(height) as aggregateHeight, aggregateEvalExpression(aggregateWeight - aggregateHeight) as result FROM character group by addressId");
+        query = Query.compile("SELECT addressId, aggregateSum(weight, false) as aggregateWeight, aggregateSum(height, false) as aggregateHeight, aggregateEvalExpression(aggregateWeight - aggregateHeight) as result FROM character group by addressId");
         Collection<JoinableMap> resultSet1 = Query.evaluate(query);
         query = Query.compile("SELECT addressId, aggregateEvalExpression(sum(weight) / 2) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet2 = Query.evaluate(query);
@@ -526,15 +526,15 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 2);
 
-        query = Query.compile("SELECT aggregateSum(weight) AS sum FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateSum(weight, false) AS sum FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 3);
 
-        query = Query.compile("SELECT aggregateProduct(weight) AS product FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateProduct(weight, false) AS product FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 3);
 
-        query = Query.compile("SELECT aggregateMean(weight) AS mean FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateMean(weight, 'arithmetic', false) AS mean FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 3);
 
@@ -651,7 +651,7 @@ public class QueryRunningTest {
         query = Query.compile("SELECT name, case(name, 'Homer Jay', 'gordo', 'Marjorie Jaqueline', 'flaco', 'mmm!') AS es FROM character");
         resultSet = query.evaluate(dataSource);
 
-        query = Query.compile("SELECT lastName, count(weight) as size, aggregateMin(weight) as min, aggregateMax(weight) as max, aggregateSum(weight) as sum, aggregateMean(weight) as arithmeticMean, aggregateMean(weight, 'harmonic') as harmonicMean FROM character group by lastName");
+        query = Query.compile("SELECT lastName, count(weight) as size, aggregateMin(weight) as min, aggregateMax(weight) as max, aggregateSum(weight, false) as sum, aggregateMean(weight, 'arithmetic', false) as arithmeticMean, aggregateMean(weight, 'harmonic', false) as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());
         System.out.println();
@@ -1002,6 +1002,52 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testAggregateSum() {
+        String sql = "SELECT aggregateSum(weight) FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateSum(weight, false) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateSum(weight, false, true) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testAggregateMean() {
+        String sql = "SELECT aggregateMean(weight) FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'arithmetic', false) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'harmonic') FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'median', false) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'median') FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void testGroupByAndCount() {
         String json = "[\n" +
                 "  {\n" +
@@ -1104,7 +1150,7 @@ public class QueryRunningTest {
         Query query1 = Query.compile("select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125");
         Collection<Map<String,Object>> resultSet1 = query1.evaluate(data);
 
-        Query query = Query.compile("select aggregateSum(cantidadFacturada) as totalFacturado, aggregateSum(cantidad) as totalEntregado, aggregateContext(cantidadFacturada) as facturado, aggregateContext(cantidad) as entregado from (select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125).lineas as data group by a");
+        Query query = Query.compile("select aggregateSum(cantidadFacturada, false) as totalFacturado, aggregateSum(cantidad, false) as totalEntregado, aggregateContext(cantidadFacturada) as facturado, aggregateContext(cantidad) as entregado from (select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125).lineas as data group by a");
 
         Collection<Map<String,Object>> resultSet = query.evaluate(data);
         Map<String,Object> firstObject = resultSet.stream().findFirst().get();

@@ -59,5 +59,25 @@ public class GeoUtils {
             }
         }
         return result;
-     }
+    }
+
+    public static Double degreesToDouble(String value) {
+        String[] parts = value.split("([°'\"])");
+
+        String hour = parts[0];
+        String minute = parts[1];
+        String second = parts[2];
+        String sign = parts[3].trim();
+
+        double result = Double.parseDouble(hour) +
+             Double.parseDouble(minute) / 60.0 +
+             Double.parseDouble(second) / 3600.0;
+
+        if(sign.equals("W")||sign.equals("O")||sign.equals("S")) {
+            result *= -1;
+        }
+
+        return  result;
+    }
+
 }

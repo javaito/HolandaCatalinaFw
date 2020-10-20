@@ -46,6 +46,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         private static final String GEO_UNION = "geoUnion";
         private static final String GEO_WITHIN = "geoWithin";
         private static final String GEO_PROJECT = "geoProject";
+        private static final String DEGREES_TO_DECIMAL = "degreesToDecimal";
     }
 
     public GeoQueryFunctionLayer() {
@@ -85,6 +86,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         addFunctionName(Functions.GEO_UNION);
         addFunctionName(Functions.GEO_WITHIN);
         addFunctionName(Functions.GEO_PROJECT);
+        addFunctionName(Functions.DEGREES_TO_DECIMAL);
     }
 
     @Override
@@ -189,6 +191,11 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
                 checkNumberAndType(functionName, parameters, 2, Object.class, Object.class);
                 result = GeometryEngine.geodesicDistanceOnWGS84((Point) geometry.centroid().getEsriGeometry(),
                         (Point) GeoUtils.createGeometry(parameters[1]).centroid().getEsriGeometry());
+                break;
+            }
+            case Functions.DEGREES_TO_DECIMAL: {
+                checkNumberAndType(functionName, parameters, 1, String.class);
+                result = GeoUtils.degreesToDouble((String) parameters[0]);
                 break;
             }
             default: throw new HCJFRuntimeException("Unrecognized get function: %s", functionName);
