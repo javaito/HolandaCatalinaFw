@@ -467,4 +467,13 @@ public class QueryCompileTest {
         Query query = Query.compile(sql);
         System.out.println();
     }
+
+    @Test
+    public void unionInSubQueryTest() {
+        String sql = "select * from (select planilla, patente, enteredDate, loginCode, _creationDate, _lastUpdate, rollbackDate, rollbackSource, checkOutDate, checkInDate, new('VIRTUAL TOTEM') as source, new('<h6 align=\"center\" style=\"margin-top:10px;font-size:15px\">') as tagInicial, new('</h6>') as tagFinal, _eventTracking.eventTriggerId as eventTriggerId, id as idRegistro from store.dynamic.ccu.planilla where planilla=800743756 union \n" +
+                "select planilla, patente, enteredDate, loginCode, _creationDate, _lastUpdate, new('CHECK OUT') as source, new('<h6 align=\"center\" style=\"margin-top:10px;font-size:15px\">') as tagInicial, new('</h6>') as tagFinal, _eventTracking.eventTriggerId as eventTriggerId, id as idRegistro from store.dynamic.ccu.checkout where planilla=800743756 union\n" +
+                "select planilla, patente, enteredDate, loginCode, _creationDate, _lastUpdate, new('CHECK IN') as source, new('<h6 align=\"center\" style=\"margin-top:10px;font-size:15px\">') as tagInicial, new('</h6>') as tagFinal, plateChanged, _eventTracking.eventTriggerId as eventTriggerId, id as idRegistro from store.dynamic.ccu.checkin where planilla=800743756) as data";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
 }

@@ -82,6 +82,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(EvalExpressionAggregateFunctionLayer.class);
         Layers.publishLayer(ContextAggregateFunction.class);
         Layers.publishLayer(PutAggregateFunction.class);
+        Layers.publishLayer(AddAggregateFunction.class);
     }
 
     public Query(QueryResource resource, QueryId id) {

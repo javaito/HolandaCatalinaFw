@@ -1017,6 +1017,11 @@ public class QueryRunningTest {
         query = Query.compile(sql);
         resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        sql = "SELECT *, put('.', 'idCopy', id) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test

@@ -193,7 +193,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
 
         for (int i = 2; i < unions.length; i+=2) {
             groups.set(groups.size() - 1, unions[i].trim());
-            query.addUnion(compile(groups, richTexts, startGroup, placesIndex));
+            query.addUnion(compile(groups, richTexts, groups.size() - 1, placesIndex));
         }
 
         return query;
