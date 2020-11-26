@@ -55,4 +55,16 @@ public class GeoUtilsTest {
 
     }
 
+    @Test
+    public void test2() {
+        String s = "01030000000100000005000000FFFFFF6F30514DC0BA0EC2EB703A41C0FFFFFF6F30514DC0BA0EC2EB703A41C0FFFFFF6F30514DC0BA0EC2EB703A41C0FFFFFF6F30514DC0BA0EC2EB703A41C0FFFFFF6F30514DC0BA0EC2EB703A41C0";
+        byte[] be = Strings.hexToBytes(s, false);
+        byte[] le = Strings.hexToBytes(s, true);
+        String s1 = "01010000000000000000003e400000000000002440";
+        byte[] be1 = Strings.hexToBytes(s1, false);
+        byte[] le1 = Strings.hexToBytes(s1, true);
+        OGCGeometry geometry = GeoUtils.createGeometry(be);
+        System.out.println();
+    }
+
 }

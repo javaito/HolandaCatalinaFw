@@ -1,5 +1,6 @@
 package org.hcjf.utils;
 
+import com.esri.core.geometry.*;
 import com.esri.core.geometry.ogc.OGCGeometry;
 import org.hcjf.errors.HCJFRuntimeException;
 

@@ -674,14 +674,31 @@ public final class Strings {
      * @return Byte array.
      */
     public static byte[] hexToBytes(String hex) {
+        return hexToBytes(hex, false);
+    }
+
+    /**
+     * Returns a byte array based on the hexadecimal representation.
+     * @param hex Hexadecimal representation.
+     * @param littleEndian
+     * @return Byte array.
+     */
+    public static byte[] hexToBytes(String hex, Boolean littleEndian) {
         if ((hex.length() % 2) != 0) {
             throw new IllegalArgumentException("Input string must contain an even number of characters");
         }
         int len = hex.length();
         byte[] result = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            result[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
-                    + Character.digit(hex.charAt(i+1), 16));
+        if(littleEndian) {
+            for (int i = len - 1; i >= 0; i -= 2) {
+                result[(len - 1 - i) / 2] = (byte) ((Character.digit(hex.charAt(i-1), 16) << 4)
+                        + Character.digit(hex.charAt(i), 16));
+            }
+        } else {
+            for (int i = 0; i < len; i += 2) {
+                result[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                        + Character.digit(hex.charAt(i + 1), 16));
+            }
         }
         return result;
     }

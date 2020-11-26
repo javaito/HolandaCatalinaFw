@@ -317,6 +317,7 @@ public final class SystemProperties extends Properties {
         public static final String UNION_REGULAR_EXPRESSION = "hcjf.query.union.regular.expression";
         public static final String AS_REGULAR_EXPRESSION = "hcjf.query.as.regular.expression";
         public static final String DESC_REGULAR_EXPRESSION = "hcjf.query.desc.regular.expression";
+        public static final String ENVIRONMENT_GROUP_INDEX = "hcjf.query.environment.group.index";
         public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
         public static final String FROM_GROUP_INDEX = "hcjf.query.from.group.index";
         public static final String CONDITIONAL_GROUP_INDEX = "hcjf.query.conditional.group.index";
@@ -338,6 +339,7 @@ public final class SystemProperties extends Properties {
         public static final String DEFAULT_SERIALIZER = "hcjf.query.default.serializer";
 
         public static final class ReservedWord {
+            public static final String ENVIRONMENT = "hcjf.query.environment.reserved.word";
             public static final String SELECT = "hcjf.query.select.reserved.word";
             public static final String FROM = "hcjf.query.from.reserved.word";
             public static final String JOIN = "hcjf.query.join.reserved.word";
@@ -744,7 +746,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<select>select[  ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<environment>environment[ ]{1,}'¡[0-9]{1,}'[ ]{1,}){0,1}(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right | full )?join )| where | limit | start | order by | group by )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right | full )?join )| where | limit | start | order by | group by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
@@ -756,6 +758,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.UNION_REGULAR_EXPRESSION, "(?i)((?<=( union ))|(?=( union )))");
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
         defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)((?<=( desc| asc))|(?=( desc| asc)))");
+        defaults.put(Query.ENVIRONMENT_GROUP_INDEX, "environment");
         defaults.put(Query.SELECT_GROUP_INDEX, "select");
         defaults.put(Query.FROM_GROUP_INDEX, "from");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "conditionalBody");
@@ -775,6 +778,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.COMPILER_CACHE_SIZE, "1000");
         defaults.put(Query.DEFAULT_COMPILER, "SQL");
         defaults.put(Query.DEFAULT_SERIALIZER, "SQL");
+        defaults.put(Query.ReservedWord.ENVIRONMENT, "ENVIRONMENT");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");

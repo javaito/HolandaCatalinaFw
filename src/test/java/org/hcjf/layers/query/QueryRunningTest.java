@@ -1053,6 +1053,14 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testJsonResource() {
+        String sql = "SELECT * FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void testGroupByAndCount() {
         String json = "[\n" +
                 "  {\n" +

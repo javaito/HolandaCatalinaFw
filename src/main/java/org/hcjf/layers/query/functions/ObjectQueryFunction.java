@@ -1,6 +1,7 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.JsonUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -21,6 +22,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
     private static final String NEW = "new";
     private static final String NEW_MAP = "newMap";
     private static final String NEW_ARRAY = "newArray";
+    private static final String JSON_TO_OBJECT = "jsonToObject";
 
     private static final class InstanceOfValues {
         private static final String NULL = "NULL";
@@ -51,6 +53,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         addFunctionName(NEW);
         addFunctionName(NEW_MAP);
         addFunctionName(NEW_ARRAY);
+        addFunctionName(JSON_TO_OBJECT);
     }
 
     @Override
@@ -190,6 +193,11 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                     collection.add(parameter);
                 }
                 result = collection;
+                break;
+            }
+            case(JSON_TO_OBJECT): {
+                String stringValue = getParameter(0, parameters);
+                result = JsonUtils.createObject(stringValue);
                 break;
             }
         }

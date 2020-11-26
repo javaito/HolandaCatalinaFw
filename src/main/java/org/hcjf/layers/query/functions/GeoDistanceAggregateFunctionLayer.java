@@ -1,5 +1,7 @@
 package org.hcjf.layers.query.functions;
 
+import com.esri.core.geometry.GeometryEngine;
+import com.esri.core.geometry.Point;
 import com.esri.core.geometry.ogc.OGCGeometry;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.Enlarged;
@@ -35,7 +37,8 @@ public class GeoDistanceAggregateFunctionLayer extends BaseQueryAggregateFunctio
         for(Object row : result) {
             currentGeometry = GeoUtils.createGeometry(resolveValue(row, parameters[0]));
             if (previousGeometry != null) {
-                distance = previousGeometry.centroid().distance(currentGeometry.centroid()) * 100;
+                GeometryEngine.geodesicDistanceOnWGS84((Point) previousGeometry.centroid().getEsriGeometry(),
+                        (Point) currentGeometry.centroid().getEsriGeometry());
                 totalDistance += distance;
             }
             previousGeometry = currentGeometry;

@@ -46,6 +46,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final List<Join> joins;
     private final List<Queryable> unions;
     private boolean returnAll;
+    private Map<String,Object> environment;
 
     static {
         //Init query compiler cache
@@ -153,6 +154,22 @@ public class Query extends EvaluatorCollection implements Queryable {
             }
         }
         return evaluator;
+    }
+
+    /**
+     * Returns the environment object.
+     * @return Environment object.
+     */
+    public Map<String, Object> getEnvironment() {
+        return environment;
+    }
+
+    /**
+     * Set the environment object.
+     * @param environment Environment object.
+     */
+    public void setEnvironment(Map<String, Object> environment) {
+        this.environment = environment;
     }
 
     /**
@@ -555,8 +572,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                     //If the query has not joins then data source must return data from
                     //resource of the query.
                     if(getResource() instanceof QueryDynamicResource) {
-                        data = (Collection<O>) resolveDynamicResource((QueryDynamicResource)getResource(),
+                        data = (Collection<O>) resolveDynamicResource((QueryDynamicResource) getResource(),
                                 (DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
+                    } else if(getResource() instanceof QueryJsonResource) {
+                        data = (Collection<O>) ((QueryJsonResource)getResource()).getResourceValues();
                     } else {
                         //Creates the first query for the original resource.
                         Query resolveQuery = new Query(getResource());
@@ -967,6 +986,8 @@ public class Query extends EvaluatorCollection implements Queryable {
         Collection<? extends Joinable> result;
         if(query.getResource() instanceof  QueryDynamicResource) {
             result = resolveDynamicResource((QueryDynamicResource) query.getResource(), dataSource, consumer);
+        } else if(getResource() instanceof QueryJsonResource) {
+            result = ((QueryJsonResource)getResource()).getResourceValues();
         } else {
             result = dataSource.getResourceData(verifyInstance(query, consumer));
         }

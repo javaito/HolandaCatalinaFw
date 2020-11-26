@@ -476,4 +476,18 @@ public class QueryCompileTest {
         Query query = Query.compile(sql);
         System.out.println();
     }
+
+    @Test
+    public void jsonResourceQueryTest() {
+        String sql = "select * from '[{\"field1\":2}]' as resource";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void environmentQueryTest() {
+        String sql = "environment '{\"field\":4}' select * from '[{\"field1\":2}]' as resource";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
 }

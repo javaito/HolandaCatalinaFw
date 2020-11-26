@@ -7,13 +7,11 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.evaluators.*;
 import org.hcjf.layers.query.model.*;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,6 +64,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
         Matcher matcher = pattern.matcher(queryDefinition);
 
         if(matcher.matches()) {
+            String environmentBody = matcher.group(SystemProperties.get(SystemProperties.Query.ENVIRONMENT_GROUP_INDEX));
             String selectBody = matcher.group(SystemProperties.get(SystemProperties.Query.SELECT_GROUP_INDEX));
             selectBody = selectBody.replaceFirst(Strings.CASE_INSENSITIVE_REGEX_FLAG+SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT), Strings.EMPTY_STRING);
             String fromBody = matcher.group(SystemProperties.get(SystemProperties.Query.FROM_GROUP_INDEX));
@@ -79,6 +78,12 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             String dynamicResource = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_INDEX));
             String dynamicResourceAlias = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_ALIAS_INDEX));
             query = new Query(createResource(resourceValue, dynamicResource, dynamicResourceAlias, groups, richTexts, placesIndex));
+            if(environmentBody != null && !environmentBody.isBlank()) {
+                //TODO: Parse the environment json
+//                environmentBody = Strings.reverseRichTextGrouping(environmentBody, richTexts);
+//                environmentBody = environmentBody.substring(1, environmentBody.length() - 1);
+//                query.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
+            }
 
             if(conditionalBody != null) {
                 Pattern conditionalPatter = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
@@ -212,6 +217,17 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
         QueryResource result;
         if(dynamicResource.isBlank()) {
             result = new QueryResource(resourceValue.trim());
+        } else if(resourceValue.startsWith(Strings.RICH_TEXT_SEPARATOR) && resourceValue.endsWith(Strings.RICH_TEXT_SEPARATOR)) {
+            String json = Strings.reverseRichTextGrouping(resourceValue, richTexts);
+            json = json.substring(1, json.length() - 1);
+            Object object = JsonUtils.createObject(json);
+            Collection<Map<String,Object>> resourceValues;
+            if(object instanceof Collection) {
+                resourceValues = (Collection<Map<String, Object>>) object;
+            } else {
+                resourceValues = List.of((Map<String,Object>)object);
+            }
+            result = new QueryJsonResource(dynamicResourceAlias.trim(), resourceValues);
         } else {
             String path = null;
             if (resourceValue.indexOf(Strings.CLASS_SEPARATOR) > 0) {
