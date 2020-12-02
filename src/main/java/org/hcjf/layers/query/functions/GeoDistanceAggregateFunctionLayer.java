@@ -37,7 +37,7 @@ public class GeoDistanceAggregateFunctionLayer extends BaseQueryAggregateFunctio
         for(Object row : result) {
             currentGeometry = GeoUtils.createGeometry(resolveValue(row, parameters[0]));
             if (previousGeometry != null) {
-                GeometryEngine.geodesicDistanceOnWGS84((Point) previousGeometry.centroid().getEsriGeometry(),
+                distance = GeometryEngine.geodesicDistanceOnWGS84((Point) previousGeometry.centroid().getEsriGeometry(),
                         (Point) currentGeometry.centroid().getEsriGeometry());
                 totalDistance += distance;
             }

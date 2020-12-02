@@ -33,7 +33,7 @@ public class PutAggregateFunction extends BaseQueryAggregateFunctionLayer {
                         Object value = resolveValue(row, parameters[2]);
                         Introspection.resolveAndPut(row, path, key, value);
                     } else {
-                        Map<String,Object> values = resolveValue(row, parameters);
+                        Map<String,Object> values = resolveValue(row, parameters[1]);
                         Introspection.resolveAndPutAll(row, path, values);
                     }
                 }
