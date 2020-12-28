@@ -35,13 +35,14 @@ public class PutAggregateFunction extends BaseQueryAggregateFunctionLayer {
                     } else {
                         Map<String,Object> values = resolveValue(row, parameters[1]);
                         Introspection.resolveAndPutAll(row, path, values);
+                        System.out.println();
                     }
                 }
             } catch (Exception ex){
-                throw new HCJFRuntimeException("Min aggregate function fail", ex);
+                throw new HCJFRuntimeException("Put aggregate function fail", ex);
             }
         } else {
-            throw new HCJFRuntimeException("Min aggregate function need at leas two parameters");
+            throw new HCJFRuntimeException("Put aggregate function need at leas two parameters");
         }
         return result;
     }

@@ -686,11 +686,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                                 } else {
                                     groupValue = consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource);
                                 }
-                                if(groupValue == null) {
-                                    hashCode.append(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL).hashCode());
-                                } else {
-                                    hashCode.append(groupValue.hashCode());
-                                }
+                                hashCode.append(groupValue);
                             }
                             if (groupables.containsKey(hashCode.toString())) {
                                 groupables.get(hashCode.toString()).group(groupable);
