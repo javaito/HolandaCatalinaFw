@@ -790,7 +790,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             }
             try {
                 if (client.waitForConnect()) {
-                    ResponseListener responseListener = new ResponseListener(timeout);
+                    ResponseListener responseListener = new ResponseListener(networkComponent, timeout);
                     registerListener(message, responseListener);
                     try {
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
@@ -1318,9 +1318,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private final class ResponseListener {
 
         private final Long timeout;
+        private final NetworkComponent destination;
         private ResponseMessage responseMessage;
 
-        public ResponseListener(Long timeout) {
+        public ResponseListener(NetworkComponent destination, Long timeout) {
+            this.destination = destination;
             this.timeout = timeout;
         }
 
@@ -1339,12 +1341,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
             if(responseMessage != null) {
                 if(responseMessage.getThrowable() != null) {
-                    throw new HCJFRemoteException("Remote exception", responseMessage.getThrowable());
+                    throw new HCJFRemoteException("Remote exception from %s",
+                            responseMessage.getThrowable(), destination.getName());
                 } else {
                     result = responseMessage.getValue();
                 }
             } else {
-                throw new HCJFRemoteInvocationTimeoutException("Remote invocation timeout, message id: " + message.getId().toString());
+                throw new HCJFRemoteInvocationTimeoutException("Remote invocation timeout from %s, message id: %s",
+                        destination.getName(), message.getId().toString());
             }
             responseListeners.remove(message.getId());
             return result;
