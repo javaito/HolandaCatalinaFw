@@ -19,6 +19,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -480,6 +482,10 @@ public class QueryRunningTest {
         query = Query.compile("SELECT name, aggregateSum(weight) FROM character GROUP BY addressId UNION SELECT name, aggregateSum(weight) FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        query = Query.compile("SELECT * FROM character JOIN (SELECT * FROM character) AS ch ON character.id = ch.id");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test
@@ -494,6 +500,12 @@ public class QueryRunningTest {
         Query query = Query.compile("SELECT *, weight * 2 as wt FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
+    }
+
+    @Test
+    public void testPutAggregateFunction() {
+        Query query = Query.compile("SELECT *, put('.', 'copy', .) FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
     }
 
     @Test
@@ -684,6 +696,29 @@ public class QueryRunningTest {
 
         bsonDocument = BsonDecoder.decode(doc);
         Map<String,Object> map = bsonDocument.toMap();
+    }
+
+    @Test
+    public void queryInsideAggregationContext() {
+        Query query = Query.compile("SELECT (SELECT * FROM .) as names FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+
+        query = Query.compile("SELECT aggregateContext((SELECT * FROM . WHERE lastName like 'simp')) as names FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void disjoint() {
+        Query query = Query.compile("SELECT * FROM character DISJOINT BY lastName");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select (SELECT count() FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT count() FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test
@@ -1172,6 +1207,20 @@ public class QueryRunningTest {
 
         Assert.assertEquals(((BigDecimal)firstObject.get("totalFacturado")).intValue(), 7);
         Assert.assertEquals(((BigDecimal)firstObject.get("totalEntregado")).intValue(), 5);
+    }
+
+    @Test
+    public void testCodCamion() throws Exception {
+
+        System.out.println("085".hashCode());
+        System.out.println("07T".hashCode());
+
+        String json = new String(Files.readAllBytes(Path.of("/home/javaito/Descargas/codCamion.json")));
+        List<Map<String,Object>> datasource = (List<Map<String, Object>>) JsonUtils.createObject(json);
+        String sql = "select codCamion from data group by codCamion";
+        Query query = Query.compile(sql);
+        Collection rs = query.evaluate(datasource);
+        System.out.println();
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {

@@ -77,7 +77,11 @@ public class SQLSerializer extends Layer implements QuerySerializer {
         }
 
         if (query.getGroupParameters().size() > 0) {
-            resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
+            if(query.isDisjoint()) {
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISJOINT_BY)).append(Strings.WHITE_SPACE);
+            } else {
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)).append(Strings.WHITE_SPACE);
+            }
             for (QueryReturnParameter groupParameter : query.getGroupParameters()) {
                 resultBuilder.append(groupParameter, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
             }

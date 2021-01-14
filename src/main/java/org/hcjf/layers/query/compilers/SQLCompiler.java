@@ -132,11 +132,15 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                             query.addOrderParameter((QueryOrderParameter)
                                     processStringValue(query, groups, richTexts, orderField, placesIndex, QueryOrderParameter.class, new ArrayList<>()));
                         }
-                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY))) {
+                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.GROUP_BY)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISJOINT_BY))) {
                         for (String orderField : elementValue.split(SystemProperties.get(
                                 SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
                             query.addGroupField((QueryReturnParameter)
                                     processStringValue(query, groups, richTexts, orderField, placesIndex, QueryReturnParameter.class, new ArrayList<>()));
+                        }
+                        if(element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DISJOINT_BY))) {
+                            query.setDisjoint(true);
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
                         if(elementValue == null || elementValue.isBlank()) {

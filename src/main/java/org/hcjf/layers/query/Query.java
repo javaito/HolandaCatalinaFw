@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 public class Query extends EvaluatorCollection implements Queryable {
 
     public static final String QUERY_BSON_FIELD_NAME = "__query__";
+    public static final String DISJOINT_RESULT_SET = "disjointResultSet";
     private static final LruMap<String,Query> cache;
 
     private final QueryId id;
@@ -46,6 +47,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final List<Join> joins;
     private final List<Queryable> unions;
     private boolean returnAll;
+    private boolean disjoint;
     private Map<String,Object> environment;
 
     static {
@@ -329,6 +331,14 @@ public class Query extends EvaluatorCollection implements Queryable {
         return this;
     }
 
+    public boolean isDisjoint() {
+        return disjoint;
+    }
+
+    public void setDisjoint(boolean disjoint) {
+        this.disjoint = disjoint;
+    }
+
     /**
      * Return the unmodifiable list with order fields.
      * @return Order fields.
@@ -497,6 +507,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
         Collection<O> result;
         Map<String, Groupable> groupables = null;
+        Map<String, Map<String,Object>> disjointResultSets = null;
         List<QueryReturnFunction> aggregateFunctions = new ArrayList<>();
         if(!(Thread.currentThread() instanceof ServiceThread)) {
             //If the current thread is not a service thread then we call this
@@ -610,7 +621,11 @@ public class Query extends EvaluatorCollection implements Queryable {
                 StringBuilder hashCode;
                 Groupable groupable;
                 if (!groupParameters.isEmpty()) {
-                    groupables = new HashMap<>();
+                    if(isDisjoint()) {
+                        disjointResultSets = new HashMap<>();
+                    } else {
+                        groupables = new HashMap<>();
+                    }
                 }
 
                 for (O object : data) {
@@ -656,10 +671,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                                         Object dataset = Introspection.resolve(object, resourceName);
                                         if(dataset != null) {
                                             if (dataset instanceof Collection) {
-                                                unprocessedDataSource = queryable -> (Collection) dataset;
+                                                unprocessedDataSource = queryable -> (Collection) Introspection.deepCopy(dataset);
                                             } else if (dataset instanceof Map) {
                                                 Collection collection = new ArrayList();
-                                                collection.add(dataset);
+                                                collection.add(Introspection.deepCopy(dataset));
                                                 unprocessedDataSource = queryable -> collection;
                                             } else {
                                                 throw new HCJFRuntimeException("The resource path of query into a return values must point ot the collection value");
@@ -676,8 +691,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                             }
                         }
 
-                        if (!groupParameters.isEmpty() && object instanceof Groupable) {
-                            groupable = (Groupable) object;
+                        if (!groupParameters.isEmpty() && (object instanceof Groupable || isDisjoint())) {
                             hashCode = new StringBuilder();
                             Object groupValue;
                             for (QueryReturnParameter returnParameter : groupParameters) {
@@ -688,10 +702,23 @@ public class Query extends EvaluatorCollection implements Queryable {
                                 }
                                 hashCode.append(groupValue);
                             }
-                            if (groupables.containsKey(hashCode.toString())) {
-                                groupables.get(hashCode.toString()).group(groupable);
+                            if(isDisjoint()) {
+                                Collection<Object> resultSet;
+                                if(disjointResultSets.containsKey(hashCode.toString())) {
+                                    resultSet = Introspection.resolve(disjointResultSets, hashCode.toString(), DISJOINT_RESULT_SET);
+                                } else {
+                                    resultSet = new ArrayList<>();
+                                    JoinableMap disjointMap = new JoinableMap();
+                                    disjointMap.put(DISJOINT_RESULT_SET, resultSet);
+                                    disjointResultSets.put(hashCode.toString(), disjointMap);
+                                }
+                                resultSet.add(object);
                             } else {
-                                groupables.put(hashCode.toString(), groupable);
+                                if (groupables.containsKey(hashCode.toString())) {
+                                    groupables.get(hashCode.toString()).group((Groupable) object);
+                                } else {
+                                    groupables.put(hashCode.toString(), (Groupable) object);
+                                }
                             }
                         } else {
                             result.add(object);
@@ -704,6 +731,9 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                 if(groupables != null) {
                     result.addAll((Collection<? extends O>) groupables.values());
+                }
+                if(disjointResultSets != null) {
+                    result.addAll((Collection<? extends O>) disjointResultSets.values());
                 }
             } finally {
                 clearEvaluatorsCache();

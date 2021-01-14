@@ -3,6 +3,8 @@ package org.hcjf.utils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.UUID;
+
 
 /**
  * @author Andres Medina
@@ -27,4 +29,5 @@ public class CryptographyTestSuite {
         String messageResult = new String(crypt.decrypt(Strings.hexToBytes(encryptedMessage)));
         Assert.assertEquals(message,messageResult);
     }
+
 }

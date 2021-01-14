@@ -10,6 +10,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author javaito
@@ -143,7 +144,6 @@ public abstract class BaseEvaluator implements Evaluator {
     public static class QueryValue implements UnprocessedValue {
 
         private final Query query;
-        private Collection subQueryResult;
 
         public QueryValue(Query query) {
             this.query = query;
@@ -171,14 +171,11 @@ public abstract class BaseEvaluator implements Evaluator {
         public Object process(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
             Object result;
             Collection collection;
-            if(subQueryResult == null) {
-
-                subQueryResult = query.evaluate(dataSource, consumer);
-            }
+            Collection subQueryResult = query.evaluate(dataSource, consumer);
             if(query.getReturnParameters().size() == 1){
                 List<Object> listResult = new ArrayList<>();
                 for(Object element : subQueryResult) {
-                    listResult.add(((JoinableMap)element).values().stream().findFirst().orElse(null));
+                    listResult.add(((Map)element).values().stream().findFirst().orElse(null));
                 }
                 collection = listResult;
             } else {

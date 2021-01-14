@@ -1,11 +1,15 @@
 package org.hcjf.errors;
 
-public class HCJFRemoteException extends HCJFRuntimeException{
+public class HCJFRemoteException extends TaggedException {
+
+    private static final String TAG = "REMOTE";
+
     public HCJFRemoteException(String message, Object... params) {
-        super(message, params);
+        this(message, null, params);
     }
 
     public HCJFRemoteException(String message, Throwable cause, Object... params) {
-        super(message, cause, params);
+        super(TAG, message, cause, params);
     }
+
 }

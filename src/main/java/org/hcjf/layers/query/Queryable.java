@@ -2,11 +2,13 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.evaluators.BaseEvaluator;
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.functions.QueryAggregateFunctionLayerInterface;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.layers.query.model.*;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonParcelable;
 
@@ -170,8 +172,13 @@ public interface Queryable extends BsonParcelable {
                             }
                         }
                     } else if (currentParameter instanceof FieldEvaluator.UnprocessedValue) {
-                        parameterValues.add(((FieldEvaluator.UnprocessedValue)currentParameter).
-                                process(dataSource, this));
+                        DataSource currentDataSource = dataSource;
+                        if (currentParameter instanceof BaseEvaluator.QueryValue &&
+                                function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
+                            currentDataSource = queryable -> (Collection) Introspection.deepCopy(instance);
+                        }
+                        parameterValues.add(((FieldEvaluator.UnprocessedValue) currentParameter).
+                                process(currentDataSource, this));
                     } else {
                         parameterValues.add(currentParameter);
                     }
