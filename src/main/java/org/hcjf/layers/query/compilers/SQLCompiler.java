@@ -466,7 +466,8 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             Integer index = Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
-                result = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex));
+                result = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex),
+                        parameterClass.equals(QueryReturnParameter.class));
             } else if(group.toUpperCase().contains(Strings.wrap(SystemProperties.get(SystemProperties.Query.ReservedWord.AND), Strings.WHITE_SPACE))
                     || group.toUpperCase().contains(Strings.wrap(SystemProperties.get(SystemProperties.Query.ReservedWord.OR), Strings.WHITE_SPACE))) {
                 if(parameterClass.equals(QueryReturnParameter.class)) {

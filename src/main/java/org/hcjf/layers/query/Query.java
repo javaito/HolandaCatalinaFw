@@ -648,45 +648,11 @@ public class Query extends EvaluatorCollection implements Queryable {
                             String name;
                             Object value;
                             for (QueryReturnParameter returnParameter : getReturnParameters()) {
-                                name = null;
-                                value = null;
-                                if (returnParameter instanceof QueryReturnField) {
-                                    QueryReturnField returnField = (QueryReturnField) returnParameter;
-                                    name = returnField.getAlias();
-                                    value = consumer.get((O) enlargedObject, returnField, dataSource);
-                                } else if (returnParameter instanceof QueryReturnConditional) {
-                                    QueryReturnConditional returnConditional = (QueryReturnConditional) returnParameter;
-                                    name = returnConditional.getAlias();
-                                    value = consumer.get((O) enlargedObject, returnConditional, dataSource);
-                                } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
-                                    QueryReturnFunction function = (QueryReturnFunction) returnParameter;
-                                    name = function.getAlias();
-                                    value = consumer.resolveFunction(function, enlargedObject, dataSource);
-                                } else if (returnParameter instanceof QueryReturnUnprocessedValue) {
-                                    QueryReturnUnprocessedValue queryReturnUnprocessedValue = (QueryReturnUnprocessedValue) returnParameter;
-                                    BaseEvaluator.UnprocessedValue unprocessedValue = queryReturnUnprocessedValue.getUnprocessedValue();
-                                    DataSource unprocessedDataSource = dataSource;
-                                    if(unprocessedValue instanceof BaseEvaluator.QueryValue) {
-                                        String resourceName = ((BaseEvaluator.QueryValue)unprocessedValue).getQuery().resource.getResourceName();
-                                        Object dataset = Introspection.resolve(object, resourceName);
-                                        if(dataset != null) {
-                                            if (dataset instanceof Collection) {
-                                                unprocessedDataSource = queryable -> (Collection) Introspection.deepCopy(dataset);
-                                            } else if (dataset instanceof Map) {
-                                                Collection collection = new ArrayList();
-                                                collection.add(Introspection.deepCopy(dataset));
-                                                unprocessedDataSource = queryable -> collection;
-                                            } else {
-                                                throw new HCJFRuntimeException("The resource path of query into a return values must point ot the collection value");
-                                            }
-                                        }
-                                    }
-                                    value = unprocessedValue.process(unprocessedDataSource, consumer);
-                                    name = queryReturnUnprocessedValue.getAlias();
-                                }
-                                if(name != null) {
-                                    presentFields.add(name);
-                                    enlargedObject.put(name, value);
+                                Map.Entry<String,Object> entry =
+                                        consumer.resolveQueryReturnParameter(returnParameter, object, dataSource);
+                                if(entry != null) {
+                                    presentFields.add(entry.getKey());
+                                    enlargedObject.put(entry.getKey(), entry.getValue());
                                 }
                             }
                         }

@@ -260,7 +260,17 @@ public class QueryRunningTest {
         resultSet = Query.evaluate(query);
         System.out.println();
 
-        query = Query.compile("SELECT * FROM character WHERE (SELECT name FROM character2 WHERE addressId = (select addressId from address where street like 'Evergreen Terrace' limit 1) limit 1) like name");
+        query = Query.compile("SELECT * FROM character WHERE (SELECT name FROM character2 WHERE addressId = (select addressId from address where street like 'Terrace' limit 1) limit 1) like name");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+
+
+        query = Query.compile("select addressId from address where street like 'Terrace' limit 1");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+
+
+        query = Query.compile("SELECT * FROM character WHERE addressId in (select addressId from address)");
         resultSet = Query.evaluate(query);
         System.out.println();
     }
@@ -717,6 +727,10 @@ public class QueryRunningTest {
         System.out.println();
 
         query = Query.compile("select (SELECT count() FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT count() FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select (SELECT name, lastName FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT name, lastName FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
         resultSet = query.evaluate(dataSource);
         System.out.println();
     }

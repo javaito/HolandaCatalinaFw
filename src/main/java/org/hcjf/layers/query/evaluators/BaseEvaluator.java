@@ -5,12 +5,12 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.query.model.QueryField;
 import org.hcjf.layers.query.model.QueryParameter;
+import org.hcjf.layers.query.model.QueryReturnParameter;
+import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author javaito
@@ -144,9 +144,11 @@ public abstract class BaseEvaluator implements Evaluator {
     public static class QueryValue implements UnprocessedValue {
 
         private final Query query;
+        private final Boolean rawValue;
 
-        public QueryValue(Query query) {
+        public QueryValue(Query query, Boolean rawValue) {
             this.query = query;
+            this.rawValue = rawValue;
         }
 
         /**
@@ -171,26 +173,34 @@ public abstract class BaseEvaluator implements Evaluator {
         public Object process(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
             Object result;
             Collection collection;
-            Collection subQueryResult = query.evaluate(dataSource, consumer);
-            if(query.getReturnParameters().size() == 1){
-                List<Object> listResult = new ArrayList<>();
-                for(Object element : subQueryResult) {
-                    listResult.add(((Map)element).values().stream().findFirst().orElse(null));
+            if(rawValue) {
+                result = query.evaluate(dataSource, consumer);
+            } else {
+                Collection subQueryResult = query.evaluate(new Queryable.ReadableDataSource(), consumer);
+                if (query.getReturnParameters().size() == 1) {
+                    QueryReturnParameter queryReturnParameter = query.getReturnParameters().get(0);
+                    List<Object> listResult = new ArrayList<>();
+                    for (Object element : subQueryResult) {
+                        Object value = Introspection.resolve(element, queryReturnParameter.getAlias());
+                        if(value != null) {
+                            listResult.add(value);
+                        }
+                    }
+                    collection = listResult;
+                } else {
+                    collection = subQueryResult;
                 }
-                collection = listResult;
-            } else {
-                collection = subQueryResult;
-            }
 
-            if(collection.size() == 0) {
-                //If the size of the collection result is zero then the result will be null.
-                result = null;
-            } else if(collection.size() == 1) {
-                //If the size of the collection result is one then the result will be the unique instance of the collection.
-                result = collection.iterator().next();
-            } else {
-                //If the size of the collection result is greater than one then the result is the collection.
-                result = collection;
+                if (collection.size() == 0) {
+                    //If the size of the collection result is zero then the result will be null.
+                    result = null;
+                } else if (collection.size() == 1) {
+                    //If the size of the collection result is one then the result will be the unique instance of the collection.
+                    result = collection.iterator().next();
+                } else {
+                    //If the size of the collection result is greater than one then the result is the collection.
+                    result = collection;
+                }
             }
 
             return result;

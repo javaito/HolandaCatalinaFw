@@ -1,5 +1,6 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.evaluators.BaseEvaluator;
@@ -115,6 +116,56 @@ public interface Queryable extends BsonParcelable {
          */
         <R extends Object> R getParameter(Integer place);
 
+        /**
+         * This method resolve all the return data types, and returns a key value object with the name and value.
+         * @param returnParameter Return parameter instance.
+         * @param instance Instance to resolve.
+         * @param dataSource Data source.
+         * @return Key value object or null if the name is null.
+         */
+        default Map.Entry<String,Object> resolveQueryReturnParameter(QueryReturnParameter returnParameter, Object instance, DataSource<O> dataSource) {
+            AbstractMap.SimpleEntry result = null;
+            String name = null;
+            Object value = null;
+            if (returnParameter instanceof QueryReturnField) {
+                QueryReturnField returnField = (QueryReturnField) returnParameter;
+                name = returnField.getAlias();
+                value = get((O) instance, returnField, dataSource);
+            } else if (returnParameter instanceof QueryReturnConditional) {
+                QueryReturnConditional returnConditional = (QueryReturnConditional) returnParameter;
+                name = returnConditional.getAlias();
+                value = get((O) instance, returnConditional, dataSource);
+            } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
+                QueryReturnFunction function = (QueryReturnFunction) returnParameter;
+                name = function.getAlias();
+                value = resolveFunction(function, instance, dataSource);
+            } else if (returnParameter instanceof QueryReturnUnprocessedValue) {
+                QueryReturnUnprocessedValue queryReturnUnprocessedValue = (QueryReturnUnprocessedValue) returnParameter;
+                BaseEvaluator.UnprocessedValue unprocessedValue = queryReturnUnprocessedValue.getUnprocessedValue();
+                DataSource unprocessedDataSource = dataSource;
+                if(unprocessedValue instanceof BaseEvaluator.QueryValue) {
+                    String resourceName = ((BaseEvaluator.QueryValue)unprocessedValue).getQuery().getResource().getResourceName();
+                    Object dataset = Introspection.resolve(instance, resourceName);
+                    if(dataset != null) {
+                        if (dataset instanceof Collection) {
+                            unprocessedDataSource = queryable -> (Collection) Introspection.deepCopy(dataset);
+                        } else if (dataset instanceof Map) {
+                            Collection collection = new ArrayList();
+                            collection.add(Introspection.deepCopy(dataset));
+                            unprocessedDataSource = queryable -> collection;
+                        } else {
+                            throw new HCJFRuntimeException("The resource path of query into a return values must point ot the collection value");
+                        }
+                    }
+                }
+                value = unprocessedValue.process(unprocessedDataSource, this);
+                name = queryReturnUnprocessedValue.getAlias();
+            }
+            if(name != null) {
+                result = new AbstractMap.SimpleEntry<String, Object>(name, value);
+            }
+            return result;
+        }
     }
 
     /**

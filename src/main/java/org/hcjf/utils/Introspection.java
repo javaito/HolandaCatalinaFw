@@ -1,6 +1,7 @@
 package org.hcjf.utils;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.names.Naming;
 import org.hcjf.service.security.LazyPermission;
 import org.hcjf.service.security.Permission;
@@ -59,7 +60,12 @@ public final class Introspection {
      * @return Copy of the map instance and all the collections referencies into the copy are a copy too.
      */
     private static Map<String,Object> deepCopyMap(Map<String,Object> map) {
-        Map<String,Object> copy = new HashMap<>();
+        Map<String,Object> copy;
+        if(map instanceof JoinableMap) {
+            copy = new JoinableMap();
+        } else {
+            copy = new HashMap<>();
+        }
 
         for(String key : map.keySet()) {
             Object value = map.get(key);
