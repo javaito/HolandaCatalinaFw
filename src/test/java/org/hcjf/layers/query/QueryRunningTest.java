@@ -733,6 +733,10 @@ public class QueryRunningTest {
         query = Query.compile("select (SELECT name, lastName FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT name, lastName FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
         resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        query = Query.compile("select (SELECT name as nombre, lastName FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT name, lastName FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test

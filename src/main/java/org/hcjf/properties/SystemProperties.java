@@ -289,6 +289,7 @@ public final class SystemProperties extends Properties {
             public static final String BODY_FIELD = "hcjf.net.http.rest.body.field";
             public static final String QUERY_FIELD = "hcjf.net.http.rest.query.field";
             public static final String QUERIES_FIELD = "hcjf.net.http.rest.queries.field";
+            public static final String DATA_SOURCE_FIELD = "hcjf.net.http.rest.data.source.field";
         }
 
     }
@@ -737,6 +738,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Rest.BODY_FIELD, "_body");
         defaults.put(Net.Rest.QUERY_FIELD, "_query");
         defaults.put(Net.Rest.QUERIES_FIELD, "_queries");
+        defaults.put(Net.Rest.DATA_SOURCE_FIELD, "_dataSource");
 
         defaults.put(ProcessDiscovery.LOG_TAG, "PROCESS_DISCOVERY");
         defaults.put(ProcessDiscovery.SERVICE_NAME, "Process Discovery Service");

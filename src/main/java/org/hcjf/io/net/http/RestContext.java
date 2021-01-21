@@ -114,13 +114,22 @@ public class RestContext extends Context {
             if(requestModel.getBody() == null) {
                 // If the method is post and the body object is null then the request attempt to create a parameterized
                 // query instance or a group of queryable instances.
+                Queryable.DataSource dataSource = requestModel.getDataSource();
                 if(requestModel.getQueryable() != null) {
-                    jsonElement = gson.toJsonTree(Query.evaluate(requestModel.getQueryable()));
+                    if(dataSource == null) {
+                        jsonElement = gson.toJsonTree(Query.evaluate(requestModel.getQueryable()));
+                    } else {
+                        jsonElement = gson.toJsonTree(requestModel.getQueryable().evaluate(dataSource));
+                    }
                 } else if(requestModel.getQueryables() != null){
                     JsonObject queriesResult = new JsonObject();
                     for(String key : requestModel.getQueryables().keySet()) {
                         try {
-                            queriesResult.add(key, gson.toJsonTree(Query.evaluate(requestModel.getQueryables().get(key))));
+                            if(dataSource == null) {
+                                queriesResult.add(key, gson.toJsonTree(Query.evaluate(requestModel.getQueryables().get(key))));
+                            } else {
+                                queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(dataSource)));
+                            }
                         } catch (Throwable throwable){
                             queriesResult.add(key, createJsonFromThrowable(throwable));
                         }
@@ -245,6 +254,7 @@ public class RestContext extends Context {
         private Queryable queryable;
         private Map<String,Queryable> queryables;
         private Map<String,Object> requestConfig;
+        private Queryable.DataSource<Object> dataSource;
 
         public RequestModel(JsonArray jsonArray) {
             body = JsonUtils.createList(jsonArray);
@@ -269,6 +279,34 @@ public class RestContext extends Context {
                     for (String key : queryablesObject.keySet()) {
                         queryables.put(key, createQuery(queryablesObject.get(key)));
                     }
+                }
+
+                if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD))) {
+                    Map<String, Object> rawDataSources = (Map<String, Object>)
+                            JsonUtils.createObject(jsonObject.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD));
+
+                    Map<String,Object> dataSourcesMap = new HashMap<>();
+                    for(String dataSourceName : rawDataSources.keySet()) {
+                        Object dataSource = rawDataSources.get(dataSourceName);
+                        if(dataSource instanceof String) {
+                            Queryable queryable = Query.compile((String) dataSource);
+                            dataSourcesMap.put(dataSourceName, Query.evaluate(queryable));
+                        } else if(dataSource instanceof List) {
+                            dataSourcesMap.put(dataSourceName, dataSource);
+                        } else if(dataSource instanceof Map) {
+                            List list = new ArrayList();
+                            list.add(dataSource);
+                            dataSourcesMap.put(dataSourceName, list);
+                        }
+                    }
+
+                    dataSource = queryable -> {
+                        if(dataSourcesMap.containsKey(queryable.getResourceName())) {
+                            return (Collection<Object>) dataSourcesMap.get(queryable.getResourceName());
+                        } else {
+                            throw new HCJFRuntimeException("Data source not found: %s", queryable.getResourceName());
+                        }
+                    };
                 }
             }
         }
@@ -317,6 +355,10 @@ public class RestContext extends Context {
          */
         public Map<String, Queryable> getQueryables() {
             return queryables;
+        }
+
+        public Queryable.DataSource<Object> getDataSource() {
+            return dataSource;
         }
     }
 }

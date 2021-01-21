@@ -615,11 +615,15 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 //If the parameter class is the QueryReturnParameter.class then the result will be a
                 //QueryReturnFunction.class instance or QueryReturnField.class instance.
                 String alias = null;
+
+                List<String> subGroups = Strings.replaceableGroup(originalValue);
+                originalValue = subGroups.get(subGroups.size() - 1);
                 String[] parts = originalValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
                 if(parts.length == 3) {
                     originalValue = parts[0].trim();
                     alias = parts[2].trim();
                 }
+                originalValue = Strings.reverseGrouping(originalValue, subGroups);
 
                 if(function) {
                     result = new QueryReturnFunction(query, originalValue, functionName, functionParameters, alias);
