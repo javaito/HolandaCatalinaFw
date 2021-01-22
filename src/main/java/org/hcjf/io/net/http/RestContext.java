@@ -136,7 +136,8 @@ public class RestContext extends Context {
                         }
                     }
                     for(String key : requestModel.getPointers().keySet()) {
-                        queriesResult.add(key, gson.toJsonTree(requestModel.getDataSourcesMap().get(key)));
+                        String value = requestModel.getPointers().get(key);
+                        queriesResult.add(key, gson.toJsonTree(requestModel.getDataSourcesMap().get(value)));
                     }
                     jsonElement = queriesResult;
                 } else {
