@@ -29,6 +29,7 @@ public class RestContext extends Context {
         private static final String VALUE_FIELD = "value";
         private static final String PARAMS_FIELD = "params";
         private static final String ID_URL_FIELD = "id";
+        private static final String POINTER_PREFIX = "$";
         private static final String REQUEST_CONFIG = "__request_config";
         private static final String DATE_FORMAT_CONFIG = "dateFormat";
         private static class Throwable {
@@ -133,6 +134,9 @@ public class RestContext extends Context {
                         } catch (Throwable throwable){
                             queriesResult.add(key, createJsonFromThrowable(throwable));
                         }
+                    }
+                    for(String key : requestModel.getPointers().keySet()) {
+                        queriesResult.add(key, gson.toJsonTree(requestModel.getDataSourcesMap().get(key)));
                     }
                     jsonElement = queriesResult;
                 } else {
@@ -253,7 +257,9 @@ public class RestContext extends Context {
         private Object body;
         private Queryable queryable;
         private Map<String,Queryable> queryables;
+        private Map<String,String> pointers;
         private Map<String,Object> requestConfig;
+        private Map<String,Object> dataSourcesMap;
         private Queryable.DataSource<Object> dataSource;
 
         public RequestModel(JsonArray jsonArray) {
@@ -270,22 +276,29 @@ public class RestContext extends Context {
                 }
 
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD))) {
-                    queryable = createQuery(jsonObject.get(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)));
+                    queryable = (Queryable) createQuery(jsonObject.get(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)));
                 }
 
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD))) {
+                    pointers = new HashMap<>();
                     queryables = new HashMap<>();
                     JsonObject queryablesObject = jsonObject.getAsJsonObject(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD));
                     for (String key : queryablesObject.keySet()) {
-                        queryables.put(key, createQuery(queryablesObject.get(key)));
+                        Object query = createQuery(queryablesObject.get(key));
+                        if(query instanceof Queryable) {
+                            queryables.put(key, (Queryable) query);
+                        } else {
+                            pointers.put(key, (String) query);
+                        }
                     }
                 }
 
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD))) {
                     Map<String, Object> rawDataSources = (Map<String, Object>)
-                            JsonUtils.createObject(jsonObject.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD));
+                            JsonUtils.createObject(jsonObject.get(
+                                    SystemProperties.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD)));
 
-                    Map<String,Object> dataSourcesMap = new HashMap<>();
+                    dataSourcesMap = new HashMap<>();
                     for(String dataSourceName : rawDataSources.keySet()) {
                         Object dataSource = rawDataSources.get(dataSourceName);
                         if(dataSource instanceof String) {
@@ -316,8 +329,8 @@ public class RestContext extends Context {
          * @param element Json element instance.
          * @return Returns the queriable instance.
          */
-        private Queryable createQuery(JsonElement element) {
-            Queryable result;
+        private Object createQuery(JsonElement element) {
+            Object result;
             if(element instanceof JsonObject) {
                 JsonObject queryJsonObject = element.getAsJsonObject();
                 ParameterizedQuery parameterizedQuery = Query.compile(queryJsonObject.get(Fields.VALUE_FIELD).getAsString()).getParameterizedQuery();
@@ -328,7 +341,12 @@ public class RestContext extends Context {
                 }
                 result = parameterizedQuery;
             } else {
-                result = Query.compile(element.getAsString());
+                String value = element.getAsString();
+                if(value.startsWith(Fields.POINTER_PREFIX)) {
+                    result = value.substring(Fields.POINTER_PREFIX.length());
+                } else {
+                    result = Query.compile(element.getAsString());
+                }
             }
             return result;
         }
@@ -355,6 +373,14 @@ public class RestContext extends Context {
          */
         public Map<String, Queryable> getQueryables() {
             return queryables;
+        }
+
+        public Map<String, String> getPointers() {
+            return pointers;
+        }
+
+        public Map<String, Object> getDataSourcesMap() {
+            return dataSourcesMap;
         }
 
         public Queryable.DataSource<Object> getDataSource() {
