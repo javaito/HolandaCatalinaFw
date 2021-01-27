@@ -722,8 +722,12 @@ public class QueryRunningTest {
 
     @Test
     public void disjoint() {
-        Query query = Query.compile("SELECT * FROM character DISJOINT BY lastName");
+        Query query = Query.compile("SELECT name FROM character DISJOINT BY lastName");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM character DISJOINT BY lastName");
+        resultSet = query.evaluate(dataSource);
         System.out.println();
 
         query = Query.compile("select (SELECT count() FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT count() FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");

@@ -645,8 +645,6 @@ public class Query extends EvaluatorCollection implements Queryable {
                                 enlargedObject = ((Enlarged) object).clone(returnParametersAsArray.toArray(new String[]{}));
                             }
                             object = (O) enlargedObject;
-                            String name;
-                            Object value;
                             for (QueryReturnParameter returnParameter : getReturnParameters()) {
                                 Map.Entry<String,Object> entry =
                                         consumer.resolveQueryReturnParameter(returnParameter, object, dataSource);
@@ -660,12 +658,14 @@ public class Query extends EvaluatorCollection implements Queryable {
                         if (!groupParameters.isEmpty() && (object instanceof Groupable || isDisjoint())) {
                             hashCode = new StringBuilder();
                             Object groupValue;
+                            Map<String,Object> groupKeyValues = new HashMap<>();
                             for (QueryReturnParameter returnParameter : groupParameters) {
                                 if (returnParameter instanceof QueryReturnField) {
                                     groupValue = consumer.get(object, ((QueryReturnField) returnParameter), dataSource);
                                 } else {
                                     groupValue = consumer.resolveFunction(((QueryReturnFunction) returnParameter), object, dataSource);
                                 }
+                                groupKeyValues.put(returnParameter.getAlias(), groupValue);
                                 hashCode.append(groupValue);
                             }
                             if(isDisjoint()) {
@@ -675,8 +675,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                                 } else {
                                     resultSet = new ArrayList<>();
                                     JoinableMap disjointMap = new JoinableMap();
+                                    disjointMap.putAll(groupKeyValues);
                                     disjointMap.put(DISJOINT_RESULT_SET, resultSet);
                                     disjointResultSets.put(hashCode.toString(), disjointMap);
+                                }
+                                if(object instanceof Enlarged && !returnAll) {
+                                    ((Enlarged)object).purge();
                                 }
                                 resultSet.add(object);
                             } else {
@@ -712,7 +716,8 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             }
 
-            if(result.size() > 0 && result.iterator().next() instanceof Enlarged && !returnAll) {
+            if(result.size() > 0 && result.iterator().next() instanceof Enlarged
+                    && !returnAll && !isDisjoint()) {
                 result.forEach(O -> ((Enlarged)O).purge());
             }
 
