@@ -145,10 +145,14 @@ public abstract class BaseEvaluator implements Evaluator {
 
         private final Query query;
         private final Boolean rawValue;
+        private Boolean cachedResult;
+        private Object cache;
 
         public QueryValue(Query query, Boolean rawValue) {
             this.query = query;
             this.rawValue = rawValue;
+            this.cachedResult = false;
+            this.cache = null;
         }
 
         /**
@@ -176,30 +180,35 @@ public abstract class BaseEvaluator implements Evaluator {
             if(rawValue) {
                 result = query.evaluate(dataSource, consumer);
             } else {
-                Collection subQueryResult = query.evaluate(new Queryable.ReadableDataSource(), consumer);
-                if (query.getReturnParameters().size() == 1) {
-                    QueryReturnParameter queryReturnParameter = query.getReturnParameters().get(0);
-                    List<Object> listResult = new ArrayList<>();
-                    for (Object element : subQueryResult) {
-                        Object value = Introspection.resolve(element, queryReturnParameter.getAlias());
-                        if(value != null) {
-                            listResult.add(value);
+                if(cachedResult) {
+                    Collection subQueryResult = query.evaluate(new Queryable.ReadableDataSource(), consumer);
+                    if (query.getReturnParameters().size() == 1) {
+                        QueryReturnParameter queryReturnParameter = query.getReturnParameters().get(0);
+                        List<Object> listResult = new ArrayList<>();
+                        for (Object element : subQueryResult) {
+                            Object value = Introspection.resolve(element, queryReturnParameter.getAlias());
+                            if (value != null) {
+                                listResult.add(value);
+                            }
                         }
+                        collection = listResult;
+                    } else {
+                        collection = subQueryResult;
                     }
-                    collection = listResult;
-                } else {
-                    collection = subQueryResult;
-                }
 
-                if (collection.size() == 0) {
-                    //If the size of the collection result is zero then the result will be null.
-                    result = null;
-                } else if (collection.size() == 1) {
-                    //If the size of the collection result is one then the result will be the unique instance of the collection.
-                    result = collection.iterator().next();
+                    if (collection.size() == 0) {
+                        //If the size of the collection result is zero then the result will be null.
+                        result = null;
+                    } else if (collection.size() == 1) {
+                        //If the size of the collection result is one then the result will be the unique instance of the collection.
+                        result = collection.iterator().next();
+                    } else {
+                        //If the size of the collection result is greater than one then the result is the collection.
+                        result = collection;
+                    }
+                    cache = result;
                 } else {
-                    //If the size of the collection result is greater than one then the result is the collection.
-                    result = collection;
+                    result = cache;
                 }
             }
 
