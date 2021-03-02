@@ -889,6 +889,21 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testParenthesesIntoStrings() {
+        Query query = Query.compile("select indexOf('9393939(9:00)','(') as suerte from '{}' as data");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select replace('9393939(9:00)','(','8') as suerte from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select split('9393939(9:00)','\\(') as suerte from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void arithmeticTest() {
         Query query = Query.compile("SELECT * FROM (SELECT *, getMillisecondUnixEpoch(now()), getMillisecondUnixEpoch(birthday), getMillisecondUnixEpoch(now()) - getMillisecondUnixEpoch(birthday) as ageMillis FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson') as ch WHERE weight > 16");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);

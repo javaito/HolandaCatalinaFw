@@ -441,8 +441,12 @@ public final class Strings {
      * @return List with all the groups.
      */
     public static List<String> group(String value, String startGroupCharacter, String endGroupCharacter) {
-        Set<Integer> startIndexes = allIndexOf(value, startGroupCharacter);
-        Set<Integer> endIndexes = allIndexOf(value, endGroupCharacter);
+        List<String> richTexts = Strings.groupRichText(value);
+        String safetyValue = richTexts.get(richTexts.size() - 1);
+        //Using the las value of the rich text list we assure that the start and end characters into the strings
+        //be discarded of the group calculation.
+        Set<Integer> startIndexes = allIndexOf(safetyValue, startGroupCharacter);
+        Set<Integer> endIndexes = allIndexOf(safetyValue, endGroupCharacter);
 
         if(startIndexes.size() != endIndexes.size()) {
             throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
