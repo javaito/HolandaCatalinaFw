@@ -217,7 +217,9 @@ public interface Queryable extends BsonParcelable {
                         } else {
                             value = get((O) instance, ((QueryParameter) currentParameter), dataSource);
                             if(value != null && value.equals(Strings.ALL)) {
-                                parameterValues.add(instance);
+                                Map<String,Object> copy = new HashMap<>();
+                                copy.putAll(Introspection.toMap(instance));
+                                parameterValues.add(copy);
                             } else{
                                 parameterValues.add(value);
                             }

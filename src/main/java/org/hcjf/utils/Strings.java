@@ -452,7 +452,10 @@ public final class Strings {
             throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
         }
 
-        return group(value, startIndexes, endIndexes);
+        List<String> groups = group(safetyValue, startIndexes, endIndexes);
+        List<String> result = new ArrayList<>();
+        groups.stream().forEach(G -> result.add(reverseRichTextGrouping(G, richTexts)));
+        return result;
     }
 
     /**
@@ -559,12 +562,14 @@ public final class Strings {
      */
     public static String reverseRichTextGrouping(String value, List<String> richTextGroups) {
         String result = value;
-        String groupIndex = Strings.getGroupIndex(result, REPLACEABLE_RICH_TEXT);
+        String copy = value;
+        String groupIndex = Strings.getGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         Integer index;
         while(groupIndex != null) {
             index = Integer.parseInt(groupIndex.replace(REPLACEABLE_RICH_TEXT, EMPTY_STRING));
             result = result.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), wrap(richTextGroups.get(index), Strings.RICH_TEXT_SEPARATOR));
-            groupIndex = Strings.getGroupIndex(result, REPLACEABLE_RICH_TEXT);
+            copy = copy.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), Strings.EMPTY_STRING);
+            groupIndex = Strings.getGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         }
         return result;
     }

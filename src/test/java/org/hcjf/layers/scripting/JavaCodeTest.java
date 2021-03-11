@@ -12,12 +12,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class JavaCodeTest {
 
-    @Test(timeout = 10000)
+    @Test
     public void test() {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
         String script = "" +
                 "System.out.printf(\"Esto tiene el campo 2 '%s', y esta es la iteración '%d'\", parameters.get(\"field2\"), parameters.get(\"iteration\"));" +
                 "result.put(\"date\", new Date());";
+
+        Long totalTime = System.currentTimeMillis();
         for (int i = 0; i < 10; i++) {
             int index = i;
             Service.run(() -> {
@@ -35,9 +37,10 @@ public class JavaCodeTest {
                 System.out.println("Total time: " + (System.currentTimeMillis() - time));
                 System.out.println();
                 System.out.println("**************************");
+                System.out.println();
             }, ServiceSession.getSystemSession(), true, Long.MAX_VALUE);
         }
-        System.out.println();
+        System.out.println("Total time: " + (System.currentTimeMillis() - totalTime));
     }
 
     @Test

@@ -42,14 +42,14 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
     private static final String ERR_FIELD = "_error";
     private static final String WAITING_VM_TIME_FIELD = "_waitingVmTime";
     private static final String EVAL_TIME_FIELD = "_evalTime";
-    private static final Integer DEFAULT_CACHE_SIZE = 1;
+    private static final Integer DEFAULT_CACHE_SIZE = 10;
     private static final Long DEFAULT_EVAL_TIMEOUT = 5000L;
 
     private final Queue<JShellInstance> cache;
 
     public JavaCodeEvaluator() {
         this.cache = new LinkedList<>();
-        Integer size = SystemProperties.getInteger(SystemProperties.CodeEvaluator.JAVA_CACHE_SIZE, DEFAULT_CACHE_SIZE);
+        Integer size = SystemProperties.getInteger(SystemProperties.CodeEvaluator.Java.JAVA_CACHE_SIZE, DEFAULT_CACHE_SIZE);
         for (int i = 0; i < size; i++) {
             cache.offer(new JShellInstance());
         }
@@ -84,7 +84,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
         }
 
         Boolean killShell = false;
-        Long timeout = SystemProperties.getLong(SystemProperties.CodeEvaluator.JAVA_CACHE_TIMEOUT, DEFAULT_EVAL_TIMEOUT);
+        Long timeout = SystemProperties.getLong(SystemProperties.CodeEvaluator.Java.JAVA_CACHE_TIMEOUT, DEFAULT_EVAL_TIMEOUT);
         try {
             Map<String,Object> result = Service.call(() -> jShellInstance.evaluate(script, parameters),
                     ServiceSession.getCurrentIdentity(), timeout);

@@ -784,9 +784,32 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void test() {
+        Query query = Query.compile("select store.dynamic.ccu.checkout.id as chkOutId, data1.planilla as planilla, store.dynamic.ccu.checkout.patente as patente, store.dynamic.ccu.checkout.patente as GPS, \n" +
+                "dateFormat(store.dynamic.ccu.checkout.enteredDate,'America/Santiago','dd/MM/yyyy HH:mm:ss') as horario, \n" +
+                "if(store.dynamic.ccu.checkout.plateManualEntry,'##keyboard','##camera') as ingresoPatente, \n" +
+                "if(store.dynamic.ccu.checkout.planningManualEntry,'##keyboard','##camera') as ingresoPlanilla,\n" +
+                "if(size(store.dynamic.ccu.checkout.photoIds)>0,'##image','') as Foto,\n" +
+                "if(isNull(data.name),data.loginCode,if(equals(data.name,''),data.loginCode,data.name)) as loginCode, \n" +
+                "data1.codCamion as codCamion, data1.codCarga as codCarga, data1.centroDistribucion as CD, \n" +
+                "if(isNotNull(data1.checkInDate),dateFormat(data1.checkInDate,'America/Santiago','dd/MM/yyyy HH:mm:ss'),'') as ingreso, checkInDate,checkOutDate \n" +
+                "from store.dynamic.ccu.checkout left join (select name, loginCode from store.dynamic.ccu.device.profile) as data on store.dynamic.ccu.checkout.loginCode = data.loginCode \n" +
+                "join (select planilla, centroDistribucion, codCarga, codCamion, checkOutDate, checkInDate from store.dynamic.ccu.planilla where rollbackDate=null and centroDistribucion = 0 and _creationDate >= '' \n" +
+                "and _creationDate < toDate(plusDays('',1))) as data1 on store.dynamic.ccu.checkout.planilla = data1.planilla \n" +
+                "where store.dynamic.ccu.checkout._creationDate >= '' and store.dynamic.ccu.checkout._creationDate < toDate(plusDays('',1)) \n" +
+                "and store.dynamic.ccu.checkout.centroDistribucion = 1 order by store.dynamic.ccu.checkout._creationDate desc");
+
+        System.out.println();
+    }
+
+    @Test
     public void newObjectTest() {
-        Query query = Query.compile("SELECT newMap('key', 'value', 'name', name) as var FROM character");
+        Query query = Query.compile("SELECT newMap('value', *) as var FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT newMap('key', 'value', 'name', name) as var FROM character");
+        resultSet = query.evaluate(dataSource);
         for(JoinableMap map : resultSet) {
             Assert.assertTrue(Introspection.resolve(map, "var") instanceof Map);
         }
