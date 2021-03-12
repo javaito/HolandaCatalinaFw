@@ -3,10 +3,12 @@ package org.hcjf.layers.scripting;
 import org.hcjf.layers.Layers;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.Introspection;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,7 +30,8 @@ public class JavaCodeTest {
                 parameters.put("field2", "Hola mundo!");
                 parameters.put("iteration", index);
                 Long time = System.currentTimeMillis();
-                Map<String,Object> result = codeEvaluator.evaluate(script, parameters);
+                ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
+                Map<String,Object> result = executionResult.getResult();
                 System.out.println(result.get("date"));
                 System.out.println(result.get("_out"));
                 System.out.println(result.get("_error"));
@@ -58,7 +61,8 @@ public class JavaCodeTest {
                 parameters.put("field2", "Hola mundo!");
                 parameters.put("iteration", index);
                 Long time = System.currentTimeMillis();
-                Map<String,Object> result = codeEvaluator.evaluate(script, parameters);
+                ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
+                Map<String,Object> result = executionResult.getResult();
                 System.out.println(result.get("date"));
                 System.out.println(result.get("_out"));
                 System.out.println(result.get("_error"));
@@ -84,7 +88,7 @@ public class JavaCodeTest {
         String script = "Thread.sleep(20000);";
         Map<String,Object> parameters = new HashMap<>();
         try {
-            Map<String, Object> result = codeEvaluator.evaluate(script, parameters);
+            ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
             Assert.fail();
         } catch (Exception ex) {
             Assert.assertTrue(true);
@@ -96,11 +100,32 @@ public class JavaCodeTest {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
         String script = "asdfasdfasdf";
         Map<String,Object> parameters = new HashMap<>();
-        try {
-            Map<String, Object> result = codeEvaluator.evaluate(script, parameters);
-            Assert.fail();
-        } catch (Exception ex) {
+        ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
+        if(executionResult.isExecutionFailed()) {
+            List<String> diagnostics = Introspection.resolve(executionResult.getResult(), "_diagnostics");
+            diagnostics.forEach(System.out::println);
             Assert.assertTrue(true);
+        } else {
+            Assert.fail();
         }
     }
+
+    @Test
+    public void testMaps() {
+        String script =
+                "Map<String,Object> agent = Introspection.resolve(assignment, \"agent\");" +
+                "Number value = Introspection.resolve(agent, \"value\");" +
+                "Double cost = -1 * value.doubleValue();" +
+                "result.put(\"cost\", cost);";
+        Map<String, Object> parameters = new HashMap<>();
+        Map<String, Object> assignment = new HashMap<>();
+        Map<String, Object> agent = new HashMap<>();
+        agent.put("value", 1);
+        assignment.put("agent", agent);
+        parameters.put("assignment", assignment);
+        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
+        parameters = codeEvaluator.evaluate(script, parameters).getResult();
+        System.out.println(Introspection.resolve(parameters, "cost").toString());
+    }
+
 }

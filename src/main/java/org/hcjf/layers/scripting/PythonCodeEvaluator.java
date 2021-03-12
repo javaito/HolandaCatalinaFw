@@ -1,7 +1,6 @@
 package org.hcjf.layers.scripting;
 
 import org.hcjf.layers.Layer;
-import org.hcjf.service.ServiceSession;
 
 import java.util.Map;
 
@@ -14,7 +13,7 @@ public class PythonCodeEvaluator extends Layer implements CodeEvaluator {
      * @return Returns a map with the result model of evaluate script.
      */
     @Override
-    public Map<String, Object> evaluate(String script, Map<String, Object> parameters) {
+    public ExecutionResult evaluate(String script, Map<String, Object> parameters) {
 
 //        ServiceSession.getCurrentIdentity().
 

@@ -6,7 +6,6 @@ import jdk.jshell.SnippetEvent;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
-import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.errors.HCJFServiceTimeoutException;
 import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
@@ -40,6 +39,9 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
     private static final String OVERRIDE_BSON_RESULT_LINE = "_bsonResult = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(result)));";
     private static final String OUT_FIELD = "_out";
     private static final String ERR_FIELD = "_error";
+    private static final String DIAGNOSTICS_FIELD = "_diagnostics";
+    private static final String START_DIAGNOSTIC_ERROR = "-->";
+    private static final String END_DIAGNOSTIC_ERROR = "<--";
     private static final String WAITING_VM_TIME_FIELD = "_waitingVmTime";
     private static final String EVAL_TIME_FIELD = "_evalTime";
     private static final Integer DEFAULT_CACHE_SIZE = 10;
@@ -68,7 +70,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
      * @return Model as result of the script evaluation.
      */
     @Override
-    public Map<String,Object> evaluate(String script, Map<String, Object> parameters) {
+    public ExecutionResult evaluate(String script, Map<String, Object> parameters) {
         JShellInstance jShellInstance;
         Long waitingVmTime = System.currentTimeMillis();
         synchronized (cache) {
@@ -86,9 +88,9 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
         Boolean killShell = false;
         Long timeout = SystemProperties.getLong(SystemProperties.CodeEvaluator.Java.JAVA_CACHE_TIMEOUT, DEFAULT_EVAL_TIMEOUT);
         try {
-            Map<String,Object> result = Service.call(() -> jShellInstance.evaluate(script, parameters),
+            ExecutionResult result = Service.call(() -> jShellInstance.evaluate(script, parameters),
                     ServiceSession.getCurrentIdentity(), timeout);
-            result.put(WAITING_VM_TIME_FIELD, waitingVmTime);
+            result.getResult().put(WAITING_VM_TIME_FIELD, waitingVmTime);
             return result;
         } catch (HCJFServiceTimeoutException ex) {
             killShell = true;
@@ -133,9 +135,11 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             jShell.eval(CREATE_BSON_RESULT_LINE);
         }
 
-        public Map<String,Object> evaluate(String script, Map<String, Object> parameters) {
+        public ExecutionResult evaluate(String script, Map<String, Object> parameters) {
+            Boolean fail = false;
             Long time = System.currentTimeMillis();
             String bson = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(parameters)));
+            List<String> diagnosticsList = new ArrayList<>();
             List<SnippetEvent> snippets = new ArrayList<>();
             StringBuilder codeLines = new StringBuilder();
             codeLines.append(String.format(OVERRIDE_PARAMETERS_LINE, bson));
@@ -148,19 +152,43 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             snippets.addAll(jShell.eval(codeLines.toString()));
             for(SnippetEvent snippetEvent : snippets) {
                 if(!snippetEvent.status().equals(Snippet.Status.VALID)) {
-                    throw new HCJFRuntimeException("Invalid code, status: %s", snippetEvent.status());
+                    fail = true;
+                    jShell.diagnostics(snippetEvent.snippet()).forEach(D -> {
+                        StringBuilder sourceBuilder = new StringBuilder();
+                        snippets.stream().forEach(S -> sourceBuilder.append(S.snippet().source()));
+                        StringBuilder builder = new StringBuilder();
+                        String source = sourceBuilder.toString();
+                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                        builder.append(snippetEvent.status().toString());
+                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                        builder.append(D.getMessage(Locale.getDefault()));
+                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                        builder.append(source, 0, (int)D.getStartPosition());
+                        builder.append(START_DIAGNOSTIC_ERROR);
+                        builder.append(source, (int)D.getStartPosition(), (int)D.getEndPosition());
+                        builder.append(END_DIAGNOSTIC_ERROR);
+                        builder.append(source.substring((int)D.getEndPosition()));
+                        diagnosticsList.add(builder.toString());
+                    });
                 }
             }
-            String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(BSON_RESULT_VAR_NAME)).findFirst().get());
-            bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
-            Map<String,Object> result = BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap();
+            Map<String,Object> result = new HashMap<>();
+            if(!fail) {
+                String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(BSON_RESULT_VAR_NAME)).findFirst().get());
+                bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
+                result.putAll(BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap());
+            }
             result.put(OUT_FIELD, outStream.toString());
             result.put(ERR_FIELD, errorStream.toString());
+            result.put(DIAGNOSTICS_FIELD, diagnosticsList);
             result.put(EVAL_TIME_FIELD, System.currentTimeMillis() - time);
+            ExecutionResult executionResult = new ExecutionResult(fail ? ExecutionResult.State.FAIL : ExecutionResult.State.SUCCESS);
+            executionResult.setResult(result);
             snippets.forEach(S -> jShell.drop(S.snippet()));
             outStream.reset();
             errorStream.reset();
-            return result;
+            return executionResult;
         }
 
         public void kill() {
@@ -169,4 +197,5 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
         }
 
     }
+
 }

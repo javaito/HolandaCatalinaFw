@@ -15,6 +15,6 @@ public interface CodeEvaluator extends LayerInterface {
      * @param parameters Parameters object.
      * @return Returns a map with the result model of evaluate script.
      */
-    Map<String,Object> evaluate(String script, Map<String,Object> parameters);
+    ExecutionResult evaluate(String script, Map<String,Object> parameters);
 
 }

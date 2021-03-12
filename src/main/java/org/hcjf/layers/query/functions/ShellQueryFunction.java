@@ -3,6 +3,7 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.errors.HCJFRemoteException;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.scripting.CodeEvaluator;
+import org.hcjf.layers.scripting.ExecutionResult;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,8 +54,8 @@ public class ShellQueryFunction extends BaseQueryFunctionLayer {
         }
 
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, functionName);
-        Map<String,Object> result = codeEvaluator.evaluate(String.format(STATEMENT_PATTERN, script), parametersMap);
-        return result.get(RESULT_VAR);
+        ExecutionResult result = codeEvaluator.evaluate(String.format(STATEMENT_PATTERN, script), parametersMap);
+        return result.getResult().get(RESULT_VAR);
     }
 
 }
