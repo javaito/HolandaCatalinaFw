@@ -1,5 +1,6 @@
 package org.hcjf.layers.scripting;
 
+import jdk.jshell.ImportSnippet;
 import jdk.jshell.JShell;
 import jdk.jshell.Snippet;
 import jdk.jshell.SnippetEvent;
@@ -130,9 +131,6 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             for(String i : imports) {
                 jShell.eval(i);
             }
-            jShell.eval(CREATE_PARAMETERS_LINE);
-            jShell.eval(CREATE_RESULT_LINE);
-            jShell.eval(CREATE_BSON_RESULT_LINE);
         }
 
         public ExecutionResult evaluate(String script, Map<String, Object> parameters) {
@@ -142,58 +140,69 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             List<String> diagnosticsList = new ArrayList<>();
             List<SnippetEvent> snippets = new ArrayList<>();
             StringBuilder codeLines = new StringBuilder();
-            codeLines.append(String.format(OVERRIDE_PARAMETERS_LINE, bson));
-            codeLines.append(OVERRIDE_RESULT_LINE);
-            for(String key : parameters.keySet()) {
-                codeLines.append(String.format(CREATE_VAR_STATEMENT, key, key));
-            }
-            codeLines.append(String.format(SCRIPT_STATEMENT, script));
-            codeLines.append(OVERRIDE_BSON_RESULT_LINE);
-            snippets.addAll(jShell.eval(codeLines.toString()));
-            for(SnippetEvent snippetEvent : snippets) {
-                if(!snippetEvent.status().equals(Snippet.Status.VALID)) {
-                    fail = true;
-                    jShell.diagnostics(snippetEvent.snippet()).forEach(D -> {
-                        StringBuilder sourceBuilder = new StringBuilder();
-                        snippets.stream().forEach(S -> sourceBuilder.append(S.snippet().source()));
-                        StringBuilder builder = new StringBuilder();
-                        String source = sourceBuilder.toString();
-                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                        builder.append(snippetEvent.status().toString());
-                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                        builder.append(D.getMessage(Locale.getDefault()));
-                        builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                        builder.append(source, 0, (int)D.getStartPosition());
-                        builder.append(START_DIAGNOSTIC_ERROR);
-                        builder.append(source, (int)D.getStartPosition(), (int)D.getEndPosition());
-                        builder.append(END_DIAGNOSTIC_ERROR);
-                        builder.append(source.substring((int)D.getEndPosition()));
-                        diagnosticsList.add(builder.toString());
-                    });
+            try {
+                codeLines.append(String.format(OVERRIDE_PARAMETERS_LINE, bson));
+                codeLines.append(OVERRIDE_RESULT_LINE);
+                for (String key : parameters.keySet()) {
+                    codeLines.append(String.format(CREATE_VAR_STATEMENT, key, key));
                 }
+                codeLines.append(String.format(SCRIPT_STATEMENT, script));
+                codeLines.append(OVERRIDE_BSON_RESULT_LINE);
+
+                jShell.eval(CREATE_PARAMETERS_LINE);
+                jShell.eval(CREATE_RESULT_LINE);
+                jShell.eval(CREATE_BSON_RESULT_LINE);
+
+                snippets.addAll(jShell.eval(codeLines.toString()));
+                for (SnippetEvent snippetEvent : snippets) {
+                    if (!snippetEvent.status().equals(Snippet.Status.VALID)) {
+                        fail = true;
+                        jShell.diagnostics(snippetEvent.snippet()).forEach(D -> {
+                            StringBuilder sourceBuilder = new StringBuilder();
+                            snippets.stream().forEach(S -> sourceBuilder.append(S.snippet().source()));
+                            StringBuilder builder = new StringBuilder();
+                            String source = sourceBuilder.toString();
+                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                            builder.append(snippetEvent.status().toString());
+                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                            builder.append(D.getMessage(Locale.getDefault()));
+                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                            builder.append(source, 0, (int) D.getStartPosition());
+                            builder.append(START_DIAGNOSTIC_ERROR);
+                            builder.append(source, (int) D.getStartPosition(), (int) D.getEndPosition());
+                            builder.append(END_DIAGNOSTIC_ERROR);
+                            builder.append(source.substring((int) D.getEndPosition()));
+                            diagnosticsList.add(builder.toString());
+                        });
+                    }
+                }
+                Map<String, Object> result = new HashMap<>();
+                if (!fail) {
+                    String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(BSON_RESULT_VAR_NAME)).findFirst().get());
+                    bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
+                    result.putAll(BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap());
+                }
+                result.put(OUT_FIELD, outStream.toString());
+                result.put(ERR_FIELD, errorStream.toString());
+                result.put(DIAGNOSTICS_FIELD, diagnosticsList);
+                result.put(EVAL_TIME_FIELD, System.currentTimeMillis() - time);
+                ExecutionResult executionResult = new ExecutionResult(fail ? ExecutionResult.State.FAIL : ExecutionResult.State.SUCCESS);
+                executionResult.setResult(result);
+                return executionResult;
+            } finally {
+                jShell.snippets().forEach(S -> {
+                    if(!(S instanceof ImportSnippet)) {
+                        jShell.drop(S).stream().forEach(E -> System.out.println(E.status().toString()));
+                    }
+                });
+                outStream.reset();
+                errorStream.reset();
             }
-            Map<String,Object> result = new HashMap<>();
-            if(!fail) {
-                String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(BSON_RESULT_VAR_NAME)).findFirst().get());
-                bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
-                result.putAll(BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap());
-            }
-            result.put(OUT_FIELD, outStream.toString());
-            result.put(ERR_FIELD, errorStream.toString());
-            result.put(DIAGNOSTICS_FIELD, diagnosticsList);
-            result.put(EVAL_TIME_FIELD, System.currentTimeMillis() - time);
-            ExecutionResult executionResult = new ExecutionResult(fail ? ExecutionResult.State.FAIL : ExecutionResult.State.SUCCESS);
-            executionResult.setResult(result);
-            snippets.forEach(S -> jShell.drop(S.snippet()));
-            outStream.reset();
-            errorStream.reset();
-            return executionResult;
         }
 
         public void kill() {
             jShell.close();
-            System.out.println();
         }
 
     }
