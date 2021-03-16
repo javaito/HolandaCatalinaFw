@@ -207,6 +207,7 @@ public abstract class BaseEvaluator implements Evaluator {
                         result = collection;
                     }
                     cache = result;
+                    cachedResult = true;
                 } else {
                     result = cache;
                 }
