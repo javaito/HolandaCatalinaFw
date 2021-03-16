@@ -180,7 +180,7 @@ public abstract class BaseEvaluator implements Evaluator {
             if(rawValue) {
                 result = query.evaluate(dataSource, consumer);
             } else {
-                if(cachedResult) {
+                if(!cachedResult) {
                     Collection subQueryResult = query.evaluate(new Queryable.ReadableDataSource(), consumer);
                     if (query.getReturnParameters().size() == 1) {
                         QueryReturnParameter queryReturnParameter = query.getReturnParameters().get(0);
