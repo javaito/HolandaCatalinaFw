@@ -19,7 +19,9 @@ public class JavaCodeTest {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
         String script = "" +
                 "System.out.printf(\"Esto tiene el campo 2 '%s', y esta es la iteración '%d'\", parameters.get(\"field2\"), parameters.get(\"iteration\"));" +
-                "result.put(\"date\", new Date());";
+                "Integer iteration = Introspection.resolve(parameters, \"iteration\");" +
+                "parameters.put(\"newIteration\", iteration * 100);" +
+                "return new Date();";
 
         Long totalTime = System.currentTimeMillis();
         for (int i = 0; i < 10; i++) {
@@ -31,12 +33,14 @@ public class JavaCodeTest {
                 parameters.put("iteration", index);
                 Long time = System.currentTimeMillis();
                 ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
-                Map<String,Object> result = executionResult.getResult();
-                System.out.println(result.get("date"));
-                System.out.println(result.get("_out"));
-                System.out.println(result.get("_error"));
-                System.out.println("Eval time: " + result.get("_evalTime"));
-                System.out.println("Waiting vm time: " + result.get("_waitingVmTime"));
+                Map<String,Object> resultParameters = executionResult.getResultParameters();
+                Assert.assertEquals(Introspection.resolve(resultParameters, "newIteration"), Integer.valueOf(index * 100));
+                Map<String,Object> resultState = executionResult.getResultState();
+                System.out.println(resultState.get("date"));
+                System.out.println(resultState.get("_out"));
+                System.out.println(resultState.get("_error"));
+                System.out.println("Eval time: " + resultState.get("_evalTime"));
+                System.out.println("Waiting vm time: " + resultState.get("_waitingVmTime"));
                 System.out.println("Total time: " + (System.currentTimeMillis() - time));
                 System.out.println();
                 System.out.println("**************************");
@@ -51,7 +55,9 @@ public class JavaCodeTest {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
         String script = "" +
                 "System.out.printf(\"Esto tiene el campo 2 '%s', y esta es la iteración '%d'\", parameters.get(\"field2\"), parameters.get(\"iteration\"));" +
-                "result.put(\"date\", new Date());";
+                "Integer iteration = Introspection.resolve(parameters, \"iteration\");" +
+                "parameters.put(\"newIteration\", iteration * 100);" +
+                "return new Date();";
         AtomicInteger counter = new AtomicInteger();
         for (int i = 0; i < 10; i++) {
             int index = i;
@@ -62,7 +68,7 @@ public class JavaCodeTest {
                 parameters.put("iteration", index);
                 Long time = System.currentTimeMillis();
                 ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
-                Map<String,Object> result = executionResult.getResult();
+                Map<String,Object> result = executionResult.getResultState();
                 System.out.println(result.get("date"));
                 System.out.println(result.get("_out"));
                 System.out.println(result.get("_error"));
@@ -85,7 +91,7 @@ public class JavaCodeTest {
     @Test(timeout = 10000)
     public void testTimeout() {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
-        String script = "Thread.sleep(20000);";
+        String script = "Thread.sleep(20000);return null;";
         Map<String,Object> parameters = new HashMap<>();
         try {
             ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
@@ -102,7 +108,7 @@ public class JavaCodeTest {
         Map<String,Object> parameters = new HashMap<>();
         ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
         if(executionResult.isExecutionFailed()) {
-            List<String> diagnostics = Introspection.resolve(executionResult.getResult(), "_diagnostics");
+            List<String> diagnostics = Introspection.resolve(executionResult.getResultState(), "_diagnostics");
             diagnostics.forEach(System.out::println);
             Assert.assertTrue(true);
         } else {
@@ -113,19 +119,23 @@ public class JavaCodeTest {
     @Test
     public void testMaps() {
         String script =
+                "Map<String,Object> assignment = Introspection.resolve(parameters, \"assignment\");" +
                 "Map<String,Object> agent = Introspection.resolve(assignment, \"agent\");" +
                 "Number value = Introspection.resolve(agent, \"value\");" +
                 "Double cost = -1 * value.doubleValue();" +
-                "result.put(\"cost\", cost);";
+                "return cost;";
         Map<String, Object> parameters = new HashMap<>();
         Map<String, Object> assignment = new HashMap<>();
         Map<String, Object> agent = new HashMap<>();
-        agent.put("value", 1);
         assignment.put("agent", agent);
         parameters.put("assignment", assignment);
-        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
-        parameters = codeEvaluator.evaluate(script, parameters).getResult();
-        System.out.println(Introspection.resolve(parameters, "cost").toString());
+        for (int i = 0; i < 10; i++) {
+            agent.put("value", i);
+            CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
+            ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
+            executionResult.getResultState();
+            System.out.println(executionResult.getResult().toString());
+        }
     }
 
 }

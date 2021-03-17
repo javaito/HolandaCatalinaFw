@@ -13,8 +13,7 @@ import java.util.Map;
 public class ShellQueryFunction extends BaseQueryFunctionLayer {
 
     private static final String PARAMETER_PATTERN = "_p%d";
-    private static final String STATEMENT_PATTERN = "result.put(\"_r\", %s);";
-    private static final String RESULT_VAR = "_r";
+    private static final String STATEMENT_PATTERN = "return %s";
 
     private static final class Functions {
         private static final String JAVA = "java";
@@ -55,7 +54,7 @@ public class ShellQueryFunction extends BaseQueryFunctionLayer {
 
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, functionName);
         ExecutionResult result = codeEvaluator.evaluate(String.format(STATEMENT_PATTERN, script), parametersMap);
-        return result.getResult().get(RESULT_VAR);
+        return result.getResult();
     }
 
 }

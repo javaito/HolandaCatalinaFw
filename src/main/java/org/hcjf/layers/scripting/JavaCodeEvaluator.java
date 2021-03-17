@@ -29,15 +29,13 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             "import org.hcjf.bson.*;"
     };
 
-    private static final String SCRIPT_STATEMENT = "%s\r\n";
-    private static final String BSON_RESULT_VAR_NAME = "_bsonResult";
-    private static final String CREATE_VAR_STATEMENT = "var %s = parameters.get(\"%s\");\r\n";
-    private static final String CREATE_PARAMETERS_LINE = "Map<String,Object> parameters = new HashMap<>(parameters);";
-    private static final String CREATE_RESULT_LINE = "Map<String,Object> result = new HashMap<>(parameters);";
-    private static final String CREATE_BSON_RESULT_LINE = "String _bsonResult = \"\";";
-    private static final String OVERRIDE_PARAMETERS_LINE = "parameters = BsonDecoder.decode(Strings.hexToBytes(\"%s\")).toMap();\r\n";
-    private static final String OVERRIDE_RESULT_LINE = "result = new HashMap<>(parameters);\r\n";
-    private static final String OVERRIDE_BSON_RESULT_LINE = "_bsonResult = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(result)));";
+    private static final String METHOD_WRAPPER = "public Object method_%s(Map<String,Object> parameters) throws Exception {%s}";
+    private static final String CREATE_PARAMETERS = "Map<String,Object> var_%s = BsonDecoder.decode(Strings.hexToBytes(\"%s\")).toMap();";
+    private static final String CALL_METHOD = "var_%s.put(\"_result\", method_%s(var_%s));";
+    private static final String CREATE_BSON_RESULT = "String _var_%s = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(var_%s)));";
+    private static final String BSON_RESULT = "_var_%s";
+    private static final String RESULT = "_result";
+
     private static final String OUT_FIELD = "_out";
     private static final String ERR_FIELD = "_error";
     private static final String DIAGNOSTICS_FIELD = "_diagnostics";
@@ -91,7 +89,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
         try {
             ExecutionResult result = Service.call(() -> jShellInstance.evaluate(script, parameters),
                     ServiceSession.getCurrentIdentity(), timeout);
-            result.getResult().put(WAITING_VM_TIME_FIELD, waitingVmTime);
+            result.getResultState().put(WAITING_VM_TIME_FIELD, waitingVmTime);
             return result;
         } catch (HCJFServiceTimeoutException ex) {
             killShell = true;
@@ -133,27 +131,39 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             }
         }
 
+        private List<SnippetEvent> createMethod(String executionId, String script) {
+            String method = String.format(METHOD_WRAPPER, executionId, script);
+            return jShell.eval(method);
+        }
+
+        private List<SnippetEvent> createParameters(String executionId, String bson) {
+            String parameters = String.format(CREATE_PARAMETERS, executionId, bson);
+            return jShell.eval(parameters);
+        }
+
+        private List<SnippetEvent> call(String executionId) {
+            String call = String.format(CALL_METHOD, executionId, executionId, executionId);
+            return jShell.eval(call);
+        }
+
+        private List<SnippetEvent> createBsonResult(String executionId) {
+            String call = String.format(CREATE_BSON_RESULT, executionId, executionId, executionId);
+            return jShell.eval(call);
+        }
+
         public ExecutionResult evaluate(String script, Map<String, Object> parameters) {
             Boolean fail = false;
             Long time = System.currentTimeMillis();
             String bson = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(parameters)));
             List<String> diagnosticsList = new ArrayList<>();
             List<SnippetEvent> snippets = new ArrayList<>();
-            StringBuilder codeLines = new StringBuilder();
             try {
-                codeLines.append(String.format(OVERRIDE_PARAMETERS_LINE, bson));
-                codeLines.append(OVERRIDE_RESULT_LINE);
-                for (String key : parameters.keySet()) {
-                    codeLines.append(String.format(CREATE_VAR_STATEMENT, key, key));
-                }
-                codeLines.append(String.format(SCRIPT_STATEMENT, script));
-                codeLines.append(OVERRIDE_BSON_RESULT_LINE);
+                String executionId = UUID.randomUUID().toString().replace("-", "_");
+                snippets.addAll(createMethod(executionId, script));
+                snippets.addAll(createParameters(executionId, bson));
+                snippets.addAll(call(executionId));
+                snippets.addAll(createBsonResult(executionId));
 
-                jShell.eval(CREATE_PARAMETERS_LINE);
-                jShell.eval(CREATE_RESULT_LINE);
-                jShell.eval(CREATE_BSON_RESULT_LINE);
-
-                snippets.addAll(jShell.eval(codeLines.toString()));
                 for (SnippetEvent snippetEvent : snippets) {
                     if (!snippetEvent.status().equals(Snippet.Status.VALID)) {
                         fail = true;
@@ -177,23 +187,25 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
                         });
                     }
                 }
-                Map<String, Object> result = new HashMap<>();
+                Map<String,Object> resultParameters = new HashMap<>();
+                Map<String, Object> resultState = new HashMap<>();
                 if (!fail) {
-                    String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(BSON_RESULT_VAR_NAME)).findFirst().get());
+                    String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(String.format(BSON_RESULT, executionId))).findFirst().get());
                     bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
-                    result.putAll(BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap());
+                    resultParameters.putAll(BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap());
                 }
-                result.put(OUT_FIELD, outStream.toString());
-                result.put(ERR_FIELD, errorStream.toString());
-                result.put(DIAGNOSTICS_FIELD, diagnosticsList);
-                result.put(EVAL_TIME_FIELD, System.currentTimeMillis() - time);
-                ExecutionResult executionResult = new ExecutionResult(fail ? ExecutionResult.State.FAIL : ExecutionResult.State.SUCCESS);
-                executionResult.setResult(result);
+                resultState.put(OUT_FIELD, outStream.toString());
+                resultState.put(ERR_FIELD, errorStream.toString());
+                resultState.put(DIAGNOSTICS_FIELD, diagnosticsList);
+                resultState.put(EVAL_TIME_FIELD, System.currentTimeMillis() - time);
+                ExecutionResult executionResult = new ExecutionResult(
+                        fail ? ExecutionResult.State.FAIL : ExecutionResult.State.SUCCESS,
+                        resultState, resultParameters, resultParameters.remove(RESULT));
                 return executionResult;
             } finally {
                 jShell.snippets().forEach(S -> {
                     if(!(S instanceof ImportSnippet)) {
-                        jShell.drop(S).stream().forEach(E -> System.out.println(E.status().toString()));
+                        jShell.drop(S);
                     }
                 });
                 outStream.reset();

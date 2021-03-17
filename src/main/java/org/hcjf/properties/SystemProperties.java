@@ -589,7 +589,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Collector.CLOUD_SAVE_MODE, "false");
         defaults.put(Collector.CLOUD_TIMER_TASK_NAME, "CollectorsFlushCycle");
 
-        defaults.put(CodeEvaluator.Java.JAVA_CACHE_SIZE, "3");
+        defaults.put(CodeEvaluator.Java.JAVA_CACHE_SIZE, "5");
         defaults.put(CodeEvaluator.Java.JAVA_CACHE_TIMEOUT, "5000");
 
         defaults.put(Cryptography.KEY,"71324dccdb58966a04507b0fe2008632940b87c6dc5cea5f4bdf0d0089524c8e");
