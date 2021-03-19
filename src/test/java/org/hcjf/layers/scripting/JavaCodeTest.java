@@ -104,7 +104,7 @@ public class JavaCodeTest {
     @Test
     public void testInvalidCode() {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
-        String script = "asdfasdfasdf";
+        String script = "System.out.println()";
         Map<String,Object> parameters = new HashMap<>();
         ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
         if(executionResult.isExecutionFailed()) {

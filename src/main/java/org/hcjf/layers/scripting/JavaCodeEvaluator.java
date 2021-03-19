@@ -1,6 +1,5 @@
 package org.hcjf.layers.scripting;
 
-import jdk.jshell.ImportSnippet;
 import jdk.jshell.JShell;
 import jdk.jshell.Snippet;
 import jdk.jshell.SnippetEvent;
@@ -12,6 +11,7 @@ import org.hcjf.layers.Layer;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.LruMap;
 import org.hcjf.utils.Strings;
 
 import java.io.ByteArrayOutputStream;
@@ -19,8 +19,6 @@ import java.io.PrintStream;
 import java.util.*;
 
 public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
-
-    private static final String NAME = "java";
 
     private static final String CLASS_PATH_PROPERTY = "java.class.path";
     private static final String[] imports = {
@@ -30,9 +28,11 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
     };
 
     private static final String METHOD_WRAPPER = "public Object method_%s(Map<String,Object> parameters) throws Exception {%s}";
-    private static final String CREATE_PARAMETERS = "Map<String,Object> var_%s = BsonDecoder.decode(Strings.hexToBytes(\"%s\")).toMap();";
+    private static final String CREATE_PARAMETERS = "Map<String,Object> var_%s = BsonDecoder.decode(Strings.hexToBytes(bson)).toMap();";
     private static final String CALL_METHOD = "var_%s.put(\"_result\", method_%s(var_%s));";
-    private static final String CREATE_BSON_RESULT = "String _var_%s = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(var_%s)));";
+    private static final String CREATE_BSON_RESULT = "return Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(var_%s)));";
+    private static final String CREATE_RESULT_METHOD = "public String createResult_%s(String bson) throws Exception {%s\r\n%s\r\n%s\r\n}";
+    private static final String CALL_RESULT_METHOD = "String _var_%s = createResult_%s(\"%s\");";
     private static final String BSON_RESULT = "_var_%s";
     private static final String RESULT = "_result";
 
@@ -43,22 +43,20 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
     private static final String END_DIAGNOSTIC_ERROR = "<--";
     private static final String WAITING_VM_TIME_FIELD = "_waitingVmTime";
     private static final String EVAL_TIME_FIELD = "_evalTime";
-    private static final Integer DEFAULT_CACHE_SIZE = 10;
-    private static final Long DEFAULT_EVAL_TIMEOUT = 5000L;
 
-    private final Queue<JShellInstance> cache;
+    private final Queue<JShellInstance> pool;
 
     public JavaCodeEvaluator() {
-        this.cache = new LinkedList<>();
-        Integer size = SystemProperties.getInteger(SystemProperties.CodeEvaluator.Java.JAVA_CACHE_SIZE, DEFAULT_CACHE_SIZE);
+        this.pool = new LinkedList<>();
+        Integer size = SystemProperties.getInteger(SystemProperties.CodeEvaluator.Java.J_SHELL_POOL_SIZE);
         for (int i = 0; i < size; i++) {
-            cache.offer(new JShellInstance());
+            pool.offer(new JShellInstance());
         }
     }
 
     @Override
     public String getImplName() {
-        return NAME;
+        return SystemProperties.get(SystemProperties.CodeEvaluator.Java.IMPL_NAME);
     }
 
     /**
@@ -72,20 +70,20 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
     public ExecutionResult evaluate(String script, Map<String, Object> parameters) {
         JShellInstance jShellInstance;
         Long waitingVmTime = System.currentTimeMillis();
-        synchronized (cache) {
-            while (cache.isEmpty()) {
+        synchronized (pool) {
+            while (pool.isEmpty()) {
                 try {
-                    cache.wait();
+                    pool.wait();
                 } catch (InterruptedException e) {
                     break;
                 }
             }
-            jShellInstance = cache.remove();
+            jShellInstance = pool.remove();
             waitingVmTime = System.currentTimeMillis() - waitingVmTime;
         }
 
         Boolean killShell = false;
-        Long timeout = SystemProperties.getLong(SystemProperties.CodeEvaluator.Java.JAVA_CACHE_TIMEOUT, DEFAULT_EVAL_TIMEOUT);
+        Long timeout = SystemProperties.getLong(SystemProperties.CodeEvaluator.Java.J_SHELL_INSTANCE_TIMEOUT);
         try {
             ExecutionResult result = Service.call(() -> jShellInstance.evaluate(script, parameters),
                     ServiceSession.getCurrentIdentity(), timeout);
@@ -95,25 +93,51 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             killShell = true;
             throw ex;
         } finally {
-            synchronized (cache) {
+            synchronized (pool) {
                 if(killShell) {
                     jShellInstance.kill();
-                    cache.offer(new JShellInstance());
+                    pool.offer(new JShellInstance());
                 } else {
-                    cache.offer(jShellInstance);
+                    pool.offer(jShellInstance);
                 }
-                cache.notifyAll();
+                pool.notifyAll();
             }
         }
     }
 
-    private static class JShellInstance {
+    private static class JShellScript {
+
+        private final String id;
+        private final String script;
+        private final List<SnippetEvent> snippetEvents;
+
+        public JShellScript(String id, String script, List<SnippetEvent> snippetEvents) {
+            this.id = id;
+            this.script = script;
+            this.snippetEvents = snippetEvents;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getScript() {
+            return script;
+        }
+
+        public List<SnippetEvent> getSnippetEvents() {
+            return snippetEvents;
+        }
+    }
+
+    private static class JShellInstance implements LruMap.RemoveOverflowListener {
 
         private JShell jShell;
         private ByteArrayOutputStream outStream;
         private ByteArrayOutputStream errorStream;
         private PrintStream out;
         private PrintStream error;
+        private LruMap<String,JShellScript> scriptCache;
 
         public JShellInstance() {
             init();
@@ -129,25 +153,24 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             for(String i : imports) {
                 jShell.eval(i);
             }
+            scriptCache = new LruMap<>(SystemProperties.getInteger(SystemProperties.CodeEvaluator.Java.SCRIPT_CACHE_SIZE));
         }
 
-        private List<SnippetEvent> createMethod(String executionId, String script) {
-            String method = String.format(METHOD_WRAPPER, executionId, script);
+        private List<SnippetEvent> createMethod(String scriptId, String script) {
+            String method = String.format(METHOD_WRAPPER, scriptId, script);
             return jShell.eval(method);
         }
 
-        private List<SnippetEvent> createParameters(String executionId, String bson) {
-            String parameters = String.format(CREATE_PARAMETERS, executionId, bson);
-            return jShell.eval(parameters);
+        private List<SnippetEvent> createResultMethod(String scriptId) {
+            String resultMethod = String.format(CREATE_RESULT_METHOD, scriptId,
+                    String.format(CREATE_PARAMETERS, scriptId),
+                    String.format(CALL_METHOD, scriptId, scriptId, scriptId),
+                    String.format(CREATE_BSON_RESULT, scriptId, scriptId, scriptId));
+            return jShell.eval(resultMethod);
         }
 
-        private List<SnippetEvent> call(String executionId) {
-            String call = String.format(CALL_METHOD, executionId, executionId, executionId);
-            return jShell.eval(call);
-        }
-
-        private List<SnippetEvent> createBsonResult(String executionId) {
-            String call = String.format(CREATE_BSON_RESULT, executionId, executionId, executionId);
+        private List<SnippetEvent> call(String scriptId, String bson) {
+            String call = String.format(CALL_RESULT_METHOD, scriptId, scriptId, bson);
             return jShell.eval(call);
         }
 
@@ -156,41 +179,49 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             Long time = System.currentTimeMillis();
             String bson = Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(parameters)));
             List<String> diagnosticsList = new ArrayList<>();
-            List<SnippetEvent> snippets = new ArrayList<>();
             try {
-                String executionId = UUID.randomUUID().toString().replace("-", "_");
-                snippets.addAll(createMethod(executionId, script));
-                snippets.addAll(createParameters(executionId, bson));
-                snippets.addAll(call(executionId));
-                snippets.addAll(createBsonResult(executionId));
-
-                for (SnippetEvent snippetEvent : snippets) {
-                    if (!snippetEvent.status().equals(Snippet.Status.VALID)) {
-                        fail = true;
-                        jShell.diagnostics(snippetEvent.snippet()).forEach(D -> {
-                            StringBuilder sourceBuilder = new StringBuilder();
-                            snippets.stream().forEach(S -> sourceBuilder.append(S.snippet().source()));
-                            StringBuilder builder = new StringBuilder();
-                            String source = sourceBuilder.toString();
-                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                            builder.append(snippetEvent.status().toString());
-                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                            builder.append(D.getMessage(Locale.getDefault()));
-                            builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
-                            builder.append(source, 0, (int) D.getStartPosition());
-                            builder.append(START_DIAGNOSTIC_ERROR);
-                            builder.append(source, (int) D.getStartPosition(), (int) D.getEndPosition());
-                            builder.append(END_DIAGNOSTIC_ERROR);
-                            builder.append(source.substring((int) D.getEndPosition()));
-                            diagnosticsList.add(builder.toString());
-                        });
+                JShellScript jShellScript = scriptCache.get(script);
+                String scriptId;
+                List<SnippetEvent> scriptSnippets = new ArrayList<>();
+                if(jShellScript == null) {
+                    scriptId = UUID.randomUUID().toString().replace("-", "_");
+                    scriptSnippets.addAll(createMethod(scriptId, script));
+                    for (SnippetEvent snippetEvent : scriptSnippets) {
+                        if (!snippetEvent.status().equals(Snippet.Status.VALID)) {
+                            fail = true;
+                            jShell.diagnostics(snippetEvent.snippet()).forEach(D -> {
+                                StringBuilder sourceBuilder = new StringBuilder();
+                                scriptSnippets.stream().forEach(S -> sourceBuilder.append(S.snippet().source()));
+                                StringBuilder builder = new StringBuilder();
+                                String source = sourceBuilder.toString();
+                                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                                builder.append(snippetEvent.status().toString());
+                                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                                builder.append(D.getMessage(Locale.getDefault()));
+                                builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
+                                builder.append(source, 0, (int) D.getStartPosition());
+                                builder.append(START_DIAGNOSTIC_ERROR);
+                                builder.append(source, (int) D.getStartPosition(), (int) D.getEndPosition());
+                                builder.append(END_DIAGNOSTIC_ERROR);
+                                builder.append(source.substring((int) D.getEndPosition()));
+                                diagnosticsList.add(builder.toString());
+                            });
+                        }
                     }
+                    if(!fail) {
+                        scriptSnippets.addAll(createResultMethod(scriptId));
+                        scriptCache.put(script, new JShellScript(scriptId, script, scriptSnippets));
+                    }
+                } else {
+                    scriptId = jShellScript.getId();
                 }
+
                 Map<String,Object> resultParameters = new HashMap<>();
                 Map<String, Object> resultState = new HashMap<>();
                 if (!fail) {
-                    String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(String.format(BSON_RESULT, executionId))).findFirst().get());
+                    call(scriptId, bson);
+                    String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(String.format(BSON_RESULT, scriptId))).findFirst().get());
                     bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
                     resultParameters.putAll(BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap());
                 }
@@ -203,14 +234,15 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
                         resultState, resultParameters, resultParameters.remove(RESULT));
                 return executionResult;
             } finally {
-                jShell.snippets().forEach(S -> {
-                    if(!(S instanceof ImportSnippet)) {
-                        jShell.drop(S);
-                    }
-                });
                 outStream.reset();
                 errorStream.reset();
             }
+        }
+
+        @Override
+        public synchronized void onRemove(Object key, Object value) {
+            JShellScript jShellScript = (JShellScript) value;
+            jShellScript.getSnippetEvents().stream().forEach(E -> jShell.drop(E.snippet()));
         }
 
         public void kill() {

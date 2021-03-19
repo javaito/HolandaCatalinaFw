@@ -284,7 +284,7 @@ public class LruMap<K extends Object, V extends Object> implements Map<K,V> {
      * @param <K> Expected key data type.
      * @param <V> Expected value data type.
      */
-    interface RemoveOverflowListener<K extends Object, V extends Object> {
+    public interface RemoveOverflowListener<K extends Object, V extends Object> {
 
         void onRemove(K key, V value);
 

@@ -91,8 +91,9 @@ public final class SystemProperties extends Properties {
 
         public static final class Java {
             public static final String IMPL_NAME = "hcjf.code.evaluator.java.impl.name";
-            public static final String JAVA_CACHE_SIZE = "hcjf.code.evaluator.java.cache.size";
-            public static final String JAVA_CACHE_TIMEOUT = "hcjf.code.evaluator.java.cache.timeout";
+            public static final String J_SHELL_POOL_SIZE = "hcjf.code.evaluator.java.j.shell.pool.size";
+            public static final String J_SHELL_INSTANCE_TIMEOUT = "hcjf.code.evaluator.java.j.shell.instance.timeout";
+            public static final String SCRIPT_CACHE_SIZE = "hcjf.code.evaluator.java.script.cache.size";
         }
 
         public static final class Python {
@@ -589,8 +590,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Collector.CLOUD_SAVE_MODE, "false");
         defaults.put(Collector.CLOUD_TIMER_TASK_NAME, "CollectorsFlushCycle");
 
-        defaults.put(CodeEvaluator.Java.JAVA_CACHE_SIZE, "5");
-        defaults.put(CodeEvaluator.Java.JAVA_CACHE_TIMEOUT, "5000");
+        defaults.put(CodeEvaluator.Java.IMPL_NAME, "java");
+        defaults.put(CodeEvaluator.Java.J_SHELL_POOL_SIZE, "5");
+        defaults.put(CodeEvaluator.Java.J_SHELL_INSTANCE_TIMEOUT, "5000");
+        defaults.put(CodeEvaluator.Java.SCRIPT_CACHE_SIZE, "10");
 
         defaults.put(Cryptography.KEY,"71324dccdb58966a04507b0fe2008632940b87c6dc5cea5f4bdf0d0089524c8e");
         defaults.put(Cryptography.ALGORITHM,"AES");
