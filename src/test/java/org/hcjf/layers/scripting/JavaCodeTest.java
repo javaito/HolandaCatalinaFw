@@ -24,7 +24,7 @@ public class JavaCodeTest {
                 "return new Date();";
 
         Long totalTime = System.currentTimeMillis();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10; i++) {
             int index = i;
             Service.run(() -> {
                 Map<String,Object> parameters = new HashMap<>();
