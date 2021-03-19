@@ -32,9 +32,9 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
     private static final String CALL_METHOD = "var_%s.put(\"_result\", method_%s(var_%s));";
     private static final String CREATE_BSON_RESULT = "return Strings.bytesToHex(BsonEncoder.encode(new BsonDocument(var_%s)));";
     private static final String CREATE_RESULT_METHOD = "public String createResult_%s(String bson) throws Exception {%s\r\n%s\r\n%s\r\n}";
-    private static final String CALL_RESULT_METHOD = "String _var_%s = createResult_%s(\"%s\");";
-    private static final String BSON_RESULT = "_var_%s";
+    private static final String CALL_RESULT_METHOD = "System.out.print(\">>>>\" + createResult_%s(\"%s\"));";
     private static final String RESULT = "_result";
+    private static final String BSON_POINTER = ">>>>";
 
     private static final String OUT_FIELD = "_out";
     private static final String ERR_FIELD = "_error";
@@ -170,7 +170,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
         }
 
         private List<SnippetEvent> call(String scriptId, String bson) {
-            String call = String.format(CALL_RESULT_METHOD, scriptId, scriptId, bson);
+            String call = String.format(CALL_RESULT_METHOD, scriptId, bson);
             return jShell.eval(call);
         }
 
@@ -221,8 +221,9 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
                 Map<String, Object> resultState = new HashMap<>();
                 if (!fail) {
                     call(scriptId, bson);
-                    String bsonResult = jShell.varValue(jShell.variables().filter(V -> V.name().equals(String.format(BSON_RESULT, scriptId))).findFirst().get());
-                    bsonResult = bsonResult.replace("\"", Strings.EMPTY_STRING);
+                    String bsonResult = outStream.toString();
+                    Integer lastIndex = bsonResult.lastIndexOf(BSON_POINTER);
+                    bsonResult = bsonResult.substring(lastIndex + BSON_POINTER.length());
                     resultParameters.putAll(BsonDecoder.decode(Strings.hexToBytes(bsonResult)).toMap());
                 }
                 resultState.put(OUT_FIELD, outStream.toString());
