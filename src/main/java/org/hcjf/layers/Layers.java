@@ -13,6 +13,7 @@ import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
+import org.hcjf.layers.scripting.JsCodeEvaluator;
 import org.hcjf.layers.scripting.JavaCodeEvaluator;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
@@ -60,6 +61,7 @@ public final class Layers {
 
         //Publish a code evaluator implementations
         Layers.publishLayer(JavaCodeEvaluator.class);
+        Layers.publishLayer(JsCodeEvaluator.class);
     }
 
     private final Map<Class<? extends Layer>, Object> initialInstances;

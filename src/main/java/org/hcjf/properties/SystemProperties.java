@@ -99,6 +99,10 @@ public final class SystemProperties extends Properties {
         public static final class Python {
             public static final String IMPL_NAME = "hcjf.code.evaluator.python.impl.name";
         }
+
+        public static final class Js {
+            public static final String IMPL_NAME = "hcjf.code.evaluator.js.impl.name";
+        }
     }
 
     public static final class Cryptography{
@@ -594,6 +598,8 @@ public final class SystemProperties extends Properties {
         defaults.put(CodeEvaluator.Java.J_SHELL_POOL_SIZE, "5");
         defaults.put(CodeEvaluator.Java.J_SHELL_INSTANCE_TIMEOUT, "5000");
         defaults.put(CodeEvaluator.Java.SCRIPT_CACHE_SIZE, "10");
+
+        defaults.put(CodeEvaluator.Js.IMPL_NAME, "js");
 
         defaults.put(Cryptography.KEY,"71324dccdb58966a04507b0fe2008632940b87c6dc5cea5f4bdf0d0089524c8e");
         defaults.put(Cryptography.ALGORITHM,"AES");
