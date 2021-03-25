@@ -1,11 +1,11 @@
 package org.hcjf.layers.scripting;
 
 import org.hcjf.layers.Layers;
+import org.hcjf.utils.Introspection;
+import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class JsCodeTest {
 
@@ -53,4 +53,31 @@ public class JsCodeTest {
         ExecutionResult result = codeEvaluator.evaluate(script, parameters);
         System.out.println(result.getResult().toString());
     }
+
+    @Test
+    public void testMapWithList() {
+        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "js");
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("name", "javier");
+        parameters.put("age", 40);
+        parameters.put("date", new Date());
+        List<String> list = new ArrayList<>();
+        list.add("item1");
+        list.add("item2");
+        parameters.put("map", Map.of("lastName", "quiroga", "list", list));
+
+        String script =
+                "print(name);" +
+                        "print(age);" +
+                        "print(date);" +
+                        "print(map);" +
+                        "print(map.list);" +
+                        "map.list = [...map.list, 'item3'];" +
+                        "return map;";
+        ExecutionResult result = codeEvaluator.evaluate(script, parameters);
+        List<Object> resultList = Introspection.resolve(result.getResult(), "list");
+        Assert.assertEquals(resultList.size(), 3);
+        System.out.println("Result into java context: " + result.getResult().toString());
+    }
 }
+

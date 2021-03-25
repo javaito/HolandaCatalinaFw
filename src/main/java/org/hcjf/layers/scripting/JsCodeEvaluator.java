@@ -58,11 +58,40 @@ public class JsCodeEvaluator extends Layer implements CodeEvaluator{
     public Object getParameterInstance(String parameterName, Map<String,Object> parameters) {
         Object result = parameters.get(parameterName);
         if(result instanceof Map) {
-            result = ProxyObject.fromMap((Map<String, Object>) result);
+            result = getProxyObjectFromMap((Map<String, Object>) result);
         } else if(result instanceof Collection) {
-            result = ProxyArray.fromList(Arrays.asList(((Collection)result).toArray()));
+            result = getProxyArrayFromCollection((Collection<Object>) result);
         }
         return result;
+    }
+
+    public ProxyObject getProxyObjectFromMap(Map<String,Object> map) {
+        Map<String,Object> mapCopy = new HashMap<>();
+        for(String key : map.keySet()) {
+            Object value = map.get(key);
+            if(value instanceof Map) {
+                mapCopy.put(key, getProxyObjectFromMap((Map<String, Object>) value));
+            } else if(value instanceof Collection) {
+                mapCopy.put(key, getProxyArrayFromCollection((Collection<Object>) value));
+            } else {
+                mapCopy.put(key, value);
+            }
+        }
+        return ProxyObject.fromMap(mapCopy);
+    }
+
+    public ProxyArray getProxyArrayFromCollection(Collection<Object> collection) {
+        List<Object> collectionCopy = new ArrayList<>();
+        for(Object value : collection) {
+            if(value instanceof Map) {
+                collectionCopy.add(getProxyObjectFromMap((Map<String, Object>) value));
+            } else if(value instanceof Collection) {
+                collectionCopy.add(getProxyArrayFromCollection((Collection<Object>) value));
+            } else {
+                collectionCopy.add(value);
+            }
+        }
+        return ProxyArray.fromList(collectionCopy);
     }
 
     /**
@@ -74,6 +103,13 @@ public class JsCodeEvaluator extends Layer implements CodeEvaluator{
         Object result = scriptResult;
         if(scriptResult instanceof Value) {
             result = getResultInstance((Value) result);
+        } else if(scriptResult instanceof ProxyArray) {
+            ProxyArray proxyArray = (ProxyArray) scriptResult;
+            Collection<Object> collection = new ArrayList<>();
+            for (long i = 0; i < proxyArray.getSize(); i++) {
+                collection.add(proxyArray.get(i));
+            }
+            result = collection;
         }
         return result;
     }
@@ -94,20 +130,38 @@ public class JsCodeEvaluator extends Layer implements CodeEvaluator{
         } else if(scriptResult.isNumber()) {
             result = scriptResult.asDouble();
         } else if(scriptResult.isProxyObject()) {
-            ProxyObject proxyObject = scriptResult.asProxyObject();
-            Map<String,Object> resultMap = new HashMap<>();
-            ProxyArray list = (ProxyArray) proxyObject.getMemberKeys();
-            for (long i = 0; i < list.getSize(); i++) {
-                String key = (String) list.get(i);
-                resultMap.put(key, getResultInstance(resultMap.get(key)));
+            Object proxy = scriptResult.asProxyObject();
+            if(proxy instanceof ProxyObject) {
+                ProxyObject proxyObject = (ProxyObject) proxy;
+                Map<String, Object> resultMap = new HashMap<>();
+                ProxyArray list = (ProxyArray) proxyObject.getMemberKeys();
+                for (long i = 0; i < list.getSize(); i++) {
+                    String key = (String) list.get(i);
+                    resultMap.put(key, getResultInstance(proxyObject.getMember(key)));
+                }
+                result = resultMap;
+            } else if(proxy instanceof ProxyArray) {
+                ProxyArray proxyArray = (ProxyArray) proxy;
+                Collection<Object> resultArray = new ArrayList<>();
+                for (long i = 0; i < proxyArray.getSize(); i++) {
+                    resultArray.add(proxyArray.get(i));
+                }
+                result = resultArray;
             }
-            result = resultMap;
         } else {
-            Map<String,Object> resultMap = new HashMap<>();
-            for(String key : scriptResult.getMemberKeys()) {
-                resultMap.put(key, getResultInstance(scriptResult.getMember(key)));
+            if(scriptResult.hasArrayElements()) {
+                Collection<Object> resultCollection = new ArrayList<>();
+                for (long i = 0; i < scriptResult.getArraySize(); i++) {
+                    resultCollection.add(getResultInstance(scriptResult.getArrayElement(i)));
+                }
+                result = resultCollection;
+            } else {
+                Map<String, Object> resultMap = new HashMap<>();
+                for (String key : scriptResult.getMemberKeys()) {
+                    resultMap.put(key, getResultInstance(scriptResult.getMember(key)));
+                }
+                result = resultMap;
             }
-            result = resultMap;
         }
         return result;
     }
