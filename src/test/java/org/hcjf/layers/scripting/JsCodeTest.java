@@ -61,10 +61,17 @@ public class JsCodeTest {
         parameters.put("name", "javier");
         parameters.put("age", 40);
         parameters.put("date", new Date());
+        Map<String,Object> innerMap = new HashMap<>();
+        innerMap.put("innerField1", "innerValue1");
+        Map<String,Object> innerMap2 = new HashMap<>();
+        innerMap2.put("innerField2", "innerValue2");
+        List<Map<String,Object>> listOfMaps = new ArrayList<>();
+        listOfMaps.add(innerMap);
+        listOfMaps.add(innerMap2);
         List<String> list = new ArrayList<>();
         list.add("item1");
         list.add("item2");
-        parameters.put("map", Map.of("lastName", "quiroga", "list", list));
+        parameters.put("map", Map.of("lastName", "quiroga", "list", list, "listOfMaps", listOfMaps));
 
         String script =
                 "print(name);" +
