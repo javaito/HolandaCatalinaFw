@@ -144,7 +144,17 @@ public interface Queryable extends BsonParcelable {
                 BaseEvaluator.UnprocessedValue unprocessedValue = queryReturnUnprocessedValue.getUnprocessedValue();
                 DataSource unprocessedDataSource = dataSource;
                 if(unprocessedValue instanceof BaseEvaluator.QueryValue) {
-                    String resourceName = ((BaseEvaluator.QueryValue)unprocessedValue).getQuery().getResource().getResourceName();
+                    BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) unprocessedValue;
+                    String resourceName = queryValue.getQuery().getResource().getResourceName();
+                    Map<String,Object> originalEnvironment = queryValue.getQuery().getEnvironment();
+                    Map<String,Object> newEnvironment;
+                    if(originalEnvironment != null) {
+                        newEnvironment = new HashMap<>(originalEnvironment);
+                    } else {
+                        newEnvironment = new HashMap<>();
+                    }
+                    newEnvironment.putAll(Introspection.toMap(instance));
+                    queryValue.getQuery().setEnvironment(newEnvironment);
                     Object dataset = Introspection.resolve(instance, resourceName);
                     if(dataset != null) {
                         if (dataset instanceof Collection) {
@@ -157,8 +167,11 @@ public interface Queryable extends BsonParcelable {
                             throw new HCJFRuntimeException("The resource path of query into a return values must point ot the collection value");
                         }
                     }
+                    value = unprocessedValue.process(unprocessedDataSource, this);
+                    queryValue.getQuery().setEnvironment(originalEnvironment);
+                } else {
+                    value = unprocessedValue.process(unprocessedDataSource, this);
                 }
-                value = unprocessedValue.process(unprocessedDataSource, this);
                 name = queryReturnUnprocessedValue.getAlias();
             }
             if(name != null) {

@@ -55,6 +55,33 @@ public class JsCodeTest {
     }
 
     @Test
+    public void testDeleteElementOfMap() {
+        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "js");
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("name", "javier");
+        parameters.put("age", 40);
+        parameters.put("date", new Date());
+        parameters.put("list", List.of(Map.of("middleName", "roman", "lastName", "quiroga"),
+                Map.of("middleName", "nicolas", "lastName", "quiroga")));
+
+        String script =
+                "print(name);" +
+                "print(age);" +
+                "print(date);" +
+                "print(list);" +
+                "var i;\n" +
+                "var newList = [];" +
+                "for (i = 0; i < list.length; i++) {\n" +
+                "  if(list[i].middleName != 'nicolas') {" +
+                "     newList = [...newList, list[i]]" +
+                "  }\n" +
+                "}" +
+                "return newList";
+        ExecutionResult result = codeEvaluator.evaluate(script, parameters);
+        System.out.println(result.getResult().toString());
+    }
+
+    @Test
     public void testMapWithList() {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "js");
         Map<String,Object> parameters = new HashMap<>();

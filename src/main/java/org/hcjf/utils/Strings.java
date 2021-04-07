@@ -125,6 +125,7 @@ public final class Strings {
     public static final String SLASH = "/";
     public static final String AT = "@";
     public static final String ALL = "*";
+    public static final String ARGUMENT_IDENTIFIER = "$";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
     public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]{1,}";

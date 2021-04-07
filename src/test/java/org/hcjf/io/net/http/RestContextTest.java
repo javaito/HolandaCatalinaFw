@@ -58,6 +58,11 @@ public class RestContextTest {
         }
 
         @Override
+        public Collection<Map<String, Object>> create(Collection<Map<String, Object>> objects) {
+            return objects;
+        }
+
+        @Override
         public Collection<Map<String, Object>> update(Queryable queryable, Map<String, Object> object) {
             return List.of();
         }

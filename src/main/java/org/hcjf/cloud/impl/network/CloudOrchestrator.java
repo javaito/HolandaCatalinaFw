@@ -568,7 +568,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             }
 
             if(node == null && Objects.equals(nodeIdentificationMessage.getNode().getClusterName(), thisNode.getClusterName())) {
-                //In this case we need to add the node ass a new node
+                //In this case we need to add the node as a new node
                 registerConsumer(nodeIdentificationMessage.getNode());
 
                 //Search again the node into the class collections.

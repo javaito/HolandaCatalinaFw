@@ -492,6 +492,13 @@ public class QueryCompileTest {
     }
 
     @Test
+    public void testCompileQueryWithEnvironment() {
+        String sql = "environment '{\"field\":4}' select * from '[{\"field\":2}, {\"field\":4}]' as resource where field = $field";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
     public void queryWithTwoSubQueries() {
         String sql = "select zona as geometry, new('#ff0000') as fillColor, new('#b80004') as strokeColor, toUpperCase(nombre) as label from store.dynamic.ccu.zona.riesgo where region = (select region from store.dynamic.ccu.centro.distribucion where codigo=(select centroDistribucion from store.dynamic.ccu.lastplanilla where planilla=7799086))";
         Query query = Query.compile(sql);

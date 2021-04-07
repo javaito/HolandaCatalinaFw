@@ -79,10 +79,10 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             String dynamicResourceAlias = matcher.group(SystemProperties.get(SystemProperties.Query.DYNAMIC_RESOURCE_ALIAS_INDEX));
             query = new Query(createResource(resourceValue, dynamicResource, dynamicResourceAlias, groups, richTexts, placesIndex));
             if(environmentBody != null && !environmentBody.isBlank()) {
-                //TODO: Parse the environment json
-//                environmentBody = Strings.reverseRichTextGrouping(environmentBody, richTexts);
-//                environmentBody = environmentBody.substring(1, environmentBody.length() - 1);
-//                query.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
+                environmentBody = environmentBody.substring(environmentBody.indexOf(Strings.RICH_TEXT_SEPARATOR)).trim();
+                environmentBody = Strings.reverseRichTextGrouping(environmentBody, richTexts);
+                environmentBody = environmentBody.substring(1, environmentBody.length() - 1);
+                query.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
             }
 
             if(conditionalBody != null) {

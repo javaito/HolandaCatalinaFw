@@ -3,6 +3,7 @@ package org.hcjf.properties;
 import com.google.gson.*;
 import org.hcjf.cloud.impl.DefaultCloudServiceImpl;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
+import org.hcjf.utils.JsonUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -258,13 +259,14 @@ public final class SystemProperties extends Properties {
             public static final String HOST_ACCESS_CONTROL_REGEX_START_CHAR = "hcjf.net.http.host.access.control.regex.start.char";
             public static final String CLIENT_RESPONSE_HANDLER_QUEUE_SIZE = "hcjf.net.http.client.response.handler.queue.size";
 
-            public static final class Http2Settings {
-                public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.settings.header.table.size";
-                public static final String ENABLE_PUSH = "hcjf.net.http.http2.settings.enable.push";
-                public static final String MAX_CONCURRENT_STREAMS = "hcjf.net.http.http2.settings.max.concurrent.streams";
-                public static final String INITIAL_WINDOWS_SIZE = "hcjf.net.http.http2.settings.initial.windows.size";
-                public static final String MAX_FRAME_SIZE = "hcjf.net.http.http2.settings.max.frame.size";
-                public static final String MAX_HEADER_LIST_SIZE = "hcjf.net.http.http2.settings.max.header.list.size";
+            public static final class Http2 {
+                public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.header.table.size";
+                public static final String ENABLE_PUSH = "hcjf.net.http.http2.enable.push";
+                public static final String MAX_CONCURRENT_STREAMS = "hcjf.net.http.http2.max.concurrent.streams";
+                public static final String INITIAL_WINDOWS_SIZE = "hcjf.net.http.http2.initial.windows.size";
+                public static final String MAX_FRAME_SIZE = "hcjf.net.http.http2.max.frame.size";
+                public static final String MAX_HEADER_LIST_SIZE = "hcjf.net.http.http2.max.header.list.size";
+                public static final String STREAM_FRAMES_QUEUE_MAX_SIZE = "hcjf.net.http.http2.stream.frames.queue.max.size";
             }
 
             public static final class Folder {
@@ -531,13 +533,11 @@ public final class SystemProperties extends Properties {
     }
 
     private final Map<String, Object> instancesCache;
-    private final JsonParser jsonParser;
     private final Gson gson;
 
     private SystemProperties() {
         super(new Properties());
         instancesCache = new HashMap<>();
-        jsonParser = new JsonParser();
         gson = new Gson();
 
         defaults.put(HCJF_DEFAULT_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
@@ -728,12 +728,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
 
-        defaults.put(Net.Http.Http2Settings.HEADER_TABLE_SIZE, "4096");
-        defaults.put(Net.Http.Http2Settings.ENABLE_PUSH, "true");
-        defaults.put(Net.Http.Http2Settings.MAX_CONCURRENT_STREAMS, "-1");
-        defaults.put(Net.Http.Http2Settings.INITIAL_WINDOWS_SIZE, "65535");
-        defaults.put(Net.Http.Http2Settings.MAX_FRAME_SIZE, "16384");
-        defaults.put(Net.Http.Http2Settings.MAX_HEADER_LIST_SIZE, "-1");
+        defaults.put(Net.Http.Http2.HEADER_TABLE_SIZE, "4096");
+        defaults.put(Net.Http.Http2.ENABLE_PUSH, "true");
+        defaults.put(Net.Http.Http2.MAX_CONCURRENT_STREAMS, "-1");
+        defaults.put(Net.Http.Http2.INITIAL_WINDOWS_SIZE, "65535");
+        defaults.put(Net.Http.Http2.MAX_FRAME_SIZE, "16384");
+        defaults.put(Net.Http.Http2.MAX_HEADER_LIST_SIZE, "-1");
+        defaults.put(Net.Http.Http2.STREAM_FRAMES_QUEUE_MAX_SIZE, "10");
 
         defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
@@ -1370,7 +1371,7 @@ public final class SystemProperties extends Properties {
     public static <O extends Object> List<O> getObjects(String propertyName, Class<O> objectType) {
         List<O> result = new ArrayList<>();
         try {
-            JsonArray array = (JsonArray) instance.jsonParser.parse(get(propertyName));
+            JsonArray array = JsonParser.parseString(get(propertyName)).getAsJsonArray();
             Iterator<JsonElement> iterator = array.iterator();
             while(iterator.hasNext()) {
                 result.add(instance.gson.fromJson(iterator.next(), objectType));
@@ -1395,8 +1396,7 @@ public final class SystemProperties extends Properties {
                 result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
             } else {
                 try {
-                    JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
-                    array.forEach(A -> result.add(A.getAsString()));
+                    result.addAll((Collection<? extends String>) JsonUtils.createObject(propertyValue));
                     List<String> cachedResult = new ArrayList<>();
                     cachedResult.addAll(result);
                     instance.instancesCache.put(propertyName, cachedResult);
@@ -1422,8 +1422,7 @@ public final class SystemProperties extends Properties {
                 result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
             } else {
                 try {
-                    JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
-                    array.forEach(A -> result.add(A.getAsString()));
+                    result.addAll((Collection<? extends String>) JsonUtils.createObject(propertyValue));
                     List<String> cachedResult = new ArrayList<>();
                     cachedResult.addAll(result);
                     instance.instancesCache.put(propertyName, cachedResult);
@@ -1449,8 +1448,7 @@ public final class SystemProperties extends Properties {
                 result.putAll((Map<String, String>) instance.instancesCache.get(propertyName));
             } else {
                 try {
-                    JsonObject object = (JsonObject) instance.jsonParser.parse(propertyValue);
-                    object.entrySet().forEach(S -> result.put(S.getKey(), object.get(S.getKey()).getAsString()));
+                    result.putAll((Map<? extends String, ? extends String>) JsonUtils.createObject(propertyValue));
                     Map<String, String> cachedResult = new HashMap<>();
                     cachedResult.putAll(result);
                     instance.instancesCache.put(propertyName, cachedResult);

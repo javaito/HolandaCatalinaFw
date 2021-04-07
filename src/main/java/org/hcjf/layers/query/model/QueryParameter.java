@@ -5,12 +5,14 @@ import org.hcjf.utils.Strings;
 
 public abstract class QueryParameter implements Comparable<QueryParameter>, QueryComponent {
 
+    private final Query container;
     private QueryResource resource;
     private String fieldPath;
     private final String originalValue;
     private final boolean underlying;
 
     public QueryParameter(Query query, String originalValue, String value) {
+        this.container = query;
         this.originalValue = originalValue.trim();
 
         String cleanValue = value;
@@ -39,6 +41,14 @@ public abstract class QueryParameter implements Comparable<QueryParameter>, Quer
         } else {
             this.fieldPath = cleanValue;
         }
+    }
+
+    /**
+     * Returns query instance that contains the field.
+     * @return Query instance.
+     */
+    protected Query getContainer() {
+        return container;
     }
 
     /**

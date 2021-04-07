@@ -63,7 +63,6 @@ public class RestContext extends Context {
     @Override
     public HttpResponse onContext(HttpRequest request) {
         HttpMethod method = request.getMethod();
-        JsonParser jsonParser = new JsonParser();
         Gson gson = new GsonBuilder().setDateFormat(SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
         JsonElement jsonElement;
         Collection<HttpHeader> headers = new ArrayList<>();
@@ -105,7 +104,7 @@ public class RestContext extends Context {
                 jsonElement = gson.toJsonTree(readLayerInterface.read(id));
             }
         } else if(method.equals(HttpMethod.POST)) {
-            JsonElement body = jsonParser.parse(new String(request.getBody()));
+            JsonElement body = JsonParser.parseString(new String(request.getBody()));
             RequestModel requestModel;
             if (body.isJsonObject()) {
                 requestModel = new RequestModel((JsonObject) body);
@@ -146,17 +145,25 @@ public class RestContext extends Context {
             } else {
                 // This method call by default to create layer interface implementation.
                 CreateLayerInterface createLayerInterface = Layers.get(CreateLayerInterface.class, resourceName);
-                jsonElement = gson.toJsonTree(createLayerInterface.create(requestModel.getBody()));
+                if(requestModel.getBody() instanceof Collection) {
+                    jsonElement = gson.toJsonTree(createLayerInterface.create((Collection) requestModel.getBody()));
+                } else {
+                    jsonElement = gson.toJsonTree(createLayerInterface.create(requestModel.getBody()));
+                }
             }
         } else if(method.equals(HttpMethod.PUT)) {
             // This method call to update layer interface implementation.
             UpdateLayerInterface updateLayerInterface = Layers.get(UpdateLayerInterface.class, resourceName);
-            RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
+            RequestModel requestModel = new RequestModel(JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
             if(requestModel.getQueryable() == null) {
                 if(id != null) {
                     ((Map<String, Object>) requestModel.getBody()).put(Fields.ID_URL_FIELD, id);
                 }
-                jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
+                if(requestModel.getBody() instanceof Collection) {
+                    jsonElement = gson.toJsonTree(updateLayerInterface.update((Collection) requestModel.getBody()));
+                } else {
+                    jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
+                }
             } else {
                 jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));
             }
@@ -166,7 +173,7 @@ public class RestContext extends Context {
             if(id != null && (request.getBody() == null || request.getBody().length == 0)) {
                 jsonElement = gson.toJsonTree(deleteLayerInterface.delete(id));
             } else {
-                RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
+                RequestModel requestModel = new RequestModel(JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
                 if(requestModel.getQueryable() != null) {
                     jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
                 } else {
@@ -266,6 +273,7 @@ public class RestContext extends Context {
         public RequestModel(JsonArray jsonArray) {
             body = JsonUtils.createList(jsonArray);
         }
+
         public RequestModel(JsonObject jsonObject) {
             if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&
                     !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)) &&

@@ -1127,6 +1127,19 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testEnvironment() {
+        String sql = "ENVIRONMENT '{\"lastName\":\"flander\"}' SELECT * FROM character where lastName like $lastName";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT (SELECT * FROM character where lastName like $lastName) as family FROM '[{\"lastName\":\"flander\"}, {\"lastName\":\"simpson\"}]' as data";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void testAggregateMean() {
         String sql = "SELECT aggregateMean(weight) FROM character";
         Query query = Query.compile(sql);

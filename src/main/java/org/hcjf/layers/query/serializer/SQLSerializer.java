@@ -8,6 +8,7 @@ import org.hcjf.layers.query.evaluators.*;
 import org.hcjf.layers.query.model.QueryOrderParameter;
 import org.hcjf.layers.query.model.QueryReturnParameter;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 
 import java.util.Collection;
@@ -31,6 +32,14 @@ public class SQLSerializer extends Layer implements QuerySerializer {
     @Override
     public String serialize(Query query){
         Strings.Builder resultBuilder = new Strings.Builder();
+
+        //Print environment
+        if(query.getEnvironment() != null && query.getEnvironment().size() > 0) {
+            resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT));
+            resultBuilder.append(Strings.WHITE_SPACE);
+            resultBuilder.append(JsonUtils.toJsonTree(query.getEnvironment()).toString());
+            resultBuilder.append(Strings.WHITE_SPACE);
+        }
 
         //Print select
         resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT));

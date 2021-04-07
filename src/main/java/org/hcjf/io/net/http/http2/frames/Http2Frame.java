@@ -1,6 +1,7 @@
 package org.hcjf.io.net.http.http2.frames;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.utils.Strings;
 
 import java.nio.ByteBuffer;
 
@@ -9,17 +10,21 @@ import java.nio.ByteBuffer;
  */
 public abstract class Http2Frame {
 
-    private final Integer length;
-    private final Type type;
-    private Byte flags;
-    private Integer id;
-    private ByteBuffer payload;
-    private Boolean complete;
+    //All the frames start with 9 octets as headers
+    //https://httpwg.org/specs/rfc7540.html#FramingLayer
+    public static final Integer FRAME_HEADER_LENGTH = 9;
 
-    protected Http2Frame(Integer length, Type type) {
+    private final Integer id;
+    private final Byte flags;
+    private Integer length;
+    private final Type type;
+    private ByteBuffer payload;
+
+    protected Http2Frame(Integer id, Byte flags, Integer length, Type type) {
+        this.id = id;
+        this.flags = flags;
         this.length = length;
         this.type = type;
-        this.complete = false;
         this.payload = ByteBuffer.allocate(length);
     }
 
@@ -31,16 +36,12 @@ public abstract class Http2Frame {
         return flags;
     }
 
-    public final void setFlags(Byte flags) {
-        this.flags = flags;
+    public final Integer getLength() {
+        return length;
     }
 
     public final Integer getId() {
         return id;
-    }
-
-    public final void setId(Integer id) {
-        this.id = id;
     }
 
     public final ByteBuffer getPayload() {
@@ -49,38 +50,46 @@ public abstract class Http2Frame {
 
     public final void setPayload(ByteBuffer payload) {
         this.payload = payload;
+        processPayload();
     }
 
-    public final Boolean getComplete() {
-        return complete;
-    }
+    public final ByteBuffer serialize() {
+        length = recalculateLength();
+        ByteBuffer fixedBuffer = ByteBuffer.allocate(getLength() + FRAME_HEADER_LENGTH);
 
-    protected final void setComplete(Boolean complete) {
-        this.complete = complete;
-    }
-
-    public final void addData(ByteBuffer data) {
-        if(!getComplete()) {
-            payload.put(data);
-            if (payload.position() == payload.limit()) {
-                setComplete(true);
-                payload.rewind();
-                processPayload();
-            }
+        //Add length value into the fixed buffer
+        byte[] lengthBytes = ByteBuffer.allocate(4).putInt(getLength()).array();
+        for (int i = 1; i < 4; i++) {
+            fixedBuffer.put(lengthBytes[i]);
         }
+
+        //Add type value into fixed buffer
+        fixedBuffer.put(getType().id);
+
+        //Add flags value into fixed buffer
+        fixedBuffer.put(getFlags());
+
+        //Add id into fixed buffer
+        fixedBuffer.putInt(getId());
+
+        return serializePayload(fixedBuffer);
     }
+
+    protected abstract Integer recalculateLength();
 
     protected abstract void processPayload();
 
+    protected abstract ByteBuffer serializePayload(ByteBuffer fixedBuffer);
+
     public static final class Builder {
 
-        public static <F extends Http2Frame> F build(Integer length, Byte type) {
+        public static <F extends Http2Frame> F build(Integer id, Byte flags, Integer length, Byte type) {
             Class<? extends Http2Frame> frameClass = Type.getClassById(type);
             if(frameClass == null) {
                 throw new HCJFRuntimeException("Frame type not found: %d", type);
             }
             try {
-                return (F) frameClass.getConstructor(Integer.class, Byte.class).newInstance(length, type);
+                return (F) frameClass.getConstructor(Integer.class, Byte.class, Integer.class).newInstance(id, flags, length);
             } catch (Exception e) {
                 throw new HCJFRuntimeException("Unable to create frame instance");
             }
@@ -174,29 +183,4 @@ public abstract class Http2Frame {
         }
     }
 
-    public enum Settings {
-
-        SETTINGS_HEADER_TABLE_SIZE((byte)0x1),
-
-        SETTINGS_ENABLE_PUSH((byte)0x2),
-
-        SETTINGS_MAX_CONCURRENT_STREAMS((byte)0x3),
-
-        SETTINGS_INITIAL_WINDOW_SIZE((byte)0x4),
-
-        SETTINGS_MAX_FRAME_SIZE((byte)0x5),
-
-        SETTINGS_MAX_HEADER_LIST_SIZE((byte)0x6);
-
-        private final byte id;
-
-        Settings(byte id) {
-            this.id = id;
-        }
-
-        public byte getId() {
-            return id;
-        }
-
-    }
 }

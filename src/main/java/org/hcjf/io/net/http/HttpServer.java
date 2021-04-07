@@ -6,6 +6,9 @@ import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
 import org.hcjf.io.net.http.http2.Stream;
 import org.hcjf.io.net.http.http2.StreamSettings;
+import org.hcjf.io.net.http.http2.frames.DataFrame;
+import org.hcjf.io.net.http.http2.frames.Http2Frame;
+import org.hcjf.io.net.http.http2.frames.SettingsFrame;
 import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
@@ -163,27 +166,35 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     protected final HttpPackage decode(NetPackage netPackage) {
         HttpRequest request = null;
         if(((HttpSession)netPackage.getSession()).getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
+            Stream stream = ((HttpSession)netPackage.getSession()).getStream();
             byte[] data = netPackage.getPayload();
-            String httpClientPreface = new String(data, 0, 24);
-            Integer length = (data[26] & 0xFF) | ((data[25] & 0xFF) << 8) | ((data[24] & 0x0F) << 16);
-            Byte type = data[27];
-            Byte flags = data[28];
-            Integer id = (data[32] & 0xFF) | ((data[31] & 0xFF) << 8) | ((data[30] & 0xFF) << 16) | ((data[29] & 0x0F) << 24);
+            if(stream.getHttpClientPreface() == null) {
+                String httpClientPreface = new String(data, 0, 24);
+                stream.setHttpClientPreface(httpClientPreface);
+                stream.addData(data, 24);
+            } else {
+                stream.addData(data, 0);
+            }
 
-            Integer settingId1 = (data[34] & 0xFF) | ((data[33] & 0x0F) << 8);
-            Integer settingValue1 = (data[38] & 0xFF) | ((data[37] & 0xFF) << 8) | ((data[36] & 0xFF) << 16) | ((data[35] & 0x0F) << 24);
-            Integer settingId2 = (data[40] & 0xFF) | ((data[39] & 0x0F) << 8);
-            Integer settingValue2 = (data[44] & 0xFF) | ((data[43] & 0xFF) << 8) | ((data[42] & 0xFF) << 16) | ((data[41] & 0x0F) << 24);
-            Integer settingId3 = (data[46] & 0xFF) | ((data[45] & 0x0F) << 8);
-            Integer settingValue3 = (data[50] & 0xFF) | ((data[49] & 0xFF) << 8) | ((data[48] & 0xFF) << 16) | ((data[47] & 0x0F) << 24);
+            for(Http2Frame frame : stream.getFrames()) {
+                System.out.println(frame);
+                if(frame instanceof SettingsFrame) {
+                    stream.getFrames().remove(frame);
+                    SettingsFrame settingsFrame = (SettingsFrame) frame;
+                    if(settingsFrame.getFlags() != 0x01) {
+                        SettingsFrame copy = new SettingsFrame(settingsFrame.getId(), (byte) 0x01, 0);
+                        try {
+                            byte[] responseData = settingsFrame.serialize().array();
+                            getService().writeData(netPackage.getSession(), responseData);
+                            System.out.println("Response data<<<!!!: " + Strings.bytesToHex(responseData));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
 
-            Integer length2 = (data[53] & 0xFF) | ((data[52] & 0xFF) << 8) | ((data[51] & 0x0F) << 16);
-            Byte type2 = data[54];
-            Byte flags2 = data[55];
-            Integer id2 = (data[59] & 0xFF) | ((data[58] & 0xFF) << 8) | ((data[57] & 0xFF) << 16) | ((data[56] & 0x0F) << 24);
-            Integer windowsSize = (data[63] & 0xFF) | ((data[62] & 0xFF) << 8) | ((data[61] & 0xFF) << 16) | ((data[60] & 0x0F) << 24);
-
-            System.out.println(new String(data, 60, data.length - 60));
+            System.out.println();
         } else {
             request = requestBuffers.get(netPackage.getSession());
             if (request == null) {
@@ -263,15 +274,19 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        if(payLoad.isComplete()) {
-            //Remove the http buffer because the payload is complete.
-            requestBuffers.remove(session);
-            addDecoupledAction(new DecoupledAction(session) {
-                @Override
-                public void onAction() {
-                    processRequest(session, (HttpRequest) payLoad);
-                }
-            });
+        if(session.getStream() != null) {
+
+        } else {
+            if (payLoad.isComplete()) {
+                //Remove the http buffer because the payload is complete.
+                requestBuffers.remove(session);
+                addDecoupledAction(new DecoupledAction(session) {
+                    @Override
+                    public void onAction() {
+                        processRequest(session, (HttpRequest) payLoad);
+                    }
+                });
+            }
         }
     }
 
@@ -302,10 +317,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
 
                     if (upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
-//                        session.setStream(new Stream(new StreamSettings()));
-//                        response = new HttpResponse();
-//                        response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
-//                        response.addHeader(upgrade);
+                        session.setStream(new Stream(1, new StreamSettings()));
+                        response = new HttpResponse();
+                        response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
+                        response.addHeader(upgrade);
                     } else {
                         throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
                     }
@@ -669,5 +684,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         public void addExposeHeader(String... headers) {
             exposeHeaders.addAll(Arrays.asList(headers));
         }
+    }
+
+    public static void main(String[] args) {
+        byte b = (byte) 0b10000011;
+        System.out.println(b);
+        System.out.println(Integer.toBinaryString(b));
+        b &= ~0b10000000;
+        System.out.println(b);
+        System.out.println(Integer.toBinaryString(b));
     }
 }

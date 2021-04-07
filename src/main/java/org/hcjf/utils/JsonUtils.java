@@ -10,13 +10,11 @@ import java.util.*;
 
 public class JsonUtils {
 
-    private static final JsonParser jsonParser;
     private static final Gson gson;
     public static final String DATE_FORMAT_ARG = "dateFormatArgument";
     public static final String ADAPTERS_ARG = "adaptersArgument";
 
     static {
-        jsonParser = new JsonParser();
         gson = new GsonBuilder().setPrettyPrinting().setDateFormat(
                 SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
     }
@@ -27,7 +25,7 @@ public class JsonUtils {
      * @return Object instance.
      */
     public static Object createObject(String json) {
-        return createObject(jsonParser.parse(json));
+        return createObject(JsonParser.parseString(json));
     }
 
     /**
