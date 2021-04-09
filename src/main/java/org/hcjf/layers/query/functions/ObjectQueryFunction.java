@@ -20,6 +20,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
     private static final String CASE = "case";
     private static final String EQUALS = "equals";
     private static final String NEW = "new";
+    private static final String NEW_UUID = "newUUID";
     private static final String NEW_MAP = "newMap";
     private static final String NEW_ARRAY = "newArray";
     private static final String JSON_TO_OBJECT = "jsonToObject";
@@ -51,6 +52,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         addFunctionName(CASE);
         addFunctionName(EQUALS);
         addFunctionName(NEW);
+        addFunctionName(NEW_UUID);
         addFunctionName(NEW_MAP);
         addFunctionName(NEW_ARRAY);
         addFunctionName(JSON_TO_OBJECT);
@@ -174,6 +176,10 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                 }
                 break;
             }
+            case (NEW_UUID): {
+                result = UUID.randomUUID();
+                break;
+            }
             case(NEW_MAP): {
                 Map<String,Object> map = new HashMap<>();
                 for (int i = 0; i < parameters.length; i+=2) {
@@ -190,7 +196,13 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
             case(NEW_ARRAY): {
                 Collection collection = new ArrayList();
                 for(Object parameter : parameters) {
-                    collection.add(parameter);
+                    if(parameter instanceof Collection) {
+                        collection.addAll((Collection) parameter);
+                    } else if(parameter.getClass().isArray()) {
+                        collection.addAll(Arrays.asList(parameter));
+                    } else {
+                        collection.add(parameter);
+                    }
                 }
                 result = collection;
                 break;

@@ -1,8 +1,8 @@
 package org.hcjf.cloud.impl.network;
 
-import io.kubernetes.client.models.V1Pod;
-import io.kubernetes.client.models.V1Service;
-import io.kubernetes.client.models.V1ServicePort;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1Service;
+import io.kubernetes.client.openapi.models.V1ServicePort;
 import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;

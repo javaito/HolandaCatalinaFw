@@ -13,10 +13,11 @@ import java.util.Map;
 public class ShellQueryFunction extends BaseQueryFunctionLayer {
 
     private static final String PARAMETER_PATTERN = "_p%d";
-    private static final String STATEMENT_PATTERN = "return %s";
+    private static final String STATEMENT_PATTERN = "return %s;";
 
     private static final class Functions {
         private static final String JAVA = "java";
+        private static final String JS = "js";
     }
 
     private static final String NAME = "shell";
@@ -24,6 +25,7 @@ public class ShellQueryFunction extends BaseQueryFunctionLayer {
     public ShellQueryFunction() {
         super(NAME);
         addFunctionName(Functions.JAVA);
+        addFunctionName(Functions.JS);
     }
 
     @Override

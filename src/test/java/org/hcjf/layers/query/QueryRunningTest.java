@@ -1133,6 +1133,11 @@ public class QueryRunningTest {
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
 
+        sql = "ENVIRONMENT '{\"lastName\":\"Flanders\"}' SELECT * FROM character where lastName = $lastName";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
         sql = "SELECT (SELECT * FROM character where lastName like $lastName) as family FROM '[{\"lastName\":\"flander\"}, {\"lastName\":\"simpson\"}]' as data";
         query = Query.compile(sql);
         resultSet = query.evaluate(dataSource);
@@ -1290,16 +1295,23 @@ public class QueryRunningTest {
     }
 
     @Test
-    public void testCodCamion() throws Exception {
-
-        System.out.println("085".hashCode());
-        System.out.println("07T".hashCode());
-
-        String json = new String(Files.readAllBytes(Path.of("/home/javaito/Descargas/codCamion.json")));
-        List<Map<String,Object>> datasource = (List<Map<String, Object>>) JsonUtils.createObject(json);
-        String sql = "select codCamion from data group by codCamion";
+    public void testJsScript() {
+        String sql = "SELECT js('value * 2', *) as value FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
         Query query = Query.compile(sql);
-        Collection rs = query.evaluate(datasource);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT js('_p1 * 2', value) as value FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testNewUUID() {
+        String sql = "SELECT *, newUUID() as id FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
     }
 
