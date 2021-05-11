@@ -4,6 +4,7 @@ import org.hcjf.errors.Errors;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.utils.Strings;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,14 +31,19 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
 
     private WatchService watcher;
     private final Map<Path, WatchKey> keys;
-    private final Map<WatchKey, List<FileSystemWatcherConsumer>> consumers;
-    private Future future;
+    private final Map<WatchKey, List<FileSystemWatcherConsumer>> consumersForWatch;
+    private final Map<Path, String> lastChecksum;
+    private final Map<Path, List<FileSystemWatcherConsumer>> consumersForPolling;
+    private Future watcherFuture;
+    private Future pollingFuture;
 
     private FileSystemWatcherService() {
         super(SystemProperties.get(SystemProperties.FileSystem.SERVICE_NAME),
                 SystemProperties.getInteger(SystemProperties.FileSystem.SERVICE_PRIORITY));
         keys = new HashMap<>();
-        consumers = new HashMap<>();
+        consumersForWatch = new HashMap<>();
+        lastChecksum = new HashMap<>();
+        consumersForPolling = new HashMap<>();
 
         if(System.getProperties().containsKey(SystemProperties.HCJF_DEFAULT_PROPERTIES_FILE_PATH)) {
             registerConsumer(new SystemPropertiesConsumer());
@@ -75,15 +81,23 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
         try {
             synchronized (this) {
                 Path absolutePath = consumer.getBasePath().toAbsolutePath();
-                if(!keys.containsKey(absolutePath)) {
-                    keys.put(absolutePath, consumer.getBasePath().register(watcher, consumer.getEventKinds()));
+                if(consumer.getTriggerType() == FileSystemWatcherConsumer.TriggerType.WATCHER) {
+                    if (!keys.containsKey(absolutePath)) {
+                        keys.put(absolutePath, consumer.getBasePath().register(watcher, consumer.getEventKinds()));
+                    }
+                    WatchKey key = keys.get(absolutePath);
+                    if (!consumersForWatch.containsKey(key)) {
+                        consumersForWatch.put(key, new ArrayList<>());
+                    }
+                    consumersForWatch.get(key).add(consumer);
+                    Log.i(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "File system watcher registered %s", absolutePath);
+                } else if(consumer.getTriggerType() == FileSystemWatcherConsumer.TriggerType.POLLING) {
+                    if(!consumersForPolling.containsKey(absolutePath)) {
+                        lastChecksum.put(absolutePath, Strings.checksum(Files.readAllBytes(absolutePath)));
+                        consumersForPolling.put(absolutePath, new ArrayList<>());
+                    }
+                    consumersForPolling.get(absolutePath).add(consumer);
                 }
-                WatchKey key = keys.get(absolutePath);
-                if(!consumers.containsKey(key)) {
-                    consumers.put(key, new ArrayList<>());
-                }
-                consumers.get(key).add(consumer);
-                Log.i(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "File system watcher registered %s", absolutePath);
             }
         } catch (IOException ex) {
             Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
@@ -112,7 +126,8 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
             Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "File System Watcher init fail", ex);
         }
 
-        future = fork(new FileSystemWatcherTask());
+        watcherFuture = fork(new FileSystemWatcherTask());
+        pollingFuture = fork(new FileSystemPollingTask());
     }
 
     /**
@@ -120,7 +135,63 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
      */
     @Override
     protected void shutdown(ShutdownStage stage) {
-        future.cancel(true);
+        watcherFuture.cancel(true);
+    }
+
+    private class FileSystemPollingTask implements Runnable {
+
+        @Override
+        public void run() {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    for (Path path : consumersForPolling.keySet()) {
+                        try {
+                            String checksum = lastChecksum.get(path);
+                            String currentChecksum = Strings.checksum(Files.readAllBytes(path));
+                            if (!checksum.equals(currentChecksum)) {
+                                for(FileSystemWatcherConsumer consumer : consumersForPolling.get(path)) {
+                                    fork(() -> {
+                                        synchronized (consumer) {
+                                            WatchEvent<Path> event = new WatchEvent<Path>() {
+                                                @Override
+                                                public Kind<Path> kind() {
+                                                    return StandardWatchEventKinds.ENTRY_MODIFY;
+                                                }
+
+                                                @Override
+                                                public int count() {
+                                                    return 1;
+                                                }
+
+                                                @Override
+                                                public Path context() {
+                                                    return path;
+                                                }
+                                            };
+                                            consumer.update(event);
+                                        }
+                                    });
+                                }
+                            }
+                        } catch (Exception ex){
+                            Log.w(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
+                                    "Polling path fail: %s", path.toString());
+                        }
+                    }
+                } catch (Exception ex) {
+                    Log.w(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
+                            "Polling file system fail", ex);
+                }
+                try {
+                    Thread.sleep(SystemProperties.getLong(SystemProperties.FileSystem.POLLING_WAIT_TIME));
+                } catch (Exception ex) {
+                    Log.e(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
+                            "Polling file system loop fail, closing...", ex);
+                    break;
+                }
+            }
+        }
+
     }
 
     /**
@@ -141,7 +212,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                     }
 
                     //Find the consumer by key.
-                    for(FileSystemWatcherConsumer consumer : consumers.get(key)) {
+                    for(FileSystemWatcherConsumer consumer : consumersForWatch.get(key)) {
                         key.pollEvents().stream().filter(event -> {
                             boolean result = false;
                             try {
@@ -203,6 +274,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
         public SystemPropertiesConsumer() {
             super(Paths.get(SystemProperties.get(
                     SystemProperties.HCJF_DEFAULT_PROPERTIES_FILE_PATH)),
+                    TriggerType.POLLING,
                     StandardWatchEventKinds.ENTRY_CREATE,
                     StandardWatchEventKinds.ENTRY_MODIFY);
             this.xmlFile = SystemProperties.getBoolean(
