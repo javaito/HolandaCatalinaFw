@@ -4,6 +4,7 @@ import org.hcjf.bson.BsonDocument;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.IdentifiableLayerInterface;
+import org.hcjf.layers.query.compilers.JsonCompiler;
 import org.hcjf.layers.query.compilers.QueryCompiler;
 import org.hcjf.layers.query.compilers.SQLCompiler;
 import org.hcjf.layers.query.evaluators.*;
@@ -56,6 +57,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         //Publishing compilers
         Layers.publishLayer(SQLCompiler.class);
+        Layers.publishLayer(JsonCompiler.class);
 
         //Publishing serializers
         Layers.publishLayer(SQLSerializer.class);
@@ -636,13 +638,22 @@ public class Query extends EvaluatorCollection implements Queryable {
                     evaluatingCount++;
                     if (add) {
                         Long timeFormatting = System.currentTimeMillis();
-                        if (object instanceof Enlarged) {
+                        if (object instanceof Enlarged || object instanceof Map) {
                             Enlarged enlargedObject;
-                            if(returnAll) {
-                                enlargedObject = ((Enlarged) object).clone();
-                                presentFields.addAll(enlargedObject.keySet());
+                            if(object instanceof Enlarged) {
+                                if (returnAll) {
+                                    enlargedObject = ((Enlarged) object).clone();
+                                    presentFields.addAll(enlargedObject.keySet());
+                                } else {
+                                    enlargedObject = ((Enlarged) object).clone(returnParametersAsArray.toArray(new String[]{}));
+                                }
                             } else {
-                                enlargedObject = ((Enlarged) object).clone(returnParametersAsArray.toArray(new String[]{}));
+                                if (returnAll) {
+                                    enlargedObject = (new JoinableMap((Map<String, Object>) object)).clone();
+                                    presentFields.addAll(enlargedObject.keySet());
+                                } else {
+                                    enlargedObject = (new JoinableMap((Map<String, Object>) object)).clone(returnParametersAsArray.toArray(new String[]{}));
+                                }
                             }
                             object = (O) enlargedObject;
                             for (QueryReturnParameter returnParameter : getReturnParameters()) {

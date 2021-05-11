@@ -39,6 +39,7 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
     public static final String HCJF_DEFAULT_LRU_MAP_SIZE = "hcjf.default.lru.map.size";
     public static final String HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG = "hcjf.default.exception.message.tag";
+    public static final String HCJF_CHECKSUM_ALGORITHM = "hcjf.checksum.algorithm";
 
     public static final class Locale {
         public static final String LOG_TAG = "hcjf.locale.log.tag";
@@ -151,6 +152,7 @@ public final class SystemProperties extends Properties {
         public static final String SERVICE_NAME = "hcjf.file.system.service.name";
         public static final String SERVICE_PRIORITY = "hcjf.file.system.service.priority";
         public static final String LOG_TAG = "hcjf.file.system.log.tag";
+        public static final String POLLING_WAIT_TIME = "hcjf.file.system.polling.wait.time";
     }
 
     public static final class Net {
@@ -557,6 +559,7 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))|(?=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))");
         defaults.put(HCJF_DEFAULT_LRU_MAP_SIZE, "1000");
         defaults.put(HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG, "IMPL");
+        defaults.put(HCJF_CHECKSUM_ALGORITHM, "MD5");
 
         defaults.put(Locale.DEFAULT_LOCALE, java.util.Locale.getDefault().toLanguageTag());
         defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, DefaultLocaleLayer.class.getName());
@@ -615,6 +618,7 @@ public final class SystemProperties extends Properties {
         defaults.put(FileSystem.SERVICE_NAME, "FileSystemWatcherService");
         defaults.put(FileSystem.SERVICE_PRIORITY, "1");
         defaults.put(FileSystem.LOG_TAG, "FILE_SYSTEM_WATCHER_SERVICE");
+        defaults.put(FileSystem.POLLING_WAIT_TIME, "5000");
 
         defaults.put(Log.SERVICE_NAME, "LogService");
         defaults.put(Log.SERVICE_PRIORITY, "0");
@@ -767,11 +771,11 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<environment>environment[ ]{1,}'¡[0-9]{1,}'[ ]{1,}){0,1}(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<environment>environment[ ]{1,}'¡[0-9]{1,}·'[ ]{1,}){0,1}(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿·@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿·'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿·.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
-        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)(((?<resourceValue>[a-zA-Z_0-9$¡¿.]{1,})(?<dynamicResource>[ ]as[ ](?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,})|[ ]?)) on (?<conditionalBody>[a-zA-Z_0-9'=,.~+-\\/* ?%\\$&¡¿@<>!\\:\\-()\\[\\]]{1,}))");
+        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)(((?<resourceValue>[a-zA-Z_0-9$¡¿·.]{1,})(?<dynamicResource>[ ]as[ ](?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,})|[ ]?)) on (?<conditionalBody>[a-zA-Z_0-9'=,.~+-\\/* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,}))");
         defaults.put(Query.JOIN_RESOURCE_VALUE_INDEX, "resourceValue");
         defaults.put(Query.JOIN_DYNAMIC_RESOURCE_INDEX, "dynamicResource");
         defaults.put(Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX, "dynamicResourceAlias");

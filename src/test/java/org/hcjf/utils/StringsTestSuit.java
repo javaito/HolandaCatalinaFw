@@ -21,7 +21,7 @@ public class StringsTestSuit {
         List<String> richTexts = Strings.groupRichText(value);
         Assert.assertEquals(richTexts.size(), 2);
         Assert.assertEquals(richTexts.get(0), "world");
-        Assert.assertEquals(richTexts.get(1), "Hello '¡0'");
+        Assert.assertEquals(richTexts.get(1), "Hello '¡0·'");
 
         value = "SELECT *  FROM holder WHERE nombre LIKE '%MKR%' OR dominio LIKE " +
                 "'%MKR%' AND activo = '1' AND holderid IN " +
@@ -35,8 +35,8 @@ public class StringsTestSuit {
         Assert.assertEquals(richTexts.get(0), "%MKR%");
         Assert.assertEquals(richTexts.get(1), "%MKR%");
         Assert.assertEquals(richTexts.get(2), "1");
-        Assert.assertEquals(richTexts.get(3), "SELECT *  FROM holder WHERE nombre LIKE '¡0' OR dominio LIKE " +
-                "'¡1' AND activo = '¡2' AND holderid IN " +
+        Assert.assertEquals(richTexts.get(3), "SELECT *  FROM holder WHERE nombre LIKE '¡0·' OR dominio LIKE " +
+                "'¡1·' AND activo = '¡2·' AND holderid IN " +
                 "(92928,124291,11278,119441,104341,45460,111255,15513,15001,3358,12447,22047," +
                 "88740,15528,21033,3755,115506,57397,123447,10427,120639,120638,120641,120640," +
                 "120642,30533,58697,17483,40395,106188,7246,43598,23889,23891,81366,15321,23130," +
@@ -47,14 +47,14 @@ public class StringsTestSuit {
         richTexts = Strings.groupRichText(value);
         Assert.assertEquals(richTexts.size(), 2);
         Assert.assertEquals(richTexts.get(0), "example of \\'rich text\\'");
-        Assert.assertEquals(richTexts.get(1), "This is an example of rich text: '¡0'");
+        Assert.assertEquals(richTexts.get(1), "This is an example of rich text: '¡0·'");
 
         value = "'Start with' rich text. '[]\\';;./,;;\\|||^!@#$%&*()_+~~~```'";
         richTexts = Strings.groupRichText(value);
         Assert.assertEquals(richTexts.size(), 3);
         Assert.assertEquals(richTexts.get(0), "Start with");
         Assert.assertEquals(richTexts.get(1), "[]\\';;./,;;\\|||^!@#$%&*()_+~~~```");
-        Assert.assertEquals(richTexts.get(2), "'¡0' rich text. '¡1'");
+        Assert.assertEquals(richTexts.get(2), "'¡0·' rich text. '¡1·'");
 
         value = "in 'the' middle";
         richTexts = Strings.groupRichText(value);

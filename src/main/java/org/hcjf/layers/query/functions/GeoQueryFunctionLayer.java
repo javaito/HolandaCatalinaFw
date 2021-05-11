@@ -3,6 +3,8 @@ package org.hcjf.layers.query.functions;
 import com.esri.core.geometry.GeometryEngine;
 import com.esri.core.geometry.Point;
 import com.esri.core.geometry.ogc.OGCGeometry;
+import com.esri.core.geometry.ogc.OGCLineString;
+import com.esri.core.geometry.ogc.OGCPolygon;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.utils.GeoUtils;
 import org.hcjf.utils.JsonUtils;
@@ -47,6 +49,9 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         private static final String GEO_WITHIN = "geoWithin";
         private static final String GEO_PROJECT = "geoProject";
         private static final String DEGREES_TO_DECIMAL = "degreesToDecimal";
+        private static final String AREA = "area";
+        private static final String PERIMETER = "perimeter";
+        private static final String LINE_DISTANCE = "lineDistance";
     }
 
     public GeoQueryFunctionLayer() {
@@ -87,6 +92,9 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         addFunctionName(Functions.GEO_WITHIN);
         addFunctionName(Functions.GEO_PROJECT);
         addFunctionName(Functions.DEGREES_TO_DECIMAL);
+        addFunctionName(Functions.AREA);
+        addFunctionName(Functions.PERIMETER);
+        addFunctionName(Functions.LINE_DISTANCE);
     }
 
     @Override
@@ -196,6 +204,30 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
             case Functions.DEGREES_TO_DECIMAL: {
                 checkNumberAndType(functionName, parameters, 1, String.class);
                 result = GeoUtils.degreesToDouble((String) parameters[0]);
+                break;
+            }
+            case Functions.AREA: {
+                if(geometry instanceof OGCPolygon) {
+                    result = GeoUtils.calculateArea((OGCPolygon) geometry);
+                } else {
+                    throw new HCJFRuntimeException("Area function expecting a polygon as parameter");
+                }
+                break;
+            }
+            case Functions.PERIMETER: {
+                if(geometry instanceof OGCPolygon) {
+                    result = GeoUtils.calculatePerimeter((OGCPolygon) geometry);
+                } else {
+                    throw new HCJFRuntimeException("Perimeter function expecting a polygon as parameter");
+                }
+                break;
+            }
+            case Functions.LINE_DISTANCE: {
+                if(geometry instanceof OGCLineString) {
+                    result = GeoUtils.calculateLineDistance((OGCLineString) geometry);
+                } else {
+                    throw new HCJFRuntimeException("Line distance function expecting a line string as parameter");
+                }
                 break;
             }
             default: throw new HCJFRuntimeException("Unrecognized get function: %s", functionName);

@@ -1,9 +1,13 @@
 package org.hcjf.utils;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.RecursiveAction;
 import java.util.regex.Matcher;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -104,8 +108,12 @@ public final class Strings {
     public static final String END_SUB_GROUP = "]";
     public static final String START_OBJECT = "{";
     public static final String END_OBJECT = "}";
+    public static final String START_TAG = "<";
+    public static final String END_TAG = ">";
     public static final String OBJECT_FIELD_SEPARATOR = ":";
+    public static final String QUESTION = "?";
     public static final String REPLACEABLE_GROUP = "¿";
+    public static final String END_GROUP_NAME = "·";
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";
     public static final String CLASS_SEPARATOR = ".";
@@ -128,7 +136,33 @@ public final class Strings {
     public static final String ARGUMENT_IDENTIFIER = "$";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
-    public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]{1,}";
+    public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]·{1,}";
+
+    /**
+     * Creates a hexadecimal string as checksum for the byte array. This method use the algorithm indicated into the
+     * file properties or MD% as default.
+     * @param bytes Bytes to create the checksum.
+     * @return Checksum string.
+     */
+    public static String checksum(byte[] bytes) {
+        return checksum(SystemProperties.get(SystemProperties.HCJF_CHECKSUM_ALGORITHM), bytes);
+    }
+
+    /**
+     * Creates a hexadecimal string as checksum for the byte array.
+     * @param algorithm Algorithm to create the checksum.
+     * @param bytes Bytes to create the checksum.
+     * @return Checksum string.
+     */
+    public static String checksum(String algorithm, byte[] bytes) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance(algorithm);
+            messageDigest.update(bytes);
+            return bytesToHex(messageDigest.digest());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new HCJFRuntimeException("Checksum fail", ex);
+        }
+    }
 
     /**
      * This method trim the first and the last value if this values are equals that the parameter.
@@ -401,7 +435,8 @@ public final class Strings {
                 } else {
                     richText = value.substring(startIndex + 1, index);
                     newValue.append(value.substring(endIndex, startIndex));
-                    newValue.append(RICH_TEXT_SEPARATOR).append(REPLACEABLE_RICH_TEXT).append(counter++).append(RICH_TEXT_SEPARATOR);
+                    newValue.append(RICH_TEXT_SEPARATOR).append(REPLACEABLE_RICH_TEXT).
+                            append(counter++).append(END_GROUP_NAME).append(RICH_TEXT_SEPARATOR);
                     result.add(richText);
                     endIndex = index + 1;
                     startIndex = -1;
@@ -434,28 +469,56 @@ public final class Strings {
 
     /**
      * Return the list with all the groups and sub groups of the value.
-     * A group is the char sequence between the start group character '('
-     * and the end group character ')'
+     * A group is the char sequence between the start group and the end group values.
      * @param value Groupable value.
      * @param startGroupCharacter Starting character
      * @param endGroupCharacter Ending character
      * @return List with all the groups.
      */
     public static List<String> group(String value, String startGroupCharacter, String endGroupCharacter) {
-        List<String> richTexts = Strings.groupRichText(value);
-        String safetyValue = richTexts.get(richTexts.size() - 1);
-        //Using the las value of the rich text list we assure that the start and end characters into the strings
-        //be discarded of the group calculation.
-        Set<Integer> startIndexes = allIndexOf(safetyValue, startGroupCharacter);
-        Set<Integer> endIndexes = allIndexOf(safetyValue, endGroupCharacter);
+        return group(value, startGroupCharacter, endGroupCharacter, true, true);
+    }
 
-        if(startIndexes.size() != endIndexes.size()) {
-            throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
+    /**
+     * Return the list with all the groups and sub groups if it is considered.
+     * A group is the char sequence between the start group and the end group values.
+     * @param value Groupable value.
+     * @param startGroupCharacter Starting character
+     * @param endGroupCharacter Ending character
+     * @param considerSubGroups This argument must be true if you need to consider subgroups.
+     * @param skipText This argument must be true if you need to skip the text into the value, the text is considered
+     *                 all the text between ''.
+     * @return List with all the groups.
+     */
+    public static List<String> group(String value, String startGroupCharacter, String endGroupCharacter, Boolean skipText, Boolean considerSubGroups) {
+        List<String> result;
+        if(skipText) {
+            List<String> richTexts = Strings.groupRichText(value);
+            String safetyValue = richTexts.get(richTexts.size() - 1);
+            //Using the las value of the rich text list we assure that the start and end characters into the strings
+            //be discarded of the group calculation.
+            Set<Integer> startIndexes = allIndexOf(safetyValue, startGroupCharacter);
+            Set<Integer> endIndexes = allIndexOf(safetyValue, endGroupCharacter);
+
+            if (startIndexes.size() != endIndexes.size()) {
+                throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
+            }
+
+            List<String> groups = group(safetyValue, startIndexes, startGroupCharacter.length(), endIndexes, considerSubGroups);
+            result = new ArrayList<>();
+            groups.stream().forEach(G -> result.add(reverseRichTextGrouping(G, richTexts)));
+        } else {
+            //Using the las value of the rich text list we assure that the start and end characters into the strings
+            //be discarded of the group calculation.
+            Set<Integer> startIndexes = allIndexOf(value, startGroupCharacter);
+            Set<Integer> endIndexes = allIndexOf(value, endGroupCharacter);
+
+            if (startIndexes.size() != endIndexes.size()) {
+                throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
+            }
+
+            result = group(value, startIndexes, startGroupCharacter.length(), endIndexes, considerSubGroups);
         }
-
-        List<String> groups = group(safetyValue, startIndexes, endIndexes);
-        List<String> result = new ArrayList<>();
-        groups.stream().forEach(G -> result.add(reverseRichTextGrouping(G, richTexts)));
         return result;
     }
 
@@ -467,7 +530,7 @@ public final class Strings {
      * @param endIndexes Set with all the end indexes.
      * @return List with all the groups.
      */
-    private static List<String> group(String value, Set<Integer> startIndexes, Set<Integer> endIndexes) {
+    private static List<String> group(String value, Set<Integer> startIndexes, Integer startElementSize, Set<Integer> endIndexes, Boolean considerSubGroups) {
         List<String> result = new ArrayList<>();
         Integer start;
         Integer end;
@@ -480,6 +543,9 @@ public final class Strings {
                 candidate = endIterator.next();
                 if(start < candidate && candidate < end) {
                     end = candidate;
+                    if(!considerSubGroups) {
+                        break;
+                    }
                 }
             }
 
@@ -490,7 +556,7 @@ public final class Strings {
                 throw new IllegalArgumentException("");
             }
 
-            result.add(value.substring(start + 1, end));
+            result.add(value.substring(start + startElementSize, end));
         }
 
         return result;
@@ -504,7 +570,20 @@ public final class Strings {
      * @return List with groups.
      */
     public static List<String> replaceableGroup(String value) {
-        List<String> groups = Strings.group(value);
+        return replaceableGroup(value, START_GROUP, END_GROUP);
+    }
+
+    /**
+     * Return a list with all groups and sub groups in ascendant order with replacement
+     * places that refer some index into the same list.
+     * e.g. "Hello (world)" - ["world", "Hello $0"]
+     * @param value String to group.
+     * @param startGroup String to delimit the group starts
+     * @param endGroup String to delimit the group ends
+     * @return List with groups.
+     */
+    public static List<String> replaceableGroup(String value, String startGroup, String endGroup) {
+        List<String> groups = Strings.group(value, startGroup, endGroup);
         String replacedValue = value;
         String group;
         String nextGroup;
@@ -513,15 +592,15 @@ public final class Strings {
         for (int j = 0; j < groups.size(); j++) {
             occurrence = 0;
             group = groups.get(j);
-            newSegment = START_GROUP + group + END_GROUP;
-            replacedValue = replaceLast(replacedValue,newSegment, REPLACEABLE_GROUP+j);
+            newSegment = startGroup + group + endGroup;
+            replacedValue = replaceLast(replacedValue,newSegment, REPLACEABLE_GROUP + j + END_GROUP_NAME);
             for(int k = j + 1; k < groups.size(); k++) {
                 nextGroup = groups.get(k);
                 if(nextGroup.equals(group)) {
                     occurrence += 1;
-                } else if(nextGroup.contains(Strings.START_GROUP)) {
+                } else if(nextGroup.contains(startGroup)) {
                     if(occurrence < occurrenceSize(nextGroup, newSegment)) {
-                        nextGroup = replaceLast(nextGroup, newSegment, REPLACEABLE_GROUP + j);
+                        nextGroup = replaceLast(nextGroup, newSegment, REPLACEABLE_GROUP + j + END_GROUP_NAME);
                         groups.set(k, nextGroup);
                     }
                 }
@@ -536,7 +615,7 @@ public final class Strings {
      * @param value Value to analyse
      * @return Replaceable index.
      */
-    public static String getGroupIndex(String value, String groupIndicator) {
+    public static String getNextGroupIndex(String value, String groupIndicator) {
         String result = null;
         Integer startIndex = value.indexOf(groupIndicator);
         StringBuilder resultBuilder = new StringBuilder();
@@ -545,7 +624,8 @@ public final class Strings {
             current = value.charAt(i);
             if(Character.isDigit(current) || current == groupIndicator.charAt(0)) {
                 resultBuilder.append(current);
-            } else {
+            } else if(current == END_GROUP_NAME.charAt(0)) {
+                resultBuilder.append(current);
                 break;
             }
         }
@@ -553,6 +633,11 @@ public final class Strings {
             result = resultBuilder.toString();
         }
         return result;
+    }
+
+    public static Integer getGroupIndexAsNumber(String value, String groupIndicator) {
+        return Integer.parseInt(value.replace(groupIndicator, Strings.EMPTY_STRING).
+                replace(Strings.END_GROUP_NAME, Strings.EMPTY_STRING));
     }
 
     /**
@@ -564,13 +649,13 @@ public final class Strings {
     public static String reverseRichTextGrouping(String value, List<String> richTextGroups) {
         String result = value;
         String copy = value;
-        String groupIndex = Strings.getGroupIndex(copy, REPLACEABLE_RICH_TEXT);
+        String groupIndex = Strings.getNextGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         Integer index;
         while(groupIndex != null) {
-            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_RICH_TEXT, EMPTY_STRING));
+            index = getGroupIndexAsNumber(groupIndex, REPLACEABLE_RICH_TEXT);
             result = result.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), wrap(richTextGroups.get(index), Strings.RICH_TEXT_SEPARATOR));
             copy = copy.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), Strings.EMPTY_STRING);
-            groupIndex = Strings.getGroupIndex(copy, REPLACEABLE_RICH_TEXT);
+            groupIndex = Strings.getNextGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         }
         return result;
     }
@@ -595,13 +680,13 @@ public final class Strings {
      */
     public static String reverseGrouping(String value, List<String> groups, String startGroupCharacter, String endGroupCharacter) {
         String result = value;
-        String groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
+        String groupIndex = Strings.getNextGroupIndex(result, REPLACEABLE_GROUP);
         Integer index;
         while(groupIndex != null) {
-            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_GROUP, EMPTY_STRING));
+            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_GROUP, EMPTY_STRING).replace(END_GROUP_NAME, EMPTY_STRING));
             result = result.replace(groupIndex,
                     startGroupCharacter + groups.get(index) + endGroupCharacter);
-            groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
+            groupIndex = Strings.getNextGroupIndex(result, REPLACEABLE_GROUP);
         }
         return result;
     }

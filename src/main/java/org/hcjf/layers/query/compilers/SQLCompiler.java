@@ -238,7 +238,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 path = resourceValue.substring(resourceValue.indexOf(Strings.CLASS_SEPARATOR) + 1).trim();
                 resourceValue = resourceValue.substring(0, resourceValue.indexOf(Strings.CLASS_SEPARATOR));
             }
-            Integer index = Integer.parseInt(resourceValue.trim().replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
+            Integer index = Strings.getGroupIndexAsNumber(resourceValue.trim(), Strings.REPLACEABLE_GROUP);
             resourceValue = Strings.reverseGrouping(resourceValue, groups);
             resourceValue = Strings.reverseRichTextGrouping(resourceValue, richTexts);
             resourceValue = resourceValue.substring(1, resourceValue.length() - 1);
@@ -342,7 +342,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
 
         evaluatorValues = definition.split(SystemProperties.get(SystemProperties.Query.OPERATION_REGULAR_EXPRESSION));
         if (evaluatorValues.length == 1 && definition.startsWith(Strings.REPLACEABLE_GROUP)) {
-            Integer index = Integer.parseInt(definition.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
+            Integer index = Strings.getGroupIndexAsNumber(definition, Strings.REPLACEABLE_GROUP);
             completeEvaluatorCollection(query, null, groups, richTexts, collection, index, placesIndex);
         } else {
             boolean operatorDone = false;
@@ -445,7 +445,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             if (trimmedStringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
                 //If the string value start and end with "'" then the value can be a string or a date object.
                 trimmedStringValue = trimmedStringValue.substring(1, trimmedStringValue.length() - 1);
-                trimmedStringValue = richTexts.get(Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_RICH_TEXT, Strings.EMPTY_STRING)));
+                trimmedStringValue = richTexts.get(Strings.getGroupIndexAsNumber(trimmedStringValue, Strings.REPLACEABLE_RICH_TEXT));
 
                 //Clean the value to remove all the skip characters into the string value.
                 trimmedStringValue = trimmedStringValue.replace(Strings.RICH_TEXT_SKIP_CHARACTER + Strings.RICH_TEXT_SEPARATOR, Strings.RICH_TEXT_SEPARATOR);
@@ -463,7 +463,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 throw new HCJFRuntimeException("Expecting string en delimiter, near %s", trimmedStringValue);
             }
         } else if(trimmedStringValue.matches(Strings.REPLACEABLE_EXPRESSION_REGEX)) {
-            Integer index = Integer.parseInt(trimmedStringValue.replace(Strings.REPLACEABLE_GROUP, Strings.EMPTY_STRING));
+            Integer index = Strings.getGroupIndexAsNumber(trimmedStringValue, Strings.REPLACEABLE_GROUP);
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 result = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex),
@@ -513,7 +513,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
             String alias = null;
             String[] asParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
-            if(asParts.length == 3) {
+            if (asParts.length == 3) {
                 trimmedStringValue = asParts[0].trim();
                 alias = asParts[2].trim();
             }
@@ -525,28 +525,28 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             boolean desc = false;
             for (int i = 0; i < mathExpressionParts.length; i++) {
                 currentValue = mathExpressionParts[i];
-                if(i == mathExpressionParts.length - 1){
+                if (i == mathExpressionParts.length - 1) {
                     //This code run only one time for the last part.
-                    if(parameterClass.equals(QueryReturnParameter.class)) {
+                    if (parameterClass.equals(QueryReturnParameter.class)) {
                         //Check if the last part contains the 'AS' word
                         String[] parts = currentValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
                         if (parts.length == 2) {
                             currentValue = parts[0].trim();
                             alias = parts[1].trim();
                         }
-                    } else if(parameterClass.equals(QueryOrderParameter.class)) {
+                    } else if (parameterClass.equals(QueryOrderParameter.class)) {
                         //Check if the last part contains the 'DESC' word
                         String[] parts = currentValue.split(SystemProperties.get(SystemProperties.Query.DESC_REGULAR_EXPRESSION));
-                        if(parts.length == 3) {
+                        if (parts.length == 3) {
                             currentValue = parts[0].trim();
-                            if(parts[2].trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
+                            if (parts[2].trim().equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.DESC))) {
                                 desc = true;
                             }
                         }
                     }
                 }
 
-                if(currentValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION))) {
+                if (currentValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION))) {
                     //If the current value is a math connector (+-*/) the this connector is a function parameter.
                     parameters.add(currentValue.trim());
                 } else {
@@ -555,13 +555,13 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 }
             }
 
-            if(parameterClass.equals(QueryParameter.class)) {
+            if (parameterClass.equals(QueryParameter.class)) {
                 result = new QueryFunction(query, Strings.reverseGrouping(trimmedStringValue, groups),
                         SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters);
-            } else if(parameterClass.equals(QueryReturnParameter.class)) {
+            } else if (parameterClass.equals(QueryReturnParameter.class)) {
                 result = new QueryReturnFunction(query, Strings.reverseGrouping(trimmedStringValue, groups),
                         SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters, alias);
-            } else if(parameterClass.equals(QueryOrderParameter.class)) {
+            } else if (parameterClass.equals(QueryOrderParameter.class)) {
                 result = new QueryOrderFunction(query, Strings.reverseGrouping(trimmedStringValue, groups),
                         SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME), parameters, desc);
             }
@@ -576,8 +576,8 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             Boolean unprocessedValue = false;
             if(trimmedStringValue.contains(Strings.REPLACEABLE_GROUP)) {
                 //If the string contains a replaceable group character then the parameter is a function.
-                replaceValue = Strings.getGroupIndex(trimmedStringValue, Strings.REPLACEABLE_GROUP);
-                group = groups.get(Integer.parseInt(replaceValue.replace(Strings.REPLACEABLE_GROUP,Strings.EMPTY_STRING)));
+                replaceValue = Strings.getNextGroupIndex(trimmedStringValue, Strings.REPLACEABLE_GROUP);
+                group = groups.get(Strings.getGroupIndexAsNumber(replaceValue, Strings.REPLACEABLE_GROUP));
                 functionName = trimmedStringValue.substring(0, trimmedStringValue.indexOf(Strings.REPLACEABLE_GROUP));
                 if(functionName == null || functionName.isBlank()) {
                     originalValue = Strings.reverseGrouping(trimmedStringValue, groups);
