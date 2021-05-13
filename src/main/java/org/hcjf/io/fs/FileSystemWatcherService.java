@@ -32,7 +32,7 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
     private WatchService watcher;
     private final Map<Path, WatchKey> keys;
     private final Map<WatchKey, List<FileSystemWatcherConsumer>> consumersForWatch;
-    private final Map<Path, String> lastChecksum;
+    private final Map<Path, Map<Path,String>> lastChecksum;
     private final Map<Path, List<FileSystemWatcherConsumer>> consumersForPolling;
     private Future watcherFuture;
     private Future pollingFuture;
@@ -93,16 +93,38 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                     Log.i(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG), "File system watcher registered %s", absolutePath);
                 } else if(consumer.getTriggerType() == FileSystemWatcherConsumer.TriggerType.POLLING) {
                     if(!consumersForPolling.containsKey(absolutePath)) {
-                        lastChecksum.put(absolutePath, Strings.checksum(Files.readAllBytes(absolutePath)));
+                        lastChecksum.put(absolutePath, loadChecksumMap(absolutePath, new HashMap<>()));
                         consumersForPolling.put(absolutePath, new ArrayList<>());
                     }
                     consumersForPolling.get(absolutePath).add(consumer);
                 }
             }
         } catch (IOException ex) {
-            Log.d(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
-                    "Unable to register file system watcher consumer, '$1'", ex, consumer.getBasePath());
+            Log.e(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
+                    "Unable to register file system watcher consumer, '%s'", ex, consumer.getBasePath());
         }
+    }
+
+    private Map<Path,String> loadChecksumMap(Path currentPath, Map<Path,String> checksumMap) {
+        return verifyNewChecksumMap(currentPath, null, checksumMap);
+    }
+
+    private Map<Path,String> verifyNewChecksumMap(Path currentPath, Map<Path,String> checksumMap, Map<Path,String> newChecksumMap) {
+        if(currentPath.toFile().isDirectory()) {
+            for(File file : currentPath.toFile().listFiles()) {
+                newChecksumMap = verifyNewChecksumMap(file.toPath(), checksumMap, newChecksumMap);
+            }
+        } else {
+            try {
+                if(checksumMap == null || !checksumMap.containsKey(currentPath)) {
+                    newChecksumMap.put(currentPath, Strings.checksum(Files.readAllBytes(currentPath)));
+                }
+            } catch (IOException ex) {
+                Log.e(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
+                        "Unable to calculate checksum for file: %s", ex, currentPath.toString());
+            }
+        }
+        return newChecksumMap;
     }
 
     @Override
@@ -144,35 +166,42 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
         public void run() {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
+                    Thread.sleep(SystemProperties.getLong(SystemProperties.FileSystem.POLLING_WAIT_TIME));
+                } catch (Exception ex) {
+                    Log.e(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
+                            "Polling file system loop fail, closing...", ex);
+                    break;
+                }
+                try {
                     for (Path path : consumersForPolling.keySet()) {
                         try {
-                            String checksum = lastChecksum.get(path);
-                            String currentChecksum = Strings.checksum(Files.readAllBytes(path));
-                            if (!checksum.equals(currentChecksum)) {
-                                for(FileSystemWatcherConsumer consumer : consumersForPolling.get(path)) {
-                                    fork(() -> {
-                                        synchronized (consumer) {
-                                            WatchEvent<Path> event = new WatchEvent<Path>() {
-                                                @Override
-                                                public Kind<Path> kind() {
-                                                    return StandardWatchEventKinds.ENTRY_MODIFY;
-                                                }
 
-                                                @Override
-                                                public int count() {
-                                                    return 1;
-                                                }
-
-                                                @Override
-                                                public Path context() {
-                                                    return path;
-                                                }
-                                            };
-                                            consumer.update(event);
-                                        }
-                                    });
+                            //Verify file changes.
+                            List<Path> deletePaths = new ArrayList<>();
+                            List<Path> updatePaths = new ArrayList<>();
+                            List<Path> createPaths = new ArrayList<>();
+                            Map<Path, String> lastChecksumMap = lastChecksum.get(path);
+                            for(Path checksumPath : lastChecksumMap.keySet()) {
+                                String checksum = lastChecksumMap.get(checksumPath);
+                                if(checksumPath.toFile().exists()) {
+                                    String currentChecksum = Strings.checksum(Files.readAllBytes(checksumPath));
+                                    if (!checksum.equals(currentChecksum)) {
+                                        updatePaths.add(checksumPath);
+                                        lastChecksumMap.put(checksumPath, currentChecksum);
+                                    }
+                                } else {
+                                    deletePaths.add(checksumPath);
+                                    lastChecksumMap.remove(checksumPath);
                                 }
                             }
+                            Map<Path, String> newChecksumMap = verifyNewChecksumMap(path, lastChecksumMap, new HashMap<>());
+                            lastChecksumMap.putAll(newChecksumMap);
+                            createPaths.addAll(newChecksumMap.keySet());
+
+                            //Notify consumers
+                            notifyConsumer(path, createPaths, StandardWatchEventKinds.ENTRY_CREATE);
+                            notifyConsumer(path, updatePaths, StandardWatchEventKinds.ENTRY_MODIFY);
+                            notifyConsumer(path, deletePaths, StandardWatchEventKinds.ENTRY_DELETE);
                         } catch (Exception ex){
                             Log.w(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
                                     "Polling path fail: %s", path.toString());
@@ -182,13 +211,40 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                     Log.w(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
                             "Polling file system fail", ex);
                 }
-                try {
-                    Thread.sleep(SystemProperties.getLong(SystemProperties.FileSystem.POLLING_WAIT_TIME));
-                } catch (Exception ex) {
-                    Log.e(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
-                            "Polling file system loop fail, closing...", ex);
-                    break;
-                }
+            }
+        }
+
+        private void notifyConsumer(Path path, List<Path> paths, WatchEvent.Kind<Path> kind) {
+            for(FileSystemWatcherConsumer consumer : consumersForPolling.get(path)) {
+                fork(() -> {
+                    for(Path changedPath : paths) {
+                        synchronized (consumer) {
+                            WatchEvent<Path> event = new WatchEvent<Path>() {
+                                @Override
+                                public Kind<Path> kind() {
+                                    return kind;
+                                }
+
+                                @Override
+                                public int count() {
+                                    return 1;
+                                }
+
+                                @Override
+                                public Path context() {
+                                    return changedPath;
+                                }
+                            };
+                            if(kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
+                                consumer.create(event);
+                            } else if(kind.equals(StandardWatchEventKinds.ENTRY_MODIFY)) {
+                                consumer.update(event);
+                            } else if(kind.equals(StandardWatchEventKinds.ENTRY_DELETE)) {
+                                consumer.delete(event);
+                            }
+                        }
+                    }
+                });
             }
         }
 

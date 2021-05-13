@@ -931,6 +931,10 @@ public class QueryRunningTest {
         Query query = Query.compile("SELECT * FROM (SELECT *, getMillisecondUnixEpoch(now()), getMillisecondUnixEpoch(birthday), getMillisecondUnixEpoch(now()) - getMillisecondUnixEpoch(birthday) as ageMillis FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson') as ch WHERE weight > 16");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        Query.compile("SELECT new(4.5) as d, new(3) as i, i-integerValue(d) as a from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     @Test
