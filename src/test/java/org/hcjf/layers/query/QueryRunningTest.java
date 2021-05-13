@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author javaito
@@ -928,11 +929,18 @@ public class QueryRunningTest {
 
     @Test
     public void arithmeticTest() {
-        Query query = Query.compile("SELECT * FROM (SELECT *, getMillisecondUnixEpoch(now()), getMillisecondUnixEpoch(birthday), getMillisecondUnixEpoch(now()) - getMillisecondUnixEpoch(birthday) as ageMillis FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson') as ch WHERE weight > 16");
-        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Query query;
+        Collection<JoinableMap> resultSet;
+
+        query = Query.compile("SELECT * FROM (SELECT *, getMillisecondUnixEpoch(now()), getMillisecondUnixEpoch(birthday), getMillisecondUnixEpoch(now()) - getMillisecondUnixEpoch(birthday) as ageMillis FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson') as ch WHERE weight > 16");
+        resultSet = query.evaluate(dataSource);
         System.out.println();
 
-        Query.compile("SELECT new(4.5) as d, new(3) as i, i-integerValue(d) as a from '{}' as data");
+        query = Query.compile("SELECT new(4.5) as d, new(3) as i, i-integerValue(d) as a from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select new(2) as tiempo, new(3) as tiempoHs, integerValue(tiempo-integerValue(tiempoHs*60)) as tiempoMin from '{}' as data");
         resultSet = query.evaluate(dataSource);
         System.out.println();
     }
