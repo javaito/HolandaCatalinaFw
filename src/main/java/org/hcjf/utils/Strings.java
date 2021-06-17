@@ -381,7 +381,18 @@ public final class Strings {
      * @return Wrapper value.
      */
     public static String wrap(String value, String wrapper) {
-        return wrapper + value + wrapper;
+        return wrap(value, wrapper, wrapper);
+    }
+
+    /**
+     * This method wrap the value with the start and end wrapper.
+     * @param value Value to wrap.
+     * @param startWrapper Start value of the wrapper.
+     * @param endWrapper End value of the wrapper.
+     * @return Wrapper value.
+     */
+    public static String wrap(String value, String startWrapper, String endWrapper) {
+        return startWrapper + value + endWrapper;
     }
 
     /**
