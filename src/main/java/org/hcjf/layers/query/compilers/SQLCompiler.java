@@ -432,15 +432,27 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
     private Object processStringValue(Query query, List<String> groups, List<String> richTexts, String stringValue, AtomicInteger placesIndex, Class parameterClass, List<QueryField> presentFields) {
         Object result = null;
         String trimmedStringValue = stringValue.trim();
+
+        String alias = null;
+        String[] trimmedStringValueParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
+        if(trimmedStringValueParts.length == 3) {
+            trimmedStringValue = trimmedStringValueParts[0].trim();
+            alias = trimmedStringValueParts[2].trim();
+        }
+
+        Boolean literal = false;
         if(trimmedStringValue.equals(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE))) {
             //If the string value is equals than "?" then the value object is an instance of ReplaceableValue.
             result = new FieldEvaluator.ReplaceableValue(placesIndex.getAndAdd(1));
         } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.NULL))) {
             result = null;
+            literal = true;
         } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.TRUE))) {
             result = true;
+            literal = true;
         } else if(trimmedStringValue.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FALSE))) {
             result = false;
+            literal = true;
         } else if(trimmedStringValue.startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
             if (trimmedStringValue.endsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER))) {
                 //If the string value start and end with "'" then the value can be a string or a date object.
@@ -459,6 +471,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                     }
                     result = trimmedStringValue;
                 }
+                literal = true;
             } else {
                 throw new HCJFRuntimeException("Expecting string en delimiter, near %s", trimmedStringValue);
             }
@@ -466,14 +479,23 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             Integer index = Strings.getGroupIndexAsNumber(trimmedStringValue, Strings.REPLACEABLE_GROUP);
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
-                result = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex),
+                FieldEvaluator.QueryValue queryValue = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex),
                         parameterClass.equals(QueryReturnParameter.class));
+                if(alias != null) {
+                    result = new QueryReturnUnprocessedValue(query, trimmedStringValue, alias, queryValue);
+                } else {
+                    result = queryValue;
+                }
             } else if(group.toUpperCase().contains(Strings.wrap(SystemProperties.get(SystemProperties.Query.ReservedWord.AND), Strings.WHITE_SPACE))
                     || group.toUpperCase().contains(Strings.wrap(SystemProperties.get(SystemProperties.Query.ReservedWord.OR), Strings.WHITE_SPACE))) {
                 if(parameterClass.equals(QueryReturnParameter.class)) {
                     String conditionalBlock = Strings.reverseGrouping(trimmedStringValue, groups);
                     conditionalBlock = Strings.reverseRichTextGrouping(conditionalBlock, richTexts);
-                    result = new QueryConditional.ConditionalValue(conditionalBlock);
+                    if(alias != null) {
+                        result = new QueryReturnConditional(query, conditionalBlock, conditionalBlock, alias);
+                    } else {
+                        result = new QueryConditional.ConditionalValue(conditionalBlock);
+                    }
                 } else {
                     throw new HCJFRuntimeException("The conditional block is only for return values");
                 }
@@ -491,33 +513,30 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             }
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_UUID_REGEX))) {
             result = UUID.fromString(trimmedStringValue);
+            literal = true;
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_INTEGER_NUMBER_REGEX))) {
             try {
                 result = Long.parseLong(trimmedStringValue);
             } catch (Exception ex) {
                 result = trimmedStringValue;
             }
+            literal = true;
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.DECIMAL_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
                 result = trimmedStringValue;
             }
+            literal = true;
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
             try {
                 result = SystemProperties.getDecimalFormat(SystemProperties.Query.SCIENTIFIC_NOTATION_FORMAT).parse(trimmedStringValue);
             } catch (ParseException e) {
                 result = trimmedStringValue;
             }
+            literal = true;
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
-            String alias = null;
-            String[] asParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
-            if (asParts.length == 3) {
-                trimmedStringValue = asParts[0].trim();
-                alias = asParts[2].trim();
-            }
-
             //If the string matchs with a math expression then creates a function that resolves this math expression.
             String[] mathExpressionParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.HCJF_MATH_SPLITTER_REGULAR_EXPRESSION));
             List<Object> parameters = new ArrayList<>();
@@ -614,15 +633,8 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             } else if(parameterClass.equals(QueryReturnParameter.class)) {
                 //If the parameter class is the QueryReturnParameter.class then the result will be a
                 //QueryReturnFunction.class instance or QueryReturnField.class instance.
-                String alias = null;
-
                 List<String> subGroups = Strings.replaceableGroup(originalValue);
                 originalValue = subGroups.get(subGroups.size() - 1);
-                String[] parts = originalValue.split(SystemProperties.get(SystemProperties.Query.AS_REGULAR_EXPRESSION));
-                if(parts.length == 3) {
-                    originalValue = parts[0].trim();
-                    alias = parts[2].trim();
-                }
                 originalValue = Strings.reverseGrouping(originalValue, subGroups);
 
                 if(function) {
@@ -663,6 +675,10 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                     result = new QueryOrderField(query, originalValue, desc);
                 }
             }
+        }
+
+        if(alias != null && literal) {
+            result = new QueryReturnLiteral(query, trimmedStringValue, trimmedStringValue, result, alias);
         }
 
         if(result instanceof QueryField) {

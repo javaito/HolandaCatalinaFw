@@ -6,6 +6,7 @@ import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.query.evaluators.*;
 import org.hcjf.layers.query.model.QueryOrderParameter;
+import org.hcjf.layers.query.model.QueryReturnLiteral;
 import org.hcjf.layers.query.model.QueryReturnParameter;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.JsonUtils;
@@ -13,6 +14,7 @@ import org.hcjf.utils.Strings;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.Objects;
 
 public class SQLSerializer extends Layer implements QuerySerializer {
 
@@ -50,12 +52,7 @@ public class SQLSerializer extends Layer implements QuerySerializer {
             resultBuilder.append(Strings.WHITE_SPACE);
         }
         for (QueryReturnParameter field : query.getReturnParameters()) {
-            resultBuilder.append(field);
-            if (field.getAlias() != null) {
-                resultBuilder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.AS));
-                resultBuilder.append(Strings.WHITE_SPACE).append(field.getAlias());
-            }
-            resultBuilder.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
+            resultBuilder = toStringQueryReturnValue(resultBuilder, field);
         }
         resultBuilder.cleanBuffer();
 
@@ -142,6 +139,37 @@ public class SQLSerializer extends Layer implements QuerySerializer {
         }
 
         return resultBuilder.toString();
+    }
+
+    /**
+     * Creates string representation of query return parameter and add this representation into builder.
+     * @param builder String builder instance.
+     * @return  Returns the same builder that receive.
+     */
+    private Strings.Builder toStringQueryReturnValue(Strings.Builder builder, QueryReturnParameter queryReturnParameter) {
+        if(queryReturnParameter instanceof QueryReturnLiteral) {
+            Object value = ((QueryReturnLiteral)queryReturnParameter).getValue();
+            if(value instanceof String) {
+                builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+                builder.append(value);
+                builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+            } else if(value instanceof Date) {
+                builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+                builder.append(SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).format((Date)value));
+                builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
+            } else {
+                builder.append(Objects.toString(value));
+            }
+        } else {
+            builder.append(queryReturnParameter);
+        }
+
+        if (queryReturnParameter.getAlias() != null) {
+            builder.append(Strings.WHITE_SPACE).append(SystemProperties.get(SystemProperties.Query.ReservedWord.AS));
+            builder.append(Strings.WHITE_SPACE).append(queryReturnParameter.getAlias());
+        }
+        builder.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
+        return builder;
     }
 
     /**
