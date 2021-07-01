@@ -283,6 +283,35 @@ public class QueryCompileTest {
         }
     }
 
+    @Test
+    public void testSubqueryIntoSelect() {
+        Query query = Query.compile("select (select type,geometry,properties from disjointResultSet) as zona, newMap('features',newArray(zona)) as zona, celularConductor,loginCode,\n" +
+                "disjointResultSet.0.numeroClientes as numeroClientes, disjointResultSet.0.centroDistribucion as centroDistribucion, disjointResultSet.0.fletero as fletero, disjointResultSet.0.codCamion as codCamion, disjointResultSet.0.usuarioCamion as usuarioCamion\n" +
+                "from (select *\n" +
+                "from (select  new('Feature') as type, newMap('') as properties, bboxBuffer as geometry, numeroClientes, centroDistribucion, fletero, codCamion, usuarioCamion\n" +
+                "from (select if(equals(latitudMin,latitudMax),geoNew(concat('POINT(',longitudMin,' ',latitudMin,')')),geoNew(concat('POLYGON((',longitudMin,' ',latitudMin,',', longitudMax,' ',latitudMin,',',longitudMax,' ',latitudMax,',',longitudMin,' ',latitudMax,'))'))) as bbox,\n" +
+                "geoBuffer(bbox,0.002) as bboxBuffer, numeroClientes, centroDistribucion, fletero, codCamion, usuarioCamion\n" +
+                "from (select disjointResultSet,(select latitud from disjointResultSet where latitud!=0 and latitud!=null order by latitud desc) as latitudMax, first(latitudMax) as latitudMax, latitudMax.latitud as latitudMax,\n" +
+                "(select latitud from disjointResultSet where latitud!=0 and latitud!=null order by latitud asc) as latitudMin, first(latitudMin) as latitudMin, latitudMin.latitud as latitudMin,\n" +
+                "(select longitud from disjointResultSet where longitud!=0 and latitud!=null order by longitud desc) as longitudMax, first(longitudMax) as longitudMax, longitudMax.longitud as longitudMax,\n" +
+                "(select longitud from disjointResultSet where longitud!=0 and latitud!=null order by longitud asc) as longitudMin, first(longitudMin) as longitudMin, longitudMin.longitud as longitudMin,\n" +
+                "disjointResultSet.0.numeroClientes as numeroClientes, disjointResultSet.0.centroDistribucion as centroDistribucion, disjointResultSet.0.fletero as fletero, disjointResultSet.0.codCamion as codCamion, disjointResultSet.0.usuarioCamion as usuarioCamion\n" +
+                "from (select latitud, longitud, numeroClientes, centroDistribucion, fletero, codCamion, usuarioCamion\n" +
+                "from (select clientes, put('clientes','numeroClientes',numeroClientes), put('clientes','centroDistribucion',centroDistribucion), put('clientes','fletero',fletero), put('clientes','codCamion',codCamion), put('clientes','usuarioCamion',usuarioCamion)\n" +
+                "from store.dynamic.ccu.lastplanilla where planilla=17774481).clientes as data disjoint by a) as data) as dato) as data2) as data3 disjoint by a) as data4\n" +
+                "full join (select celularConductor, loginCode from store.dynamic.ccu.planilla where planilla = 17774481 and rollbackDate = null) as data5 on true");
+
+        Query query1 = Query.compile(query.toString());
+
+        System.out.println();
+    }
+
+    @Test
+    public void testTextResource() {
+        Query query = Query.compile("SELECT * FROM 'file://path/file.ext' AS file");
+        System.out.println();
+    }
+
     /**
      * Test the numeric value parsing
      */
