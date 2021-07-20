@@ -131,6 +131,10 @@ public interface Queryable extends BsonParcelable {
                 QueryReturnField returnField = (QueryReturnField) returnParameter;
                 name = returnField.getAlias();
                 value = get((O) instance, returnField, dataSource);
+            } else if (returnParameter instanceof QueryReturnLiteral) {
+                QueryReturnLiteral queryReturnLiteral = (QueryReturnLiteral) returnParameter;
+                name = queryReturnLiteral.getAlias();
+                value = queryReturnLiteral.getValue();
             } else if (returnParameter instanceof QueryReturnConditional) {
                 QueryReturnConditional returnConditional = (QueryReturnConditional) returnParameter;
                 name = returnConditional.getAlias();
@@ -175,7 +179,7 @@ public interface Queryable extends BsonParcelable {
                 name = queryReturnUnprocessedValue.getAlias();
             }
             if(name != null) {
-                result = new AbstractMap.SimpleEntry<String, Object>(name, value);
+                result = new AbstractMap.SimpleEntry<>(name, value);
             }
             return result;
         }

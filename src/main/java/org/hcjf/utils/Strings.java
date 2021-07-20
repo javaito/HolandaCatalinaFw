@@ -134,6 +134,7 @@ public final class Strings {
     public static final String AT = "@";
     public static final String ALL = "*";
     public static final String ARGUMENT_IDENTIFIER = "$";
+    public static final String NULL = "null";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
     public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]*·{1,}";
@@ -381,7 +382,18 @@ public final class Strings {
      * @return Wrapper value.
      */
     public static String wrap(String value, String wrapper) {
-        return wrapper + value + wrapper;
+        return wrap(value, wrapper, wrapper);
+    }
+
+    /**
+     * This method wrap the value with the start and end wrapper.
+     * @param value Value to wrap.
+     * @param startWrapper Start value of the wrapper.
+     * @param endWrapper End value of the wrapper.
+     * @return Wrapper value.
+     */
+    public static String wrap(String value, String startWrapper, String endWrapper) {
+        return startWrapper + value + endWrapper;
     }
 
     /**

@@ -4,13 +4,16 @@ import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.query.Join;
 import org.hcjf.layers.query.Query;
+import org.hcjf.layers.query.evaluators.BaseEvaluator;
 import org.hcjf.layers.query.evaluators.Evaluator;
 import org.hcjf.layers.query.model.*;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
+import org.hcjf.utils.Strings;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public class JsonCompiler extends Layer implements QueryCompiler {
@@ -36,6 +39,8 @@ public class JsonCompiler extends Layer implements QueryCompiler {
         public static final String PATH = "path";
         public static final String FUNCTION = "function";
         public static final String PARAMETERS = "parameters";
+        public static final String AND = "and";
+        public static final String OR = "or";
     }
 
     @Override
@@ -154,11 +159,11 @@ public class JsonCompiler extends Layer implements QueryCompiler {
                     result = new QueryDynamicResource(alias, subQuery, path);
                 } else if(body.containsKey(Fields.DATA)) {
                     Object data = Introspection.resolve(Fields.DATA);
-                    Collection<Map<String,Object>> collection;
-                    if(data instanceof Map) {
+                    Collection<Map<String, Object>> collection;
+                    if (data instanceof Map) {
                         collection = new ArrayList<>();
                         collection.add((Map<String, Object>) data);
-                    } else if(data instanceof Collection) {
+                    } else if (data instanceof Collection) {
                         collection = (Collection<Map<String, Object>>) data;
                     } else {
                         throw new HCJFRuntimeException("");
@@ -179,6 +184,16 @@ public class JsonCompiler extends Layer implements QueryCompiler {
     /**
      *
      * @param query
+     * @param queryBody
+     * @return
+     */
+    private QueryFunction createQueryFunction(Query query, Map<String,Object> queryBody) {
+        return null;
+    }
+
+    /**
+     *
+     * @param query
      * @param fieldBody
      * @return
      */
@@ -186,7 +201,28 @@ public class JsonCompiler extends Layer implements QueryCompiler {
         QueryReturnParameter result = null;
 
         if(fieldBody instanceof Map) {
-
+            Map<String,Object> map = (Map<String, Object>) fieldBody;
+            String alias = Introspection.resolve(map, Fields.AS);
+            if(map.containsKey(Fields.QUERY)) {
+                String originalValue = Introspection.resolve(map, Fields.QUERY);
+                Query subQuery = compile(originalValue);
+                QueryReturnUnprocessedValue queryReturnUnprocessedValue =
+                        new QueryReturnUnprocessedValue(query, originalValue,
+                                alias, new BaseEvaluator.QueryValue(subQuery, true));
+                result = queryReturnUnprocessedValue;
+            } else if(map.containsKey(Fields.FUNCTION)) {
+                String functionName = Introspection.resolve(map, Fields.FUNCTION);
+                List<Object> parameters = Introspection.resolve(map, Fields.PARAMETERS);
+                QueryReturnFunction queryReturnFunction = new QueryReturnFunction(query,
+                        functionName, functionName, parameters, alias);
+                result = queryReturnFunction;
+            } else if(map.containsKey(Fields.PATH)) {
+                String path = Introspection.resolve(map, Fields.PATH);
+                QueryReturnField queryReturnField = new QueryReturnField(query, path, alias);
+                result = queryReturnField;
+            } else {
+                throw new HCJFRuntimeException("Unknown parameter type: %s", JsonUtils.toJsonTree(map).toString());
+            }
         }
 
         return result;
