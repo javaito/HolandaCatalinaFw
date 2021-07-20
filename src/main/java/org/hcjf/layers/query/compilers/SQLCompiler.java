@@ -222,16 +222,22 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
         if(dynamicResource.isBlank()) {
             result = new QueryResource(resourceValue.trim());
         } else if(resourceValue.startsWith(Strings.RICH_TEXT_SEPARATOR) && resourceValue.endsWith(Strings.RICH_TEXT_SEPARATOR)) {
-            String json = Strings.reverseRichTextGrouping(resourceValue, richTexts);
-            json = json.substring(1, json.length() - 1);
-            Object object = JsonUtils.createObject(json);
-            Collection<Map<String,Object>> resourceValues;
-            if(object instanceof Collection) {
-                resourceValues = (Collection<Map<String, Object>>) object;
+            String text = Strings.reverseRichTextGrouping(resourceValue, richTexts);
+            text = text.substring(1, text.length() - 1).trim();
+            if((text.startsWith(Strings.START_SUB_GROUP) && text.endsWith(Strings.END_SUB_GROUP)) ||
+                    (text.startsWith(Strings.START_OBJECT) && text.endsWith(Strings.END_OBJECT))) {
+                //In this case the text value is a json file
+                Object object = JsonUtils.createObject(text);
+                Collection<Map<String, Object>> resourceValues;
+                if (object instanceof Collection) {
+                    resourceValues = (Collection<Map<String, Object>>) object;
+                } else {
+                    resourceValues = List.of((Map<String, Object>) object);
+                }
+                result = new QueryJsonResource(dynamicResourceAlias.trim(), resourceValues);
             } else {
-                resourceValues = List.of((Map<String,Object>)object);
+                result = new QueryTextResource(dynamicResourceAlias.trim(), text);
             }
-            result = new QueryJsonResource(dynamicResourceAlias.trim(), resourceValues);
         } else {
             String path = null;
             if (resourceValue.indexOf(Strings.CLASS_SEPARATOR) > 0) {

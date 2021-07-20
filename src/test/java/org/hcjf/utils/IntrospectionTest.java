@@ -55,6 +55,26 @@ public class IntrospectionTest {
         }
     }
 
+    public class Bean {
+        public String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    @Test
+    public void testBean() {
+        Bean bean = new Bean();
+        bean.setName("javier");
+
+        System.out.println(Introspection.resolve(bean, "name").toString());
+    }
+
     @Test
     public void testToInstance() {
         try {
@@ -233,6 +253,8 @@ public class IntrospectionTest {
 
         Object o2 = Introspection.resolveAndPut(body, "collection.0.innerMap", "newKLey2", "newValue2");
         System.out.println(o2);
+
+        Object obj = Introspection.resolve(body, "collection.0.innerCollection");
 
         Object o3 = Introspection.resolveAndAdd(body, "collection.0.innerCollection", Map.of("newKLey2", "newValue2"));
         System.out.println(03);

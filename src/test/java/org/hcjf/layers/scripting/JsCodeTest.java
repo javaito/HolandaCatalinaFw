@@ -36,6 +36,32 @@ public class JsCodeTest {
     }
 
     @Test
+    public void testJsonPrint() {
+        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "js");
+        Map<String,Object> parameters = new HashMap<>();
+        parameters.put("name", "javier");
+        parameters.put("age", 40);
+        parameters.put("date", new Date());
+        parameters.put("map", Map.of("lastName", "quiroga"));
+
+        String script = "" +
+                "print(name);" +
+                "print(age);" +
+                "print(date);" +
+                "print(map);" +
+                "print(index);" +
+                "return JSON.stringify(map, null, 2);";
+
+        Long time = System.currentTimeMillis();
+        for (int i = 0; i < 1; i++) {
+            parameters.put("index", i);
+            ExecutionResult result = codeEvaluator.evaluate(script, parameters);
+            System.out.println(result.getResult().toString());
+        }
+        System.out.println("Time:" + (System.currentTimeMillis() - time));
+    }
+
+    @Test
     public void testReturnMap() {
         CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "js");
         Map<String,Object> parameters = new HashMap<>();

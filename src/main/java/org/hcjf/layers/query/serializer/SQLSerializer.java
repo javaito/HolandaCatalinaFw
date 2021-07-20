@@ -5,9 +5,7 @@ import org.hcjf.layers.query.Join;
 import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.query.evaluators.*;
-import org.hcjf.layers.query.model.QueryOrderParameter;
-import org.hcjf.layers.query.model.QueryReturnLiteral;
-import org.hcjf.layers.query.model.QueryReturnParameter;
+import org.hcjf.layers.query.model.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
@@ -19,6 +17,19 @@ import java.util.Objects;
 public class SQLSerializer extends Layer implements QuerySerializer {
 
     private static final String NAME = "SQL";
+
+    private static final class QueryResourcePatterns {
+
+        private static final class QueryDynamicResource {
+            private static final String TO_STRING_PATTERN = "(%s) as %s";
+            private static final String TO_STRING_WITH_PATH_PATTERN = "(%s).%s as %s";
+        }
+
+        private static final class TextResource {
+            private static final String TO_STRING_PATTERN = "'%s' as %s";
+        }
+
+    }
 
     @Override
     public String getImplName() {
@@ -60,7 +71,7 @@ public class SQLSerializer extends Layer implements QuerySerializer {
         resultBuilder.append(Strings.WHITE_SPACE);
         resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.FROM));
         resultBuilder.append(Strings.WHITE_SPACE);
-        resultBuilder.append(query.getResource().toString());
+        toStringQueryResource(resultBuilder, query.getResource());
         resultBuilder.append(Strings.WHITE_SPACE);
 
         //Print joins
@@ -170,6 +181,31 @@ public class SQLSerializer extends Layer implements QuerySerializer {
         }
         builder.append(Strings.EMPTY_STRING, SystemProperties.get(SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR));
         return builder;
+    }
+
+     * Creates a string representation of query resource and append this representation into result object.
+     * @param result Buffer with the current result.
+     * @param resource Query resource object.
+     */
+    private void toStringQueryResource(Strings.Builder result, QueryResource resource) {
+        if(resource instanceof QueryDynamicResource) {
+            QueryDynamicResource queryDynamicResource = (QueryDynamicResource) resource;
+            result.append(queryDynamicResource.getPath() == null ?
+                    String.format(QueryResourcePatterns.QueryDynamicResource.TO_STRING_PATTERN,
+                            queryDynamicResource.getQuery().toString(), queryDynamicResource.getResourceName()) :
+                    String.format(QueryResourcePatterns.QueryDynamicResource.TO_STRING_WITH_PATH_PATTERN,
+                            queryDynamicResource.getQuery().toString(), queryDynamicResource.getPath(), queryDynamicResource.getResourceName()));
+        } else if(resource instanceof QueryJsonResource) {
+            QueryJsonResource queryJsonResource = (QueryJsonResource) resource;
+            result.append(String.format(QueryResourcePatterns.TextResource.TO_STRING_PATTERN,
+                    JsonUtils.toJsonTree(queryJsonResource.getResourceValues()).toString(), queryJsonResource.getResourceName()));
+        } else if(resource instanceof QueryTextResource) {
+            QueryTextResource queryTextResource = (QueryTextResource) resource;
+            result.append(String.format(QueryResourcePatterns.TextResource.TO_STRING_PATTERN,
+                    JsonUtils.toJsonTree(queryTextResource.getText()).toString(), queryTextResource.getResourceName()));
+        } else {
+            result.append(resource.getResourceName());
+        }
     }
 
     /**

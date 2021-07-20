@@ -137,7 +137,7 @@ public final class Strings {
     public static final String NULL = "null";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
-    public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]·{1,}";
+    public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]*·{1,}";
 
     /**
      * Creates a hexadecimal string as checksum for the byte array. This method use the algorithm indicated into the
