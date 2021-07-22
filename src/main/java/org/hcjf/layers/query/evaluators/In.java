@@ -25,26 +25,34 @@ public class In extends FieldEvaluator {
             Object leftValue = getProcessedLeftValue(object, dataSource, consumer);
             Object rightValue = getProcessedRightValue(object, dataSource, consumer);
 
-            Collection collection = null;
-            if(Map.class.isAssignableFrom(rightValue.getClass())) {
-                collection = ((Map)rightValue).keySet();
-            } else if(Collection.class.isAssignableFrom(rightValue.getClass())) {
-                collection = ((Collection)rightValue);
-            } else if(rightValue.getClass().isArray()) {
-                collection = Arrays.asList((Object[])rightValue);
-            } else {
-                throw new HCJFRuntimeException("In evaluator fail, right value must be a collection, map or array");
-            }
+            if(rightValue != null && leftValue != null) {
+                Collection collection = null;
+                if (Map.class.isAssignableFrom(rightValue.getClass())) {
+                    collection = ((Map) rightValue).keySet();
+                } else if (Collection.class.isAssignableFrom(rightValue.getClass())) {
+                    collection = ((Collection) rightValue);
+                } else if (rightValue.getClass().isArray()) {
+                    collection = Arrays.asList((Object[]) rightValue);
+                }
 
-            if(leftValue instanceof Number) {
-                for(Object collectionItem : collection) {
-                    result = numberEquals((Number) leftValue, collectionItem);
-                    if(result) {
-                        break;
+                if (collection == null) {
+                    if (leftValue instanceof Number) {
+                        result = numberEquals((Number) leftValue, rightValue);
+                    } else {
+                        result = leftValue.equals(rightValue);
+                    }
+                } else {
+                    if (leftValue instanceof Number) {
+                        for (Object collectionItem : collection) {
+                            result = numberEquals((Number) leftValue, collectionItem);
+                            if (result) {
+                                break;
+                            }
+                        }
+                    } else {
+                        result = collection.contains(leftValue);
                     }
                 }
-            } else {
-                result = collection.contains(leftValue);
             }
         } catch (Exception ex) {
             throw new HCJFRuntimeException("In evaluator fail", ex);

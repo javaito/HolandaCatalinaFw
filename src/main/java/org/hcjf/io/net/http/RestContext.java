@@ -29,6 +29,7 @@ public class RestContext extends Context {
         private static final String VALUE_FIELD = "value";
         private static final String PARAMS_FIELD = "params";
         private static final String ID_URL_FIELD = "id";
+        private static final String POINTER_PREFIX = "$";
         private static final String REQUEST_CONFIG = "__request_config";
         private static final String DATE_FORMAT_CONFIG = "dateFormat";
         private static class Throwable {
@@ -62,7 +63,6 @@ public class RestContext extends Context {
     @Override
     public HttpResponse onContext(HttpRequest request) {
         HttpMethod method = request.getMethod();
-        JsonParser jsonParser = new JsonParser();
         Gson gson = new GsonBuilder().setDateFormat(SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
         JsonElement jsonElement;
         Collection<HttpHeader> headers = new ArrayList<>();
@@ -104,20 +104,39 @@ public class RestContext extends Context {
                 jsonElement = gson.toJsonTree(readLayerInterface.read(id));
             }
         } else if(method.equals(HttpMethod.POST)) {
-            RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
+            JsonElement body = JsonParser.parseString(new String(request.getBody()));
+            RequestModel requestModel;
+            if (body.isJsonObject()) {
+                requestModel = new RequestModel((JsonObject) body);
+            } else {
+                requestModel = new RequestModel((JsonArray) body);
+            }
             if(requestModel.getBody() == null) {
                 // If the method is post and the body object is null then the request attempt to create a parameterized
                 // query instance or a group of queryable instances.
+                Queryable.DataSource dataSource = requestModel.getDataSource();
                 if(requestModel.getQueryable() != null) {
-                    jsonElement = gson.toJsonTree(Query.evaluate(requestModel.getQueryable()));
+                    if(dataSource == null) {
+                        jsonElement = gson.toJsonTree(Query.evaluate(requestModel.getQueryable()));
+                    } else {
+                        jsonElement = gson.toJsonTree(requestModel.getQueryable().evaluate(dataSource));
+                    }
                 } else if(requestModel.getQueryables() != null){
                     JsonObject queriesResult = new JsonObject();
                     for(String key : requestModel.getQueryables().keySet()) {
                         try {
-                            queriesResult.add(key, gson.toJsonTree(Query.evaluate(requestModel.getQueryables().get(key))));
+                            if(dataSource == null) {
+                                queriesResult.add(key, gson.toJsonTree(Query.evaluate(requestModel.getQueryables().get(key))));
+                            } else {
+                                queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(dataSource)));
+                            }
                         } catch (Throwable throwable){
                             queriesResult.add(key, createJsonFromThrowable(throwable));
                         }
+                    }
+                    for(String key : requestModel.getPointers().keySet()) {
+                        String value = requestModel.getPointers().get(key);
+                        queriesResult.add(key, gson.toJsonTree(requestModel.getDataSourcesMap().get(value)));
                     }
                     jsonElement = queriesResult;
                 } else {
@@ -126,26 +145,40 @@ public class RestContext extends Context {
             } else {
                 // This method call by default to create layer interface implementation.
                 CreateLayerInterface createLayerInterface = Layers.get(CreateLayerInterface.class, resourceName);
-                jsonElement = gson.toJsonTree(createLayerInterface.create(requestModel.getBody()));
+                if(requestModel.getBody() instanceof Collection) {
+                    jsonElement = gson.toJsonTree(createLayerInterface.create((Collection) requestModel.getBody()));
+                } else {
+                    jsonElement = gson.toJsonTree(createLayerInterface.create(requestModel.getBody()));
+                }
             }
         } else if(method.equals(HttpMethod.PUT)) {
             // This method call to update layer interface implementation.
             UpdateLayerInterface updateLayerInterface = Layers.get(UpdateLayerInterface.class, resourceName);
-            RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
-            if(id != null) {
-                requestModel.getBody().put(Fields.ID_URL_FIELD, id);
-                jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
+            RequestModel requestModel = new RequestModel(JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
+            if(requestModel.getQueryable() == null) {
+                if(id != null) {
+                    ((Map<String, Object>) requestModel.getBody()).put(Fields.ID_URL_FIELD, id);
+                }
+                if(requestModel.getBody() instanceof Collection) {
+                    jsonElement = gson.toJsonTree(updateLayerInterface.update((Collection) requestModel.getBody()));
+                } else {
+                    jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
+                }
             } else {
                 jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));
             }
         } else if(method.equals(HttpMethod.DELETE)) {
             // This method call to delete layer interface implementation.
             DeleteLayerInterface deleteLayerInterface = Layers.get(DeleteLayerInterface.class, resourceName);
-            if(id != null) {
+            if(id != null && (request.getBody() == null || request.getBody().length == 0)) {
                 jsonElement = gson.toJsonTree(deleteLayerInterface.delete(id));
             } else {
-                RequestModel requestModel = new RequestModel((JsonObject) jsonParser.parse(new String(request.getBody())));
-                jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
+                RequestModel requestModel = new RequestModel(JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
+                if(requestModel.getQueryable() != null) {
+                    jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
+                } else {
+                    jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getBody()));
+                }
             }
         } else {
             throw new HCJFRuntimeException("Unsupported http method: %s", method.toString());
@@ -229,10 +262,17 @@ public class RestContext extends Context {
      */
     private static class RequestModel {
 
-        private Map<String,Object> body;
+        private Object body;
         private Queryable queryable;
         private Map<String,Queryable> queryables;
+        private Map<String,String> pointers;
         private Map<String,Object> requestConfig;
+        private Map<String,Object> dataSourcesMap;
+        private Queryable.DataSource<Object> dataSource;
+
+        public RequestModel(JsonArray jsonArray) {
+            body = JsonUtils.createList(jsonArray);
+        }
 
         public RequestModel(JsonObject jsonObject) {
             if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&
@@ -245,15 +285,50 @@ public class RestContext extends Context {
                 }
 
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD))) {
-                    queryable = createQuery(jsonObject.get(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)));
+                    queryable = (Queryable) createQuery(jsonObject.get(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)));
                 }
 
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD))) {
+                    pointers = new HashMap<>();
                     queryables = new HashMap<>();
                     JsonObject queryablesObject = jsonObject.getAsJsonObject(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD));
                     for (String key : queryablesObject.keySet()) {
-                        queryables.put(key, createQuery(queryablesObject.get(key)));
+                        Object query = createQuery(queryablesObject.get(key));
+                        if(query instanceof Queryable) {
+                            queryables.put(key, (Queryable) query);
+                        } else {
+                            pointers.put(key, (String) query);
+                        }
                     }
+                }
+
+                if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD))) {
+                    Map<String, Object> rawDataSources = (Map<String, Object>)
+                            JsonUtils.createObject(jsonObject.get(
+                                    SystemProperties.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD)));
+
+                    dataSourcesMap = new HashMap<>();
+                    for(String dataSourceName : rawDataSources.keySet()) {
+                        Object dataSource = rawDataSources.get(dataSourceName);
+                        if(dataSource instanceof String) {
+                            Queryable queryable = Query.compile((String) dataSource);
+                            dataSourcesMap.put(dataSourceName, Query.evaluate(queryable));
+                        } else if(dataSource instanceof List) {
+                            dataSourcesMap.put(dataSourceName, dataSource);
+                        } else if(dataSource instanceof Map) {
+                            List list = new ArrayList();
+                            list.add(dataSource);
+                            dataSourcesMap.put(dataSourceName, list);
+                        }
+                    }
+
+                    dataSource = queryable -> {
+                        if(dataSourcesMap.containsKey(queryable.getResourceName())) {
+                            return (Collection<Object>) dataSourcesMap.get(queryable.getResourceName());
+                        } else {
+                            throw new HCJFRuntimeException("Data source not found: %s", queryable.getResourceName());
+                        }
+                    };
                 }
             }
         }
@@ -263,8 +338,8 @@ public class RestContext extends Context {
          * @param element Json element instance.
          * @return Returns the queriable instance.
          */
-        private Queryable createQuery(JsonElement element) {
-            Queryable result;
+        private Object createQuery(JsonElement element) {
+            Object result;
             if(element instanceof JsonObject) {
                 JsonObject queryJsonObject = element.getAsJsonObject();
                 ParameterizedQuery parameterizedQuery = Query.compile(queryJsonObject.get(Fields.VALUE_FIELD).getAsString()).getParameterizedQuery();
@@ -275,7 +350,12 @@ public class RestContext extends Context {
                 }
                 result = parameterizedQuery;
             } else {
-                result = Query.compile(element.getAsString());
+                String value = element.getAsString();
+                if(value.startsWith(Fields.POINTER_PREFIX)) {
+                    result = value.substring(Fields.POINTER_PREFIX.length());
+                } else {
+                    result = Query.compile(element.getAsString());
+                }
             }
             return result;
         }
@@ -284,7 +364,7 @@ public class RestContext extends Context {
          * Returns the body of the request.
          * @return Body of the request.
          */
-        public Map<String, Object> getBody() {
+        public Object getBody() {
             return body;
         }
 
@@ -302,6 +382,18 @@ public class RestContext extends Context {
          */
         public Map<String, Queryable> getQueryables() {
             return queryables;
+        }
+
+        public Map<String, String> getPointers() {
+            return pointers;
+        }
+
+        public Map<String, Object> getDataSourcesMap() {
+            return dataSourcesMap;
+        }
+
+        public Queryable.DataSource<Object> getDataSource() {
+            return dataSource;
         }
     }
 }

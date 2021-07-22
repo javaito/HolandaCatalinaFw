@@ -1,19 +1,19 @@
 package org.hcjf.cloud.impl.network;
 
-import io.kubernetes.client.models.V1Pod;
-import io.kubernetes.client.models.V1Service;
-import io.kubernetes.client.models.V1ServicePort;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1Service;
+import io.kubernetes.client.openapi.models.V1ServicePort;
 import org.hcjf.cloud.Cloud;
 import org.hcjf.cloud.impl.LockImpl;
 import org.hcjf.cloud.impl.messages.*;
 import org.hcjf.cloud.impl.objects.*;
+import org.hcjf.errors.HCJFRemoteException;
+import org.hcjf.errors.HCJFRemoteInvocationTimeoutException;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.events.DistributedEvent;
 import org.hcjf.events.Events;
 import org.hcjf.events.RemoteEvent;
 import org.hcjf.events.StoreStrategyLayerInterface;
-import org.hcjf.io.net.NetClient;
-import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetServiceConsumer;
 import org.hcjf.io.net.broadcast.BroadcastService;
@@ -151,8 +151,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
         random = new Random();
         sharedStore = new DistributedTree(Strings.EMPTY_STRING);
-
-//        fork(this::initReorganizationTimer);
         server = new CloudServer();
         server.start();
 
@@ -273,8 +271,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
     /**
      *
-     * @param expectedLabels
-     * @param labels
+     * @param expectedLabels expected labels
+     * @param labels labels
      * @return
      */
     public boolean verifyLabels(Map<String,String> expectedLabels, Map<String,String> labels) {
@@ -354,7 +352,29 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 serviceDefinitionMessage.setBroadcasting(true);
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
                 try {
-                    invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
+                    Object responseObject = invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
+                    if(responseObject != null) {
+                        ServiceDefinitionResponseMessage definitionResponse = (ServiceDefinitionResponseMessage) responseObject;
+                        fork(() -> {
+                            if (definitionResponse.getMessages() != null) {
+                                for (Message innerMessage : definitionResponse.getMessages()) {
+                                    try {
+                                        processMessage(null, innerMessage);
+                                    } catch (Exception ex) {
+                                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                                "Unable to process one message of the service publication collection: %s",
+                                                innerMessage.getClass().toString());
+                                    }
+                                }
+                            }
+                        });
+
+                        try {
+                            endPoints.get(definitionResponse.getServiceId()).setName(definitionResponse.getServiceName());
+                            endPoints.get(definitionResponse.getServiceId()).setDistributedEventListener(definitionResponse.getEventListener());
+                        } catch (Exception ex) {
+                        }
+                    }
                 } catch (Exception ex) {
                     Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
                     try {
@@ -427,95 +447,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     /**
-     * This method is called periodically or for some particular events like the connection or disconnection of a node,
-     * and verify the memory organization to fix it if necessary.
-     * @param node Node that produce the event.
-     * @param session Session that represents the node.
-     */
-    private synchronized void reorganize(Node node, CloudSession session, ReorganizationAction action) {
-        long time = System.currentTimeMillis();
-
-        switch(action) {
-            case CONNECT: {
-                LocalLeaf localLeaf;
-                Object[] path;
-                List<UUID> nodes = List.of(thisNode.getId());
-                List<PublishObjectMessage.Path> paths = new ArrayList<>();
-
-                for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
-                    localLeaf = (LocalLeaf) entry.getValue();
-                    path = entry.getPath();
-                    if (!(localLeaf.getInstance() instanceof DistributedLayer) &&
-                            !(localLeaf.getInstance() instanceof DistributedLock)) {
-                        paths.add(new PublishObjectMessage.Path(path, nodes));
-                    }
-                }
-
-                PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
-                publishObjectMessage.setTimestamp(System.currentTimeMillis());
-                publishObjectMessage.setPaths(paths);
-                sendResponse(session, publishObjectMessage);
-                break;
-            }
-            case DISCONNECT: {
-                DistributedLeaf distributedLeaf;
-                for (DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class, RemoteLeaf.class)) {
-                    distributedLeaf = (DistributedLeaf) entry.getValue();
-                    distributedLeaf.getNodes().remove(node.getId());
-                }
-                break;
-            }
-            case TIME: {
-                int replicationFactor = SystemProperties.getInteger(
-                        SystemProperties.Cloud.Orchestrator.REPLICATION_FACTOR);
-
-                LocalLeaf localLeaf;
-                Map<UUID, List<PublishObjectMessage.Path>> pathsByNode = new HashMap<>();
-                for(Node sortedNode : getSortedNodes()) {
-                    pathsByNode.put(sortedNode.getId(), new ArrayList<>());
-                }
-                for(DistributedTree.Entry entry : sharedStore.filter(LocalLeaf.class)) {
-                    localLeaf = (LocalLeaf) entry.getValue();
-                    if(!(localLeaf.getInstance() instanceof DistributedLayer) &&
-                            !(localLeaf.getInstance() instanceof DistributedLock)) {
-                        if (localLeaf.getNodes().size() < replicationFactor) {
-                            for (Node sortedNode : getSortedNodes()) {
-                                if (!localLeaf.getNodes().contains(sortedNode.getId())) {
-                                    List<UUID> nodeIds = new ArrayList<>(localLeaf.getNodes());
-                                    nodeIds.add(sortedNode.getId());
-                                    pathsByNode.get(sortedNode.getId()).add(
-                                            new PublishObjectMessage.Path(entry.getPath(),
-                                                    localLeaf.getInstance(), nodeIds));
-                                }
-                            }
-                        }
-                    }
-                }
-
-                for(UUID nodeId : pathsByNode.keySet()) {
-                    List<PublishObjectMessage.Path> paths = pathsByNode.get(nodeId);
-                    if(!paths.isEmpty()) {
-                        PublishObjectMessage publishObjectMessage = new PublishObjectMessage(UUID.randomUUID());
-                        publishObjectMessage.setPaths(paths);
-                        publishObjectMessage.setTimestamp(System.currentTimeMillis());
-                        invokeNetworkComponent(nodes.get(nodeId), publishObjectMessage);
-                        for(PublishObjectMessage.Path path : paths) {
-                            addLocalObject(path.getValue(), path.getNodes(), List.of(), 0L, path.getPath());
-                        }
-                    }
-                }
-                break;
-            }
-        }
-
-        time = System.currentTimeMillis() - time;
-        if(time > SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.REORGANIZATION_WARNING_TIME_LIMIT)) {
-            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "End reorganization process by action: %s, time: %d",
-                    action.toString(), time);
-        }
-    }
-
-    /**
      * Creates all the message needed to publish the service.
      * @return Collection of messages.
      */
@@ -538,22 +469,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return messages;
     }
 
-//    private void initReorganizationTimer() {
-//        while(!Thread.currentThread().isInterrupted()) {
-//            try {
-//                Thread.sleep(SystemProperties.getLong(
-//                        SystemProperties.Cloud.Orchestrator.REORGANIZATION_TIMEOUT));
-//                try {
-//                    reorganize(null, null, ReorganizationAction.TIME);
-//                } catch (Exception ex) {
-//                    ex.printStackTrace();
-//                }
-//            } catch (InterruptedException ex){
-//                break;
-//            }
-//        }
-//    }
-
     public void incomingMessage(CloudSession session, Message message) {
         String from = OriginDataFields.UNKNOWN;
         if(message.getOriginData() != null) {
@@ -564,8 +479,16 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         Message responseMessage = null;
         if(message instanceof ServiceDefinitionMessage) {
             try {
-                responseMessage = new ServiceDefinitionResponseMessage(message);
-                ((ServiceDefinitionResponseMessage) responseMessage).setMessages(createServicePublicationCollection());
+                ServiceDefinitionResponseMessage serviceDefinitionResponseMessage = new ServiceDefinitionResponseMessage();
+                serviceDefinitionResponseMessage.setId(UUID.randomUUID());
+                serviceDefinitionResponseMessage.setMessages(createServicePublicationCollection());
+                serviceDefinitionResponseMessage.setServiceId(thisServiceEndPoint.getId());
+                serviceDefinitionResponseMessage.setServiceName(thisServiceEndPoint.getName());
+                serviceDefinitionResponseMessage.setEventListener(thisServiceEndPoint.isDistributedEventListener());
+                serviceDefinitionResponseMessage.setBroadcasting(true);
+                ResponseMessage definitionResponse = new ResponseMessage(message);
+                definitionResponse.setValue(serviceDefinitionResponseMessage);
+                responseMessage = definitionResponse;
             } catch (Exception ex) {
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                         "Unable to create publication response message", ex);
@@ -594,21 +517,23 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                             ((ServiceDefinitionMessage) message).getEventListener());
                 } catch (Exception ex){}
 
-                fork(() -> {
-                    //Sent the message for all the replicas
-                    if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
-                        serviceDefinitionMessage.setBroadcasting(false);
-                        for (Node node : nodes.values()) {
-                            try {
-                                invokeNetworkComponent(node, serviceDefinitionMessage,
-                                        SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT));
-                            } catch (Exception ex) {
-                                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                                        "Unable to notify node: %s", node.toString());
+                if(SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED)) {
+                    fork(() -> {
+                        //Sent the message for all the replicas
+                        if (serviceDefinitionMessage.getBroadcasting() != null && serviceDefinitionMessage.getBroadcasting()) {
+                            serviceDefinitionMessage.setBroadcasting(false);
+                            for (Node node : nodes.values()) {
+                                try {
+                                    invokeNetworkComponent(node, serviceDefinitionMessage,
+                                            SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT));
+                                } catch (Exception ex) {
+                                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                            "Unable to notify node: %s", node.toString());
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
             } catch (Exception ex){
                 Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                         "Exception processing publication message: %s", ex, message.getId().toString());
@@ -643,7 +568,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             }
 
             if(node == null && Objects.equals(nodeIdentificationMessage.getNode().getClusterName(), thisNode.getClusterName())) {
-                //In this case we need to add the node ass a new node
+                //In this case we need to add the node as a new node
                 registerConsumer(nodeIdentificationMessage.getNode());
 
                 //Search again the node into the class collections.
@@ -865,7 +790,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             }
             try {
                 if (client.waitForConnect()) {
-                    ResponseListener responseListener = new ResponseListener(timeout);
+                    ResponseListener responseListener = new ResponseListener(networkComponent, timeout);
                     registerListener(message, responseListener);
                     try {
                         Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
@@ -1115,7 +1040,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     public void publishDistributedLayer(String regex, Object... path) {
         DistributedLayer distributedLayer = getDistributedLayer(true, path);
         distributedLayer.setRegex(regex);
-        System.out.println();
     }
 
     public void publishPlugin(byte[] jarFile) {
@@ -1394,9 +1318,11 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private final class ResponseListener {
 
         private final Long timeout;
+        private final NetworkComponent destination;
         private ResponseMessage responseMessage;
 
-        public ResponseListener(Long timeout) {
+        public ResponseListener(NetworkComponent destination, Long timeout) {
+            this.destination = destination;
             this.timeout = timeout;
         }
 
@@ -1415,12 +1341,14 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
 
             if(responseMessage != null) {
                 if(responseMessage.getThrowable() != null) {
-                    throw new HCJFRuntimeException("Remote exception", responseMessage.getThrowable());
+                    throw new HCJFRemoteException("Remote exception from %s",
+                            responseMessage.getThrowable(), destination.getName());
                 } else {
                     result = responseMessage.getValue();
                 }
             } else {
-                throw new HCJFRuntimeException("Remote invocation timeout, message id: " + message.getId().toString());
+                throw new HCJFRemoteInvocationTimeoutException("Remote invocation timeout from %s, message id: %s",
+                        destination.getName(), message.getId().toString());
             }
             responseListeners.remove(message.getId());
             return result;

@@ -1,6 +1,7 @@
 package org.hcjf.utils;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.names.Naming;
 import org.hcjf.service.security.LazyPermission;
 import org.hcjf.service.security.Permission;
@@ -25,11 +26,82 @@ public final class Introspection {
     private static final String PATH_SEPARATOR = "\\.";
     private static final String SETTER_PREFIX = "set";
 
+    private static final String GROUP_AS_LIST_CHARACTER = "**";
+    private static final String GROUP_AS_SET_CHARACTER = "*";
+    private static final String CONCAT_GROUP_CHARACTER = "|";
+
     private static final int SETTER_GETTER_FIRST_CHAR_FIELD_NAME_GROUP = 2;
     private static final int SETTER_GETTER_FIELD_NAME_GROUP = 3;
 
     private static final Map<String, Map<String, ? extends Invoker>> invokerCache = new HashMap<>();
     private static final Map<Class, Map<String, Accessors>> accessorsCache = new HashMap<>();
+
+    /**
+     * If the value is an instance of map or collection the the method returns a deep copy of the object, if the value
+     * si an instance of other object then returns the same value.
+     * @param value Value to make the copy.
+     * @param <O> Expected return type.
+     * @return Returns the copy of the value.
+     */
+    public static <O extends Object> O deepCopy(O value) {
+        O result = value;
+        if(value instanceof Map) {
+            result = (O) deepCopyMap((Map<String, Object>) value);
+        } else if(value instanceof Collection) {
+            result = (O) deepCopyCollection((Collection<Object>) value);
+        }
+        return result;
+    }
+
+    /**
+     * Creates a copy of the map instance and put all the values into the copy. If the value is a map or collection then
+     * call in order to create a copy of the map or collection before to put the value into the copy.
+     * @param map Map instance to create a copy.
+     * @return Copy of the map instance and all the collections referencies into the copy are a copy too.
+     */
+    private static Map<String,Object> deepCopyMap(Map<String,Object> map) {
+        Map<String,Object> copy;
+        if(map instanceof JoinableMap) {
+            copy = new JoinableMap();
+        } else {
+            copy = new HashMap<>();
+        }
+
+        for(String key : map.keySet()) {
+            Object value = map.get(key);
+            if(value instanceof Map) {
+                copy.put(key, deepCopyMap((Map<String, Object>) value));
+            } else if(value instanceof Collection) {
+                copy.put(key, deepCopyCollection((Collection<Object>) value));
+            } else {
+                copy.put(key, value);
+            }
+        }
+
+        return copy;
+    }
+
+    /**
+     * Creates a copy of the collection instance and add all the values into the copy. If the value is a map or
+     * collection then call in order to create a copy of the map or collection before to put the value into the copy.
+     * @param collection Collection instance to create a copy.
+     * @return Copy of the collection instance and all the collections referencies into the copy are a copy too.
+     */
+    private static Collection<Object> deepCopyCollection(Collection<Object> collection) {
+        Collection<Object> copy = new ArrayList<>();
+
+        for(Object value : collection) {
+            if(value instanceof Map) {
+                copy.add(deepCopyMap((Map<String, Object>) value));
+            } else if(value instanceof Collection) {
+                copy.add(deepCopyCollection((Collection<Object>) value));
+            } else {
+                copy.add(value);
+            }
+        }
+
+        return copy;
+    }
 
     /**
      * This method resolve the path using introspection to navigate into the instance finding each element of the path.
@@ -57,7 +129,12 @@ public final class Introspection {
      * @return Returns the value that point the path.
      */
     public static <O extends Object> O resolve(Object instance, String path) {
-        String[] pathElements = path.split(PATH_SEPARATOR);
+        String[] pathElements;
+        if(path.equals(Strings.CLASS_SEPARATOR)) {
+            pathElements = new String[]{};
+        } else {
+            pathElements = path.split(PATH_SEPARATOR);
+        }
         return resolve(instance, pathElements);
     }
 
@@ -71,8 +148,16 @@ public final class Introspection {
      */
     public static <O extends Object> O resolve(Object instance, String... path) {
         Object result = instance;
+        Integer currentElement = 0;
         for(String element : path) {
             if(result == null) {
+                break;
+            }
+
+            if(element.startsWith(GROUP_AS_SET_CHARACTER)) {
+                result = resolvePathAndJoin(result, currentElement,
+                        !element.startsWith(GROUP_AS_LIST_CHARACTER),
+                        element.endsWith(CONCAT_GROUP_CHARACTER), path);
                 break;
             }
 
@@ -106,8 +191,115 @@ public final class Introspection {
                     throw new HCJFRuntimeException("Unable to access to field '" + element + "'");
                 }
             }
+            currentElement++;
         }
         return (O) result;
+    }
+
+    private static <O extends Object> Collection<O> resolvePathAndJoin(Object instance
+            , Integer currenElement, boolean onlyDistinct, boolean concat, String... path) {
+        Collection<O> result;
+        Collection collectionInstance;
+        if(instance.getClass().isArray()) {
+            collectionInstance = Arrays.asList(instance);
+        } else if(instance instanceof Collection) {
+            collectionInstance = (Collection) instance;
+        } else {
+            collectionInstance = List.of(instance);
+        }
+
+        if(currenElement < path.length - 1) {
+            if(onlyDistinct == true) {
+                result = new TreeSet<>();
+            } else {
+                result = new ArrayList<>();
+            }
+            Integer newLength = path.length-currenElement-1;
+            String[] newPath = new String[newLength];
+            System.arraycopy(path, currenElement+1, newPath, 0, newLength);
+            for(Object subInstance : collectionInstance) {
+                Object introspectionResult = resolve(subInstance, newPath);
+                if(introspectionResult != null) {
+                    if (concat && introspectionResult instanceof Collection) {
+                        result.addAll((Collection)introspectionResult);
+                    } else {
+                        result.add((O) introspectionResult);
+                    }
+                }
+            }
+        } else {
+            result = collectionInstance;
+        }
+        return result;
+    }
+
+    /**
+     * Resolves the path into the instance and put the value in the map resolved by the path. If the path don't resolves
+     * a map instance or collection of maps then the call has not effect.
+     * @param instance Instance to introspect the path.
+     * @param path Path to resolve the map.
+     * @param key Key to index the value
+     * @param value Value to put.
+     * @param <O> Expected return data type.
+     * @return Returns the same instance.
+     */
+    public static <O extends Object> O resolveAndPut(Object instance, String path, String key, Object value) {
+        return (O) resolveAndPutAll(instance, path, Map.of(key, value));
+    }
+
+    /**
+     * Resolves the path into the instance and put all the values in the map resolved by the path. If the path don't resolves
+     * a map instance or collection of maps then the call has not effect.
+     * @param instance Instance to introspect the path.
+     * @param path Path to resolve the map.
+     * @param values Map with all the values to put into the resolved map.
+     * @param <O> Expected return data type.
+     * @return Returns the same instance.
+     */
+    public static <O extends Object> O resolveAndPutAll(O instance, String path, Map<String,Object> values) {
+        Object resolvedObject = silentResolve(instance, path);
+        if(resolvedObject != null) {
+            if(resolvedObject instanceof Map) {
+                ((Map)resolvedObject).putAll(deepCopy(values));
+            } else if(resolvedObject instanceof Collection) {
+                for(Object innerValue : ((Collection)resolvedObject)) {
+                    if(innerValue instanceof Map) {
+                        ((Map)innerValue).putAll(deepCopy(values));
+                    }
+                }
+            }
+        }
+        return (O) instance;
+    }
+
+    /**
+     * Resolves the path into the instance and add all the values into the collection resolved. If the resolved values
+     * is not a collection then the method has not effect.
+     * @param instance Instance to introspect the path.
+     * @param path Path to resolve the collection.
+     * @param values Array with all the values to add into the collection.
+     * @param <O> Expected return data type.
+     * @return Returns the same instance.
+     */
+    public static <O extends Object> O resolveAndAdd(O instance, String path, Object... values) {
+        return resolveAndAdd(instance, path, List.of(values));
+    }
+
+    /**
+     * Resolves the path into the instance and add all the values into the collection resolved. If the resolved values
+     * is not a collection then the method has not effect.
+     * @param instance Instance to introspect the path.
+     * @param path Path to resolve the collection.
+     * @param values Array with all the values to add into the collection.
+     * @param <O> Expected return data type.
+     * @return Returns the same instance.
+     */
+    public static <O extends Object> O resolveAndAdd(O instance, String path, Collection<Object> values) {
+        Object resolvedObject = silentResolve(instance, path);
+        if(resolvedObject != null && resolvedObject instanceof Collection) {
+            ((Collection<Object>) resolvedObject).addAll(deepCopy(values));
+        }
+        return instance;
     }
 
     /**
@@ -566,10 +758,18 @@ public final class Introspection {
                 annotationList.add(annotation);
 
                 if(annotationClass.equals(Permission.class)) {
-                    SecurityPermissions.publishPermission(implementationClass, ((Permission)annotation).value(), ((Permission)annotation).description(), List.of(((Permission)annotation).tags()));
+                    SecurityPermissions.publishPermission(implementationClass,
+                            ((Permission)annotation).value(),
+                            ((Permission)annotation).title(),
+                            ((Permission)annotation).description(),
+                            List.of(((Permission)annotation).tags()));
                     containsPermission = true;
                 } else if(annotationClass.equals(LazyPermission.class)) {
-                    SecurityPermissions.publishPermission(implementationClass, ((LazyPermission)annotation).value(), ((Permission)annotation).description(), List.of(((LazyPermission)annotation).tags()));
+                    SecurityPermissions.publishPermission(implementationClass,
+                            ((LazyPermission)annotation).value(),
+                            ((Permission)annotation).title(),
+                            ((Permission)annotation).description(),
+                            List.of(((LazyPermission)annotation).tags()));
                 }
             }
         }

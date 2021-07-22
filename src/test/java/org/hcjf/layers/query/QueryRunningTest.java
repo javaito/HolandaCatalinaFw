@@ -6,8 +6,11 @@ import org.hcjf.bson.BsonEncoder;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.evaluators.Equals;
+import org.hcjf.layers.query.evaluators.In;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
+import org.hcjf.layers.query.model.QueryField;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
@@ -15,8 +18,15 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * @author javaito
@@ -25,6 +35,7 @@ public class QueryRunningTest {
 
     private static final String CHARACTER = "character";
     private static final String CHARACTER_2 = "character2";
+    private static final String Z_CHARACTER = "zCharacter";
     private static final String ADDRESS = "address";
 
     private static final String ID = "id";
@@ -200,6 +211,15 @@ public class QueryRunningTest {
                     }
                     break;
                 }
+                case Z_CHARACTER: {
+                    Collection<JoinableMap> resultSet = simpsonCharacters.values();
+                    String json = JsonUtils.toJsonTree(resultSet).toString();
+                    Collection<Map<String,Object>> newResultSet = (Collection<Map<String, Object>>) JsonUtils.createObject(json);
+                    for(Map<String,Object> map : newResultSet) {
+                        result.add(new JoinableMap(map));
+                    }
+                    break;
+                }
                 case ADDRESS: {
                     for(JoinableMap map : simpsonAddresses.values()) {
                         result.add(new JoinableMap(map));
@@ -214,6 +234,13 @@ public class QueryRunningTest {
             return result;
         }
 
+    }
+
+    @Test
+    public void functionInWhere() {
+        Query query = Query.compile("SELECT * FROM character WHERE parseDate('yyyy-MM-dd HH:mm:ss', dateFormat(birthday, 'yyyy-MM-dd 00:00:00')) < '2020-01-01 00:00:00'");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        System.out.println();
     }
 
     @Test
@@ -234,7 +261,17 @@ public class QueryRunningTest {
         resultSet = Query.evaluate(query);
         System.out.println();
 
-        query = Query.compile("SELECT * FROM character WHERE (SELECT name FROM character2 WHERE addressId = (select addressId from address where street like 'Evergreen Terrace' limit 1) limit 1) like name");
+        query = Query.compile("SELECT * FROM character WHERE (SELECT name FROM character2 WHERE addressId = (select addressId from address where street like 'Terrace' limit 1) limit 1) like name");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+
+
+        query = Query.compile("select addressId from address where street like 'Terrace' limit 1");
+        resultSet = Query.evaluate(query);
+        System.out.println();
+
+
+        query = Query.compile("SELECT * FROM character WHERE addressId in (select addressId from address)");
         resultSet = Query.evaluate(query);
         System.out.println();
     }
@@ -250,7 +287,7 @@ public class QueryRunningTest {
     public void aggregateFunction() {
         Query query = Query.compile("SELECT addressId, aggregateProduct(weight) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
-        query = Query.compile("SELECT addressId, aggregateSum(weight) as aggregateWeight, aggregateSum(height) as aggregateHeight, aggregateEvalExpression(aggregateWeight - aggregateHeight) as result FROM character group by addressId");
+        query = Query.compile("SELECT addressId, aggregateSum(weight, false) as aggregateWeight, aggregateSum(height, false) as aggregateHeight, aggregateEvalExpression(aggregateWeight - aggregateHeight) as result FROM character group by addressId");
         Collection<JoinableMap> resultSet1 = Query.evaluate(query);
         query = Query.compile("SELECT addressId, aggregateEvalExpression(sum(weight) / 2) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet2 = Query.evaluate(query);
@@ -401,6 +438,9 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT * FROM character LEFT JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
+
+        resultSet.stream().findFirst().get().get("street");
+
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
         query = Query.compile("SELECT * FROM character FULL JOIN address ON address.addressId = character.addressId");
@@ -435,6 +475,10 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
 
+        query = Query.compile("SELECT * FROM character JOIN character2 ON character.id = character2.id LEFT JOIN address ON address.addressId = character.addressId where character2.name like 'Home'");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 1);
+
         query = Query.compile("SELECT * FROM character JOIN character2 ON character.lastName like character2.lastName JOIN address ON address.addressId = character.addressId");
         resultSet = query.evaluate(dataSource);
 
@@ -445,6 +489,34 @@ public class QueryRunningTest {
         query = Query.compile("SELECT name, aggregateSum(weight) FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        query = Query.compile("SELECT name, aggregateSum(weight) FROM character GROUP BY addressId UNION SELECT name, aggregateSum(weight) FROM character GROUP BY addressId");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM character JOIN (SELECT * FROM character) AS ch ON character.id = ch.id");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testIf() {
+        Query query = Query.compile("SELECT * FROM (SELECT *, if(equals(weight, 82),'si','no') as mmm FROM character) AS ch where mmm = 'si'");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 2);
+    }
+
+    @Test
+    public void testArithmetic() {
+        Query query = Query.compile("SELECT *, weight * 2 as wt FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testPutAggregateFunction() {
+        Query query = Query.compile("SELECT *, put('.', 'copy', .) FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
     }
 
     @Test
@@ -477,15 +549,15 @@ public class QueryRunningTest {
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 2);
 
-        query = Query.compile("SELECT aggregateSum(weight) AS sum FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateSum(weight, false) AS sum FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 3);
 
-        query = Query.compile("SELECT aggregateProduct(weight) AS product FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateProduct(weight, false) AS product FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 3);
 
-        query = Query.compile("SELECT aggregateMean(weight) AS mean FROM character GROUP BY addressId");
+        query = Query.compile("SELECT aggregateMean(weight, 'arithmetic', false) AS mean FROM character GROUP BY addressId");
         resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.size(), 3);
 
@@ -508,6 +580,13 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT weight, -2  *  weight AS superWeight, pow(max(weight, 50.1) ,2) AS smartWeight FROM character");
         resultSet = query.evaluate(dataSource);
+        for(Joinable obj : resultSet) {
+            Double dweight = Introspection.resolve(obj, "weight");
+            dweight = -2 * dweight;
+            BigDecimal weight = new BigDecimal(dweight);
+            BigDecimal superWeight = Introspection.resolve(obj, "superWeight");
+            Assert.assertEquals(superWeight, weight);
+        }
 
         query = Query.compile("SELECT name FROM character");
         resultSet = query.evaluate(dataSource);
@@ -541,6 +620,7 @@ public class QueryRunningTest {
             Assert.assertTrue((double)row.get("weight") > 40 && (double)row.get("weight") < 100);
         }
 
+        resultSet = parameterizedQuery.add(40).add(80).evaluate(dataSource);
         resultSet = parameterizedQuery.add(40).add(80).evaluate(dataSource);
         for(JoinableMap row : resultSet){
             Assert.assertTrue((double)row.get("weight") > 40 && (double)row.get("weight") < 80);
@@ -577,13 +657,24 @@ public class QueryRunningTest {
             Assert.assertNotNull(map.get("es"));
         }
 
+        query = Query.compile("SELECT name, if(weight + 10 > 0, 'gordo', size(null)) AS es FROM character");
+        resultSet = query.evaluate(dataSource);
+
+        try {
+            query = Query.compile("SELECT name, if(weight + 10 > 0, size(null), 'flaco') AS es FROM character");
+            resultSet = query.evaluate(dataSource);
+            Assert.fail();
+        } catch (Exception ex) {
+            Assert.assertTrue(true);
+        }
+
         query = Query.compile("SELECT name, if(equals(name, 'Homer Jay'), 'gordo', 'flaco') AS es FROM character");
         resultSet = query.evaluate(dataSource);
 
         query = Query.compile("SELECT name, case(name, 'Homer Jay', 'gordo', 'Marjorie Jaqueline', 'flaco', 'mmm!') AS es FROM character");
         resultSet = query.evaluate(dataSource);
 
-        query = Query.compile("SELECT lastName, count(weight) as size, aggregateMin(weight) as min, aggregateMax(weight) as max, aggregateSum(weight) as sum, aggregateMean(weight) as arithmeticMean, aggregateMean(weight, 'harmonic') as harmonicMean FROM character group by lastName");
+        query = Query.compile("SELECT lastName, count(weight) as size, aggregateMin(weight) as min, aggregateMax(weight) as max, aggregateSum(weight, false) as sum, aggregateMean(weight, 'arithmetic', false) as arithmeticMean, aggregateMean(weight, 'harmonic', false) as harmonicMean FROM character group by lastName");
         resultSet = query.evaluate(dataSource);
         System.out.println(JsonUtils.toJsonTree(resultSet).toString());
         System.out.println();
@@ -619,6 +710,145 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void queryInsideAggregationContext() {
+        Query query = Query.compile("SELECT (SELECT * FROM .) as names FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+
+        query = Query.compile("SELECT aggregateContext((SELECT * FROM . WHERE lastName like 'simp')) as names FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void disjoint() {
+        Query query = Query.compile("SELECT name FROM character DISJOINT BY lastName");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM character DISJOINT BY lastName");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select (SELECT count() FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT count() FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select (SELECT name, lastName FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT name, lastName FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select (SELECT name as nombre, lastName FROM disjointResultSet WHERE height >= 1.30) as mayores, (SELECT name, lastName FROM disjointResultSet WHERE height < 1.30) as menores FROM (SELECT * FROM character DISJOINT BY lastName) as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void mathExpression() {
+        Query query = Query.compile("SELECT *, (100 - 2) / 50 as value FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testSize() {
+        Query query = Query.compile("SELECT aggregateContext(size(name)) as names FROM character group by a");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT * FROM character join address on address.addressId = character.addressId group by a");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT name, aggregateContext(size(name)) as names FROM character left join address on address.addressId = character.addressId group by a");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("names"), 7);
+
+        query = Query.compile("SELECT size(name) as names FROM (SELECT name FROM character left join address on address.addressId = character.addressId group by a) as date");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("names"), 7);
+
+        query = Query.compile("SELECT aggregateContext(size(name)) as names FROM character right join address on address.addressId = character.addressId group by a");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("names"), 6);
+
+        query = Query.compile("SELECT aggregateContext(size(name)) as names FROM character left join address on address.addressId = character.addressId group by addressId");
+        resultSet = query.evaluate(dataSource);
+    }
+
+    @Test
+    public void shellTest() {
+        Query query = Query.compile("SELECT java('name.toString().length() > 10',*) as var FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void test() {
+        Query query = Query.compile("select store.dynamic.ccu.checkout.id as chkOutId, data1.planilla as planilla, store.dynamic.ccu.checkout.patente as patente, store.dynamic.ccu.checkout.patente as GPS, \n" +
+                "dateFormat(store.dynamic.ccu.checkout.enteredDate,'America/Santiago','dd/MM/yyyy HH:mm:ss') as horario, \n" +
+                "if(store.dynamic.ccu.checkout.plateManualEntry,'##keyboard','##camera') as ingresoPatente, \n" +
+                "if(store.dynamic.ccu.checkout.planningManualEntry,'##keyboard','##camera') as ingresoPlanilla,\n" +
+                "if(size(store.dynamic.ccu.checkout.photoIds)>0,'##image','') as Foto,\n" +
+                "if(isNull(data.name),data.loginCode,if(equals(data.name,''),data.loginCode,data.name)) as loginCode, \n" +
+                "data1.codCamion as codCamion, data1.codCarga as codCarga, data1.centroDistribucion as CD, \n" +
+                "if(isNotNull(data1.checkInDate),dateFormat(data1.checkInDate,'America/Santiago','dd/MM/yyyy HH:mm:ss'),'') as ingreso, checkInDate,checkOutDate \n" +
+                "from store.dynamic.ccu.checkout left join (select name, loginCode from store.dynamic.ccu.device.profile) as data on store.dynamic.ccu.checkout.loginCode = data.loginCode \n" +
+                "join (select planilla, centroDistribucion, codCarga, codCamion, checkOutDate, checkInDate from store.dynamic.ccu.planilla where rollbackDate=null and centroDistribucion = 0 and _creationDate >= '' \n" +
+                "and _creationDate < toDate(plusDays('',1))) as data1 on store.dynamic.ccu.checkout.planilla = data1.planilla \n" +
+                "where store.dynamic.ccu.checkout._creationDate >= '' and store.dynamic.ccu.checkout._creationDate < toDate(plusDays('',1)) \n" +
+                "and store.dynamic.ccu.checkout.centroDistribucion = 1 order by store.dynamic.ccu.checkout._creationDate desc");
+
+        System.out.println();
+    }
+
+    @Test
+    public void newObjectTest() {
+        Query query = Query.compile("SELECT newMap('value', *) as var FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT newMap('key', 'value', 'name', name) as var FROM character");
+        resultSet = query.evaluate(dataSource);
+        for(JoinableMap map : resultSet) {
+            Assert.assertTrue(Introspection.resolve(map, "var") instanceof Map);
+        }
+        System.out.println();
+    }
+
+    @Test
+    public void newArrayTest() {
+        Query query = Query.compile("SELECT newArray('name', name) as var FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        for(JoinableMap map : resultSet) {
+            Assert.assertTrue(Introspection.resolve(map, "var") instanceof Collection);
+        }
+        System.out.println();
+    }
+
+    @Test
+    public void alwaysTrue() {
+        Query query = Query.compile("SELECT * FROM character WHERE true");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+    }
+
+    @Test
+    public void dateTimeZone() {
+        Query query = Query.compile("SELECT dateFormat(birthday, 'GMT', 'yyyy/MM/dd HH:mm:ssZ') as gmt, dateFormat(birthday, 'America/Santiago', 'yyyy/MM/dd HH:mm:ssZ') as santiago FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void toDate() {
+        Query query = Query.compile("SELECT birthday, toDate(plusDays(birthday,1)) as birthdayPlusOne FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void isNullTest() {
         Query query = Query.compile("SELECT isNull(noField) as n FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
@@ -629,6 +859,13 @@ public class QueryRunningTest {
     @Test
     public void testOrder() {
         Query query = Query.compile("SELECT * FROM character ORDER BY name limit 1");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        System.out.println();
+    }
+
+    @Test
+    public void testQueryWithTwoSubQuery() {
+        Query query = Query.compile("SELECT * FROM character where addressId = (SELECT addressId FROM address WHERE street = 'Evergreen Terrace')");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
         System.out.println();
     }
@@ -645,6 +882,10 @@ public class QueryRunningTest {
         query = Query.compile("SELECT name, new('hola') as gulf FROM character");
         resultSet = query.evaluate(dataSource);
 
+        query = Query.compile("SELECT geodesicDistance('POINT(-68.820792 -32.892190)', 'POINT(-68.820910 -32.894325)') FROM character WHERE true");
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), simpsonCharacters.size());
+
         System.out.println();
     }
 
@@ -652,15 +893,123 @@ public class QueryRunningTest {
     public void testToStringFunction() {
         Query query = Query.compile("SELECT toString(name) FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
-        System.out.println();
 
-        query = Query.compile("SELECT toString(number) FROM address");
+        query = Query.compile("SELECT toString(number) as numberAsString FROM address");
         resultSet = query.evaluate(dataSource);
-        System.out.println();
+        for(Map<String,Object> obj : resultSet) {
+            Assert.assertEquals(obj.get("numberAsString").getClass(), String.class);
+        }
 
         query = Query.compile("SELECT * FROM (SELECT number as A_NUMBER FROM address) as add WHERE toString(A_NUMBER) = '2321'");
         resultSet = query.evaluate(dataSource);
+
+        query = Query.compile("SELECT toString(name) as NAME, indexOf(name, 'a') as whereIsA, subString(name, 1) as subString1, subString(name, 1, 3) as subString2 FROM character");
+        resultSet = query.evaluate(dataSource);
+        for(Map<String,Object> obj : resultSet) {
+            Assert.assertEquals(((String)obj.get("NAME")).indexOf("a"), ((Number)obj.get("whereIsA")).intValue());
+            Assert.assertEquals(((String)obj.get("NAME")).substring(1), obj.get("subString1"));
+            Assert.assertEquals(((String)obj.get("NAME")).substring(1, 3), obj.get("subString2"));
+        }
+    }
+
+    @Test
+    public void testParenthesesIntoStrings() {
+        Query query = Query.compile("select indexOf('9393939(9:00)','(') as suerte from '{}' as data");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
+
+        query = Query.compile("select replace('9393939(9:00)','(','8') as suerte from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select split('9393939(9:00)','\\(') as suerte from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void arithmeticTest() {
+        Query query;
+        Collection<JoinableMap> resultSet;
+
+        query = Query.compile("SELECT * FROM (SELECT *, getMillisecondUnixEpoch(now()), getMillisecondUnixEpoch(birthday), getMillisecondUnixEpoch(now()) - getMillisecondUnixEpoch(birthday) as ageMillis FROM character JOIN address ON address.addressId = character.addressId where lastName like 'Simpson') as ch WHERE weight > 16");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT new(4.5) as d, new(3) as i, i-integerValue(d) as a from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("select new(2) as tiempo, new(3) as tiempoHs, integerValue(tiempo-integerValue(tiempoHs*60)) as tiempoMin from '{}' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testDateFunctions() {
+        Query query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as newDate FROM character");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01T00:25:12') as newDate, parseDate('yyyy-MM-dd\\'T\\'HH:mm:ss', '2020-03-01T00:25:12') as parseDate FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        String s = "{\n" +
+                "    \"endDate\": 1582724862291,\n" +
+                "    \"events\": [],\n" +
+                "    \"loginCode\": \"359459076768998\",\n" +
+                "    \"odometerEnd\": 792.8828323183975,\n" +
+                "    \"odometerStart\": 0,\n" +
+                "    \"processId\": \"0a259971-ca87-4175-b3dd-b0c3235ec828\",\n" +
+                "    \"propertyId\": \"1\",\n" +
+                "    \"propertyName\": \"Finca Bodega Salentein SRL\",\n" +
+                "    \"startDate\": 1582724839702,\n" +
+                "    \"trackingCoords\": [\n" +
+                "        -65.25090605020523,\n" +
+                "        -26.873189827241074,\n" +
+                "        -65.25777423681663,\n" +
+                "        -26.873070930388632,\n" +
+                "        -65.25792522077234,\n" +
+                "        -26.874055487787768\n" +
+                "    ],\n" +
+                "    \"trackingDistance\": 0.7928828323183975\n" +
+                "}";
+        Object obj =  JsonUtils.createObject(s);
+        System.out.println();
+
+        query = Query.compile("SELECT *, dateFormat('2020-03-01 00:25:12','UTC','America/Santiago','yyyy/MM/dd HH:mm:ss') as newDate FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, dateFormat('2020-03-01 00:25:12','UTC','America/Santiago','yyyy/MM/dd HH:mm:ss') as newDate FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, dateTransition('2020-03-01 00:25:12','UTC','America/Santiago') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, dateTransition('2020-03-01 00:25:12','Asia/Ho_Chi_Minh','America/Santiago') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, dateTransition(now(),'Asia/Ho_Chi_Minh','America/Santiago') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, toDate(dateTransition('2020-03-01 00:25:12','America/Santiago','Asia/Ho_Chi_Minh')) as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT *, new('2020-03-01 00:25:12') as dateBefore, now('Asia/Ho_Chi_Minh') as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        System.out.println((ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME)));
+        System.out.println(ZonedDateTime.parse("2020-09-09T16:06:14.838904-03:00[America/Argentina/Buenos_Aires]", DateTimeFormatter.ISO_ZONED_DATE_TIME));
+        System.out.println(ZonedDateTime.parse("2020-09-09T16:06:14-03:00[America/Argentina/Buenos_Aires]", DateTimeFormatter.ISO_ZONED_DATE_TIME));
+        System.out.println(ZonedDateTime.parse("2020-09-09T16:06:14-03:00", DateTimeFormatter.ISO_ZONED_DATE_TIME));
     }
 
     @Test
@@ -703,6 +1052,279 @@ public class QueryRunningTest {
         for(JoinableMap row : resultSet) {
             Assert.assertTrue(row.get("limitedNames") instanceof Collection);
         }
+    }
+
+    @Test
+    public void subParameterizedQueryTest() {
+        String sql = "SELECT * FROM (SELECT * FROM character WHERE name like ?) as hc where lastName like ?";
+        Query query = Query.compile(sql);
+        ParameterizedQuery parameterizedQuery = query.getParameterizedQuery();
+        parameterizedQuery.add("Homer");
+        parameterizedQuery.add("Simp");
+        Collection<JoinableMap> resultSet = parameterizedQuery.evaluate(dataSource);
+        System.out.println();
+
+
+        sql = "SELECT length, instanceOf(length) as instanceOf FROM (SELECT if(equals(length(name),0),'huy!','bah!') as length FROM zCharacter) as hc";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testEnlargedObjectWithJoin() {
+        String sql = "select if(equals(age,0),false,if(false,if(equals(name,'FJHG20'),false,true),if(equals(name,'FJHG20'),true,false))) as isDisabled, " +
+                " addressId, name, " +
+                " length(name) as l, " +
+                " toString(l) as sl, " +
+                " instanceOf(sl), " +
+                " if(equals(l,0), true, false) as eq, instanceOf(eq) as eqt, " +
+                " instanceOf(sl) as iosl, " +
+                " isDisabled, instanceOf(isDisabled) as ioid from character" +
+                " join address on character.addressId = address.addressId";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testReplaceableValues() {
+        Query query = Query.compile("SELECT * FROM character WHERE lastName like ?");
+        ParameterizedQuery parameterizedQuery = query.getParameterizedQuery();
+        parameterizedQuery.add("simp");
+        Collection<JoinableMap> resultSet = parameterizedQuery.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 5);
+
+        query = Query.compile("SELECT * FROM character WHERE lastName like ?");
+        parameterizedQuery = query.getParameterizedQuery();
+        parameterizedQuery.add("simp");
+        resultSet = parameterizedQuery.evaluate(dataSource);
+        Assert.assertEquals(resultSet.size(), 5);
+    }
+
+    @Test
+    public void testConditionalValue() {
+        String sql = "SELECT (length(name) > 5 AND length(lastName) > 10) as two, name, lastName FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT if((length(name) > 5 AND length(lastName) > 10), 'son nombre largos ;)','no son nombres largos :(') as two, name, lastName FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testAggregateSum() {
+        String sql = "SELECT aggregateSum(weight) FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateSum(weight, false) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateSum(weight, false, true) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT *, put('.', 'idCopy', id) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testEnvironment() {
+        String sql = "ENVIRONMENT '{\"lastName\":\"flander\"}' SELECT * FROM character where lastName like $lastName";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "ENVIRONMENT '{\"lastName\":\"Flanders\"}' SELECT * FROM character where lastName = $lastName";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT (SELECT * FROM character where lastName like $lastName) as family FROM '[{\"lastName\":\"flander\"}, {\"lastName\":\"simpson\"}]' as data";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testAggregateMean() {
+        String sql = "SELECT aggregateMean(weight) FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'arithmetic', false) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'harmonic') FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'median', false) FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT aggregateMean(weight, 'median') FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testJsonResource() {
+        String sql = "SELECT * FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testGroupByAndCount() {
+        String json = "[\n" +
+                "  {\n" +
+                "    \"fechaEvento\": \"2020-04-29 00:00:00\",\n" +
+                "    \"fletero\": 96263,\n" +
+                "    \"secuenciaPlanificada\": 26,\n" +
+                "    \"descripcionRechazo\": \"PRODUCTOS EN MAL ESTADO\",\n" +
+                "    \"centroDistribucion\": 7,\n" +
+                "    \"nroPedido\": 274683090291,\n" +
+                "    \"_updateAccount\": \"ea0bffc7-40f3-5252-bbd8-61ce1d0c220d\",\n" +
+                "    \"nombreUen\": \"COMERCIAL CCU S.A.\",\n" +
+                "    \"idCliente\": 780476,\n" +
+                "    \"codCamion\": \"020\",\n" +
+                "    \"horaEvento\": \"2020-04-29 19:02:41\",\n" +
+                "    \"id\": \"070a5528-4c30-4129-aa63-ca7ac5942421\",\n" +
+                "    \"estadoEntrega\": \"2\",\n" +
+                "    \"uen\": 96,\n" +
+                "    \"lineas\": [\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1007,\n" +
+                "        \"cantidad\": 1,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1600,\n" +
+                "        \"cantidad\": 0,\n" +
+                "        \"codigoRechazo\": 180\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1603,\n" +
+                "        \"cantidad\": 0,\n" +
+                "        \"codigoRechazo\": 180\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 1728,\n" +
+                "        \"cantidad\": 1,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 2,\n" +
+                "        \"producto\": 870206,\n" +
+                "        \"cantidad\": 2,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      },\n" +
+                "      {\n" +
+                "        \"cantidadFacturada\": 1,\n" +
+                "        \"producto\": 953,\n" +
+                "        \"cantidad\": 1,\n" +
+                "        \"codigoRechazo\": 0\n" +
+                "      }\n" +
+                "    ],\n" +
+                "    \"codRechazo\": 180,\n" +
+                "    \"numeroFactura\": 107008125,\n" +
+                "    \"planilla\": 7770646,\n" +
+                "    \"_creationDate\": \"2020-04-29 23:02:54\",\n" +
+                "    \"_eventTracking\": {\n" +
+                "      \"dispatchDate\": \"2020-04-29 23:02:54\",\n" +
+                "      \"eventTriggerId\": \"74b2b470-23b1-4c8e-a105-619227b5a2de\",\n" +
+                "      \"from\": {\n" +
+                "        \"path\": \"/event/flow/conditional\",\n" +
+                "        \"headers\": {\n" +
+                "          \"Authorization\": \"Apikey 7e388459f3994390b4b9fc2eb03346aa\",\n" +
+                "          \"Accept-Charset\": \"big5, big5-hkscs, euc-jp, euc-kr, gb18030, gb2312, gbk, ibm-thai, ibm00858, ibm01140, ibm01141, ibm01142, ibm01143, ibm01144, ibm01145, ibm01146, ibm01147, ibm01148, ibm01149, ibm037, ibm1026, ibm1047, ibm273, ibm277, ibm278, ibm280, ibm284, ibm285, ibm290, ibm297, ibm420, ibm424, ibm437, ibm500, ibm775, ibm850, ibm852, ibm855, ibm857, ibm860, ibm861, ibm862, ibm863, ibm864, ibm865, ibm866, ibm868, ibm869, ibm870, ibm871, ibm918, iso-2022-cn, iso-2022-jp, iso-2022-jp-2, iso-2022-kr, iso-8859-1, iso-8859-13, iso-8859-15, iso-8859-2, iso-8859-3, iso-8859-4, iso-8859-5, iso-8859-6, iso-8859-7, iso-8859-8, iso-8859-9, jis_x0201, jis_x0212-1990, koi8-r, koi8-u, shift_jis, tis-620, us-ascii, utf-16, utf-16be, utf-16le, utf-32, utf-32be, utf-32le, utf-8, windows-1250, windows-1251, windows-1252, windows-1253, windows-1254, windows-1255, windows-1256, windows-1257, windows-1258, windows-31j, x-big5-hkscs-2001, x-big5-solaris, x-compound_text, x-euc-jp-linux, x-euc-tw, x-eucjp-open, x-ibm1006, x-ibm1025, x-ibm1046, x-ibm1097, x-ibm1098, x-ibm1112, x-ibm1122, x-ibm1123, x-ibm1124, x-ibm1166, x-ibm1364, x-ibm1381, x-ibm1383, x-ibm300, x-ibm33722, x-ibm737, x-ibm833, x-ibm834, x-ibm856, x-ibm874, x-ibm875, x-ibm921, x-ibm922, x-ibm930, x-ibm933, x-ibm935, x-ibm937, x-ibm939, x-ibm942, x-ibm942c, x-ibm943, x-ibm943c, x-ibm948, x-ibm949, x-ibm949c, x-ibm950, x-ibm964, x-ibm970, x-iscii91, x-iso-2022-cn-cns, x-iso-2022-cn-gb, x-iso-8859-11, x-jis0208, x-jisautodetect, x-johab, x-macarabic, x-maccentraleurope, x-maccroatian, x-maccyrillic, x-macdingbat, x-macgreek, x-machebrew, x-maciceland, x-macroman, x-macromania, x-macsymbol, x-macthai, x-macturkish, x-macukraine, x-ms932_0213, x-ms950-hkscs, x-ms950-hkscs-xp, x-mswin-936, x-pck, x-sjis_0213, x-utf-16le-bom, x-utf-32be-bom, x-utf-32le-bom, x-windows-50220, x-windows-50221, x-windows-874, x-windows-949, x-windows-950, x-windows-iso2022jp\",\n" +
+                "          \"X-Cloud-Trace-Context\": \"fdaf2e7b43098c68ba4c4df048704bd1/11180262256834346684\",\n" +
+                "          \"Accept\": \"text/plain, application/json, application/*+json, */*\",\n" +
+                "          \"User-Agent\": \"Java1.7.0_131\",\n" +
+                "          \"X-Forwarded-Proto\": \"http\",\n" +
+                "          \"Connection\": \"Keep-Alive\",\n" +
+                "          \"X-Forwarded-For\": \"200.111.67.30, 34.95.78.57\",\n" +
+                "          \"Host\": \"api.sitrack.io\",\n" +
+                "          \"Content-Length\": \"901\",\n" +
+                "          \"Content-Type\": \"application/json; charset=utf-8\",\n" +
+                "          \"Via\": \"1.1 google\"\n" +
+                "        },\n" +
+                "        \"protocol\": \"HTTP\",\n" +
+                "        \"method\": \"POST\",\n" +
+                "        \"parameters\": {}\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"fechaReparto\": \"2020-04-29 00:00:00\",\n" +
+                "    \"_creationAccount\": \"ea0bffc7-40f3-5252-bbd8-61ce1d0c220d\",\n" +
+                "    \"usuarioCamion\": 0,\n" +
+                "    \"_lastUpdate\": \"2020-04-29 23:02:54\",\n" +
+                "    \"_permissions\": [],\n" +
+                "    \"_id\": \"070a5528-4c30-4129-aa63-ca7ac5942421\",\n" +
+                "    \"codCarga\": 1,\n" +
+                "    \"referencia\": 7770646\n" +
+                "  }\n" +
+                "]";
+
+
+
+
+        Collection<Map<String,Object>> data = (Collection<Map<String, Object>>) JsonUtils.createObject(json);
+
+        Query query1 = Query.compile("select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125");
+        Collection<Map<String,Object>> resultSet1 = query1.evaluate(data);
+
+        Query query = Query.compile("select aggregateSum(cantidadFacturada, false) as totalFacturado, aggregateSum(cantidad, false) as totalEntregado, aggregateContext(cantidadFacturada) as facturado, aggregateContext(cantidad) as entregado from (select lineas from store.dynamic.ccu.delivery where planilla = 7770646 and isNotNull(fletero) and numeroFactura=107008125).lineas as data group by a");
+
+        Collection<Map<String,Object>> resultSet = query.evaluate(data);
+        Map<String,Object> firstObject = resultSet.stream().findFirst().get();
+        Assert.assertEquals(((Collection)firstObject.get("facturado")).size(), 6);
+        Assert.assertEquals(((Collection)firstObject.get("entregado")).size(), 6);
+
+        Assert.assertEquals(((BigDecimal)firstObject.get("totalFacturado")).intValue(), 7);
+        Assert.assertEquals(((BigDecimal)firstObject.get("totalEntregado")).intValue(), 5);
+    }
+
+    @Test
+    public void testJsScript() {
+        String sql = "SELECT js('value * 2', *) as value FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "SELECT js('_p1 * 2', value) as value FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testNewUUID() {
+        String sql = "SELECT *, newUUID() as id FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {

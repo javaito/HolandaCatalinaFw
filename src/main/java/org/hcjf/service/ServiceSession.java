@@ -19,6 +19,7 @@ import java.util.concurrent.Callable;
  */
 public class ServiceSession implements Comparable {
 
+    private static final String DEFAULT_TIME_ZONE = "UTC";
     private static final SystemSession SYSTEM_SESSION;
     private static final ServiceSession GUEST_SESSION;
     private static final List<ServiceSessionSource> sources;
@@ -38,6 +39,7 @@ public class ServiceSession implements Comparable {
     private final List<ServiceSession> identities;
     private final Set<Grants.Grant> grants;
     private Locale locale;
+    private String timezone;
 
     public ServiceSession(UUID id) {
         this.id = id;
@@ -48,6 +50,7 @@ public class ServiceSession implements Comparable {
         locale = SystemProperties.getLocale();
         identities = new ArrayList<>();
         grants = new HashSet<>();
+        timezone = DEFAULT_TIME_ZONE;
     }
 
     protected ServiceSession(ServiceSession serviceSession) {
@@ -61,6 +64,7 @@ public class ServiceSession implements Comparable {
         identities = new ArrayList<>();
         this.grants = new HashSet<>();
         this.grants.addAll(serviceSession.grants);
+        this.timezone = serviceSession.timezone;
     }
 
     /**
@@ -320,6 +324,22 @@ public class ServiceSession implements Comparable {
      */
     public final void setLocale(Locale locale) {
         this.locale = locale;
+    }
+
+    /**
+     * Returns the timezone of the session.
+     * @return Session timezone.
+     */
+    public String getTimezone() {
+        return timezone;
+    }
+
+    /**
+     * Set timezone of the session.
+     * @param timezone Session timezone.
+     */
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
     }
 
     /**
@@ -654,4 +674,5 @@ public class ServiceSession implements Comparable {
          */
         <S extends ServiceSession> S findSession(Map<String,Object> sessionBean);
     }
+
 }

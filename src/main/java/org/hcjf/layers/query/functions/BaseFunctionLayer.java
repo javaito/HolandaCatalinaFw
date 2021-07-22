@@ -21,7 +21,11 @@ public abstract class BaseFunctionLayer extends Layer {
      */
     protected <O extends Object> O getParameter(int index, Object... parameters) {
         try {
-            return (O) parameters[index];
+            Object result = parameters[index];
+            if(result instanceof Throwable) {
+                throw new HCJFRuntimeException("Inner function fail parameter index: %d", (Throwable)result, index);
+            }
+            return (O) result;
         } catch (ClassCastException ex) {
             throw new HCJFRuntimeException("Illegal argument type, %d° argument", ex, index);
         } catch (IndexOutOfBoundsException ex) {

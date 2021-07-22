@@ -1,6 +1,10 @@
 package org.hcjf.layers.query.functions;
 
+import com.esri.core.geometry.GeometryEngine;
+import com.esri.core.geometry.Point;
 import com.esri.core.geometry.ogc.OGCGeometry;
+import com.esri.core.geometry.ogc.OGCLineString;
+import com.esri.core.geometry.ogc.OGCPolygon;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.utils.GeoUtils;
 import org.hcjf.utils.JsonUtils;
@@ -24,6 +28,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         private static final String GEO_DIFFERENCE = "geoDifference";
         private static final String GEO_DISJOINT = "geoDisjoint";
         private static final String GEO_DISTANCE = "geoDistance";
+        private static final String GEODESIC_DISTANCE = "geodesicDistance";
         private static final String GEO_ENVELOPE = "geoEnvelope";
         private static final String GEO_EQUALS = "geoEquals";
         private static final String GEO_TYPE = "geoType";
@@ -42,6 +47,11 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         private static final String GEO_TOUCHES = "geoTouches";
         private static final String GEO_UNION = "geoUnion";
         private static final String GEO_WITHIN = "geoWithin";
+        private static final String GEO_PROJECT = "geoProject";
+        private static final String DEGREES_TO_DECIMAL = "degreesToDecimal";
+        private static final String AREA = "area";
+        private static final String PERIMETER = "perimeter";
+        private static final String LINE_DISTANCE = "lineDistance";
     }
 
     public GeoQueryFunctionLayer() {
@@ -61,6 +71,7 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         addFunctionName(Functions.GEO_DIFFERENCE);
         addFunctionName(Functions.GEO_DISJOINT);
         addFunctionName(Functions.GEO_DISTANCE);
+        addFunctionName(Functions.GEODESIC_DISTANCE);
         addFunctionName(Functions.GEO_ENVELOPE);
         addFunctionName(Functions.GEO_EQUALS);
         addFunctionName(Functions.GEO_TYPE);
@@ -79,6 +90,11 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
         addFunctionName(Functions.GEO_TOUCHES);
         addFunctionName(Functions.GEO_UNION);
         addFunctionName(Functions.GEO_WITHIN);
+        addFunctionName(Functions.GEO_PROJECT);
+        addFunctionName(Functions.DEGREES_TO_DECIMAL);
+        addFunctionName(Functions.AREA);
+        addFunctionName(Functions.PERIMETER);
+        addFunctionName(Functions.LINE_DISTANCE);
     }
 
     @Override
@@ -177,6 +193,41 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
             case Functions.GEO_WITHIN: {
                 checkNumberAndType(functionName, parameters, 2, Object.class, Object.class);
                 result = geometry.within(GeoUtils.createGeometry(parameters[1]));
+                break;
+            }
+            case Functions.GEODESIC_DISTANCE: {
+                checkNumberAndType(functionName, parameters, 2, Object.class, Object.class);
+                result = GeometryEngine.geodesicDistanceOnWGS84((Point) geometry.centroid().getEsriGeometry(),
+                        (Point) GeoUtils.createGeometry(parameters[1]).centroid().getEsriGeometry());
+                break;
+            }
+            case Functions.DEGREES_TO_DECIMAL: {
+                checkNumberAndType(functionName, parameters, 1, String.class);
+                result = GeoUtils.degreesToDouble((String) parameters[0]);
+                break;
+            }
+            case Functions.AREA: {
+                if(geometry instanceof OGCPolygon) {
+                    result = GeoUtils.calculateArea((OGCPolygon) geometry);
+                } else {
+                    throw new HCJFRuntimeException("Area function expecting a polygon as parameter");
+                }
+                break;
+            }
+            case Functions.PERIMETER: {
+                if(geometry instanceof OGCPolygon) {
+                    result = GeoUtils.calculatePerimeter((OGCPolygon) geometry);
+                } else {
+                    throw new HCJFRuntimeException("Perimeter function expecting a polygon as parameter");
+                }
+                break;
+            }
+            case Functions.LINE_DISTANCE: {
+                if(geometry instanceof OGCLineString) {
+                    result = GeoUtils.calculateLineDistance((OGCLineString) geometry);
+                } else {
+                    throw new HCJFRuntimeException("Line distance function expecting a line string as parameter");
+                }
                 break;
             }
             default: throw new HCJFRuntimeException("Unrecognized get function: %s", functionName);

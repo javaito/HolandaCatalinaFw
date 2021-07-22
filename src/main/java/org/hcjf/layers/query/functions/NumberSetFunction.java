@@ -36,21 +36,8 @@ public interface NumberSetFunction {
     }
 
     default Number applyFunction(Number firstNumber, Number secondNumber, BiFunction<BigDecimal, BigDecimal, Number> function) {
-        Number result = 0;
-        Class biggerClass = getBiggerClass(firstNumber, secondNumber);
-        if(biggerClass.equals(Byte.class)) {
-            result = function.apply(new BigDecimal(firstNumber.byteValue()), new BigDecimal(secondNumber.byteValue()));
-        } else if(biggerClass.equals(Short.class)) {
-            result = function.apply(new BigDecimal(firstNumber.shortValue()), new BigDecimal(secondNumber.shortValue()));
-        } else if(biggerClass.equals(Integer.class)) {
-            result = function.apply(new BigDecimal(firstNumber.intValue()), new BigDecimal(secondNumber.intValue()));
-        } else if(biggerClass.equals(Long.class)) {
-            result = function.apply(new BigDecimal(firstNumber.longValue()), new BigDecimal(secondNumber.longValue()));
-        } else if(biggerClass.equals(Float.class)) {
-            result = function.apply(new BigDecimal(firstNumber.floatValue()), new BigDecimal(secondNumber.floatValue()));
-        } else if(biggerClass.equals(Double.class)) {
-            result = function.apply(new BigDecimal(firstNumber.doubleValue()), new BigDecimal(secondNumber.doubleValue()));
-        }
+        Number result = function.apply(new BigDecimal(firstNumber.doubleValue()),
+                new BigDecimal(secondNumber.doubleValue()));
         return result;
     }
 

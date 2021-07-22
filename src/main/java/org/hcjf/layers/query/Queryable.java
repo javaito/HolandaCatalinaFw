@@ -1,15 +1,16 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
+import org.hcjf.layers.query.evaluators.BaseEvaluator;
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.functions.QueryAggregateFunctionLayerInterface;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
-import org.hcjf.layers.query.model.QueryField;
-import org.hcjf.layers.query.model.QueryFunction;
-import org.hcjf.layers.query.model.QueryParameter;
-import org.hcjf.layers.query.model.QueryReturnFunction;
+import org.hcjf.layers.query.model.*;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Introspection;
+import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.*;
@@ -115,6 +116,73 @@ public interface Queryable extends BsonParcelable {
          */
         <R extends Object> R getParameter(Integer place);
 
+        /**
+         * This method resolve all the return data types, and returns a key value object with the name and value.
+         * @param returnParameter Return parameter instance.
+         * @param instance Instance to resolve.
+         * @param dataSource Data source.
+         * @return Key value object or null if the name is null.
+         */
+        default Map.Entry<String,Object> resolveQueryReturnParameter(QueryReturnParameter returnParameter, Object instance, DataSource<O> dataSource) {
+            AbstractMap.SimpleEntry result = null;
+            String name = null;
+            Object value = null;
+            if (returnParameter instanceof QueryReturnField) {
+                QueryReturnField returnField = (QueryReturnField) returnParameter;
+                name = returnField.getAlias();
+                value = get((O) instance, returnField, dataSource);
+            } else if (returnParameter instanceof QueryReturnLiteral) {
+                QueryReturnLiteral queryReturnLiteral = (QueryReturnLiteral) returnParameter;
+                name = queryReturnLiteral.getAlias();
+                value = queryReturnLiteral.getValue();
+            } else if (returnParameter instanceof QueryReturnConditional) {
+                QueryReturnConditional returnConditional = (QueryReturnConditional) returnParameter;
+                name = returnConditional.getAlias();
+                value = get((O) instance, returnConditional, dataSource);
+            } else if (returnParameter instanceof QueryReturnFunction && !((QueryReturnFunction)returnParameter).isAggregate()) {
+                QueryReturnFunction function = (QueryReturnFunction) returnParameter;
+                name = function.getAlias();
+                value = resolveFunction(function, instance, dataSource);
+            } else if (returnParameter instanceof QueryReturnUnprocessedValue) {
+                QueryReturnUnprocessedValue queryReturnUnprocessedValue = (QueryReturnUnprocessedValue) returnParameter;
+                BaseEvaluator.UnprocessedValue unprocessedValue = queryReturnUnprocessedValue.getUnprocessedValue();
+                DataSource unprocessedDataSource = dataSource;
+                if(unprocessedValue instanceof BaseEvaluator.QueryValue) {
+                    BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) unprocessedValue;
+                    String resourceName = queryValue.getQuery().getResource().getResourceName();
+                    Map<String,Object> originalEnvironment = queryValue.getQuery().getEnvironment();
+                    Map<String,Object> newEnvironment;
+                    if(originalEnvironment != null) {
+                        newEnvironment = new HashMap<>(originalEnvironment);
+                    } else {
+                        newEnvironment = new HashMap<>();
+                    }
+                    newEnvironment.putAll(Introspection.toMap(instance));
+                    queryValue.getQuery().setEnvironment(newEnvironment);
+                    Object dataset = Introspection.resolve(instance, resourceName);
+                    if(dataset != null) {
+                        if (dataset instanceof Collection) {
+                            unprocessedDataSource = queryable -> (Collection) Introspection.deepCopy(dataset);
+                        } else if (dataset instanceof Map) {
+                            Collection collection = new ArrayList();
+                            collection.add(Introspection.deepCopy(dataset));
+                            unprocessedDataSource = queryable -> collection;
+                        } else {
+                            throw new HCJFRuntimeException("The resource path of query into a return values must point ot the collection value");
+                        }
+                    }
+                    value = unprocessedValue.process(unprocessedDataSource, this);
+                    queryValue.getQuery().setEnvironment(originalEnvironment);
+                } else {
+                    value = unprocessedValue.process(unprocessedDataSource, this);
+                }
+                name = queryReturnUnprocessedValue.getAlias();
+            }
+            if(name != null) {
+                result = new AbstractMap.SimpleEntry<>(name, value);
+            }
+            return result;
+        }
     }
 
     /**
@@ -153,7 +221,11 @@ public interface Queryable extends BsonParcelable {
                             parameterValues.add(currentParameter);
                         } else {
                             QueryFunction innerFunction = (QueryFunction) currentParameter;
-                            value = resolveFunction(innerFunction, instance, dataSource);
+                            try {
+                                value = resolveFunction(innerFunction, instance, dataSource);
+                            } catch (Exception ex) {
+                                value = ex;
+                            }
                             parameterValues.add(value);
                         }
                     } else if (currentParameter instanceof QueryParameter) {
@@ -161,11 +233,22 @@ public interface Queryable extends BsonParcelable {
                            parameterValues.add(currentParameter);
                         } else {
                             value = get((O) instance, ((QueryParameter) currentParameter), dataSource);
-                            parameterValues.add(value);
+                            if(value != null && value.equals(Strings.ALL)) {
+                                Map<String,Object> copy = new HashMap<>();
+                                copy.putAll(Introspection.toMap(instance));
+                                parameterValues.add(copy);
+                            } else{
+                                parameterValues.add(value);
+                            }
                         }
                     } else if (currentParameter instanceof FieldEvaluator.UnprocessedValue) {
-                        parameterValues.add(((FieldEvaluator.UnprocessedValue)currentParameter).
-                                process(dataSource, this));
+                        DataSource currentDataSource = dataSource;
+                        if (currentParameter instanceof BaseEvaluator.QueryValue &&
+                                function instanceof QueryReturnFunction && ((QueryReturnFunction)function).isAggregate()) {
+                            currentDataSource = queryable -> (Collection) Introspection.deepCopy(instance);
+                        }
+                        parameterValues.add(((FieldEvaluator.UnprocessedValue) currentParameter).
+                                process(currentDataSource, this));
                     } else {
                         parameterValues.add(currentParameter);
                     }
@@ -206,11 +289,14 @@ public interface Queryable extends BsonParcelable {
             Object result = null;
             if(queryParameter instanceof QueryField) {
                 QueryField queryField = (QueryField) queryParameter;
-                if(queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
+                if (queryField.getFieldPath().equals(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL))) {
                     result = SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL);
                 } else {
                     result = queryField.resolve(instance);
                 }
+            } else if(queryParameter instanceof QueryConditional) {
+                QueryConditional conditional = (QueryConditional) queryParameter;
+                result = conditional.getEvaluationQuery().verifyCondition(instance, dataSource, this);
             } else if(queryParameter instanceof QueryFunction) {
                 result = resolveFunction((QueryFunction) queryParameter, instance, dataSource);
             }

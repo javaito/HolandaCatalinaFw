@@ -1,10 +1,10 @@
 package org.hcjf.io.net.kubernetes;
 
-import io.kubernetes.client.ApiClient;
-import io.kubernetes.client.Configuration;
-import io.kubernetes.client.apis.CoreV1Api;
-import io.kubernetes.client.models.V1PodList;
-import io.kubernetes.client.models.V1ServiceList;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.Config;
 import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
@@ -116,6 +116,7 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                             null,
                             null,
                             null,
+                            null,
                             null);
 
                     for(KubernetesSpyConsumer consumer : consumers) {
@@ -130,6 +131,7 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                 try {
                     V1ServiceList serviceList = api.listNamespacedService(
                             namespace,
+                            null,
                             null,
                             null,
                             null,

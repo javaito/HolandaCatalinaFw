@@ -3,6 +3,7 @@ package org.hcjf.properties;
 import com.google.gson.*;
 import org.hcjf.cloud.impl.DefaultCloudServiceImpl;
 import org.hcjf.layers.locale.DefaultLocaleLayer;
+import org.hcjf.utils.JsonUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,6 +22,8 @@ import java.util.regex.Pattern;
 public final class SystemProperties extends Properties {
 
     public static final String HCJF_DEFAULT_DATE_FORMAT = "hcjf.default.date.format";
+    public static final String HCJF_DEFAULT_DATE_FORMAT_REGEX = "hcjf.default.date.format.regex";
+    public static final String HCJF_DEFAULT_LOCAL_DATE_FORMAT_REGEX = "hcjf.default.date.format.regex";
     public static final String HCJF_DEFAULT_NUMBER_FORMAT = "hcjf.default.number.format";
     public static final String HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT = "hcjf.default.scientific.number.format";
     public static final String HCJF_DEFAULT_DECIMAL_SEPARATOR = "hcjf.default.decimal.separator";
@@ -36,6 +39,7 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
     public static final String HCJF_DEFAULT_LRU_MAP_SIZE = "hcjf.default.lru.map.size";
     public static final String HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG = "hcjf.default.exception.message.tag";
+    public static final String HCJF_CHECKSUM_ALGORITHM = "hcjf.checksum.algorithm";
 
     public static final class Locale {
         public static final String LOG_TAG = "hcjf.locale.log.tag";
@@ -85,6 +89,23 @@ public final class SystemProperties extends Properties {
         public static final String CLOUD_TIMER_TASK_NAME = "hcjf.collector.cloud.timer.task.name";
     }
 
+    public static final class CodeEvaluator {
+
+        public static final class Java {
+            public static final String IMPL_NAME = "hcjf.code.evaluator.java.impl.name";
+            public static final String J_SHELL_POOL_SIZE = "hcjf.code.evaluator.java.j.shell.pool.size";
+            public static final String J_SHELL_INSTANCE_TIMEOUT = "hcjf.code.evaluator.java.j.shell.instance.timeout";
+            public static final String SCRIPT_CACHE_SIZE = "hcjf.code.evaluator.java.script.cache.size";
+        }
+
+        public static final class Python {
+            public static final String IMPL_NAME = "hcjf.code.evaluator.python.impl.name";
+        }
+
+        public static final class Js {
+            public static final String IMPL_NAME = "hcjf.code.evaluator.js.impl.name";
+        }
+    }
 
     public static final class Cryptography{
 
@@ -131,6 +152,7 @@ public final class SystemProperties extends Properties {
         public static final String SERVICE_NAME = "hcjf.file.system.service.name";
         public static final String SERVICE_PRIORITY = "hcjf.file.system.service.priority";
         public static final String LOG_TAG = "hcjf.file.system.log.tag";
+        public static final String POLLING_WAIT_TIME = "hcjf.file.system.polling.wait.time";
     }
 
     public static final class Net {
@@ -236,14 +258,17 @@ public final class SystemProperties extends Properties {
             public static final String SERVER_DECOUPLED_IO_ACTION = "hcjf.net.http.server.decoupled.io.action";
             public static final String SERVER_IO_QUEUE_SIZE = "hcjf.net.http.server.io.queue.size";
             public static final String SERVER_IO_WORKERS = "hcjf.net.http.server.io.workers";
+            public static final String HOST_ACCESS_CONTROL_REGEX_START_CHAR = "hcjf.net.http.host.access.control.regex.start.char";
+            public static final String CLIENT_RESPONSE_HANDLER_QUEUE_SIZE = "hcjf.net.http.client.response.handler.queue.size";
 
-            public static final class Http2Settings {
-                public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.settings.header.table.size";
-                public static final String ENABLE_PUSH = "hcjf.net.http.http2.settings.enable.push";
-                public static final String MAX_CONCURRENT_STREAMS = "hcjf.net.http.http2.settings.max.concurrent.streams";
-                public static final String INITIAL_WINDOWS_SIZE = "hcjf.net.http.http2.settings.initial.windows.size";
-                public static final String MAX_FRAME_SIZE = "hcjf.net.http.http2.settings.max.frame.size";
-                public static final String MAX_HEADER_LIST_SIZE = "hcjf.net.http.http2.settings.max.header.list.size";
+            public static final class Http2 {
+                public static final String HEADER_TABLE_SIZE = "hcjf.net.http.http2.header.table.size";
+                public static final String ENABLE_PUSH = "hcjf.net.http.http2.enable.push";
+                public static final String MAX_CONCURRENT_STREAMS = "hcjf.net.http.http2.max.concurrent.streams";
+                public static final String INITIAL_WINDOWS_SIZE = "hcjf.net.http.http2.initial.windows.size";
+                public static final String MAX_FRAME_SIZE = "hcjf.net.http.http2.max.frame.size";
+                public static final String MAX_HEADER_LIST_SIZE = "hcjf.net.http.http2.max.header.list.size";
+                public static final String STREAM_FRAMES_QUEUE_MAX_SIZE = "hcjf.net.http.http2.stream.frames.queue.max.size";
             }
 
             public static final class Folder {
@@ -281,6 +306,7 @@ public final class SystemProperties extends Properties {
             public static final String BODY_FIELD = "hcjf.net.http.rest.body.field";
             public static final String QUERY_FIELD = "hcjf.net.http.rest.query.field";
             public static final String QUERIES_FIELD = "hcjf.net.http.rest.queries.field";
+            public static final String DATA_SOURCE_FIELD = "hcjf.net.http.rest.data.source.field";
         }
 
     }
@@ -306,8 +332,10 @@ public final class SystemProperties extends Properties {
         public static final String JOIN_DYNAMIC_RESOURCE_INDEX = "hcjf.query.join.dynamic.resource.index";
         public static final String JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX = "hcjf.query.join.dynamic.resource.alias.index";
         public static final String JOIN_CONDITIONAL_BODY_INDEX = "hcjf.query.join.conditional.body.index";
+        public static final String UNION_REGULAR_EXPRESSION = "hcjf.query.union.regular.expression";
         public static final String AS_REGULAR_EXPRESSION = "hcjf.query.as.regular.expression";
         public static final String DESC_REGULAR_EXPRESSION = "hcjf.query.desc.regular.expression";
+        public static final String ENVIRONMENT_GROUP_INDEX = "hcjf.query.environment.group.index";
         public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
         public static final String FROM_GROUP_INDEX = "hcjf.query.from.group.index";
         public static final String CONDITIONAL_GROUP_INDEX = "hcjf.query.conditional.group.index";
@@ -325,11 +353,15 @@ public final class SystemProperties extends Properties {
         public static final String EVALUATOR_LEFT_VALUES_CACHE_NAME = "hcjf.query.evaluator.left.values.cache";
         public static final String EVALUATOR_RIGHT_VALUES_CACHE_NAME = "hcjf.query.evaluator.right.values.cache";
         public static final String COMPILER_CACHE_SIZE = "hcjf.query.compiler.cache.size";
+        public static final String DEFAULT_COMPILER = "hcjf.query.default.compiler";
+        public static final String DEFAULT_SERIALIZER = "hcjf.query.default.serializer";
 
         public static final class ReservedWord {
+            public static final String ENVIRONMENT = "hcjf.query.environment.reserved.word";
             public static final String SELECT = "hcjf.query.select.reserved.word";
             public static final String FROM = "hcjf.query.from.reserved.word";
             public static final String JOIN = "hcjf.query.join.reserved.word";
+            public static final String UNION = "hcjf.query.union.reserved.word";
             public static final String FULL = "hcjf.query.full.reserved.word";
             public static final String INNER = "hcjf.query.inner.join.reserved.word";
             public static final String LEFT = "hcjf.query.left.join.reserved.word";
@@ -365,6 +397,7 @@ public final class SystemProperties extends Properties {
             public static final String FALSE = "hcjf.query.false.reserved.word";
             public static final String AS = "hcjf.query.as.reserved.word";
             public static final String GROUP_BY = "hcjf.query.group.by.reserved.word";
+            public static final String DISJOINT_BY = "hcjf.query.disjoint.by.reserved.word";
         }
 
         public static class Function {
@@ -417,6 +450,7 @@ public final class SystemProperties extends Properties {
             public static final String REPLICATION_FACTOR = "hcjf.cloud.orchestrator.replication.factor";
             public static final String NODES = "hcjf.cloud.orchestrator.nodes";
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
+            public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED = "hcjf.cloud.orchestrator.service.publication.broadcasting.enabled";
             public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT = "hcjf.cloud.orchestrator.service.publication.broadcasting.timeout";
 
             public static final class Events {
@@ -501,16 +535,16 @@ public final class SystemProperties extends Properties {
     }
 
     private final Map<String, Object> instancesCache;
-    private final JsonParser jsonParser;
     private final Gson gson;
 
     private SystemProperties() {
         super(new Properties());
         instancesCache = new HashMap<>();
-        jsonParser = new JsonParser();
         gson = new Gson();
 
         defaults.put(HCJF_DEFAULT_DATE_FORMAT, "yyyy-MM-dd HH:mm:ss");
+        defaults.put(HCJF_DEFAULT_DATE_FORMAT_REGEX, "(19|20)\\d\\d([- /.])(0[1-9]|1[012])\\2(0[1-9]|[12][0-9]|3[01]) ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]");
+        defaults.put(HCJF_DEFAULT_LOCAL_DATE_FORMAT_REGEX, "");
         defaults.put(HCJF_DEFAULT_NUMBER_FORMAT, "0.000");
         defaults.put(HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT, "0.00E00");
         defaults.put(HCJF_DEFAULT_DECIMAL_SEPARATOR, ".");
@@ -520,11 +554,12 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_INTEGER_NUMBER_REGEX, "^[-]?[0-9]{1,}$");
         defaults.put(HCJF_DECIMAL_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
         defaults.put(HCJF_SCIENTIFIC_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}E[-]?[0-9]{1,}$");
-        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "^([-+/*\\^%=<>!]?((\\d+(\\.\\d+)?)|([a-z A-Z \\(\\) $])))*");
+        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "[-]?(((?<subExpression>¿[\\d]+·)|(?<variable>[a-z A-Z()$_]+)|(?<decimal>[\\d]+\\.[\\d]+)|(?<integer>[\\d]+))(?<operator>[\\-+/*^%=<>! ]?))+");
         defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/%=<>!].*");
         defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))|(?=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))");
         defaults.put(HCJF_DEFAULT_LRU_MAP_SIZE, "1000");
         defaults.put(HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG, "IMPL");
+        defaults.put(HCJF_CHECKSUM_ALGORITHM, "MD5");
 
         defaults.put(Locale.DEFAULT_LOCALE, java.util.Locale.getDefault().toLanguageTag());
         defaults.put(Locale.DEFAULT_LOCALE_LAYER_IMPLEMENTATION_NAME, DefaultLocaleLayer.class.getName());
@@ -562,6 +597,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Collector.CLOUD_SAVE_MODE, "false");
         defaults.put(Collector.CLOUD_TIMER_TASK_NAME, "CollectorsFlushCycle");
 
+        defaults.put(CodeEvaluator.Java.IMPL_NAME, "java");
+        defaults.put(CodeEvaluator.Java.J_SHELL_POOL_SIZE, "5");
+        defaults.put(CodeEvaluator.Java.J_SHELL_INSTANCE_TIMEOUT, "5000");
+        defaults.put(CodeEvaluator.Java.SCRIPT_CACHE_SIZE, "10");
+
+        defaults.put(CodeEvaluator.Js.IMPL_NAME, "js");
+
         defaults.put(Cryptography.KEY,"71324dccdb58966a04507b0fe2008632940b87c6dc5cea5f4bdf0d0089524c8e");
         defaults.put(Cryptography.ALGORITHM,"AES");
         defaults.put(Cryptography.OPERATION_MODE,"GCM");
@@ -576,6 +618,7 @@ public final class SystemProperties extends Properties {
         defaults.put(FileSystem.SERVICE_NAME, "FileSystemWatcherService");
         defaults.put(FileSystem.SERVICE_PRIORITY, "1");
         defaults.put(FileSystem.LOG_TAG, "FILE_SYSTEM_WATCHER_SERVICE");
+        defaults.put(FileSystem.POLLING_WAIT_TIME, "5000");
 
         defaults.put(Log.SERVICE_NAME, "LogService");
         defaults.put(Log.SERVICE_PRIORITY, "0");
@@ -607,8 +650,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.IO_QUEUE_SIZE, "1000000");
         defaults.put(Net.IO_THREAD_POOL_KEEP_ALIVE_TIME, "120");
         defaults.put(Net.IO_THREAD_POOL_NAME, "IoThreadPool");
-        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "204800");
-        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "204800");
+        defaults.put(Net.DEFAULT_INPUT_BUFFER_SIZE, "102400");
+        defaults.put(Net.DEFAULT_OUTPUT_BUFFER_SIZE, "102400");
         defaults.put(Net.IO_THREAD_DIRECT_ALLOCATE_MEMORY, "false");
         defaults.put(Net.SSL_MAX_IO_THREAD_POOL_SIZE, "2");
         defaults.put(Net.PORT_PROVIDER_TIME_WINDOWS_SIZE, "15000");
@@ -620,6 +663,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_THRESHOLD, "60");
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_REPEATS, "5");
         defaults.put(Net.NIO_SELECTOR_HEALTH_CHECKER_DANGEROUS_ACTION, "RECREATE_SELECTOR"); //Valid values [RECREATE_SELECTOR, SHUTDOWN, VOID]
+        defaults.put(Net.Http.HOST_ACCESS_CONTROL_REGEX_START_CHAR,"^");
+        defaults.put(Net.Http.CLIENT_RESPONSE_HANDLER_QUEUE_SIZE, "1000");
 
         defaults.put(Net.Broadcast.SERVICE_NAME, "Broadcast service");
         defaults.put(Net.Broadcast.LOG_TAG, "BROADCAST");
@@ -687,12 +732,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Https.DEFAULT_SERVER_PORT, "443");
         defaults.put(Net.Https.DEFAULT_CLIENT_PORT, "443");
 
-        defaults.put(Net.Http.Http2Settings.HEADER_TABLE_SIZE, "4096");
-        defaults.put(Net.Http.Http2Settings.ENABLE_PUSH, "true");
-        defaults.put(Net.Http.Http2Settings.MAX_CONCURRENT_STREAMS, "-1");
-        defaults.put(Net.Http.Http2Settings.INITIAL_WINDOWS_SIZE, "65535");
-        defaults.put(Net.Http.Http2Settings.MAX_FRAME_SIZE, "16384");
-        defaults.put(Net.Http.Http2Settings.MAX_HEADER_LIST_SIZE, "-1");
+        defaults.put(Net.Http.Http2.HEADER_TABLE_SIZE, "4096");
+        defaults.put(Net.Http.Http2.ENABLE_PUSH, "true");
+        defaults.put(Net.Http.Http2.MAX_CONCURRENT_STREAMS, "-1");
+        defaults.put(Net.Http.Http2.INITIAL_WINDOWS_SIZE, "65535");
+        defaults.put(Net.Http.Http2.MAX_FRAME_SIZE, "16384");
+        defaults.put(Net.Http.Http2.MAX_HEADER_LIST_SIZE, "-1");
+        defaults.put(Net.Http.Http2.STREAM_FRAMES_QUEUE_MAX_SIZE, "10");
 
         defaults.put(Net.Http.Folder.LOG_TAG, "FOLDER_CONTEXT");
         defaults.put(Net.Http.Folder.FORBIDDEN_CHARACTERS, "[]");
@@ -714,6 +760,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Rest.BODY_FIELD, "_body");
         defaults.put(Net.Rest.QUERY_FIELD, "_query");
         defaults.put(Net.Rest.QUERIES_FIELD, "_queries");
+        defaults.put(Net.Rest.DATA_SOURCE_FIELD, "_dataSource");
 
         defaults.put(ProcessDiscovery.LOG_TAG, "PROCESS_DISCOVERY");
         defaults.put(ProcessDiscovery.SERVICE_NAME, "Process Discovery Service");
@@ -724,17 +771,19 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
-        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<select>select[  ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*%\\$&¡¿@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/* ?%\\$&¡¿@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right | full )?join )| where | limit | start | order by | group by )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |(( inner | left | right | full )?join )| where | limit | start | order by | group by ))");
+        defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<environment>environment[ ]{1,}'¡[0-9]{1,}·'[ ]{1,}){0,1}(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿·@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿·'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿·.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
-        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)(((?<resourceValue>[a-zA-Z_0-9$¡¿.]{1,})(?<dynamicResource>[ ]as[ ](?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,})|[ ]?)) on (?<conditionalBody>[a-zA-Z_0-9'=,.~+-\\/* ?%\\$&¡¿@<>!\\:\\-()\\[\\]]{1,}))");
+        defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)(((?<resourceValue>[a-zA-Z_0-9$¡¿·.]{1,})(?<dynamicResource>[ ]as[ ](?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,})|[ ]?)) on (?<conditionalBody>[a-zA-Z_0-9'=,.~+-\\/* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,}))");
         defaults.put(Query.JOIN_RESOURCE_VALUE_INDEX, "resourceValue");
         defaults.put(Query.JOIN_DYNAMIC_RESOURCE_INDEX, "dynamicResource");
         defaults.put(Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX, "dynamicResourceAlias");
         defaults.put(Query.JOIN_CONDITIONAL_BODY_INDEX, "conditionalBody");
+        defaults.put(Query.UNION_REGULAR_EXPRESSION, "(?i)((?<=( union ))|(?=( union )))");
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
         defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)((?<=( desc| asc))|(?=( desc| asc)))");
+        defaults.put(Query.ENVIRONMENT_GROUP_INDEX, "environment");
         defaults.put(Query.SELECT_GROUP_INDEX, "select");
         defaults.put(Query.FROM_GROUP_INDEX, "from");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "conditionalBody");
@@ -752,9 +801,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.EVALUATOR_LEFT_VALUES_CACHE_NAME, "__evaluator__left__values__cache__");
         defaults.put(Query.EVALUATOR_RIGHT_VALUES_CACHE_NAME, "__evaluator__right__values__cache__");
         defaults.put(Query.COMPILER_CACHE_SIZE, "1000");
+        defaults.put(Query.DEFAULT_COMPILER, "SQL");
+        defaults.put(Query.DEFAULT_SERIALIZER, "SQL");
+        defaults.put(Query.ReservedWord.ENVIRONMENT, "ENVIRONMENT");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");
         defaults.put(Query.ReservedWord.JOIN, "JOIN");
+        defaults.put(Query.ReservedWord.UNION, "UNION");
         defaults.put(Query.ReservedWord.FULL, "FULL");
         defaults.put(Query.ReservedWord.INNER, "INNER");
         defaults.put(Query.ReservedWord.LEFT, "LEFT");
@@ -790,6 +843,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.FALSE, "FALSE");
         defaults.put(Query.ReservedWord.AS, "AS");
         defaults.put(Query.ReservedWord.GROUP_BY, "GROUP BY");
+        defaults.put(Query.ReservedWord.DISJOINT_BY, "DISJOINT BY");
         defaults.put(Query.Function.NAME_PREFIX, "query.");
         defaults.put(Query.Function.MATH_FUNCTION_NAME, "math");
         defaults.put(Query.Function.STRING_FUNCTION_NAME, "string");
@@ -832,6 +886,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.REPLICATION_FACTOR, "2");
         defaults.put(Cloud.Orchestrator.NODES, "[]");
         defaults.put(Cloud.Orchestrator.SERVICE_END_POINTS, "[]");
+        defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED, "true");
         defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_node");
@@ -962,6 +1017,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as boolean, or null if the property is not found.
      */
     public static Boolean getBoolean(String propertyName) {
+        return getBoolean(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as boolean.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as boolean, or null if the property is not found.
+     */
+    public static Boolean getBoolean(String propertyName, Boolean defaultValue) {
         Boolean result = null;
 
         synchronized (instance.instancesCache) {
@@ -979,6 +1044,9 @@ public final class SystemProperties extends Properties {
                 }
             }
         }
+        if(result == null) {
+            result = defaultValue;
+        }
 
         return result;
     }
@@ -989,6 +1057,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as integer, or null if the property is not found.
      */
     public static Integer getInteger(String propertyName) {
+        return getInteger(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as integer.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as integer, or null if the property is not found.
+     */
+    public static Integer getInteger(String propertyName, Integer defaultValue) {
         Integer result = null;
 
         synchronized (instance.instancesCache) {
@@ -1006,6 +1084,9 @@ public final class SystemProperties extends Properties {
                 }
             }
         }
+        if(result == null) {
+            result = defaultValue;
+        }
 
         return result;
     }
@@ -1016,6 +1097,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as long, or null if the property is not found.
      */
     public static Long getLong(String propertyName) {
+        return getLong(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as long.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as long, or null if the property is not found.
+     */
+    public static Long getLong(String propertyName, Long defaultValue) {
         Long result = null;
 
         synchronized (instance.instancesCache) {
@@ -1033,6 +1124,9 @@ public final class SystemProperties extends Properties {
                 }
             }
         }
+        if(result == null) {
+            result = defaultValue;
+        }
 
         return result;
     }
@@ -1043,6 +1137,16 @@ public final class SystemProperties extends Properties {
      * @return Value of the system property as double, or null if the property is not found.
      */
     public static Double getDouble(String propertyName) {
+        return getDouble(propertyName, null);
+    }
+
+    /**
+     * This method return the value of the system property as double.
+     * @param propertyName Name of the find property.
+     * @param defaultValue If the property value is null then the method returns a default value.
+     * @return Value of the system property as double, or null if the property is not found.
+     */
+    public static Double getDouble(String propertyName, Double defaultValue) {
         Double result = null;
 
         synchronized (instance.instancesCache) {
@@ -1059,6 +1163,9 @@ public final class SystemProperties extends Properties {
                             + propertyName + ":" + propertyValue + "'", ex);
                 }
             }
+        }
+        if(result == null) {
+            result = defaultValue;
         }
 
         return result;
@@ -1268,7 +1375,7 @@ public final class SystemProperties extends Properties {
     public static <O extends Object> List<O> getObjects(String propertyName, Class<O> objectType) {
         List<O> result = new ArrayList<>();
         try {
-            JsonArray array = (JsonArray) instance.jsonParser.parse(get(propertyName));
+            JsonArray array = JsonParser.parseString(get(propertyName)).getAsJsonArray();
             Iterator<JsonElement> iterator = array.iterator();
             while(iterator.hasNext()) {
                 result.add(instance.gson.fromJson(iterator.next(), objectType));
@@ -1293,8 +1400,7 @@ public final class SystemProperties extends Properties {
                 result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
             } else {
                 try {
-                    JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
-                    array.forEach(A -> result.add(A.getAsString()));
+                    result.addAll((Collection<? extends String>) JsonUtils.createObject(propertyValue));
                     List<String> cachedResult = new ArrayList<>();
                     cachedResult.addAll(result);
                     instance.instancesCache.put(propertyName, cachedResult);
@@ -1320,8 +1426,7 @@ public final class SystemProperties extends Properties {
                 result.addAll((List<? extends String>) instance.instancesCache.get(propertyName));
             } else {
                 try {
-                    JsonArray array = (JsonArray) instance.jsonParser.parse(propertyValue);
-                    array.forEach(A -> result.add(A.getAsString()));
+                    result.addAll((Collection<? extends String>) JsonUtils.createObject(propertyValue));
                     List<String> cachedResult = new ArrayList<>();
                     cachedResult.addAll(result);
                     instance.instancesCache.put(propertyName, cachedResult);
@@ -1347,8 +1452,7 @@ public final class SystemProperties extends Properties {
                 result.putAll((Map<String, String>) instance.instancesCache.get(propertyName));
             } else {
                 try {
-                    JsonObject object = (JsonObject) instance.jsonParser.parse(propertyValue);
-                    object.entrySet().forEach(S -> result.put(S.getKey(), object.get(S.getKey()).getAsString()));
+                    result.putAll((Map<? extends String, ? extends String>) JsonUtils.createObject(propertyValue));
                     Map<String, String> cachedResult = new HashMap<>();
                     cachedResult.putAll(result);
                     instance.instancesCache.put(propertyName, cachedResult);

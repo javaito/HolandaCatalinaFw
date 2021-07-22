@@ -1,9 +1,13 @@
 package org.hcjf.utils;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.RecursiveAction;
 import java.util.regex.Matcher;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -104,11 +108,17 @@ public final class Strings {
     public static final String END_SUB_GROUP = "]";
     public static final String START_OBJECT = "{";
     public static final String END_OBJECT = "}";
-    public static final String OBJETC_FIELD_SEPARATOR = ":";
+    public static final String START_TAG = "<";
+    public static final String END_TAG = ">";
+    public static final String OBJECT_FIELD_SEPARATOR = ":";
+    public static final String QUESTION = "?";
     public static final String REPLACEABLE_GROUP = "¿";
+    public static final String END_GROUP_NAME = "·";
     public static final String EMPTY_STRING = "";
     public static final String WHITE_SPACE = " ";
     public static final String CLASS_SEPARATOR = ".";
+    public static final String CLASS_SEPARATOR_WITH_SCAPE_CHARACTER = "\\.";
+    public static final String UNDERSCORE = "_";
     public static final String CASE_INSENSITIVE_REGEX_FLAG = "(?i)";
     public static final String ARGUMENT_SEPARATOR = ",";
     public static final String ARGUMENT_SEPARATOR_2 = ";";
@@ -123,8 +133,37 @@ public final class Strings {
     public static final String SLASH = "/";
     public static final String AT = "@";
     public static final String ALL = "*";
+    public static final String ARGUMENT_IDENTIFIER = "$";
+    public static final String NULL = "null";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
+    public static final String REPLACEABLE_EXPRESSION_REGEX = "¿[0-9]*·{1,}";
+
+    /**
+     * Creates a hexadecimal string as checksum for the byte array. This method use the algorithm indicated into the
+     * file properties or MD% as default.
+     * @param bytes Bytes to create the checksum.
+     * @return Checksum string.
+     */
+    public static String checksum(byte[] bytes) {
+        return checksum(SystemProperties.get(SystemProperties.HCJF_CHECKSUM_ALGORITHM), bytes);
+    }
+
+    /**
+     * Creates a hexadecimal string as checksum for the byte array.
+     * @param algorithm Algorithm to create the checksum.
+     * @param bytes Bytes to create the checksum.
+     * @return Checksum string.
+     */
+    public static String checksum(String algorithm, byte[] bytes) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance(algorithm);
+            messageDigest.update(bytes);
+            return bytesToHex(messageDigest.digest());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new HCJFRuntimeException("Checksum fail", ex);
+        }
+    }
 
     /**
      * This method trim the first and the last value if this values are equals that the parameter.
@@ -337,6 +376,27 @@ public final class Strings {
     }
 
     /**
+     * This method wrap the value with the wrapper value.
+     * @param value Value to wrap.
+     * @param wrapper Wrapper instance.
+     * @return Wrapper value.
+     */
+    public static String wrap(String value, String wrapper) {
+        return wrap(value, wrapper, wrapper);
+    }
+
+    /**
+     * This method wrap the value with the start and end wrapper.
+     * @param value Value to wrap.
+     * @param startWrapper Start value of the wrapper.
+     * @param endWrapper End value of the wrapper.
+     * @return Wrapper value.
+     */
+    public static String wrap(String value, String startWrapper, String endWrapper) {
+        return startWrapper + value + endWrapper;
+    }
+
+    /**
      * Return all the index into the string value where found the specific founded value.
      * @param value Value to found the index.
      * @param foundedValue Founded value into the string.
@@ -387,7 +447,8 @@ public final class Strings {
                 } else {
                     richText = value.substring(startIndex + 1, index);
                     newValue.append(value.substring(endIndex, startIndex));
-                    newValue.append(RICH_TEXT_SEPARATOR).append(REPLACEABLE_RICH_TEXT).append(counter++).append(RICH_TEXT_SEPARATOR);
+                    newValue.append(RICH_TEXT_SEPARATOR).append(REPLACEABLE_RICH_TEXT).
+                            append(counter++).append(END_GROUP_NAME).append(RICH_TEXT_SEPARATOR);
                     result.add(richText);
                     endIndex = index + 1;
                     startIndex = -1;
@@ -420,22 +481,57 @@ public final class Strings {
 
     /**
      * Return the list with all the groups and sub groups of the value.
-     * A group is the char sequence between the start group character '('
-     * and the end group character ')'
+     * A group is the char sequence between the start group and the end group values.
      * @param value Groupable value.
      * @param startGroupCharacter Starting character
      * @param endGroupCharacter Ending character
      * @return List with all the groups.
      */
     public static List<String> group(String value, String startGroupCharacter, String endGroupCharacter) {
-        Set<Integer> startIndexes = allIndexOf(value, startGroupCharacter);
-        Set<Integer> endIndexes = allIndexOf(value, endGroupCharacter);
+        return group(value, startGroupCharacter, endGroupCharacter, true, true);
+    }
 
-        if(startIndexes.size() != endIndexes.size()) {
-            throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
+    /**
+     * Return the list with all the groups and sub groups if it is considered.
+     * A group is the char sequence between the start group and the end group values.
+     * @param value Groupable value.
+     * @param startGroupCharacter Starting character
+     * @param endGroupCharacter Ending character
+     * @param considerSubGroups This argument must be true if you need to consider subgroups.
+     * @param skipText This argument must be true if you need to skip the text into the value, the text is considered
+     *                 all the text between ''.
+     * @return List with all the groups.
+     */
+    public static List<String> group(String value, String startGroupCharacter, String endGroupCharacter, Boolean skipText, Boolean considerSubGroups) {
+        List<String> result;
+        if(skipText) {
+            List<String> richTexts = Strings.groupRichText(value);
+            String safetyValue = richTexts.get(richTexts.size() - 1);
+            //Using the las value of the rich text list we assure that the start and end characters into the strings
+            //be discarded of the group calculation.
+            Set<Integer> startIndexes = allIndexOf(safetyValue, startGroupCharacter);
+            Set<Integer> endIndexes = allIndexOf(safetyValue, endGroupCharacter);
+
+            if (startIndexes.size() != endIndexes.size()) {
+                throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
+            }
+
+            List<String> groups = group(safetyValue, startIndexes, startGroupCharacter.length(), endIndexes, considerSubGroups);
+            result = new ArrayList<>();
+            groups.stream().forEach(G -> result.add(reverseRichTextGrouping(G, richTexts)));
+        } else {
+            //Using the las value of the rich text list we assure that the start and end characters into the strings
+            //be discarded of the group calculation.
+            Set<Integer> startIndexes = allIndexOf(value, startGroupCharacter);
+            Set<Integer> endIndexes = allIndexOf(value, endGroupCharacter);
+
+            if (startIndexes.size() != endIndexes.size()) {
+                throw new IllegalArgumentException("Expected the same amount of start and end group delimiter");
+            }
+
+            result = group(value, startIndexes, startGroupCharacter.length(), endIndexes, considerSubGroups);
         }
-
-        return group(value, startIndexes, endIndexes);
+        return result;
     }
 
     /**
@@ -446,7 +542,7 @@ public final class Strings {
      * @param endIndexes Set with all the end indexes.
      * @return List with all the groups.
      */
-    private static List<String> group(String value, Set<Integer> startIndexes, Set<Integer> endIndexes) {
+    private static List<String> group(String value, Set<Integer> startIndexes, Integer startElementSize, Set<Integer> endIndexes, Boolean considerSubGroups) {
         List<String> result = new ArrayList<>();
         Integer start;
         Integer end;
@@ -459,6 +555,9 @@ public final class Strings {
                 candidate = endIterator.next();
                 if(start < candidate && candidate < end) {
                     end = candidate;
+                    if(!considerSubGroups) {
+                        break;
+                    }
                 }
             }
 
@@ -469,7 +568,7 @@ public final class Strings {
                 throw new IllegalArgumentException("");
             }
 
-            result.add(value.substring(start + 1, end));
+            result.add(value.substring(start + startElementSize, end));
         }
 
         return result;
@@ -482,29 +581,41 @@ public final class Strings {
      * @param value String to group.
      * @return List with groups.
      */
-    public static final List<String> replaceableGroup(String value) {
-        List<String> groups = Strings.group(value);
-        List<Integer> withSubGroups = new ArrayList<>();
-        Iterator<Integer> iterator;
-        String replacedValue = value;
-        Integer groupIndex;
-        String group;
-        String groupCopy;
-        for (int j = groups.size() -1; j >= 0; j--) {
-            group = groups.get(j);
-            replacedValue = replacedValue.replace(START_GROUP+group+END_GROUP, REPLACEABLE_GROUP+j);
-            iterator = withSubGroups.iterator();
-            while(iterator.hasNext()) {
-                groupIndex = iterator.next();
-                groupCopy = groups.remove(groupIndex.intValue()).replace(START_GROUP+group+END_GROUP, REPLACEABLE_GROUP+j);
-                groups.add(groupIndex, groupCopy);
-                if(!groupCopy.contains(Strings.END_GROUP)) {
-                    iterator.remove();
-                }
-            }
+    public static List<String> replaceableGroup(String value) {
+        return replaceableGroup(value, START_GROUP, END_GROUP);
+    }
 
-            if(group.contains(Strings.END_GROUP)) {
-                withSubGroups.add(j);
+    /**
+     * Return a list with all groups and sub groups in ascendant order with replacement
+     * places that refer some index into the same list.
+     * e.g. "Hello (world)" - ["world", "Hello $0"]
+     * @param value String to group.
+     * @param startGroup String to delimit the group starts
+     * @param endGroup String to delimit the group ends
+     * @return List with groups.
+     */
+    public static List<String> replaceableGroup(String value, String startGroup, String endGroup) {
+        List<String> groups = Strings.group(value, startGroup, endGroup);
+        String replacedValue = value;
+        String group;
+        String nextGroup;
+        Integer occurrence;
+        String newSegment;
+        for (int j = 0; j < groups.size(); j++) {
+            occurrence = 0;
+            group = groups.get(j);
+            newSegment = startGroup + group + endGroup;
+            replacedValue = replaceLast(replacedValue,newSegment, REPLACEABLE_GROUP + j + END_GROUP_NAME);
+            for(int k = j + 1; k < groups.size(); k++) {
+                nextGroup = groups.get(k);
+                if(nextGroup.equals(group)) {
+                    occurrence += 1;
+                } else if(nextGroup.contains(startGroup)) {
+                    if(occurrence < occurrenceSize(nextGroup, newSegment)) {
+                        nextGroup = replaceLast(nextGroup, newSegment, REPLACEABLE_GROUP + j + END_GROUP_NAME);
+                        groups.set(k, nextGroup);
+                    }
+                }
             }
         }
         groups.add(replacedValue);
@@ -516,7 +627,7 @@ public final class Strings {
      * @param value Value to analyse
      * @return Replaceable index.
      */
-    public static String getGroupIndex(String value, String groupIndicator) {
+    public static String getNextGroupIndex(String value, String groupIndicator) {
         String result = null;
         Integer startIndex = value.indexOf(groupIndicator);
         StringBuilder resultBuilder = new StringBuilder();
@@ -525,7 +636,8 @@ public final class Strings {
             current = value.charAt(i);
             if(Character.isDigit(current) || current == groupIndicator.charAt(0)) {
                 resultBuilder.append(current);
-            } else {
+            } else if(current == END_GROUP_NAME.charAt(0)) {
+                resultBuilder.append(current);
                 break;
             }
         }
@@ -533,6 +645,11 @@ public final class Strings {
             result = resultBuilder.toString();
         }
         return result;
+    }
+
+    public static Integer getGroupIndexAsNumber(String value, String groupIndicator) {
+        return Integer.parseInt(value.replace(groupIndicator, Strings.EMPTY_STRING).
+                replace(Strings.END_GROUP_NAME, Strings.EMPTY_STRING));
     }
 
     /**
@@ -543,12 +660,14 @@ public final class Strings {
      */
     public static String reverseRichTextGrouping(String value, List<String> richTextGroups) {
         String result = value;
-        String groupIndex = Strings.getGroupIndex(result, REPLACEABLE_RICH_TEXT);
+        String copy = value;
+        String groupIndex = Strings.getNextGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         Integer index;
         while(groupIndex != null) {
-            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_RICH_TEXT, EMPTY_STRING));
-            result = result.replace(groupIndex, richTextGroups.get(index));
-            groupIndex = Strings.getGroupIndex(result, REPLACEABLE_RICH_TEXT);
+            index = getGroupIndexAsNumber(groupIndex, REPLACEABLE_RICH_TEXT);
+            result = result.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), wrap(richTextGroups.get(index), Strings.RICH_TEXT_SEPARATOR));
+            copy = copy.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), Strings.EMPTY_STRING);
+            groupIndex = Strings.getNextGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         }
         return result;
     }
@@ -573,13 +692,72 @@ public final class Strings {
      */
     public static String reverseGrouping(String value, List<String> groups, String startGroupCharacter, String endGroupCharacter) {
         String result = value;
-        String groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
+        String groupIndex = Strings.getNextGroupIndex(result, REPLACEABLE_GROUP);
         Integer index;
         while(groupIndex != null) {
-            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_GROUP, EMPTY_STRING));
+            index = Integer.parseInt(groupIndex.replace(REPLACEABLE_GROUP, EMPTY_STRING).replace(END_GROUP_NAME, EMPTY_STRING));
             result = result.replace(groupIndex,
                     startGroupCharacter + groups.get(index) + endGroupCharacter);
-            groupIndex = Strings.getGroupIndex(result, REPLACEABLE_GROUP);
+            groupIndex = Strings.getNextGroupIndex(result, REPLACEABLE_GROUP);
+        }
+        return result;
+    }
+
+    /**
+     * This method count the number of occurrence of founded segment into the value.
+     * @param value Value to count.
+     * @param foundedSegment Segment of string.
+     * @return Returns the number of occurrences.
+     */
+    public static Integer occurrenceSize(String value, String foundedSegment) {
+        Integer result = 0;
+        Integer index = 0;
+        do {
+            index = value.indexOf(foundedSegment, index);
+            if(index >= 0) {
+                result += 1;
+                index += 1;
+            }
+        } while (index >= 0);
+        return result;
+    }
+
+    /**
+     * Replace only the first occurrence of the replace segment value and returns the value with the new segment into
+     * the original string value. If the replace segment value is not founded into the original value then the return
+     * value is the same that the original.
+     * @param value Value that contains the segment to be replaced.
+     * @param replaceSegment Replace segment value.
+     * @param newSegment New segment.
+     * @return Value replaced.
+     */
+    public static String replaceFirst(String value, String replaceSegment, String newSegment) {
+        String result = value;
+        int indexOf = value.indexOf(replaceSegment);
+        if(indexOf >= 0) {
+            String firstValue = value.substring(0, indexOf);
+            String lastValue = value.substring(indexOf + replaceSegment.length());
+            result = Strings.join(List.of(firstValue, newSegment, lastValue), Strings.EMPTY_STRING);
+        }
+        return result;
+    }
+
+    /**
+     * Replace only the last occurrence of the replace segment value and returns the value with the new segment into
+     * the original string value. If the replace segment value is not founded into the original value then the return
+     * value is the same that the original.
+     * @param value Value that contains the segment to be replaced.
+     * @param replaceSegment Replace segment value.
+     * @param newSegment New segment.
+     * @return Value replaced.
+     */
+    public static String replaceLast(String value, String replaceSegment, String newSegment) {
+        String result = value;
+        int indexOf = value.lastIndexOf(replaceSegment);
+        if(indexOf >= 0) {
+            String firstValue = value.substring(0, indexOf);
+            String lastValue = value.substring(indexOf + replaceSegment.length());
+            result = Strings.join(List.of(firstValue, newSegment, lastValue), Strings.EMPTY_STRING);
         }
         return result;
     }
@@ -603,14 +781,31 @@ public final class Strings {
      * @return Byte array.
      */
     public static byte[] hexToBytes(String hex) {
+        return hexToBytes(hex, false);
+    }
+
+    /**
+     * Returns a byte array based on the hexadecimal representation.
+     * @param hex Hexadecimal representation.
+     * @param littleEndian
+     * @return Byte array.
+     */
+    public static byte[] hexToBytes(String hex, Boolean littleEndian) {
         if ((hex.length() % 2) != 0) {
             throw new IllegalArgumentException("Input string must contain an even number of characters");
         }
         int len = hex.length();
         byte[] result = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            result[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
-                    + Character.digit(hex.charAt(i+1), 16));
+        if(littleEndian) {
+            for (int i = len - 1; i >= 0; i -= 2) {
+                result[(len - 1 - i) / 2] = (byte) ((Character.digit(hex.charAt(i-1), 16) << 4)
+                        + Character.digit(hex.charAt(i), 16));
+            }
+        } else {
+            for (int i = 0; i < len; i += 2) {
+                result[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                        + Character.digit(hex.charAt(i + 1), 16));
+            }
         }
         return result;
     }
@@ -697,6 +892,9 @@ public final class Strings {
                 try {
                     synchronized (SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT)) {
                         result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT).parse(trimmedStringValue);
+                        if(result instanceof Long) {
+                            result = ((Long) result).doubleValue();
+                        }
                     }
                 } catch (ParseException e) {
                     result = trimmedStringValue;

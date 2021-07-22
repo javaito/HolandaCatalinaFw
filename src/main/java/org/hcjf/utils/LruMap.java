@@ -19,6 +19,7 @@ public class LruMap<K extends Object, V extends Object> implements Map<K,V> {
     private final List<Key<K>> keys;
     private final Map<K,Key<K>> metadata;
     private final Map<K,V> mapInstance;
+    private final List<RemoveOverflowListener<K, V>> listeners;
 
     public LruMap() {
         this(SystemProperties.getInteger(SystemProperties.HCJF_DEFAULT_LRU_MAP_SIZE));
@@ -29,6 +30,17 @@ public class LruMap<K extends Object, V extends Object> implements Map<K,V> {
         this.metadata = new HashMap<>();
         this.mapInstance = new HashMap<>();
         this.maxSize = maxSize;
+        this.listeners = new ArrayList<>();
+    }
+
+    /**
+     * Add a listener remove overflow listener.
+     * @param listener Listener instance.
+     */
+    public final void addRemoveOverflowListener(RemoveOverflowListener<K,V> listener) {
+        if(listener != null) {
+            listeners.add(listener);
+        }
     }
 
     /**
@@ -66,7 +78,8 @@ public class LruMap<K extends Object, V extends Object> implements Map<K,V> {
         for (int i = 0; i < keys.size() - maxSize; i++) {
             Key<K> key = keys.remove(keys.size() -1);
             metadata.remove(key.getKey());
-            mapInstance.remove(key.getKey());
+            V value = mapInstance.remove(key.getKey());
+            listeners.forEach(L -> L.onRemove(key.getKey(), value));
         }
     }
 
@@ -266,4 +279,14 @@ public class LruMap<K extends Object, V extends Object> implements Map<K,V> {
         }
     }
 
+    /**
+     * This interface provides the method to listener when an object is deleted because is part fo the overflow.
+     * @param <K> Expected key data type.
+     * @param <V> Expected value data type.
+     */
+    public interface RemoveOverflowListener<K extends Object, V extends Object> {
+
+        void onRemove(K key, V value);
+
+    }
 }

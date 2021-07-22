@@ -35,7 +35,6 @@ public class ServiceSecurityManager extends SecurityManager {
 
     @Override
     public void checkPermission(Permission perm, Object context) {
-        System.out.println();
     }
 
     @Override

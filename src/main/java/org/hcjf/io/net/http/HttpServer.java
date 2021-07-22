@@ -6,6 +6,9 @@ import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
 import org.hcjf.io.net.http.http2.Stream;
 import org.hcjf.io.net.http.http2.StreamSettings;
+import org.hcjf.io.net.http.http2.frames.DataFrame;
+import org.hcjf.io.net.http.http2.frames.Http2Frame;
+import org.hcjf.io.net.http.http2.frames.SettingsFrame;
 import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
@@ -19,6 +22,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Implementation of the net service that provides the http protocol server.
@@ -160,15 +164,48 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected final HttpPackage decode(NetPackage netPackage) {
-        HttpRequest request = requestBuffers.get(netPackage.getSession());
-        if(request == null){
-            synchronized (requestBuffers) {
-                request = new HttpRequest();
-                request.setProtocol(httpProtocol);
-                requestBuffers.put(netPackage.getSession(), request);
+        HttpRequest request = null;
+        if(((HttpSession)netPackage.getSession()).getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
+            Stream stream = ((HttpSession)netPackage.getSession()).getStream();
+            byte[] data = netPackage.getPayload();
+            if(stream.getHttpClientPreface() == null) {
+                String httpClientPreface = new String(data, 0, 24);
+                stream.setHttpClientPreface(httpClientPreface);
+                stream.addData(data, 24);
+            } else {
+                stream.addData(data, 0);
             }
+
+            for(Http2Frame frame : stream.getFrames()) {
+                System.out.println(frame);
+                if(frame instanceof SettingsFrame) {
+                    stream.getFrames().remove(frame);
+                    SettingsFrame settingsFrame = (SettingsFrame) frame;
+                    if(settingsFrame.getFlags() != 0x01) {
+                        SettingsFrame copy = new SettingsFrame(settingsFrame.getId(), (byte) 0x01, 0);
+                        try {
+                            byte[] responseData = settingsFrame.serialize().array();
+                            getService().writeData(netPackage.getSession(), responseData);
+                            System.out.println("Response data<<<!!!: " + Strings.bytesToHex(responseData));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+
+            System.out.println();
+        } else {
+            request = requestBuffers.get(netPackage.getSession());
+            if (request == null) {
+                synchronized (requestBuffers) {
+                    request = new HttpRequest();
+                    request.setProtocol(httpProtocol);
+                    requestBuffers.put(netPackage.getSession(), request);
+                }
+            }
+            request.addData(netPackage.getPayload());
         }
-        request.addData(netPackage.getPayload());
         return request;
     }
 
@@ -237,15 +274,19 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        if(payLoad.isComplete()) {
-            //Remove the http buffer because the payload is complete.
-            requestBuffers.remove(session);
-            addDecoupledAction(new DecoupledAction(session) {
-                @Override
-                public void onAction() {
-                    processRequest(session, (HttpRequest) payLoad);
-                }
-            });
+        if(session.getStream() != null) {
+
+        } else {
+            if (payLoad.isComplete()) {
+                //Remove the http buffer because the payload is complete.
+                requestBuffers.remove(session);
+                addDecoupledAction(new DecoupledAction(session) {
+                    @Override
+                    public void onAction() {
+                        processRequest(session, (HttpRequest) payLoad);
+                    }
+                });
+            }
         }
     }
 
@@ -255,6 +296,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      * @param request Http request instance.
      */
     private void processRequest(HttpSession session, HttpRequest request) {
+        session.setHttpVersion(request.getHttpVersion());
+
         //Flag to pipe line.
         boolean connectionKeepAlive = false;
 
@@ -268,12 +311,13 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         try {
             if (session.isChecked()) {
                 HttpHeader upgrade = request.getHeader(HttpHeader.UPGRADE);
-                if (upgrade != null) {
+                if (upgrade != null && upgrade.getHeaderValue().equals(HttpHeader.HTTP2_REQUEST)) {
+                    session.setHttpVersion(HttpVersion.VERSION_2_0);
                     HttpHeader connection = request.getHeader(HttpHeader.CONNECTION);
                     HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
 
                     if (upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
-                        session.setStream(new Stream(new StreamSettings()));
+                        session.setStream(new Stream(1, new StreamSettings()));
                         response = new HttpResponse();
                         response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
                         response.addHeader(upgrade);
@@ -291,8 +335,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
                                 URL url = new URL(originHeader.getHeaderValue());
                                 response = new HttpResponse();
-                                if (accessControlMap.containsKey(url.getHost())) {
-                                    AccessControl accessControl = accessControlMap.get(url.getHost());
+                                AccessControl accessControl;
+                                if ((accessControl = getAccessControl(url.getHost())) != null) {
                                     response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.maxAge.toString()));
                                     if (!accessControl.getAllowMethods().isEmpty()) {
                                         response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
@@ -312,8 +356,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                 }
                                 if (originHeader != null) {
                                     URL url = new URL(originHeader.getHeaderValue());
-                                    if (accessControlMap.containsKey(url.getHost())) {
-                                        AccessControl accessControl = accessControlMap.get(url.getHost());
+                                    AccessControl accessControl;
+                                    if ((accessControl = getAccessControl(url.getHost())) != null) {
                                         if (!accessControl.getExposeHeaders().isEmpty()) {
                                             response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
                                                     Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
@@ -393,11 +437,25 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http server error", throwable);
             connectionKeepAlive = false;
         } finally {
-            if (!connectionKeepAlive) {
+            if (!connectionKeepAlive && !session.getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
                 disconnect(session, "Http request end.");
                 Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
             }
         }
+    }
+
+    private AccessControl getAccessControl (String host) {
+        String startChar = SystemProperties.get(SystemProperties.Net.Http.HOST_ACCESS_CONTROL_REGEX_START_CHAR);
+        for(String accessHost : accessControlMap.keySet()) {
+            if(accessHost.startsWith(startChar)) {
+                if(Pattern.matches(accessHost.substring(startChar.length()),host)) {
+                    return accessControlMap.get(accessHost);
+                }
+            } else if (accessHost.equals(host)) {
+                return accessControlMap.get(accessHost);
+            }
+        }
+        return null;
     }
 
     /**
@@ -626,5 +684,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         public void addExposeHeader(String... headers) {
             exposeHeaders.addAll(Arrays.asList(headers));
         }
+    }
+
+    public static void main(String[] args) {
+        byte b = (byte) 0b10000011;
+        System.out.println(b);
+        System.out.println(Integer.toBinaryString(b));
+        b &= ~0b10000000;
+        System.out.println(b);
+        System.out.println(Integer.toBinaryString(b));
     }
 }

@@ -117,6 +117,14 @@ public abstract class HttpPackage {
         return complete;
     }
 
+    public TransferDecodingLayerInterface getTransferDecodingLayer() {
+        return transferDecodingLayer;
+    }
+
+    public void setTransferDecodingLayer(TransferDecodingLayerInterface transferDecodingLayer) {
+        this.transferDecodingLayer = transferDecodingLayer;
+    }
+
     /**
      * Add a new header into a package.
      * @param header New header.
@@ -285,41 +293,49 @@ public abstract class HttpPackage {
                 writeBody(data);
             } else {
                 String line;
-                for (int i = 0; i < data.length - 1; i++) {
-                    if (data[i] == LINE_SEPARATOR_CR && data[i + 1] == LINE_SEPARATOR_LF) {
-                        if (currentBuffer.size() == 0) {
-
-                            for(int j = 1; j < lines.size(); j++) {
-                                addHeader(new HttpHeader(lines.get(j)));
-                            }
-
-                            HttpHeader transferEncodingHeader = getHeader(HttpHeader.TRANSFER_ENCODING);
-                            if(transferEncodingHeader != null && transferDecodingLayer == null) {
-                                try {
-                                    transferDecodingLayer = Layers.get(TransferDecodingLayerInterface.class, transferEncodingHeader.getHeaderValue());
-                                } catch (Exception ex) {
-                                    Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
-                                            "Transfer decoding layer not found", ex);
-                                }
-                            }
-
-                            //The previous line is empty
-                            //Start body, because there are two CRLF together
-                            currentBuffer.reset();
-                            writeBody(data, i + 2, data.length - (i + 2));
-                            onBody = true;
-                            break;
-                        } else {
-                            //The current body is a new line
-                            line = new String(currentBuffer.toByteArray()).trim();
-                            if(!line.isEmpty()) {
-                                lines.add(line);
-                            }
-                            currentBuffer.reset();
-                            i++;
+                for (int i = 0; i < data.length; i++) {
+                    if (i+1 == data.length) {
+                        //Verify if the last byte into the data array is not '\n' then this byte is part of the message
+                        //payload, this case is common when the headers are very large.
+                        if(data[i] != LINE_SEPARATOR_LF) {
+                            currentBuffer.write(data[i]);
                         }
                     } else {
-                        currentBuffer.write(data[i]);
+                        if (data[i] == LINE_SEPARATOR_CR && data[i + 1] == LINE_SEPARATOR_LF) {
+                            if (currentBuffer.size() == 0) {
+
+                                for (int j = 1; j < lines.size(); j++) {
+                                    addHeader(new HttpHeader(lines.get(j)));
+                                }
+
+                                HttpHeader transferEncodingHeader = getHeader(HttpHeader.TRANSFER_ENCODING);
+                                if (transferEncodingHeader != null && transferDecodingLayer == null) {
+                                    try {
+                                        transferDecodingLayer = Layers.get(TransferDecodingLayerInterface.class, transferEncodingHeader.getHeaderValue());
+                                    } catch (Exception ex) {
+                                        Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                                                "Transfer decoding layer not found", ex);
+                                    }
+                                }
+
+                                //The previous line is empty
+                                //Start body, because there are two CRLF together
+                                currentBuffer.reset();
+                                writeBody(data, i + 2, data.length - (i + 2));
+                                onBody = true;
+                                break;
+                            } else {
+                                //The current body is a new line
+                                line = new String(currentBuffer.toByteArray()).trim();
+                                if (!line.isEmpty()) {
+                                    lines.add(line);
+                                }
+                                currentBuffer.reset();
+                                i++;
+                            }
+                        } else {
+                            currentBuffer.write(data[i]);
+                        }
                     }
                 }
             }
@@ -351,17 +367,24 @@ public abstract class HttpPackage {
      * This method store the fragment information into the specific
      * decoder implementation
      * @param data Fragment information.
-     * @param off Start index into the array.
-     * @param len End index into the array.
+     * @param offset Start index into the array.
+     * @param length End index into the array.
      */
-    private void writeBody(byte[] data, int off, int len) {
+    private void writeBody(byte[] data, int offset, int length) {
         if(transferDecodingLayer == null) {
-            currentBuffer.write(data, off, len);
+            currentBuffer.write(data, offset, length);
             if(currentBuffer.size() > SystemProperties.getInteger(SystemProperties.Net.Http.MAX_PACKAGE_SIZE)) {
                 throw new RuntimeException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_PACKAGE_OVERFLOW));
             }
         } else {
-            transferDecodingLayer.add(ByteBuffer.wrap(data, off, len));
+            byte[] fragment;
+            if(offset == 0 && length == data.length) {
+                fragment = data;
+            } else {
+                fragment = new byte[length];
+                System.arraycopy(data, offset, fragment, 0, length);
+            }
+            transferDecodingLayer.add(ByteBuffer.wrap(fragment));
         }
     }
 

@@ -9,6 +9,7 @@ import org.hcjf.properties.SystemProperties;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,11 @@ public class RestContextTest {
         }
 
         @Override
+        public Collection<Map<String, Object>> create(Collection<Map<String, Object>> objects) {
+            return objects;
+        }
+
+        @Override
         public Collection<Map<String, Object>> update(Queryable queryable, Map<String, Object> object) {
             return List.of();
         }
@@ -93,7 +99,7 @@ public class RestContextTest {
 
         @Override
         public Collection<JoinableMap> readRows(Queryable queryable) {
-            return null;
+            return new ArrayList<>();
         }
     }
 }

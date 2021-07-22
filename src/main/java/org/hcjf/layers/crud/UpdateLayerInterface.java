@@ -21,6 +21,15 @@ public interface UpdateLayerInterface<O extends Object> extends LayerInterface {
     }
 
     /**
+     * This method implements the update for many object in the same call.
+     * @param objects Objects to update.
+     * @return The instances updated.
+     */
+    default Collection<O> update(Collection<O> objects) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * This method implements the update operation over a add of the instances,
      * this instances are selected using the query like a match.
      * @param queryable Instance that contains all the information to evaluate a query.

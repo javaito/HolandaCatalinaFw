@@ -3,15 +3,15 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalField;
+import java.time.zone.ZoneOffsetTransition;
+import java.util.*;
 
 /**
  * @author javaito
@@ -48,6 +48,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String PERIOD_IN_MINUTES = "periodInMinutes";
     private static final String PERIOD_IN_HOURS = "periodInHours";
     private static final String PERIOD_IN_DAYS = "periodInDays";
+    private static final String DATE_TRANSITION = "dateTransition";
     private static final String DATE_FORMAT = "dateFormat";
     private static final String PARSE_DATE = "parseDate";
     private static final String TO_DATE = "toDate";
@@ -89,6 +90,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         addFunctionName(PERIOD_IN_MINUTES);
         addFunctionName(PERIOD_IN_HOURS);
         addFunctionName(PERIOD_IN_DAYS);
+        addFunctionName(DATE_TRANSITION);
         addFunctionName(DATE_FORMAT);
         addFunctionName(PARSE_DATE);
         addFunctionName(TO_DATE);
@@ -103,7 +105,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
                     result = Date.from(ZonedDateTime.now().toInstant());
                 } else if(parameters.length == 1) {
                     ZoneId zoneId = ZoneId.of((String)parameters[0]);
-                    result = Date.from(ZonedDateTime.now(zoneId).toInstant());
+                    result = toDate(ZonedDateTime.now(zoneId));
                 } else {
                     throw new HCJFRuntimeException("Illegal parameters length, now() or now((String)zoneId)");
                 }
@@ -138,7 +140,11 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             case PERIOD_IN_MINUTES: result = getDuration(parameters).toMinutes(); break;
             case PERIOD_IN_HOURS: result = getDuration(parameters).toHours(); break;
             case PERIOD_IN_DAYS: result = getDuration(parameters).toDays(); break;
-            case TO_DATE: result = new Date(((Number)parameters[0]).longValue()); break;
+            case TO_DATE: {
+                Object param = getParameter(0, parameters);
+                result = toDate(param);
+                break;
+            }
             case PARSE_DATE: {
                 if(parameters.length >= 2) {
                     try {
@@ -161,6 +167,10 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
                 }
                 break;
             }
+            case DATE_TRANSITION: {
+                result = getZonedDateTimeFromDate(0, parameters);
+                break;
+            }
             default: throw new HCJFRuntimeException("Date function not found: %s", functionName);
         }
         return result;
@@ -175,6 +185,25 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         return formatter;
     }
 
+    private Date toDate(Object value) {
+        Date result;
+        if(value instanceof Number) {
+            result = new Date(((Number) value).longValue());
+        } else if(value instanceof ZonedDateTime) {
+            ZonedDateTime zonedDateTime = (ZonedDateTime) value;
+            Long timestamp = zonedDateTime.toInstant().toEpochMilli();
+            Long offset = ((ZonedDateTime) value).getOffset().getLong(ChronoField.OFFSET_SECONDS) * 1000;
+            result = new Date(timestamp + offset);
+        } else if(value instanceof TemporalAccessor) {
+            result = Date.from(Instant.from((TemporalAccessor)value));
+        } else if(value instanceof Date) {
+            result = (Date) value;
+        } else {
+            throw new HCJFRuntimeException("Illegal argument for 'toDate' function");
+        }
+        return result;
+    }
+
     private ZonedDateTime getZonedDateTimeFromDate(int skipping, Object... parameters) {
         Object[] subSet = new Object[parameters.length - skipping];
         System.arraycopy(parameters, 0, subSet, 0, subSet.length);
@@ -182,14 +211,48 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     }
 
     private ZonedDateTime getZonedDateTimeFromDate(Object... parameters) {
-        ZonedDateTime result;
+        Object firstParam;
+        Instant instant;
+        ZoneId firstZone = null;
+        ZoneId secondZone = null;
         if(parameters.length == 1) {
-            result = ZonedDateTime.ofInstant(((Date)getParameter(0, parameters)).toInstant(), ZoneId.systemDefault());
+            firstParam = getParameter(0, parameters);
         } else if(parameters.length == 2) {
-            ZoneId zoneId = ZoneId.of(getParameter(0, parameters));
-            result = ZonedDateTime.ofInstant(((Date)getParameter(1, parameters)).toInstant(), zoneId);
+            firstParam = getParameter(0, parameters);
+            firstZone = ZoneId.of(getParameter(1, parameters));
+        } else if(parameters.length == 3) {
+            firstParam = getParameter(0, parameters);
+            firstZone = ZoneId.of(getParameter(1, parameters));
+            secondZone = ZoneId.of(getParameter(2, parameters));
         } else {
-            throw new HCJFRuntimeException("Illegal parameters length");
+            throw new HCJFRuntimeException("Illegal number of arguments");
+        }
+        if(firstParam instanceof Date) {
+            instant = ((Date) firstParam).toInstant();
+        } else if(firstParam instanceof TemporalAccessor) {
+            instant = Instant.from((TemporalAccessor)firstParam);
+        } else {
+            throw new HCJFRuntimeException("Illegal argument");
+        }
+        return getZonedDateTimeFromInstant(instant, firstZone, secondZone);
+    }
+
+    private ZonedDateTime getZonedDateTimeFromInstant(Instant instant, ZoneId firstZone, ZoneId secondZone) {
+        ZonedDateTime result;
+        if (firstZone == null) {
+            result = ZonedDateTime.ofInstant(instant, ZoneId.systemDefault());
+        } else if (firstZone != null && secondZone == null) {
+            result = ZonedDateTime.ofInstant(instant, firstZone);
+        } else {
+            Instant now = Instant.now();
+            ZoneOffset zoneOffsetFrom = firstZone.getRules().getOffset(now);
+            ZoneOffset zoneOffsetTo = secondZone.getRules().getOffset(now);
+            //Fixing instance instance in order to set zero nano of seconds
+            Instant fixedInstant = instant.minusNanos(instant.getNano());
+            ZoneOffsetTransition transition = ZoneOffsetTransition.of(
+                    LocalDateTime.ofInstant(fixedInstant, ZoneId.systemDefault()),
+                    zoneOffsetFrom, zoneOffsetTo);
+            result = ZonedDateTime.ofInstant(transition.getDateTimeBefore(), transition.getOffsetBefore(), secondZone);
         }
         return result;
     }

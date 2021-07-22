@@ -2,15 +2,40 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.model.QueryDynamicResource;
+import org.hcjf.utils.Strings;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 
 /**
  * @author javaito
  */
 public class QueryCompileTest {
+
+    @Test
+    public void testLiteral() {
+        String queryAsString = "SELECT 'hola' as value, field, 5 as number FROM resource";
+        Query query = Query.compile(queryAsString);
+        System.out.println();
+    }
+
+    @Test
+    public void testInWhereOneValue() {
+        String queryAsString = "SELECT * FROM resource WHERE id IN (774cb3ea-c372-4fb3-b00d-8b7a9648a321)";
+        Query query = Query.compile(queryAsString);
+        System.out.println();
+
+        queryAsString = "SELECT * FROM resource WHERE id IN ('hola-mundo+3456')";
+        query = Query.compile(queryAsString);
+        System.out.println();
+
+        queryAsString = "SELECT * FROM resource WHERE id IN (36589)";
+        query = Query.compile(queryAsString);
+        System.out.println();
+    }
 
     @Test
     public void dynamicResourceCompile() {
@@ -71,6 +96,43 @@ public class QueryCompileTest {
         } catch (Exception ex) {
             Assert.fail(ex.getMessage());
         }
+    }
+;
+    @Test
+    public void testWhereFunctions(){
+        String q = "select * from store.dynamic.ccu.planning where fecFacturacion = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat('2020-02-20 03:00:00','yyyy-MM-dd 00:00:00'))";
+        Query query = Query.compile(q);
+        System.out.println(query.toString());
+        System.out.println();
+    }
+
+    @Test
+    public void testTwoIfs() {
+        String q = "select periodInMinutes(_lastUpdate, if(isNotNull(checkInDate), checkInDate, now())) as period,checkinTime,\n" +
+                "if(isNotNull(checkInDate), checkInDate, '') as ingreso, checkInDate, _lastUpdate as checkOutDate,\n" +
+                "if(isNotNull(photo1Id),concat(concat('<a href=\"',photo1Id),'\" target=\"_blank\"> ##image </a>'),'') as Foto1,\n" +
+                "if(isNotNull(photo2Id),concat(concat('<a href=\"',photo2Id),'\" target=\"_blank\"> ##image </a>'),'') as Foto2,\n" +
+                "consulta.CD as CD, planilla,patente,\n" +
+                "consulta.codCamion as codCamion,consulta.codCarga as codCarga,\n" +
+                "dateFormat('America/Santiago', _lastUpdate, 'dd/MM/yyyy HH:mm:ss') as horario,\n" +
+                "if(plateManualEntry,'##keyboard','') as ingresoPatente,\n" +
+                "if(planningManualEntry,'##keyboard','') as ingresoPlanilla,\n" +
+                "if(isNotNull(platePhotoId),concat(concat('<a href=\"',platePhotoId),'\" target=\"_blank\"> ##image </a>'),'') as FotoPatente,\n" +
+                "store.dynamic.ccu.checkout.loginCode as IMEI\n" +
+                "from store.dynamic.ccu.checkout JOIN (select centroDistribucion as CD,\n" +
+                "codCamion, codCarga, planilla as stringPlanilla\n" +
+                "from store.dynamic.ccu.planilla\n" +
+                "where centroDistribucion = 7 and _creationDate >= '2020-03-09 03:00:00' and _creationDate <= '2020-03-10 02:59:59') as consulta ON store.dynamic.ccu.checkout.planilla = consulta.stringPlanilla\n" +
+                "left join\n" +
+                "(select getMillisecondUnixEpoch(_creationDate) as checkinTime,\n" +
+                "_creationDate as checkInDate,\n" +
+                "planilla as checkinPlanilla\n" +
+                "from store.dynamic.ccu.checkin where _creationDate >= '2020-03-09 03:00:00' and _creationDate <= '2020-03-10 02:59:59') as consultachkin on planilla = checkinPlanilla\n" +
+                "where _creationDate >= '2020-03-09 03:00:00' and _creationDate <= '2020-03-10 02:59:59' order by _creationDate desc";
+
+        Query query = Query.compile(q);
+        Query query1 = Query.compile(query.toString());
+        System.out.println();
     }
 
     @Test()
@@ -228,6 +290,35 @@ public class QueryCompileTest {
         }
     }
 
+    @Test
+    public void testSubqueryIntoSelect() {
+        Query query = Query.compile("select (select type,geometry,properties from disjointResultSet) as zona, newMap('features',newArray(zona)) as zona, celularConductor,loginCode,\n" +
+                "disjointResultSet.0.numeroClientes as numeroClientes, disjointResultSet.0.centroDistribucion as centroDistribucion, disjointResultSet.0.fletero as fletero, disjointResultSet.0.codCamion as codCamion, disjointResultSet.0.usuarioCamion as usuarioCamion\n" +
+                "from (select *\n" +
+                "from (select  new('Feature') as type, newMap('') as properties, bboxBuffer as geometry, numeroClientes, centroDistribucion, fletero, codCamion, usuarioCamion\n" +
+                "from (select if(equals(latitudMin,latitudMax),geoNew(concat('POINT(',longitudMin,' ',latitudMin,')')),geoNew(concat('POLYGON((',longitudMin,' ',latitudMin,',', longitudMax,' ',latitudMin,',',longitudMax,' ',latitudMax,',',longitudMin,' ',latitudMax,'))'))) as bbox,\n" +
+                "geoBuffer(bbox,0.002) as bboxBuffer, numeroClientes, centroDistribucion, fletero, codCamion, usuarioCamion\n" +
+                "from (select disjointResultSet,(select latitud from disjointResultSet where latitud!=0 and latitud!=null order by latitud desc) as latitudMax, first(latitudMax) as latitudMax, latitudMax.latitud as latitudMax,\n" +
+                "(select latitud from disjointResultSet where latitud!=0 and latitud!=null order by latitud asc) as latitudMin, first(latitudMin) as latitudMin, latitudMin.latitud as latitudMin,\n" +
+                "(select longitud from disjointResultSet where longitud!=0 and latitud!=null order by longitud desc) as longitudMax, first(longitudMax) as longitudMax, longitudMax.longitud as longitudMax,\n" +
+                "(select longitud from disjointResultSet where longitud!=0 and latitud!=null order by longitud asc) as longitudMin, first(longitudMin) as longitudMin, longitudMin.longitud as longitudMin,\n" +
+                "disjointResultSet.0.numeroClientes as numeroClientes, disjointResultSet.0.centroDistribucion as centroDistribucion, disjointResultSet.0.fletero as fletero, disjointResultSet.0.codCamion as codCamion, disjointResultSet.0.usuarioCamion as usuarioCamion\n" +
+                "from (select latitud, longitud, numeroClientes, centroDistribucion, fletero, codCamion, usuarioCamion\n" +
+                "from (select clientes, put('clientes','numeroClientes',numeroClientes), put('clientes','centroDistribucion',centroDistribucion), put('clientes','fletero',fletero), put('clientes','codCamion',codCamion), put('clientes','usuarioCamion',usuarioCamion)\n" +
+                "from store.dynamic.ccu.lastplanilla where planilla=17774481).clientes as data disjoint by a) as data) as dato) as data2) as data3 disjoint by a) as data4\n" +
+                "full join (select celularConductor, loginCode from store.dynamic.ccu.planilla where planilla = 17774481 and rollbackDate = null) as data5 on true");
+
+        Query query1 = Query.compile(query.toString());
+
+        System.out.println();
+    }
+
+    @Test
+    public void testTextResource() {
+        Query query = Query.compile("SELECT * FROM 'file://path/file.ext' AS file");
+        System.out.println();
+    }
+
     /**
      * Test the numeric value parsing
      */
@@ -290,21 +381,6 @@ public class QueryCompileTest {
     }
 
     @Test
-    public void testCompileCache() {
-        long startTime = System.currentTimeMillis();
-        Query query1 = Query.compile("SELECT * FROM resource50", false);
-        long firstTime = System.currentTimeMillis() - startTime;
-
-        startTime = System.currentTimeMillis();
-        Query query2 = Query.compile("SELECT * FROM resource50", false);
-        long secondTime = System.currentTimeMillis() - startTime;
-
-        System.out.printf("First time: %d \r\n", firstTime);
-        System.out.printf("Second time: %d \r\n", secondTime);
-        Assert.assertTrue(query1 == query2);
-    }
-
-    @Test
     public void testUnderlyingValues() {
         Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84 limit 2, 50");
         Assert.assertEquals(query.getLimit().intValue(), 2);
@@ -319,4 +395,149 @@ public class QueryCompileTest {
         Assert.assertNull(query.getLimit());
     }
 
+    @Test
+    public void testReplaceValues() {
+        Query query = Query.compile("select if(isNull(store.dynamic.ccu.checkin._creationDate),0,periodInMilliseconds(store.dynamic.ccu.checkin._creationDate, ?)/3600000) as tiempo " +
+                "from store.dynamic.ccu.checkin where patente = ? and" +
+                " parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(store.dynamic.ccu.checkin._creationDate,'yyyy-MM-dd 00:00:00')) = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(?,'yyyy-MM-dd 00:00:00')) and" +
+                " store.dynamic.ccu.checkin._creationDate < ? order by store.dynamic.ccu.checkin._creationDate desc limit ,1");
+        System.out.println();
+    }
+
+    @Test
+    public void testUnprocessedValuesIntoSelect() {
+        Query query = Query.compile("SELECT field1, (SELECT * FROM field WHERE id = 1) as something FROM Resource");
+        System.out.println();
+    }
+
+    @Test
+    public void testQueryWithoutFrom() {
+        Query query = Query.compile("SELECT * FROM __new__");
+        System.out.println();
+    }
+
+    @Test
+    public void testLongCompilation() {
+        Query query = Query.compile("select * from (select data2.checkOutDate as checkOutDate, data2.checkInDate as checkInDate, data2.phoneMatch as phoneMatch, vueltasRealizadas, fecha, new(18) as zoom, lat, lng, data3.vueltasProgramadas as vueltasProgramadas, zonaRiesgo,  CD, baseTransportista, " +
+                "concat(vueltasRealizadas,'/',vueltasProgramadas) as vueltas, if(isNull(fecha),true,false) as estado, data2.codCamion as codCamion, distinct(store.dynamic.ccu.checkout.planilla), data2.codCarga as codCarga, " +
+                "store.dynamic.ccu.checkout.planilla as planilla, store.dynamic.ccu.checkout.patente as patente, data4.zonaPeligrosa as zonaPeligrosa, " +
+                "data2.celularConductor as celularConductor, if(isNotNull(data2.checkOutDate), dateFormat(data2.checkOutDate,'America/Santiago','HH:mm:ss'),'') as salida, " +
+                "if(isNull(data4.clientesVisitados),concat('0/',data4.numeroClientes),concat(data4.clientesVisitados,'/',data4.numeroClientes)) as numeroClientes, " +
+                "numberFormat('#0.00',periodInMilliseconds(data2.checkOutDate,now())/3600000) as duracion " +
+                "from store.dynamic.ccu.checkout " +
+                "join (select aggregateContext(first(patente)) as plate,aggregateContext(size(patente)) as vueltasRealizadas from store.dynamic.ccu.checkout where _creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 00:00:00')) and centroDistribucion=8 group by patente) as data1 on store.dynamic.ccu.checkout.patente = data1.plate " +
+                "join (select checkOutDate, checkInDate, phoneMatch, codCamion, codCarga, celularConductor, planilla as planillaId from store.dynamic.ccu.planilla where _creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and isNull(rollbackDate) and centroDistribucion=8 and isNull(checkInDate)) as data2 on store.dynamic.ccu.checkout.planilla=data2.planillaId " +
+                "left join (select aggregateContext(first(codCamion)) as codigoCamion,aggregateContext(size(codCamion)) as vueltasProgramadas from store.dynamic.ccu.lastplanilla where fecFacturacion > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(toDate(minusDays(now(),2)),'America/Santiago','yyyy-MM-dd 00:00:00')) and centroDistribucion=8 group by codCamion) as data3 on data2.codCamion = data3.codigoCamion " +
+                "left join (select numeroClientes, clientesVisitados, numeroClientesZonaPeligrosa, concat(numeroClientesZonaPeligrosa,'-',numberFormat('#0.0',doubleValue(numeroClientesZonaPeligrosa)/doubleValue(numeroClientes)*doubleValue(100)),'%') as zonaPeligrosa, if(isNull(data4.clientesVisitados),concat('0/',data4.numeroClientes),concat(data4.clientesVisitados,'/',data4.numeroClientes)) as zp, planilla from store.dynamic.ccu.lastplanilla where planilla in (select planilla from store.dynamic.ccu.checkout where centroDistribucion=8 and _creationDate>parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')))) as data4 on store.dynamic.ccu.checkout.planilla=data4.planilla " +
+                "left join (select lat, lng, num_plate, dateFormat(time,'America/Santiago','HH:mm:ss') as fecha, if(isNull(nameZonaRiesgo), false,true) as zonaRiesgo, if(isNull(nameCentroDistribucion), false,true) as CD, if(isNull(nameBaseTransportista), false,true) as baseTransportista FROM time.series.dynamic.ccu.report where periodStart = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and " +
+                "periodEnd = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(toDate(plusDays(now(),1)),'America/Santiago','yyyy-MM-dd 04:00:00')) and periodGroupedBy = 'num_plate' and onlyLastGroup = true) as data5 " +
+                "on store.dynamic.ccu.checkout.patente=data5.num_plate " +
+                "where store.dynamic.ccu.checkout._creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and store.dynamic.ccu.checkout.centroDistribucion=8" +
+                "order by store.dynamic.ccu.checkout._creationDate desc) as data");
+
+        System.out.println();
+
+        query = Query.compile("select * from (select replace(message,'dispositivo ','dispositivo:') as mensaje, replace(mensaje,'{\"message\":\"$@{IMPL,EDNA-KRABAPPEL}','::::::::EDNA-KRABAPPEL (notifique a proveedor):') as mensaje,\n" +
+                "replace(mensaje,'<',':') as mensaje, replace(mensaje,'>',':') as mensaje, split(mensaje,':') as mensaje, aggregateContext(if(size(mensaje)>3,mensaje.8,mensaje.0)) as mensaje \n" +
+                "from store.dynamic.ccu.error.report where _creationDate >= '2020-08-12 04:00:00' and _creationDate < parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(toDate(plusDays('2020-08-12 04:00:00',1)),'yyyy-MM-dd 04:00:00'))) as dat");
+
+        System.out.println();
+    }
+
+    @Test
+    public void testUnionCompilation() {
+        Query query = Query.compile("SELECT * FROM resource UNION SELECT * from resource2");
+        System.out.println();
+
+        query = Query.compile("SELECT  cliente.clienteid as clienteid ,  cliente.nombre as nombre ,  cliente.rubroid as rubroid ,  cliente.documentotipoid as documentotipoid ,  cliente.documentonro as documentonro ,\n" +
+                " cliente.direccionid as direccionid ,  cliente.clienteestadoid as clienteestadoid ,  cliente.clavepublica as clavepublica ,  cliente.clientetipoid as clientetipoid ,\n" +
+                " cliente.norestacredito as norestacredito ,  cliente.contid as contid ,  cliente.notifholderresponsable as notifholderresponsable ,  cliente.parquevehicular as parquevehicular ,\n" +
+                " cliente.listaprecioid as listaprecioid ,  cliente.descuento as descuento ,  cliente.mail as mail ,  cliente.grupo as grupo ,  pais.desc_es as pais ,  direccion.calle as calle ,\n" +
+                " direccion.localidad as localidad ,  direccion.provincia as provincia ,  direccion.cp as cp ,  clienteestado.desc_es as estado ,  rubro.desc_es as rubro ,  clientetipo.desc_es as tipo ,\n" +
+                " documentotipo.desc_es as documentotipo\n" +
+                " FROM cliente\n" +
+                " LEFT JOIN direccion  ON (direccion.direccionid=cliente.direccionid)\n" +
+                " LEFT JOIN pais  ON (pais.paisid=direccion.paisid)\n" +
+                " INNER JOIN clienteestado  ON (clienteestado.clienteestadoid=cliente.clienteestadoid)\n" +
+                " INNER JOIN rubro  ON (rubro.rubroid=cliente.rubroid)\n" +
+                " INNER JOIN clientetipo  ON (clientetipo.clientetipoid=cliente.clientetipoid)\n" +
+                " INNER JOIN documentotipo  ON (documentotipo.documentotipoid=cliente.documentotipoid)\n" +
+                " WHERE (  cliente.clienteid = 309 ) " +
+                " UNION " +
+                " SELECT  cliente.clienteid as clienteid ,  cliente.nombre as nombre ,  cliente.rubroid as rubroid ,  cliente.documentotipoid as documentotipoid ,  cliente.documentonro as documentonro ,\n" +
+                " cliente.direccionid as direccionid ,  cliente.clienteestadoid as clienteestadoid ,  cliente.clavepublica as clavepublica ,  cliente.clientetipoid as clientetipoid ,\n" +
+                " cliente.norestacredito as norestacredito ,  cliente.contid as contid ,  cliente.notifholderresponsable as notifholderresponsable ,  cliente.parquevehicular as parquevehicular ,\n" +
+                " cliente.listaprecioid as listaprecioid ,  cliente.descuento as descuento ,  cliente.mail as mail ,  cliente.grupo as grupo ,  pais.desc_es as pais ,  direccion.calle as calle ,\n" +
+                " direccion.localidad as localidad ,  direccion.provincia as provincia ,  direccion.cp as cp ,  clienteestado.desc_es as estado ,  rubro.desc_es as rubro ,  clientetipo.desc_es as tipo ,\n" +
+                " documentotipo.desc_es as documentotipo\n" +
+                " FROM cliente\n" +
+                " LEFT JOIN direccion  ON (direccion.direccionid=cliente.direccionid)\n" +
+                " LEFT JOIN pais  ON (pais.paisid=direccion.paisid)\n" +
+                " INNER JOIN clienteestado  ON (clienteestado.clienteestadoid=cliente.clienteestadoid)\n" +
+                " INNER JOIN rubro  ON (rubro.rubroid=cliente.rubroid)\n" +
+                " INNER JOIN clientetipo  ON (clientetipo.clientetipoid=cliente.clientetipoid)\n" +
+                " INNER JOIN documentotipo  ON (documentotipo.documentotipoid=cliente.documentotipoid)\n" +
+                " WHERE (  cliente.clienteid = 309 )");
+
+        System.out.println();
+    }
+
+    @Test
+    public void subParameterizedQueryTest() {
+        String sql = "SELECT * FROM (SELECT * FROM character WHERE name like ?) as hc where lastName like ?";
+        Query query = Query.compile(sql);
+        System.out.println();
+
+        sql = "select if(equals(isDisabled,true),'',patente) as suerte, instanceOf(isDisabled), * from (select distinct(store.dynamic.ccu.patente.patente), store.dynamic.ccu.patente.patente as patente,\n" +
+                "if(equals(store.dynamic.ccu.camion.fleteroAsignado,0),store.dynamic.ccu.patente.patente,if(false,if(equals(store.dynamic.ccu.camion.patente,'FJHG20'),store.dynamic.ccu.patente.patente,concat(store.dynamic.ccu.patente.patente,' - Asignada a ',fleteroAsignado)),concat(store.dynamic.ccu.patente.patente,' - Asignada a ',fleteroAsignado))) as patenteStatus,\n" +
+                "if(equals(store.dynamic.ccu.camion.fleteroAsignado,0),false,if(false,if(equals(store.dynamic.ccu.camion.patente,'FJHG20'),false,true),if(equals(store.dynamic.ccu.camion.patente,'FJHG20'),true,false))) as isDisabled\n" +
+                "from store.dynamic.ccu.patente join store.dynamic.ccu.camion on store.dynamic.ccu.patente.patente=store.dynamic.ccu.camion.patente \n" +
+                "where store.dynamic.ccu.patente.fletero=96022 and store.dynamic.ccu.patente.pallets=6 and store.dynamic.ccu.patente.patente like '') as data";
+        query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void conditionalReturnValue() {
+        String sql = "SELECT (equals(name,'javaito') and isNull(lastName)) as thisIsJavaito FROM (SELECT * FROM character WHERE name like ?) as hc where lastName like ?";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void unionInSubQueryTest() {
+        String sql = "select * from (select planilla, patente, enteredDate, loginCode, _creationDate, _lastUpdate, rollbackDate, rollbackSource, checkOutDate, checkInDate, new('VIRTUAL TOTEM') as source, new('<h6 align=\"center\" style=\"margin-top:10px;font-size:15px\">') as tagInicial, new('</h6>') as tagFinal, _eventTracking.eventTriggerId as eventTriggerId, id as idRegistro from store.dynamic.ccu.planilla where planilla=800743756 union \n" +
+                "select planilla, patente, enteredDate, loginCode, _creationDate, _lastUpdate, new('CHECK OUT') as source, new('<h6 align=\"center\" style=\"margin-top:10px;font-size:15px\">') as tagInicial, new('</h6>') as tagFinal, _eventTracking.eventTriggerId as eventTriggerId, id as idRegistro from store.dynamic.ccu.checkout where planilla=800743756 union\n" +
+                "select planilla, patente, enteredDate, loginCode, _creationDate, _lastUpdate, new('CHECK IN') as source, new('<h6 align=\"center\" style=\"margin-top:10px;font-size:15px\">') as tagInicial, new('</h6>') as tagFinal, plateChanged, _eventTracking.eventTriggerId as eventTriggerId, id as idRegistro from store.dynamic.ccu.checkin where planilla=800743756) as data";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void jsonResourceQueryTest() {
+        String sql = "select * from '[{\"field1\":2}]' as resource";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void environmentQueryTest() {
+        String sql = "environment '{\"field\":4}' select * from '[{\"field1\":2}]' as resource";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void testCompileQueryWithEnvironment() {
+        String sql = "environment '{\"field\":4}' select * from '[{\"field\":2}, {\"field\":4}]' as resource where field = $field";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void queryWithTwoSubQueries() {
+        String sql = "select zona as geometry, new('#ff0000') as fillColor, new('#b80004') as strokeColor, toUpperCase(nombre) as label from store.dynamic.ccu.zona.riesgo where region = (select region from store.dynamic.ccu.centro.distribucion where codigo=(select centroDistribucion from store.dynamic.ccu.lastplanilla where planilla=7799086))";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
 }

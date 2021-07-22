@@ -3,14 +3,21 @@ package org.hcjf.layers.query.model;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.utils.Introspection;
+import org.hcjf.utils.Strings;
 
 /**
  * This class represents any kind of query fields.
  */
 public class QueryField extends QueryParameter {
 
+    private boolean environmentIntrospection;
+
     public QueryField(Query query, String fieldPath) {
-        super(query, fieldPath, fieldPath);
+        super(query, fieldPath,
+                fieldPath.startsWith(Strings.ARGUMENT_IDENTIFIER) ? fieldPath.substring(Strings.ARGUMENT_IDENTIFIER.length()) : fieldPath);
+        if(fieldPath.startsWith(Strings.ARGUMENT_IDENTIFIER)) {
+            environmentIntrospection = true;
+        }
     }
 
     /**
@@ -22,21 +29,30 @@ public class QueryField extends QueryParameter {
      */
     public <R extends Object> R resolve(Object instance) {
         Object result = null;
-        if(instance instanceof JoinableMap && ((JoinableMap) instance).getResources().size() > 1) {
-            if(getResource().equals(QueryResource.ANY)) {
-                for(String resourceName : ((JoinableMap)instance).getResources()) {
-                    result = Introspection.silentResolve(((JoinableMap) instance).
-                            getResourceModel(resourceName), getFieldPath());
-                    if(result != null) {
-                        break;
-                    }
-                }
-            } else {
-                result = Introspection.silentResolve(((JoinableMap) instance).
-                        getResourceModel(getResource().getResourceName()), getFieldPath());
+        if(environmentIntrospection) {
+            if(getContainer().getEnvironment() != null) {
+                result = Introspection.silentResolve(getContainer().getEnvironment(), getFieldPath());
             }
         } else {
-            result = Introspection.silentResolve(instance, getFieldPath());
+            if (instance instanceof JoinableMap && ((JoinableMap) instance).getResources().size() > 1) {
+                if (getResource().equals(QueryResource.ANY)) {
+                    for (String resourceName : ((JoinableMap) instance).getResources()) {
+                        result = Introspection.silentResolve(((JoinableMap) instance).
+                                getResourceModel(resourceName), getFieldPath());
+                        if (result != null) {
+                            break;
+                        }
+                    }
+                    if (result == null) {
+                        result = Introspection.silentResolve(instance, getFieldPath());
+                    }
+                } else {
+                    result = Introspection.silentResolve(((JoinableMap) instance).
+                            getResourceModel(getResource().getResourceName()), getFieldPath());
+                }
+            } else {
+                result = Introspection.silentResolve(instance, getFieldPath());
+            }
         }
         return (R) result;
     }

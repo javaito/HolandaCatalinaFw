@@ -15,12 +15,12 @@ public class StreamSettings {
     private Integer maxHeaderListSize;
 
     public StreamSettings() {
-        setHeaderTableSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2Settings.HEADER_TABLE_SIZE));
-        setEnablePush(SystemProperties.getBoolean(SystemProperties.Net.Http.Http2Settings.ENABLE_PUSH));
-        setMaxConcurrentStream(SystemProperties.getInteger(SystemProperties.Net.Http.Http2Settings.MAX_CONCURRENT_STREAMS));
-        setInitialWindowSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2Settings.INITIAL_WINDOWS_SIZE));
-        setMaxFrameSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2Settings.MAX_FRAME_SIZE));
-        setMaxHeaderListSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2Settings.MAX_HEADER_LIST_SIZE));
+        setHeaderTableSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2.HEADER_TABLE_SIZE));
+        setEnablePush(SystemProperties.getBoolean(SystemProperties.Net.Http.Http2.ENABLE_PUSH));
+        setMaxConcurrentStream(SystemProperties.getInteger(SystemProperties.Net.Http.Http2.MAX_CONCURRENT_STREAMS));
+        setInitialWindowSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2.INITIAL_WINDOWS_SIZE));
+        setMaxFrameSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2.MAX_FRAME_SIZE));
+        setMaxHeaderListSize(SystemProperties.getInteger(SystemProperties.Net.Http.Http2.MAX_HEADER_LIST_SIZE));
     }
 
     public Integer getHeaderTableSize() {

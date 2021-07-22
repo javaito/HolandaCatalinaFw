@@ -3,18 +3,18 @@ package org.hcjf.utils;
 import com.google.gson.*;
 import org.hcjf.properties.SystemProperties;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.*;
 
 public class JsonUtils {
 
-    private static final JsonParser jsonParser;
     private static final Gson gson;
+    public static final String DATE_FORMAT_ARG = "dateFormatArgument";
+    public static final String ADAPTERS_ARG = "adaptersArgument";
 
     static {
-        jsonParser = new JsonParser();
         gson = new GsonBuilder().setPrettyPrinting().setDateFormat(
                 SystemProperties.get(SystemProperties.HCJF_DEFAULT_DATE_FORMAT)).create();
     }
@@ -25,7 +25,7 @@ public class JsonUtils {
      * @return Object instance.
      */
     public static Object createObject(String json) {
-        return createObject(jsonParser.parse(json));
+        return createObject(JsonParser.parseString(json));
     }
 
     /**
@@ -69,10 +69,12 @@ public class JsonUtils {
             value = Strings.deductInstance(element.getAsString());
 
             //This control is to save the case when the value into the json file is marked with quotes
-            if (Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
-                value = value.toString();
+            if(value != null) {
+                if (Number.class.isAssignableFrom(value.getClass()) || Boolean.class.isAssignableFrom(value.getClass())) {
+                    value = element.getAsString();
+                }
             }
-        }else if(element instanceof JsonNull) {
+        } else if(element instanceof JsonNull) {
             value = null;
         } else {
             value = Strings.deductInstance(element.getAsString());
@@ -82,5 +84,31 @@ public class JsonUtils {
 
     public static JsonElement toJsonTree(Object object) {
         return gson.toJsonTree(object);
+    }
+
+    public static JsonElement toJsonTree(Object object, Map<String, Object> formatOptions) {
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(JsonSerializer.class, (JsonSerializer<LocalDateTime>) (src, typeOfSrc, context) -> {
+            String value = SystemProperties.getDateFormat(SystemProperties.HCJF_DEFAULT_DATE_FORMAT).format(Date.from(src.toInstant(ZoneOffset.UTC)));
+            JsonPrimitive jsonPrimitive = new JsonPrimitive(value);
+            return jsonPrimitive;
+        });
+        formatOptions.forEach((key,value) -> {
+            switch (key){
+                case DATE_FORMAT_ARG : {
+                    gsonBuilder.setPrettyPrinting().setDateFormat(value.toString());
+                    break;
+                }
+                case ADAPTERS_ARG: {
+                    Map<Type, Object> adapters = (Map<Type, Object>) value;
+                    adapters.forEach((type, adapter) ->{
+                        gsonBuilder.setPrettyPrinting().registerTypeAdapter(type, adapter);
+                    });
+                    break;
+                }
+                default:{break;}
+            }
+        });
+        return gsonBuilder.create().toJsonTree(object);
     }
 }

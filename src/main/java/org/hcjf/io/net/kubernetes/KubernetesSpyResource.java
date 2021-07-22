@@ -1,12 +1,17 @@
 package org.hcjf.io.net.kubernetes;
 
-import io.kubernetes.client.ApiClient;
-import io.kubernetes.client.ApiException;
-import io.kubernetes.client.Configuration;
-import io.kubernetes.client.apis.BatchV1Api;
-import io.kubernetes.client.apis.CoreV1Api;
-import io.kubernetes.client.models.*;
+import io.kubernetes.client.Metrics;
+import io.kubernetes.client.custom.NodeMetrics;
+import io.kubernetes.client.custom.NodeMetricsList;
+import io.kubernetes.client.custom.PodMetrics;
+import io.kubernetes.client.custom.PodMetricsList;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.apis.BatchV1Api;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.crud.CreateLayerInterface;
@@ -98,15 +103,20 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
     public static final String SERVICE = "system_k8s_service";
     public static final String NAMESPACED_SERVICE = "system_k8s_namespaced_service";
     public static final String COMPONENT_STATUS = "system_k8s_component_status";
+    public static final String POD_METRICS = "system_k8s_pod_metrics";
+    public static final String NODE_METRICS = "system_k8s_node_metrics";
 
     private final ApiClient client;
+    private final Metrics metrics;
     private final BatchV1Api batchApi;
     private final CoreV1Api api;
 
     public KubernetesSpyResource() {
         super(NAME);
+
         try {
             client = Config.fromCluster();
+            metrics = new Metrics(client);
         } catch (IOException e) {
             throw new RuntimeException();
         }
@@ -143,7 +153,9 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                 NAMESPACED_SERVICE_ACCOUNT,
                 SERVICE,
                 NAMESPACED_SERVICE,
-                COMPONENT_STATUS
+                COMPONENT_STATUS,
+                POD_METRICS,
+                NODE_METRICS
         );
     }
 
@@ -311,178 +323,191 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
             switch (queryable.getResourceName()) {
                 case CONFIG_MAP: {
                     for(V1ConfigMap configMap : api.listConfigMapForAllNamespaces(
-                            null, null, null, null, null, null, null, null).getItems()) {
+                            null, null, null, null, null, null, null, null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(configMap, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_CONFIG_MAP: {
                     for(V1ConfigMap configMap : api.listNamespacedConfigMap(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null, null, null, null, null, null, null).getItems()) {
+                            null, null, null, null, null, null, null, null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(configMap, consumer)));
                     }
                     break;
                 }
                 case END_POINT: {
                     for(V1Endpoints endpoints : api.listEndpointsForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(endpoints, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_END_POINT: {
                     for(V1Endpoints endpoints : api.listNamespacedEndpoints(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(endpoints, consumer)));
                     }
                     break;
                 }
                 case EVENT: {
                     for(V1Event event : api.listEventForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(event, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_EVENT: {
                     for(V1Event event : api.listNamespacedEvent(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(event, consumer)));
                     }
                     break;
                 }
                 case LIMIT_RANGE: {
                     for(V1LimitRange limitRange : api.listNamespacedLimitRange(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(limitRange, consumer)));
                     }
                     break;
                 }
                 case NAMESPACE: {
                     for(V1Namespace namespace : api.listNamespace(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(namespace, consumer)));
                     }
                     break;
                 }
                 case NODE: {
                     for(V1Node node : api.listNode(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(node, consumer)));
                     }
                     break;
                 }
                 case PERSISTENT_VOLUME: {
                     for(V1PersistentVolume persistentVolume : api.listPersistentVolume(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(persistentVolume, consumer)));
                     }
                     break;
                 }
                 case PERSISTENT_VOLUME_CLAIM: {
                     for(V1PersistentVolumeClaim persistentVolumeClaim : api.listNamespacedPersistentVolumeClaim(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(persistentVolumeClaim, consumer)));
                     }
                     break;
                 }
                 case POD: {
                     for(V1Pod pod : api.listPodForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(pod, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_POD: {
                     for(V1Pod pod : api.listNamespacedPod(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(pod, consumer)));
                     }
                     break;
                 }
                 case POD_TEMPLATE: {
                     for(V1PodTemplate podTemplate : api.listNamespacedPodTemplate(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(podTemplate, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_POD_TEMPLATE: {
                     for(V1PodTemplate podTemplate : api.listPodTemplateForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(podTemplate, consumer)));
                     }
                     break;
                 }
                 case REPLICATION_CONTROLLER: {
                     for(V1ReplicationController replicationController : api.listNamespacedReplicationController(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(replicationController, consumer)));
                     }
                     break;
                 }
                 case RESOURCE_QUOTA: {
                     for(V1ResourceQuota resourceQuota : api.listResourceQuotaForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(resourceQuota, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_RESOURCE_QUOTA: {
                     for(V1ResourceQuota resourceQuota : api.listNamespacedResourceQuota(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(resourceQuota, consumer)));
                     }
                     break;
                 }
                 case SECRET: {
                     for(V1Secret secret : api.listSecretForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(secret, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_SECRET: {
                     for(V1Secret secret : api.listNamespacedSecret(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(secret, consumer)));
                     }
                     break;
                 }
                 case SERVICE_ACCOUNT: {
                     for(V1ServiceAccount serviceAccount : api.listServiceAccountForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(serviceAccount, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_SERVICE_ACCOUNT: {
                     for(V1ServiceAccount serviceAccount : api.listNamespacedServiceAccount(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(serviceAccount, consumer)));
                     }
                     break;
                 }
                 case SERVICE: {
                     for(V1Service service : api.listServiceForAllNamespaces(
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(service, consumer)));
                     }
                     break;
                 }
                 case NAMESPACED_SERVICE: {
                     for(V1Service service : api.listNamespacedService(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                            null, null,null,null,null,null,null,null).getItems()) {
+                            null, null,null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(service, consumer)));
                     }
                     break;
                 }
                 case COMPONENT_STATUS: {
                     for(V1ComponentStatus status : api.listComponentStatus(
-                            null, null, null,null,null,null,null,null).getItems()) {
+                            null, null, null,null,null,null,null,null, null).getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(status, consumer)));
                     }
                     break;
+                }
+                case POD_METRICS: {
+                    PodMetricsList podMetricsList = metrics.getPodMetrics(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE));
+                    for(PodMetrics podMetrics : podMetricsList.getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(podMetrics)));
+                    }
+                    break;
+                }
+                case NODE_METRICS: {
+                    NodeMetricsList nodeMetricsList = metrics.getNodeMetrics();
+                    for(NodeMetrics nodeMetrics : nodeMetricsList.getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(nodeMetrics)));
+                    }
                 }
             }
         }catch (Exception ex){

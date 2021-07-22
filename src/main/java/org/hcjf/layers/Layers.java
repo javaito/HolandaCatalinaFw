@@ -13,6 +13,8 @@ import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.resources.Resource;
 import org.hcjf.layers.resources.Resourceable;
+import org.hcjf.layers.scripting.JsCodeEvaluator;
+import org.hcjf.layers.scripting.JavaCodeEvaluator;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.security.LazyPermission;
@@ -56,6 +58,10 @@ public final class Layers {
         //Publish a read rows layer implementation in order to publish a list af all the layer of the system.
         Layers.publishLayer(SystemLayerReadableImplementation.class);
         Layers.publishLayer(SystemResourceReadableImplementation.class);
+
+        //Publish a code evaluator implementations
+        Layers.publishLayer(JavaCodeEvaluator.class);
+        Layers.publishLayer(JsCodeEvaluator.class);
     }
 
     private final Map<Class<? extends Layer>, Object> initialInstances;
@@ -451,10 +457,10 @@ public final class Layers {
         while(!classToIntrospect.equals(Layer.class) && !classToIntrospect.equals(Object.class)) {
             for (Method method : classToIntrospect.getDeclaredMethods()) {
                 for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
-                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.description(), List.of(permission.tags()));
+                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
                 }
                 for (LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
-                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.description(), List.of(permission.tags()));
+                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
                 }
             }
             classToIntrospect = classToIntrospect.getSuperclass();

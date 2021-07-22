@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public class CollectionQueryFunction extends BaseQueryFunctionLayer {
 
     private static final String SIZE = "size";
+    private static final String SIZE_DISTINCT = "sizeDistinct";
     private static final String GET = "get";
     private static final String CONTAINS = "contains";
     private static final String CONTAINS_ALL = "containsAll";
@@ -30,6 +31,7 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
         super(SystemProperties.get(SystemProperties.Query.Function.COLLECTION_FUNCTION_NAME));
 
         addFunctionName(SIZE);
+        addFunctionName(SIZE_DISTINCT);
         addFunctionName(GET);
         addFunctionName(CONTAINS);
         addFunctionName(CONTAINS_ALL);
@@ -49,22 +51,44 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
 
         switch (functionName) {
             case SIZE: {
-                if(getParameter(0, parameters) instanceof Collection) {
-                    result = ((Collection)parameters[0]).size();
-                } else if(getParameter(0, parameters) instanceof Map) {
-                    result = ((Map)parameters[0]).size();
-                } else if(getParameter(0, parameters).getClass().isArray()) {
-                    result = Array.getLength(parameters[0]);
+                if(getParameter(0, parameters) == null) {
+                    result = 0;
                 } else {
-                    result = 1;
+                    if (getParameter(0, parameters) instanceof Collection) {
+                        result = ((Collection) parameters[0]).size();
+                    } else if (getParameter(0, parameters) instanceof Map) {
+                        result = ((Map) parameters[0]).size();
+                    } else if (getParameter(0, parameters).getClass().isArray()) {
+                        result = Array.getLength(parameters[0]);
+                    } else {
+                        result = 1;
+                    }
+                }
+                break;
+            }
+            case SIZE_DISTINCT: {
+                if(getParameter(0, parameters) == null) {
+                    result = 0;
+                } else {
+                    if (getParameter(0, parameters) instanceof Collection) {
+                        HashSet<?> hashSet = new HashSet<>((Collection<?>) parameters[0]);
+                        result = hashSet.size();
+                    } else if (getParameter(0, parameters) instanceof Map) {
+                        result = ((Map<?,?>) parameters[0]).size();
+                    } else if (getParameter(0, parameters).getClass().isArray()) {
+                        HashSet<?> hashSet = new HashSet<>(Collections.singletonList(parameters[0]));
+                        result = hashSet.size();
+                    } else {
+                        result = 1;
+                    }
                 }
                 break;
             }
             case GET: {
-                if(getParameter(0, parameters) instanceof Collection && parameters[1] instanceof Integer) {
-                    result = Array.get(((Collection)parameters[0]).toArray(), (Integer)parameters[1]);
-                } else if(getParameter(0, parameters).getClass().isArray() && parameters[1] instanceof Integer) {
-                    result = Array.get(parameters[0], (Integer)parameters[1]);
+                if(getParameter(0, parameters) instanceof Collection) {
+                    result = Array.get(((Collection)parameters[0]).toArray(), ((Number)parameters[1]).intValue());
+                } else if(getParameter(0, parameters).getClass().isArray()) {
+                    result = Array.get(parameters[0], ((Number)parameters[1]).intValue());
                 } else if(getParameter(0, parameters) instanceof Map) {
                     result = ((Map)parameters[0]).get(parameters[1]);
                 }
@@ -188,7 +212,8 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
             }
             case SKIP: {
                 if(getParameter(0, parameters) instanceof  Collection) {
-                    result = ((Collection)getParameter(0, parameters)).stream().skip(getParameter(1, parameters)).collect(Collectors.toList());
+                    result = ((Collection)getParameter(0, parameters)).stream().skip(
+                            ((Number)getParameter(1, parameters)).longValue()).collect(Collectors.toList());
                 } else {
                     result = new ArrayList<>();
                 }
@@ -196,7 +221,8 @@ public class CollectionQueryFunction extends BaseQueryFunctionLayer {
             }
             case LIMIT : {
                 if(getParameter(0, parameters) instanceof  Collection) {
-                    result = ((Collection)getParameter(0, parameters)).stream().limit(getParameter(1, parameters)).collect(Collectors.toList());
+                    result = ((Collection)getParameter(0, parameters)).stream().limit(
+                            ((Number)getParameter(1, parameters)).longValue()).collect(Collectors.toList());
                 } else {
                     List<Object> list = new ArrayList<>();
                     list.add(getParameter(0, parameters));

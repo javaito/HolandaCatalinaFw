@@ -17,6 +17,7 @@ public abstract class FileSystemWatcherConsumer implements ServiceConsumer {
     private final String fileName;
     private final Path basePath;
     private final WatchEvent.Kind[] eventKinds;
+    private final TriggerType triggerType;
 
     /**
      * Constructor
@@ -24,7 +25,18 @@ public abstract class FileSystemWatcherConsumer implements ServiceConsumer {
      * @param eventKinds Kinds of events that this consumer are listening
      */
     public FileSystemWatcherConsumer(Path path, WatchEvent.Kind... eventKinds) {
+        this(path, TriggerType.WATCHER, eventKinds);
+    }
+
+    /**
+     * Constructor
+     * @param path Base path, all the paths bellow of the base are wached by the consumer
+     * @param triggerType Trigger type.
+     * @param eventKinds Kinds of events that this consumer are listening
+     */
+    public FileSystemWatcherConsumer(Path path, TriggerType triggerType, WatchEvent.Kind... eventKinds) {
         this.path = path;
+        this.triggerType = triggerType;
         if(!Files.isDirectory(path)) {
             basePath = path.getParent();
             fileName = path.getFileName().toString();
@@ -42,6 +54,14 @@ public abstract class FileSystemWatcherConsumer implements ServiceConsumer {
      */
     public Path getPath() {
         return path;
+    }
+
+    /**
+     * Returns the trigger type for this consumer.
+     * @return Trigger type.
+     */
+    public final TriggerType getTriggerType() {
+        return triggerType;
     }
 
     /**
@@ -96,4 +116,11 @@ public abstract class FileSystemWatcherConsumer implements ServiceConsumer {
      */
     protected void overflow(WatchEvent<Path> event) {}
 
+    /**
+     * Enums the kind of trigger to verify the file system.
+     */
+    public enum TriggerType {
+        WATCHER,
+        POLLING
+    }
 }

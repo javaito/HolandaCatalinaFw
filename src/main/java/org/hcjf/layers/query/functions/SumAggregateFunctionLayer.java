@@ -21,29 +21,46 @@ public class SumAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
         Collection result = resultSet;
         if(parameters.length >= 1) {
             try {
-                boolean accumulate = parameters.length >= 2 && (boolean) parameters[1];
-                boolean group = parameters.length >= 3 && (boolean) parameters[2];
-                Number value;
-                Number accumulatedValue = 0;
-                for (Object row : resultSet) {
-                    value = accumulateFunction(accumulatedValue,
-                            new Object[]{resolveValue(row, parameters[0])}, (A, V) -> A.add(V))[1];
-                    if(!group) {
-                        if(accumulate) {
-                            accumulatedValue = accumulatedValue.doubleValue() + value.doubleValue();
-                            ((Map) row).put(alias, accumulatedValue);
-                        } else {
-                            ((Map) row).put(alias, value);
+                if(parameters.length == 1) {
+                    Number sumValue;
+                    for (Object row : resultSet) {
+                        sumValue = accumulateFunction(0,
+                                new Object[]{resolveValue(row, parameters[0])}, (A, V) -> A.add(V))[1];
+                        ((Map) row).put(alias, sumValue);
+                    }
+                } else {
+                    boolean group = true;
+                    if (parameters.length >= 2) {
+                        group = getParameter(1, parameters);
+                    }
+                    boolean accumulate = false;
+                    if (parameters.length == 3) {
+                        accumulate = getParameter(2, parameters);
+                    }
+                    Number accumulatedValue = 0;
+                    for (Object row : resultSet) {
+                        accumulatedValue = accumulateFunction(accumulatedValue,
+                                new Object[]{resolveValue(row, parameters[0])}, (A, V) -> A.add(V))[1];
+                        if (!group) {
+                            if (accumulate) {
+                                ((Map) row).put(alias, accumulatedValue);
+                            }
                         }
                     }
-                }
 
-                if(group) {
-                    Collection<JoinableMap> newResultSet = new ArrayList<>();
-                    JoinableMap count = new JoinableMap(new HashMap<>(), alias);
-                    count.put(alias, accumulatedValue);
-                    newResultSet.add(count);
-                    result = newResultSet;
+                    if (group) {
+                        Collection<JoinableMap> newResultSet = new ArrayList<>();
+                        JoinableMap count = new JoinableMap(new HashMap<>(), alias);
+                        count.put(alias, accumulatedValue);
+                        newResultSet.add(count);
+                        result = newResultSet;
+                    } else {
+                        if (!accumulate) {
+                            for (Object row : resultSet) {
+                                ((Map) row).put(alias, accumulatedValue);
+                            }
+                        }
+                    }
                 }
             } catch (Exception ex){
                 throw new HCJFRuntimeException("Sum aggregate function fail", ex);

@@ -22,6 +22,8 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
     private static final String HEX_TO_BYTES = "hexToBytes";
     private static final String BYTES_TO_HEX = "bytesToHex";
     private static final String REPLACE = "replace";
+    private static final String SUB_STRING = "subString";
+    private static final String INDEX_OF = "indexOf";
 
     public StringQueryFunctionLayer() {
         super(SystemProperties.get(SystemProperties.Query.Function.STRING_FUNCTION_NAME));
@@ -38,6 +40,8 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
         addFunctionName(HEX_TO_BYTES);
         addFunctionName(BYTES_TO_HEX);
         addFunctionName(REPLACE);
+        addFunctionName(SUB_STRING);
+        addFunctionName(INDEX_OF);
     }
 
     @Override
@@ -47,7 +51,7 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
             case TRIM: result = ((String)getParameter(0, parameters)).trim();break;
             case LENGTH: result = ((String)getParameter(0, parameters)).length();break;
             case SPLIT: result = ((String)getParameter(0, parameters)).split(getParameter(1, parameters));break;
-            case SPLIT_BY_LENGTH: result = Strings.splitByLength(getParameter(0, parameters), getParameter(1, parameters));break;
+            case SPLIT_BY_LENGTH: result = Strings.splitByLength(getParameter(0, parameters), ((Number)getParameter(1, parameters)).intValue());break;
             case TO_UPPER_CASE: result = ((String)getParameter(0, parameters)).toUpperCase();break;
             case TO_LOWER_CASE: result = ((String)getParameter(0, parameters)).toLowerCase();break;
             case TO_STRING: result = getParameter(0, parameters).toString(); break;
@@ -86,6 +90,28 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
                     }
                 }
                 result = builder.toString();
+                break;
+            }
+            case SUB_STRING: {
+                String value = getParameter(0, parameters);
+                Number startIndex = getParameter(1, parameters);
+                if(parameters.length == 3) {
+                    Number endIndex = getParameter(2, parameters);
+                    result = value.substring(startIndex.intValue(), endIndex.intValue());
+                } else {
+                    result = value.substring(startIndex.intValue());
+                }
+                break;
+            }
+            case INDEX_OF: {
+                String value = getParameter(0, parameters);
+                String pattern = getParameter(1, parameters);
+                Integer fromIndex = 0;
+                if(parameters.length == 3) {
+                    fromIndex = ((Number)getParameter(2, parameters)).intValue();
+                }
+                result = value.indexOf(pattern, fromIndex);
+                break;
             }
         }
         return result;
