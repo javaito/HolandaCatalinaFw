@@ -311,8 +311,12 @@ public class RestContext extends Context {
                     for(String dataSourceName : rawDataSources.keySet()) {
                         Object dataSource = rawDataSources.get(dataSourceName);
                         if(dataSource instanceof String) {
-                            Queryable queryable = Query.compile((String) dataSource);
-                            dataSourcesMap.put(dataSourceName, Query.evaluate(queryable));
+                            try {
+                                Queryable queryable = Query.compile((String) dataSource);
+                                dataSourcesMap.put(dataSourceName, Query.evaluate(queryable));
+                            } catch (Exception e) {
+                                throw new HCJFRuntimeException(Strings.createTaggedMessage(String.format("Error resolving data source %s", dataSource), "DATA_SOURCE"), e);
+                            }
                         } else if(dataSource instanceof List) {
                             dataSourcesMap.put(dataSourceName, dataSource);
                         } else if(dataSource instanceof Map) {
