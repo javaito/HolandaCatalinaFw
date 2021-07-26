@@ -159,18 +159,34 @@ public class SQLSerializer extends Layer implements QuerySerializer {
      */
     private Strings.Builder toStringQueryReturnValue(Strings.Builder builder, QueryReturnParameter queryReturnParameter) {
         if(queryReturnParameter instanceof QueryReturnLiteral) {
-            Object value = ((QueryReturnLiteral)queryReturnParameter).getValue();
-            if(value instanceof String) {
+            Object value = ((QueryReturnLiteral) queryReturnParameter).getValue();
+            if (value instanceof String) {
                 builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
                 builder.append(value);
                 builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
-            } else if(value instanceof Date) {
+            } else if (value instanceof Date) {
                 builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
-                builder.append(SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).format((Date)value));
+                builder.append(SystemProperties.getDateFormat(SystemProperties.Query.DATE_FORMAT).format((Date) value));
                 builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.STRING_DELIMITER));
             } else {
                 builder.append(Objects.toString(value));
             }
+        } else if(queryReturnParameter instanceof QueryReturnUnprocessedValue) {
+            BaseEvaluator.UnprocessedValue unprocessedValue = ((QueryReturnUnprocessedValue) queryReturnParameter).getUnprocessedValue();
+            if (unprocessedValue instanceof BaseEvaluator.QueryValue) {
+                builder.append(Strings.START_GROUP);
+                builder.append(((BaseEvaluator.QueryValue) unprocessedValue).getQuery().toString());
+                builder.append(Strings.END_GROUP);
+            } else {
+                builder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.REPLACEABLE_VALUE));
+            }
+//        } else if(queryReturnParameter instanceof QueryReturnFunction) {
+//            QueryReturnFunction queryReturnFunction = (QueryReturnFunction) queryReturnParameter;
+//            builder.append(queryReturnFunction.getFunctionName())
+//            builder.append(Strings.START_GROUP);
+//            for()
+//            builder.append(((BaseEvaluator.QueryValue) unprocessedValue).getQuery().toString());
+//            builder.append(Strings.END_GROUP);
         } else {
             builder.append(queryReturnParameter);
         }
@@ -183,6 +199,7 @@ public class SQLSerializer extends Layer implements QuerySerializer {
         return builder;
     }
 
+    /**
      * Creates a string representation of query resource and append this representation into result object.
      * @param result Buffer with the current result.
      * @param resource Query resource object.
