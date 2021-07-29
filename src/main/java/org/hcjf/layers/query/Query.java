@@ -968,6 +968,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     private Collection<? extends Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
         Query query = new Query(getResource());
+        query.setEnvironment(getEnvironment());
         query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
         for (Evaluator evaluator : getEvaluatorsFromResource(this, query, query.getResource())) {
             query.addEvaluator(evaluator);
@@ -979,6 +980,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         for(Join join : getJoins()) {
             //Creates the first query for the original resource.
             query = new Query(join.getResource());
+            query.setEnvironment(getEnvironment());
             query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             for (Evaluator evaluator : optimizeJoin(leftData, join)) {
 //                if(join.getResource() instanceof QueryDynamicResource) {

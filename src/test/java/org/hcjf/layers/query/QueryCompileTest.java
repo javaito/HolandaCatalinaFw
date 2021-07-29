@@ -6,9 +6,7 @@ import org.hcjf.utils.Strings;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author javaito
@@ -524,6 +522,39 @@ public class QueryCompileTest {
     public void environmentQueryTest() {
         String sql = "environment '{\"field\":4}' select * from '[{\"field1\":2}]' as resource";
         Query query = Query.compile(sql);
+        System.out.println();
+
+        sql = "environment '{\n" +
+                "  \"regla\": {\n" +
+                "    \"recurso\": \"store.dynamic.ccu.fletero\",\n" +
+                "    \"condition\": \"fletero = 96512\",\n" +
+                "    \"kind\": \"READ\",\n" +
+                "    \"permissions\": [\n" +
+                "      \"4f8b8ac4-3a9a-49ea-bb73-e1ea847acbcb\"\n" +
+                "    ],\n" +
+                "    \"description\": \"Aplica filtro a recurso con fletero 96512\",\n" +
+                "    \"resourceName\": \"fletero\"\n" +
+                "  },\n" +
+                "  \"status\": false}' select id from '{" +
+                "  \"recurso\": \"store.dynamic.ccu.fletero\",\n" +
+                "  \"_lastUpdateAccount\": \"ea0bffc7-40f3-5252-bbd8-61ce1d0c220d\",\n" +
+                "  \"kind\": \"READ\",\n" +
+                "  \"description\": \"Aplica filtro a recurso con fletero 96512\",\n" +
+                "  \"active\": true,\n" +
+                "  \"resourceName\": \"store.dynamic.ccu.fletero\",\n" +
+                "  \"_creationDate\": \"2021-07-29 14:28:02\",\n" +
+                "  \"condition\": \"fletero = 96512\",\n" +
+                "  \"_lastUpdateDate\": \"2021-07-29 14:28:02\",\n" +
+                "  \"_creationAccount\": \"ea0bffc7-40f3-5252-bbd8-61ce1d0c220d\",\n" +
+                "  \"permissions\": [\n" +
+                "    \"4f8b8ac4-3a9a-49ea-bb73-e1ea847acbcb\"\n" +
+                "  ],\n" +
+                "  \"_id\": \"ea2997b2-dff7-459f-b33a-1b3e553b06f1\",\n" +
+                "  \"id\": \"ea2997b2-dff7-459f-b33a-1b3e553b06f1\"\n" +
+                "}' as data where resourceName=$regla.recurso and\n" +
+                "condition=$regla.condition and kind=$regla.kind";
+        query = Query.compile(sql);
+        query = Query.compile(query.toString());
         System.out.println();
     }
 

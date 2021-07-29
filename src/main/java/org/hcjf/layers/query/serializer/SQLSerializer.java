@@ -50,7 +50,9 @@ public class SQLSerializer extends Layer implements QuerySerializer {
         if(query.getEnvironment() != null && query.getEnvironment().size() > 0) {
             resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT));
             resultBuilder.append(Strings.WHITE_SPACE);
+            resultBuilder.append(Strings.RICH_TEXT_SEPARATOR);
             resultBuilder.append(JsonUtils.toJsonTree(query.getEnvironment()).toString());
+            resultBuilder.append(Strings.RICH_TEXT_SEPARATOR);
             resultBuilder.append(Strings.WHITE_SPACE);
         }
 
