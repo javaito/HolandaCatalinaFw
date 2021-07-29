@@ -592,6 +592,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     } else {
                         //Creates the first query for the original resource.
                         Query resolveQuery = new Query(getResource());
+                        resolveQuery.setEnvironment(getEnvironment());
                         resolveQuery.returnAll = true;
 
                         resolveQuery.setLimit(getLimit());
