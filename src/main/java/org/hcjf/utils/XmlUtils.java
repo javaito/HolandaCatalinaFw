@@ -6,13 +6,11 @@ import org.hcjf.io.net.http.*;
 import org.hcjf.layers.query.Query;
 import org.hcjf.layers.query.Queryable;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.jar.Attributes;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

@@ -1116,6 +1116,22 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testNullFieldsAndValues() {
+        String sql = "SELECT name, lastName,  FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testLiteral() {
+        String sql = "SELECT name, lastName, 'Some string' as value  FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void testAggregateSum() {
         String sql = "SELECT aggregateSum(weight) FROM character";
         Query query = Query.compile(sql);
@@ -1151,6 +1167,16 @@ public class QueryRunningTest {
         System.out.println();
 
         sql = "SELECT (SELECT * FROM character where lastName like $lastName) as family FROM '[{\"lastName\":\"flander\"}, {\"lastName\":\"simpson\"}]' as data";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "ENVIRONMENT '{\"lastName\":\"Flanders\"}' SELECT (SELECT * FROM character where lastName like $lastName) as family FROM '[{\"name\":\"flander\"}, {\"name\":\"simpson\"}]' as data";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        sql = "ENVIRONMENT '{\"lastName\":\"Simpson\", \"const\":\"value\"}' SELECT *, $const as const FROM character where lastName like $lastName";
         query = Query.compile(sql);
         resultSet = query.evaluate(dataSource);
         System.out.println();

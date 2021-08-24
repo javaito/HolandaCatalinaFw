@@ -3,6 +3,8 @@ package org.hcjf.io.net.http;
 import com.google.gson.*;
 import org.hcjf.encoding.MimeType;
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.io.net.http.datasources.DataSourceService;
+import org.hcjf.io.net.http.datasources.DataSourceServiceConsumer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.CreateLayerInterface;
 import org.hcjf.layers.crud.DeleteLayerInterface;
@@ -10,6 +12,7 @@ import org.hcjf.layers.crud.ReadLayerInterface;
 import org.hcjf.layers.crud.UpdateLayerInterface;
 import org.hcjf.layers.query.*;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 
@@ -306,25 +309,9 @@ public class RestContext extends Context {
                     Map<String, Object> rawDataSources = (Map<String, Object>)
                             JsonUtils.createObject(jsonObject.get(
                                     SystemProperties.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD)));
-
-                    dataSourcesMap = new HashMap<>();
-                    for(String dataSourceName : rawDataSources.keySet()) {
-                        Object dataSource = rawDataSources.get(dataSourceName);
-                        if(dataSource instanceof String) {
-                            try {
-                                Queryable queryable = Query.compile((String) dataSource);
-                                dataSourcesMap.put(dataSourceName, Query.evaluate(queryable));
-                            } catch (Exception e) {
-                                throw new HCJFRuntimeException(Strings.createTaggedMessage(String.format("Error resolving data source %s", dataSourceName), "DATA_SOURCE"), e);
-                            }
-                        } else if(dataSource instanceof List) {
-                            dataSourcesMap.put(dataSourceName, dataSource);
-                        } else if(dataSource instanceof Map) {
-                            List list = new ArrayList();
-                            list.add(dataSource);
-                            dataSourcesMap.put(dataSourceName, list);
-                        }
-                    }
+                    DataSourceServiceConsumer consumer = new DataSourceServiceConsumer(rawDataSources);
+                    DataSourceService.getInstance().registerConsumer(consumer);
+                    dataSourcesMap = consumer.getResult();
 
                     dataSource = queryable -> {
                         if(dataSourcesMap.containsKey(queryable.getResourceName())) {
