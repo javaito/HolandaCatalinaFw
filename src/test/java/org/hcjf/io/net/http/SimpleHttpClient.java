@@ -15,9 +15,9 @@ public class SimpleHttpClient {
 
 //    @Test
     public void testHttpClient() {
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 20; i++) {
             try {
-                HttpClient client = new HttpClient(new URL("http://www.example.com/"));
+                HttpClient client = new HttpClient(new URL("https://apis.digital.gob.cl/fl/feriados/2021"));
                 client.setHttpMethod(HttpMethod.GET);
                 HttpResponse callback = client.request();
                 Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
@@ -60,7 +60,7 @@ public class SimpleHttpClient {
 
 //        String url = "https://www.google.com.ar/";
 //        String url = "https://www.example.com/";
-        String url = "https://placehold.it/120x120&text=image1";
+        String url = "https://storage.googleapis.com/beta-gdalcalcout-0000001f-0494-45f1-0000-002e52e279b1//Gdal/calc/gdalCalctest.tif";
 
         for (int i = 0; i < 1; i++) {
             try {

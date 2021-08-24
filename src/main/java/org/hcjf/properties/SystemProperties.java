@@ -291,6 +291,15 @@ public final class SystemProperties extends Properties {
                 }
 
             }
+
+            public static final class DataSources {
+                public static final String SERVICE_NAME = "hcjf.net.http.data.sources.service.name";
+                public static final String SERVICE_PRIORITY = "hcjf.net.http.data.sources.service.priority";
+                public static final String THREAD_POOL_ENABLED = "hcjf.net.http.data.sources.service.thread.pool.enabled";
+                public static final String THREAD_POOL_CORE_SIZE = "hcjf.net.http.data.sources.service.thread.pool.core.size";
+                public static final String THREAD_POOL_MAX_SIZE = "hcjf.net.http.data.sources.service.thread.pool.max.size";
+                public static final String THREAD_POOL_KEEP_ALIVE_TIME = "hcjf.net.http.data.sources.service.thread.pool.keep.alive.time";
+            }
         }
 
         public static final class Https {
@@ -752,6 +761,13 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Http.Folder.JAR_TEMP_PREFIX, "hcjf_jar_temp");
 
         defaults.put(Net.Http.EndPoint.Json.DATE_FORMATS, " [dd/M/yyyy,dd/MM/yyyy]");
+
+        defaults.put(Net.Http.DataSources.SERVICE_NAME, "DataSourcesService");
+        defaults.put(Net.Http.DataSources.SERVICE_PRIORITY, "0");
+        defaults.put(Net.Http.DataSources.THREAD_POOL_ENABLED, "true");
+        defaults.put(Net.Http.DataSources.THREAD_POOL_CORE_SIZE, "200");
+        defaults.put(Net.Http.DataSources.THREAD_POOL_MAX_SIZE, "500");
+        defaults.put(Net.Http.DataSources.THREAD_POOL_KEEP_ALIVE_TIME, "60");
 
         defaults.put(Net.Rest.DEFAULT_MIME_TYPE, "application/json");
         defaults.put(Net.Rest.DEFAULT_ENCODING_IMPL, "hcjf");

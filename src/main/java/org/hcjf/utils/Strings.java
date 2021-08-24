@@ -433,8 +433,23 @@ public final class Strings {
      * @return List with the rich text and the original value.
      */
     public static List<String> groupRichText(String value) {
+        return groupRichText(value, RICH_TEXT_SEPARATOR);
+    }
+
+    /**
+     * Returns all the rich texts contained into the value and the value (in the last place)
+     * with all the replaceable places for each rich text.
+     * @param value Value to get the rich texts.
+     * @return List with the rich text and the original value.
+     */
+    public static List<String> groupRichText(String value, String separator) {
+
+        if(separator.length() != 1) {
+            throw new HCJFRuntimeException("Text grouping function need to a simple character as separator.");
+        }
+
         List<String> result = new ArrayList<>();
-        Set<Integer> indexes = allIndexOf(value, RICH_TEXT_SEPARATOR, true);
+        Set<Integer> indexes = allIndexOf(value, separator, true);
         Integer counter = 0;
         Integer startIndex = -1;
         Integer endIndex = 0;
@@ -446,9 +461,9 @@ public final class Strings {
                     startIndex = index;
                 } else {
                     richText = value.substring(startIndex + 1, index);
-                    newValue.append(value.substring(endIndex, startIndex));
-                    newValue.append(RICH_TEXT_SEPARATOR).append(REPLACEABLE_RICH_TEXT).
-                            append(counter++).append(END_GROUP_NAME).append(RICH_TEXT_SEPARATOR);
+                    newValue.append(value, endIndex, startIndex);
+                    newValue.append(separator).append(REPLACEABLE_RICH_TEXT).
+                            append(counter++).append(END_GROUP_NAME).append(separator);
                     result.add(richText);
                     endIndex = index + 1;
                     startIndex = -1;
@@ -659,14 +674,24 @@ public final class Strings {
      * @return Reverted value.
      */
     public static String reverseRichTextGrouping(String value, List<String> richTextGroups) {
+        return reverseRichTextGrouping(value, richTextGroups, RICH_TEXT_SEPARATOR);
+    }
+
+    /**
+     * Reverts the grouping action over the specific value.
+     * @param value Value to revert.
+     * @param richTextGroups Group lists.
+     * @return Reverted value.
+     */
+    public static String reverseRichTextGrouping(String value, List<String> richTextGroups, String separator) {
         String result = value;
         String copy = value;
         String groupIndex = Strings.getNextGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         Integer index;
         while(groupIndex != null) {
             index = getGroupIndexAsNumber(groupIndex, REPLACEABLE_RICH_TEXT);
-            result = result.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), wrap(richTextGroups.get(index), Strings.RICH_TEXT_SEPARATOR));
-            copy = copy.replace(wrap(groupIndex,Strings.RICH_TEXT_SEPARATOR), Strings.EMPTY_STRING);
+            result = result.replace(wrap(groupIndex,separator), wrap(richTextGroups.get(index), separator));
+            copy = copy.replace(wrap(groupIndex,separator), Strings.EMPTY_STRING);
             groupIndex = Strings.getNextGroupIndex(copy, REPLACEABLE_RICH_TEXT);
         }
         return result;

@@ -592,6 +592,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     } else {
                         //Creates the first query for the original resource.
                         Query resolveQuery = new Query(getResource());
+                        resolveQuery.setEnvironment(getEnvironment());
                         resolveQuery.returnAll = true;
 
                         resolveQuery.setLimit(getLimit());
@@ -659,7 +660,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                             for (QueryReturnParameter returnParameter : getReturnParameters()) {
                                 Map.Entry<String,Object> entry =
                                         consumer.resolveQueryReturnParameter(returnParameter, object, dataSource);
-                                if(entry != null) {
+                                if(entry != null && !entry.getKey().isBlank()) {
                                     presentFields.add(entry.getKey());
                                     enlargedObject.put(entry.getKey(), entry.getValue());
                                 }
@@ -767,7 +768,20 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     private Collection<? extends Joinable> resolveDynamicResource(QueryDynamicResource resource
             , Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
-        Collection<Joinable> data = resource.getQuery().evaluate(dataSource, consumer);
+        Query resourceQuery = resource.getQuery();
+        Map<String,Object> originalEnvironment = resourceQuery.getEnvironment();
+        Map<String,Object> newEnvironment;
+        if(originalEnvironment != null) {
+            newEnvironment = new HashMap<>(originalEnvironment);
+        } else {
+            newEnvironment = new HashMap<>();
+        }
+        if(getEnvironment() != null) {
+            newEnvironment.putAll(getEnvironment());
+        }
+        resourceQuery.setEnvironment(newEnvironment);
+        Collection<Joinable> data = resourceQuery.evaluate(dataSource, consumer);
+        resourceQuery.setEnvironment(originalEnvironment);
 
         if(resource.getPath() != null && !resource.getPath().isBlank()) {
             Collection resultPath = resolveResourcePath(data, resource.getPath());
@@ -955,6 +969,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     private Collection<? extends Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
         Query query = new Query(getResource());
+        query.setEnvironment(getEnvironment());
         query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
         for (Evaluator evaluator : getEvaluatorsFromResource(this, query, query.getResource())) {
             query.addEvaluator(evaluator);
@@ -966,6 +981,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         for(Join join : getJoins()) {
             //Creates the first query for the original resource.
             query = new Query(join.getResource());
+            query.setEnvironment(getEnvironment());
             query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             for (Evaluator evaluator : optimizeJoin(leftData, join)) {
 //                if(join.getResource() instanceof QueryDynamicResource) {

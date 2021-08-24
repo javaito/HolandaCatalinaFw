@@ -66,7 +66,22 @@ public abstract class BaseEvaluator implements Evaluator {
 
         if(result != null) {
             if (result instanceof FieldEvaluator.UnprocessedValue) {
-                result = ((FieldEvaluator.UnprocessedValue) result).process(dataSource, consumer);
+                if(result instanceof QueryValue) {
+                    BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) result;
+                    Map<String,Object> originalEnvironment = queryValue.getQuery().getEnvironment();
+                    Map<String,Object> newEnvironment;
+                    if(originalEnvironment != null) {
+                        newEnvironment = new HashMap<>(originalEnvironment);
+                    } else {
+                        newEnvironment = new HashMap<>();
+                    }
+                    newEnvironment.putAll(Introspection.toMap(currentResultSetElement));
+                    queryValue.getQuery().setEnvironment(newEnvironment);
+                    result = queryValue.process(dataSource, consumer);
+                    queryValue.getQuery().setEnvironment(originalEnvironment);
+                } else {
+                    result = ((FieldEvaluator.UnprocessedValue) result).process(dataSource, consumer);
+                }
             } else if (result instanceof QueryParameter) {
                 if(((QueryParameter)result).isUnderlying()) {
                     result = true;

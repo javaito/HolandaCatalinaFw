@@ -190,8 +190,11 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
 
             for(String returnField : selectBody.split(SystemProperties.get(
                     SystemProperties.Query.ReservedWord.ARGUMENT_SEPARATOR))) {
-                query.addReturnField((QueryReturnParameter)
-                        processStringValue(query, groups, richTexts, returnField, placesIndex, QueryReturnParameter.class, new ArrayList<>()));
+                QueryReturnParameter queryReturnParameter = (QueryReturnParameter)
+                        processStringValue(query, groups, richTexts, returnField, placesIndex, QueryReturnParameter.class, new ArrayList<>());
+                if(!queryReturnParameter.getAlias().isBlank()) {
+                    query.addReturnField(queryReturnParameter);
+                }
             }
         } else {
             String value = queryDefinition;
