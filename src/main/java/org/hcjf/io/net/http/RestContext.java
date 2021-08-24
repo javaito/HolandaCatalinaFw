@@ -315,7 +315,7 @@ public class RestContext extends Context {
                                 Queryable queryable = Query.compile((String) dataSource);
                                 dataSourcesMap.put(dataSourceName, Query.evaluate(queryable));
                             } catch (Exception e) {
-                                throw new HCJFRuntimeException(Strings.createTaggedMessage(String.format("Error resolving data source %s", dataSource), "DATA_SOURCE"), e);
+                                throw new HCJFRuntimeException(Strings.createTaggedMessage(String.format("Error resolving data source %s", dataSourceName), "DATA_SOURCE"), e);
                             }
                         } else if(dataSource instanceof List) {
                             dataSourcesMap.put(dataSourceName, dataSource);
