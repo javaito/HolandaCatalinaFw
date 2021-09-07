@@ -2,6 +2,7 @@ package org.hcjf.layers.query;
 
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.model.QueryDynamicResource;
+import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,6 +33,19 @@ public class QueryCompileTest {
 
         queryAsString = "SELECT * FROM resource WHERE id IN (36589)";
         query = Query.compile(queryAsString);
+        System.out.println();
+    }
+
+    @Test
+    public void testQueryWithEnvironment() {
+        Map<String,Object> environment = (Map<String, Object>) JsonUtils.createObject("{\"field\":\"a'o\"}");
+
+        Query query = Query.compile("SELECT * FROM '[{}]' as data");
+        query.setEnvironment(environment);
+
+        String sql = query.toString();
+        Query query1 = Query.compile(sql);
+
         System.out.println();
     }
 

@@ -1211,10 +1211,75 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testEnvironmentWithFunctions() {
+        String sql = "ENVIRONMENT '{\"name\":\"Javier\"}' SELECT concat('Hola, ', $name) as str FROM '{}' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+
+        sql = "ENVIRONMENT '{\"first\":\"Bartolomeo\",\"second\": \"Jay\"}' SELECT * FROM character where name = concat($first, ' ', $second)";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void testJsonResource() {
         String sql = "SELECT * FROM '[{\"id\":1,\"value\":32.56},{\"id\":2,\"value\":85.32}]' as data";
         Query query = Query.compile(sql);
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testFilter() {
+        String json = "[\n" +
+                "        {\n" +
+                "            \"id\": \"7ff46bc8-57b4-45bc-b8af-d459e1788355\",\n" +
+                "            \"number\": 6,\n" +
+                "            \"name\": \"Tarifario prueba3\",\n" +
+                "            \"active\": true,\n" +
+                "            \"clientId\": \"6f4c0647-e5ce-4c39-844c-3457444bffe6\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"id\": \"23ac1ea4-d10b-4b5c-b73f-fef543c816a6\",\n" +
+                "            \"number\": 7,\n" +
+                "            \"name\": \"Tarifario prueba 4\",\n" +
+                "            \"active\": true,\n" +
+                "            \"clientId\": \"6f4c0647-e5ce-4c39-844c-3457444bffe6\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"id\": \"a5d48a94-2754-4438-bfbe-f8b48132eaa4\",\n" +
+                "            \"number\": 8,\n" +
+                "            \"name\": \"Tarifario prueba\",\n" +
+                "            \"active\": true,\n" +
+                "            \"clientId\": \"8f09bf42-4888-4f88-978b-729f688abdd2\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"id\": \"0a845d51-9aa3-4787-9817-88bdbee64f17\",\n" +
+                "            \"number\": 9,\n" +
+                "            \"name\": \"Tarifario prueba 2\",\n" +
+                "            \"active\": true,\n" +
+                "            \"clientId\": \"80bd4307-9ca1-4678-91dd-4f766b9200ac\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"id\": \"f5246c6b-ac04-4b27-b561-bcde5ecce142\",\n" +
+                "            \"number\": 1,\n" +
+                "            \"name\": \"Tarifario nuevo\",\n" +
+                "            \"active\": true,\n" +
+                "            \"clientId\": \"5f7065b6-409b-4e77-9b6c-c0b2d70691ba\"\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"id\": \"63a78b24-af32-44f0-bda8-3c4c6dbf191b\",\n" +
+                "            \"number\": 24,\n" +
+                "            \"name\": \"Tarifario 1\",\n" +
+                "            \"active\": true,\n" +
+                "            \"clientId\": \"5f7065b6-409b-4e77-9b6c-c0b2d70691ba\"\n" +
+                "        }\n" +
+                "    ]";
+        Query q = Query.compile("SELECT id as tariffId, number, name, if(active,new('##check-circle'),new('##times-circle')) as activeIcon, active, '0' as rateId, clientId, new('##edit') as edit, new('##trash-alt') as delete FROM tarifarios WHERE clientId = 5f7065b6-409b-4e77-9b6c-c0b2d70691ba");
+        Collection<?> resultSet = q.evaluate((Collection<?>) JsonUtils.createObject(json));
         System.out.println();
     }
 
