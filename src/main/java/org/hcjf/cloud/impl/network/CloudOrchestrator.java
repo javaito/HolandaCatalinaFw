@@ -248,6 +248,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     private synchronized Map<String,Object> getThisNodeMap() {
         if(thisNodeMap == null) {
             thisNodeMap = Introspection.toMap(thisNode);
@@ -793,16 +797,20 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     ResponseListener responseListener = new ResponseListener(networkComponent, timeout);
                     registerListener(message, responseListener);
                     try {
-                        Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                                "Sending to %s invoke service message: '%s' %s",
-                                networkComponent.getName(),
-                                message.getClass().getName(),
-                                message.getId().toString());
-                        client.send(message);
-                    } catch (Exception ex) {
-                        throw new HCJFRuntimeException("Unable to send message to %s", ex, networkComponent.getName());
+                        try {
+                            Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                    "Sending to %s invoke service message: '%s' %s",
+                                    networkComponent.getName(),
+                                    message.getClass().getName(),
+                                    message.getId().toString());
+                            client.send(message);
+                        } catch (Exception ex) {
+                            throw new HCJFRuntimeException("Unable to send message to %s", ex, networkComponent.getName());
+                        }
+                        result = responseListener.getResponse(message);
+                    } finally {
+                        destroyListener(message);
                     }
-                    result = responseListener.getResponse(message);
                 } else {
                     throw new HCJFRuntimeException("Connection timeout with service: %s", networkComponent.getName());
                 }
@@ -835,6 +843,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             }
             responseListeners.put(message.getId(), listener);
         }
+    }
+
+    private void destroyListener(Message message) {
+        responseListeners.remove(message.getId());
     }
 
     private DistributedLock getDistributedLock(Object... path) {
@@ -1329,18 +1341,18 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         public Object getResponse(Message message) {
             Object result;
             synchronized (this) {
-                if(responseMessage == null) {
+                if (responseMessage == null) {
                     Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                             "Response listener waiting for id: %s", message.getId().toString());
                     try {
-                        wait(timeout);
+                        this.wait(timeout);
                     } catch (InterruptedException e) {
                     }
                 }
             }
 
-            if(responseMessage != null) {
-                if(responseMessage.getThrowable() != null) {
+            if (responseMessage != null) {
+                if (responseMessage.getThrowable() != null) {
                     throw new HCJFRemoteException("Remote exception from %s",
                             responseMessage.getThrowable(), destination.getName());
                 } else {
@@ -1350,7 +1362,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 throw new HCJFRemoteInvocationTimeoutException("Remote invocation timeout from %s, message id: %s",
                         destination.getName(), message.getId().toString());
             }
-            responseListeners.remove(message.getId());
             return result;
         }
 
@@ -1359,7 +1370,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                         "Response listener notified with id: %s", message.getId().toString());
                 responseMessage = message;
-                notifyAll();
+                this.notifyAll();
             }
         }
     }
