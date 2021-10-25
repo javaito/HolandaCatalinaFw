@@ -1,5 +1,6 @@
 package org.hcjf.layers.query.model;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Query;
 import org.hcjf.utils.Introspection;
@@ -15,6 +16,11 @@ public class QueryField extends QueryParameter {
     public QueryField(Query query, String fieldPath) {
         super(query, fieldPath,
                 fieldPath.startsWith(Strings.ARGUMENT_IDENTIFIER) ? fieldPath.substring(Strings.ARGUMENT_IDENTIFIER.length()) : fieldPath);
+
+        if(fieldPath.contains(Strings.WHITE_SPACE)) {
+            throw new HCJFRuntimeException("Query field can´t contains white space: %s", fieldPath);
+        }
+
         if(fieldPath.startsWith(Strings.ARGUMENT_IDENTIFIER)) {
             environmentIntrospection = true;
         }

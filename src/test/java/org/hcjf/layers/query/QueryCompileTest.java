@@ -444,7 +444,7 @@ public class QueryCompileTest {
                 "left join (select lat, lng, num_plate, dateFormat(time,'America/Santiago','HH:mm:ss') as fecha, if(isNull(nameZonaRiesgo), false,true) as zonaRiesgo, if(isNull(nameCentroDistribucion), false,true) as CD, if(isNull(nameBaseTransportista), false,true) as baseTransportista FROM time.series.dynamic.ccu.report where periodStart = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and " +
                 "periodEnd = parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(toDate(plusDays(now(),1)),'America/Santiago','yyyy-MM-dd 04:00:00')) and periodGroupedBy = 'num_plate' and onlyLastGroup = true) as data5 " +
                 "on store.dynamic.ccu.checkout.patente=data5.num_plate " +
-                "where store.dynamic.ccu.checkout._creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and store.dynamic.ccu.checkout.centroDistribucion=8" +
+                "where store.dynamic.ccu.checkout._creationDate > parseDate('yyyy-MM-dd HH:mm:ss',dateFormat(now(),'America/Santiago','yyyy-MM-dd 04:00:00')) and store.dynamic.ccu.checkout.centroDistribucion=8 " +
                 "order by store.dynamic.ccu.checkout._creationDate desc) as data");
 
         System.out.println();
@@ -583,6 +583,14 @@ public class QueryCompileTest {
     public void queryWithTwoSubQueries() {
         String sql = "select zona as geometry, new('#ff0000') as fillColor, new('#b80004') as strokeColor, toUpperCase(nombre) as label from store.dynamic.ccu.zona.riesgo where region = (select region from store.dynamic.ccu.centro.distribucion where codigo=(select centroDistribucion from store.dynamic.ccu.lastplanilla where planilla=7799086))";
         Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void testOrAnd() {
+        String sql  = "select * from resource where field3 and (field = 'hola' or field2 = 'hola' and field4 = 'chau')";
+        Query query = Query.compile(sql);
+        System.out.println(query.toString());
         System.out.println();
     }
 }

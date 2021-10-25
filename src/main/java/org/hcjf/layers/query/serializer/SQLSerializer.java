@@ -241,9 +241,7 @@ public class SQLSerializer extends Layer implements QuerySerializer {
                 SystemProperties.get(SystemProperties.Query.ReservedWord.AND);
         for(Evaluator evaluator : collection.getEvaluators()) {
             if(evaluator instanceof Or) {
-                if(!separator.isEmpty()) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.OR));
-                }
+                result.append(separator);
                 result.append(Strings.WHITE_SPACE);
                 if(((Or)evaluator).getEvaluators().size() == 1) {
                     toStringEvaluatorCollection(result, (Or) evaluator);
@@ -254,9 +252,7 @@ public class SQLSerializer extends Layer implements QuerySerializer {
                 }
                 result.append(Strings.WHITE_SPACE);
             } else if(evaluator instanceof And) {
-                if(!separator.isEmpty()) {
-                    result.append(SystemProperties.get(SystemProperties.Query.ReservedWord.AND));
-                }
+                result.append(separator);
                 result.append(Strings.WHITE_SPACE);
                 if (collection instanceof Query) {
                     toStringEvaluatorCollection(result, (And) evaluator);
