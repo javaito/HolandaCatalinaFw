@@ -85,7 +85,7 @@ public class RestContext extends Context {
             if(id == null) {
                 if (request.hasParameter(DEFAULT_QUERY_PARAMETER)) {
                     Queryable queryable = Query.compile(request.getParameter(DEFAULT_QUERY_PARAMETER));
-                    Collection<JoinableMap> queryResult = Query.evaluate(queryable);
+                    Collection<JoinableMap> queryResult = queryable.evaluate(getDataSource());
                     if(queryResult instanceof ResultSet) {
                         ResultSet<JoinableMap> resultSet = (ResultSet<JoinableMap>) queryResult;
                         headers.add(new HttpHeader(HttpHeader.X_HCJF_QUERY_TOTAL_TIME, resultSet.getTotalTime().toString()));
@@ -119,20 +119,12 @@ public class RestContext extends Context {
                 // query instance or a group of queryable instances.
                 Queryable.DataSource dataSource = requestModel.getDataSource();
                 if(requestModel.getQueryable() != null) {
-                    if(dataSource == null) {
-                        jsonElement = gson.toJsonTree(Query.evaluate(requestModel.getQueryable()));
-                    } else {
-                        jsonElement = gson.toJsonTree(requestModel.getQueryable().evaluate(dataSource));
-                    }
+                    jsonElement = gson.toJsonTree(requestModel.getQueryable().evaluate(verifyDataSource(dataSource)));
                 } else if(requestModel.getQueryables() != null){
                     JsonObject queriesResult = new JsonObject();
                     for(String key : requestModel.getQueryables().keySet()) {
                         try {
-                            if(dataSource == null) {
-                                queriesResult.add(key, gson.toJsonTree(Query.evaluate(requestModel.getQueryables().get(key))));
-                            } else {
-                                queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(dataSource)));
-                            }
+                            queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(verifyDataSource(dataSource))));
                         } catch (Throwable throwable){
                             queriesResult.add(key, createJsonFromThrowable(throwable));
                         }
@@ -257,6 +249,14 @@ public class RestContext extends Context {
             tag = getTags(throwable.getCause(), tag);
         }
         return tag;
+    }
+
+    private Queryable.DataSource verifyDataSource(Queryable.DataSource dataSource){
+        return dataSource == null ? getDataSource() : dataSource;
+    }
+
+    protected Queryable.DataSource<JoinableMap> getDataSource(){
+        return new Queryable.ReadableDataSource();
     }
 
     /**
