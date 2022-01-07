@@ -76,6 +76,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         //Publishing default aggregate function layers...
         Layers.publishLayer(CountQueryAggregateFunctionLayer.class);
+        Layers.publishLayer(RowNumberQueryFunctionLayer.class);
         Layers.publishLayer(SumAggregateFunctionLayer.class);
         Layers.publishLayer(ProductAggregateFunctionLayer.class);
         Layers.publishLayer(MeanAggregateFunctionLayer.class);
@@ -987,7 +988,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 //                if(join.getResource() instanceof QueryDynamicResource) {
 //                    ((QueryDynamicResource)join.getResource()).getQuery().addEvaluator(evaluator);
 //                } else {
-                    query.addEvaluator(evaluator);
+                query.addEvaluator(evaluator);
 //                }
             }
             for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
@@ -1311,9 +1312,9 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     /**
      *
-     * @param queryDefinition
-     * @param compilerName
-     * @return
+     * @param queryDefinition String
+     * @param compilerName String
+     * @return compile Query
      */
     public static Query compile(String queryDefinition, String compilerName) {
         QueryCompiler queryCompiler = Layers.get(QueryCompiler.class, compilerName);
