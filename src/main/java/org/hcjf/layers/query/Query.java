@@ -76,7 +76,7 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         //Publishing default aggregate function layers...
         Layers.publishLayer(CountQueryAggregateFunctionLayer.class);
-        Layers.publishLayer(RowNumberQueryFunctionLayer.class);
+        Layers.publishLayer(GetIndexQueryFunctionLayer.class);
         Layers.publishLayer(SumAggregateFunctionLayer.class);
         Layers.publishLayer(ProductAggregateFunctionLayer.class);
         Layers.publishLayer(MeanAggregateFunctionLayer.class);

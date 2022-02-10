@@ -3,11 +3,11 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.layers.query.Enlarged;
 import java.util.Collection;
 
-public class RowNumberQueryFunctionLayer extends BaseQueryAggregateFunctionLayer {
+public class GetIndexQueryFunctionLayer extends BaseQueryAggregateFunctionLayer {
 
-    private static final String NAME = "rowNumber";
+    private static final String NAME = "getIndex";
 
-    public RowNumberQueryFunctionLayer() {
+    public GetIndexQueryFunctionLayer() {
         super(NAME);
     }
 
