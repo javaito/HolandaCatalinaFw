@@ -6,11 +6,8 @@ import org.hcjf.bson.BsonEncoder;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
-import org.hcjf.layers.query.evaluators.Equals;
-import org.hcjf.layers.query.evaluators.In;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
-import org.hcjf.layers.query.model.QueryField;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
@@ -19,14 +16,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * @author javaito
@@ -868,6 +861,30 @@ public class QueryRunningTest {
         Query query = Query.compile("SELECT * FROM character where addressId = (SELECT addressId FROM address WHERE street = 'Evergreen Terrace')");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
         System.out.println();
+    }
+
+    @Test
+    public void testQueryGetIndexFunctionIsNumber(){
+        String queryAsString = "SELECT name, lastName, getIndex() as index FROM character";
+        Query query = Query.compile(queryAsString);
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("index"), 1);
+    }
+
+    @Test
+    public void testQueryGetIndexFunctionIncrease(){
+        String queryAsString = "SELECT name, lastName, getIndex() as index FROM character limit 3";
+        Query query = Query.compile(queryAsString);
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        ArrayList result = new ArrayList<>();
+        for (JoinableMap character : resultSet){
+            result.add(character.get("index"));
+        }
+        ArrayList expected = new ArrayList();
+        expected.add(1);
+        expected.add(2);
+        expected.add(3);
+        Assert.assertEquals(expected,result);
     }
 
     @Test
