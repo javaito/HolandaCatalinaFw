@@ -4,6 +4,8 @@ import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.MathIntrospection;
+import org.hcjf.utils.Maths;
+import org.hcjf.utils.Matrix;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -11,6 +13,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -37,8 +40,21 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
     private static final String CURRENCY_FORMAT = "currencyFormat";
     private static final String PERCENT_FORMAT = "percentFormat";
     private static final String PARSE_NUMBER = "parseNumber";
+    private static final String NEW_MATRIX = "newMatrix";
+    private static final String NEW_SUB_MATRIX = "newSubMatrix";
+    private static final String NEW_IDENTITY_MATRIX = "newIdentityMatrix";
+    private static final String IS_SQUARE_MATRIX = "isSquareMatrix";
+    private static final String MATRIX_GET = "matrixGet";
+    private static final String MATRIX_SET = "matrixSet";
+    private static final String MATRIX_ADD = "matrixAdd";
+    private static final String MATRIX_SUBTRACT = "matrixSubtract";
+    private static final String MATRIX_MULTIPLY = "matrixMultiply";
+    private static final String MATRIX_MULTIPLY_BY_SCALAR = "matrixMultiplyByScalar";
+    private static final String MATRIX_TRANSPOSE = "matrixTranspose";
+    private static final String MATRIX_DETERMINANT = "matrixDeterminant";
+    private static final String MATRIX_COFACTOR = "matrixCofactor";
+    private static final String MATRIX_INVERSE = "matrixInverse";
     private static final String EVAL_EXPRESSION = SystemProperties.get(SystemProperties.Query.Function.MATH_EVAL_EXPRESSION_NAME);
-
     public MathQueryFunctionLayer() {
         super(SystemProperties.get(SystemProperties.Query.Function.MATH_FUNCTION_NAME));
 
@@ -60,6 +76,20 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
         addFunctionName(PERCENT_FORMAT);
         addFunctionName(PARSE_NUMBER);
         addFunctionName(EVAL_EXPRESSION);
+        addFunctionName(NEW_MATRIX);
+        addFunctionName(NEW_SUB_MATRIX);
+        addFunctionName(NEW_IDENTITY_MATRIX);
+        addFunctionName(IS_SQUARE_MATRIX);
+        addFunctionName(MATRIX_GET);
+        addFunctionName(MATRIX_SET);
+        addFunctionName(MATRIX_ADD);
+        addFunctionName(MATRIX_SUBTRACT);
+        addFunctionName(MATRIX_MULTIPLY);
+        addFunctionName(MATRIX_MULTIPLY_BY_SCALAR);
+        addFunctionName(MATRIX_TRANSPOSE);
+        addFunctionName(MATRIX_DETERMINANT);
+        addFunctionName(MATRIX_COFACTOR);
+        addFunctionName(MATRIX_INVERSE);
     }
 
     /**
@@ -146,6 +176,94 @@ public class MathQueryFunctionLayer extends BaseQueryFunctionLayer implements Nu
                 } catch (ParseException ex) {
                     throw new HCJFRuntimeException("Number parse fail", ex);
                 }
+                break;
+            }
+            case NEW_MATRIX: {
+                Number rows = getParameter(0, parameters);
+                Number cols = getParameter(1, parameters);
+                if(parameters.length >= 3) {
+                    List<Number> values = getParameter(2, parameters);
+                    result = new Matrix(rows.intValue(), cols.intValue(), values.toArray(new Number[]{}));
+                } else {
+                    result = new Matrix(rows.intValue(), cols.intValue());
+                }
+                break;
+            }
+            case NEW_IDENTITY_MATRIX: {
+                Number size = getParameter(0, parameters);
+                result = Matrix.identity(size.intValue());
+                break;
+            }
+            case NEW_SUB_MATRIX: {
+                Matrix matrix = getParameter(0, parameters);
+                Number excludeRow = getParameter(1, parameters);
+                Number excludeColumn = getParameter(2, parameters);
+                result = Maths.createSubMatrix(matrix, excludeRow.intValue(), excludeColumn.intValue());
+                break;
+            }
+            case IS_SQUARE_MATRIX: {
+                Matrix matrix = getParameter(0, parameters);
+                result = matrix.isSquare();
+                break;
+            }
+            case MATRIX_GET: {
+                Matrix matrix = getParameter(0, parameters);
+                Number row = getParameter(1, parameters);
+                Number col = getParameter(2, parameters);
+                result = matrix.get(row.intValue(), col.intValue());
+                break;
+            }
+            case MATRIX_SET: {
+                Matrix matrix = getParameter(0, parameters);
+                Number row = getParameter(1, parameters);
+                Number col = getParameter(2, parameters);
+                Number value = getParameter(3, parameters);
+                matrix.set(row.intValue(), col.intValue(), value);
+                result = matrix;
+                break;
+            }
+            case MATRIX_ADD: {
+                Matrix matrixA = getParameter(0, parameters);
+                Matrix matrixB = getParameter(1, parameters);
+                result = Maths.matrixAdd(matrixA, matrixB);
+                break;
+            }
+            case MATRIX_SUBTRACT: {
+                Matrix matrixA = getParameter(0, parameters);
+                Matrix matrixB = getParameter(1, parameters);
+                result = Maths.matrixSubtract(matrixA, matrixB);
+                break;
+            }
+            case MATRIX_MULTIPLY: {
+                Matrix matrixA = getParameter(0, parameters);
+                Matrix matrixB = getParameter(1, parameters);
+                result = Maths.matrixMultiply(matrixA, matrixB);
+                break;
+            }
+            case MATRIX_MULTIPLY_BY_SCALAR: {
+                Matrix matrix = getParameter(0, parameters);
+                Number scalar = getParameter(1, parameters);
+                result = Maths.matrixMultiplyByScalar(matrix, scalar);
+                break;
+            }
+            case MATRIX_TRANSPOSE: {
+                Matrix matrix = getParameter(0, parameters);
+                result = Maths.matrixTranspose(matrix);
+                break;
+            }
+            case MATRIX_COFACTOR: {
+                Matrix matrix = getParameter(0, parameters);
+                result = Maths.matrixCofactor(matrix);
+                break;
+            }
+            case MATRIX_DETERMINANT: {
+                Matrix matrix = getParameter(0, parameters);
+                result = Maths.matrixDeterminant(matrix);
+                break;
+            }
+            case MATRIX_INVERSE: {
+                Matrix matrix = getParameter(0, parameters);
+                result = Maths.matrixInverse(matrix);
                 break;
             }
             default: {

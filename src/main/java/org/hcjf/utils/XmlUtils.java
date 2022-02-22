@@ -1,14 +1,10 @@
 package org.hcjf.utils;
 
-import org.hcjf.encoding.MimeType;
-import org.hcjf.errors.HCJFRuntimeException;
-import org.hcjf.io.net.http.*;
-import org.hcjf.layers.query.Query;
-import org.hcjf.layers.query.Queryable;
+import org.hcjf.layers.Layer;
+import org.hcjf.layers.LayerInterface;
+import org.hcjf.layers.Layers;
+import org.hcjf.layers.distributed.DistributedLayerInterface;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -38,7 +34,51 @@ public final class XmlUtils {
         private static final Pattern TAG_ATTRIBUTES_PATTERN = Pattern.compile("(?<attribute>[a-zA-Z0-9_\\-]+[ ]*=[ ]*\"[a-zA-Z0-9_\\-.:/+*#$%& ]+\"[ ]*)");
     }
 
+    public interface Printer extends LayerInterface  {
+
+        void print(Map<String,Object> obj);
+
+    }
+
+    public static class XMLPrinter extends Layer implements Printer, DistributedLayerInterface {
+
+        @Override
+        public String getImplName() {
+            return "xml";
+        }
+
+        @Override
+        public void print(Map<String, Object> obj) {
+            System.out.println("Imprime como XML");
+        }
+
+    }
+
+    public static class JsonPrinter extends Layer implements Printer {
+
+        @Override
+        public String getImplName() {
+            return "json";
+        }
+
+        @Override
+        public void print(Map<String, Object> obj) {
+            System.out.println("Imprime como Json");
+        }
+
+    }
+
     public static void main(String[] args) throws Exception {
+        Layers.publishLayer(XMLPrinter.class);
+        Layers.publishLayer(JsonPrinter.class);
+
+        Layers.get(Printer.class, "csv").print(Map.of());
+    }
+
+    public static void main1(String[] args) throws Exception {
+
+
+
 //        String regex = "(?<attribute>[a-zA-Z0-9_\\-]{1,}[ ]{0,}\\=[ ]{0,}\\\"[a-zA-Z0-9_\\- ]{1,}\\\"[ ]{0,})";
 //        String value1 = "field=\"valu  AAe\"      field=\"valu  BBe\"     field=\"valu  CCe\"";
 //
@@ -55,52 +95,91 @@ public final class XmlUtils {
 //        System.out.println();
 
 
-        String xmlFile = Files.readString(Path.of("/", "home", "javaito", "Descargas", "mza_01.osm"));
-//        String xmlFile = Files.readString(Path.of("/", "home", "javaito", "Descargas", "zapata.osm"));
-        Map<String,Object> value = parse(xmlFile);
-        Files.write(Path.of("/", "home", "javaito", "Descargas", "mza_01.json"), JsonUtils.toJsonTree(value).toString().getBytes(StandardCharsets.UTF_8));
-//        System.out.println(JsonUtils.toJsonTree(value).toString());
+//        long time = System.currentTimeMillis();
+//        Collection<Map<String,Object>> ways = new ArrayList<>();
+//        Collection<Way> ways1 = new ArrayList<>();
+//        Collection<Map<String,Object>> nodes = new ArrayList<>();
+//        Collection<Node> nodes1 = new ArrayList<>();
+//        Collection<Map<String,Object>> relations = new ArrayList<>();
+//        Collection<Relation> relations1 = new ArrayList<>();
+////        FileInputStream inputStream = new FileInputStream(Path.of("/", "home", "javaito", "Descargas", "cartografia", "18.pbf").toFile());
+//        FileInputStream inputStream = new FileInputStream(Path.of("/", "home", "javaito", "Descargas", "cartografia", "mendoza.pbf", "18.pbf").toFile());
+////        FileInputStream inputStream = new FileInputStream(Path.of("/", "home", "javaito", "Descargas", "cartografia", "losangeles18min.pbf").toFile());
+//        new ParallelBinaryParser(inputStream, 8).
+////                onWay(way -> ways.add(Introspection.toDeepMap(way))).
+//                onWay(way -> ways1.add(way)).
+////                onNode(node -> nodes.add(Introspection.toDeepMap(node))).
+//                onNode(node -> nodes1.add(node)).
+////                onRelation(relation -> relations.add(Introspection.toDeepMap(relation))).
+//                onRelation(relation -> relations1.add(relation)).
+//                onBoundBox(boundBox -> {
+//                    System.out.println(boundBox.toString());
+//                }).
+//                parse();
+//        System.out.println("Time: " + (System.currentTimeMillis() - time));
 
-        Queryable.DataSource<Map<String,Object>> ds = new Queryable.DataSource<Map<String, Object>>() {
 
-            private Collection<Map<String,Object>> nodes = Introspection.resolve(value, "osm.node");
-            private Collection<Map<String,Object>> ways = Introspection.resolve(value, "osm.way");
-            private Collection<Map<String,Object>> relation = Introspection.resolve(value, "osm.relation");
+//        Map<String,Object> map = new HashMap<>();
+//        map.put("nodes", nodes);
+//        map.put("ways", ways);
+//        map.put("relations", relations);
+//
+//        byte[] bytes = BsonEncoder.encode(new BsonDocument(map));
+//        Files.write(Path.of("/", "home", "javaito", "test.bson"), bytes);
+//
+//        time = System.currentTimeMillis();
+//        bytes = Files.readAllBytes(Path.of("/", "home", "javaito", "test.bson"));
+//        map = BsonDecoder.decode(bytes).toMap();
+//        System.out.println("Time: " + (System.currentTimeMillis() - time));
 
-            @Override
-            public Collection<Map<String, Object>> getResourceData(Queryable queryable) {
-                Collection<Map<String, Object>> result;
-                String resourceName = queryable.getResourceName();
-                if(resourceName.equals("node")) {
-                    result = queryable.evaluate(nodes);
-                } else if(resourceName.equals("way")) {
-                    result = queryable.evaluate(ways);
-                } else if(resourceName.equals("relation")) {
-                    result = queryable.evaluate(relation);
-                } else {
-                    throw new HCJFRuntimeException("Resource not found: %s", resourceName);
-                }
-                return result;
-            }
-        };
+//        time = System.currentTimeMillis();
+////        String xmlFile = Files.readString(Path.of("/", "home", "javaito", "Descargas", "18.osm"));
+////        String xmlFile = Files.readString(Path.of("/", "home", "javaito", "Descargas", "zapata.osm"));
+////        Map<String,Object> value = parse(xmlFile);
+//        System.out.println("Time: " + (System.currentTimeMillis() - time));
+////        Files.write(Path.of("/", "home", "javaito", "Descargas", "mza_01.json"), JsonUtils.toJsonTree(value).toString().getBytes(StandardCharsets.UTF_8));
+////        System.out.println(JsonUtils.toJsonTree(value).toString());
+//
+//        Queryable.DataSource<Map<String,Object>> ds = new Queryable.DataSource<Map<String, Object>>() {
+//
+//            //private Collection<Map<String,Object>> nodes = Introspection.resolve(value, "osm.node");
+//            //private Collection<Map<String,Object>> ways = Introspection.resolve(value, "osm.way");
+//            //private Collection<Map<String,Object>> relation = Introspection.resolve(value, "osm.relation");
+//
+//            @Override
+//            public Collection<Map<String, Object>> getResourceData(Queryable queryable) {
+//                Collection<Map<String, Object>> result;
+//                String resourceName = queryable.getResourceName();
+//                if(resourceName.equals("node")) {
+//                    result = queryable.evaluate(nodes);
+//                } else if(resourceName.equals("way")) {
+//                    result = queryable.evaluate(ways);
+//                } else if(resourceName.equals("relation")) {
+//                    result = queryable.evaluate(relations);
+//                } else {
+//                    throw new HCJFRuntimeException("Resource not found: %s", resourceName);
+//                }
+//                return result;
+//            }
+//        };
 
-        HttpServer server = new HttpServer(9132);
-        server.addContext(new Context(".*") {
-            @Override
-            public HttpResponse onContext(HttpRequest request) {
-                String query = Introspection.resolve(request.getParameters(), "q");
-                Queryable queryable = Query.compile(query);
-                Collection<Map<String,Object>> result = queryable.evaluate(ds);
-                byte[] body = JsonUtils.toJsonTree(result).toString().getBytes(StandardCharsets.UTF_8);
-                HttpResponse response = new HttpResponse();
-                response.setResponseCode(HttpResponseCode.OK);
-                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
-                response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
-                response.setBody(body);
-                return response;
-            }
-        });
-        server.start();
+//        HttpServer server = new HttpServer(9132);
+//        server.addContext(new Context(".*") {
+//            @Override
+//            public HttpResponse onContext(HttpRequest request) {
+//                String query = Introspection.resolve(request.getParameters(), "q");
+//                Queryable queryable = Query.compile(query);
+//                Collection<Map<String,Object>> result = queryable.evaluate(ds);
+//                byte[] body = JsonUtils.toJsonTree(result).toString().getBytes(StandardCharsets.UTF_8);
+//                HttpResponse response = new HttpResponse();
+//                response.setResponseCode(HttpResponseCode.OK);
+//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
+//                response.addHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+//                response.setBody(body);
+//                return response;
+//            }
+//        });
+//        server.start();
     }
 
     /**
@@ -139,7 +218,7 @@ public final class XmlUtils {
     private static Map<String,Object> parse(Map<String,Object> currentObject, List<String> groups, AtomicInteger index, AtomicInteger lastIndexOf, Map<String,String> cdataValues) {
         String currentTag = groups.get(index.get());
         if(currentTag.startsWith(Strings.SLASH)) {
-            //In this case the we found the closing tag
+            //In this case we found the closing tag
             if(!currentObject.containsKey(Fields.HAS_CHILDREN)) {
                 Integer currentIndex = index.get();
                 currentObject.put(Fields.VALUE, getValue(groups,currentIndex + 1, currentIndex, lastIndexOf, cdataValues));

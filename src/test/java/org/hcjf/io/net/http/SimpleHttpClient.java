@@ -31,12 +31,30 @@ public class SimpleHttpClient {
         }
     }
 
-    //@Test
+//    @Test
+    public void testHttpClient2() {
+        for (int i = 0; i < 20; i++) {
+            try {
+                HttpClient client = new HttpClient(new URL("https://apis.digital.gob.cl/fl/feriados/2021"));
+                client.setHttpMethod(HttpMethod.GET);
+                HttpResponse callback = client.request();
+                Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
+                System.out.println(callback);
+                System.out.printf("Request %d: ok\r\n", i);
+            } catch (Exception ex){
+                ex.printStackTrace();
+                System.out.printf("Request %d: fail\r\n", i);
+                Assert.fail();
+            }
+        }
+    }
+
+//    @Test
     public void testHttpsClient() {
 
 //        String url = "https://www.google.com.ar/";
-        String url = "https://www.example.com/";
-//        String url = "https://placehold.it/120x120&text=image1";
+//        String url = "https://www.example.com/";
+        String url = "https://placehold.it/120x120&text=image1";
 
         for (int i = 0; i < 1; i++) {
             try {
@@ -55,12 +73,12 @@ public class SimpleHttpClient {
         }
     }
 
-    //@Test
+//    @Test
     public void testHttpsAsyncClientImage() {
 
 //        String url = "https://www.google.com.ar/";
 //        String url = "https://www.example.com/";
-        String url = "https://storage.googleapis.com/beta-gdalcalcout-0000001f-0494-45f1-0000-002e52e279b1//Gdal/calc/gdalCalctest.tif";
+        String url = "http://storage.googleapis.com/beta-gdalcalcout-0000001f-0494-45f1-0000-002e52e279b1//Gdal/calc/gdalCalctest.tif";
 
         for (int i = 0; i < 1; i++) {
             try {

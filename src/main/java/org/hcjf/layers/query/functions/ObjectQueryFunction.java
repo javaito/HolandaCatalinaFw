@@ -2,6 +2,7 @@ package org.hcjf.layers.query.functions;
 
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.JsonUtils;
+import org.hcjf.utils.Matrix;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -21,6 +22,8 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
     private static final String EQUALS = "equals";
     private static final String NEW = "new";
     private static final String NEW_UUID = "newUUID";
+    private static final String UUID_TO_BASE64 = "uuidToBase64";
+    private static final String BASE64_TO_UUID = "base64ToUuid";
     private static final String NEW_MAP = "newMap";
     private static final String NEW_ARRAY = "newArray";
     private static final String JSON_TO_OBJECT = "jsonToObject";
@@ -35,6 +38,7 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         private static final String UUID = "UUID";
         private static final String BOOLEAN = "BOOLEAN";
         private static final String OBJECT = "OBJECT";
+        private static final String MATRIX = "MATRIX";
     }
 
     public ObjectQueryFunction() {
@@ -53,6 +57,8 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
         addFunctionName(EQUALS);
         addFunctionName(NEW);
         addFunctionName(NEW_UUID);
+        addFunctionName(UUID_TO_BASE64);
+        addFunctionName(BASE64_TO_UUID);
         addFunctionName(NEW_MAP);
         addFunctionName(NEW_ARRAY);
         addFunctionName(JSON_TO_OBJECT);
@@ -150,6 +156,8 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
                     result = InstanceOfValues.UUID;
                 } else if(parameter instanceof Boolean) {
                     result = InstanceOfValues.BOOLEAN;
+                } else if(parameter instanceof Matrix) {
+                    result = InstanceOfValues.MATRIX;
                 } else {
                     result = InstanceOfValues.OBJECT;
                 }
@@ -178,6 +186,35 @@ public class ObjectQueryFunction extends BaseQueryFunctionLayer implements Query
             }
             case (NEW_UUID): {
                 result = UUID.randomUUID();
+                break;
+            }
+            case (UUID_TO_BASE64): {
+                UUID uuid = getParameter(0, parameters);
+                long msb = uuid.getMostSignificantBits();
+                long lsb = uuid.getLeastSignificantBits();
+
+                byte[] buffer = new byte[16];
+                for (int i = 0; i < 8; i++) {
+                    buffer[7 - i] = (byte) (msb >>> 8 * (7 - i));
+                }
+                for (int i = 8; i < 16; i++) {
+                    buffer[23 - i] = (byte) (lsb >>> 8 * (7 - i));
+                }
+                result = Base64.getEncoder().encodeToString(buffer);
+                break;
+            }
+            case (BASE64_TO_UUID): {
+                String base64 = getParameter(0, parameters);
+                byte[] decoded = Base64.getDecoder().decode(base64);
+                long msb = 0;
+                long lsb = 0;
+                for (int i = 7; i >= 0; i--) {
+                    msb = (msb << 8) | (decoded[i] & 0xff);
+                }
+                for (int i = 15; i >= 8; i--) {
+                    lsb = (lsb << 8) | (decoded[i] & 0xff);
+                }
+                result = new UUID(msb, lsb);
                 break;
             }
             case(NEW_MAP): {

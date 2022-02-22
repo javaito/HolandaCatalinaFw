@@ -30,6 +30,7 @@ public class QueryRunningTest {
     private static final String CHARACTER_2 = "character2";
     private static final String Z_CHARACTER = "zCharacter";
     private static final String ADDRESS = "address";
+    private static final String FORECAST_EXAMPLE = "forecastExample";
 
     private static final String ID = "id";
 
@@ -49,6 +50,7 @@ public class QueryRunningTest {
     private static final Map<UUID, JoinableMap> simpsonCharacters = new HashMap<>();
     private static final Map<UUID, JoinableMap> simpsonCharacters2 = new HashMap<>();
     private static final Map<UUID, JoinableMap> simpsonAddresses = new HashMap<>();
+    private static List<Map<String,Object>> forecastExample;
     private static final TestDataSource dataSource = new TestDataSource();
 
     @BeforeClass
@@ -175,6 +177,65 @@ public class QueryRunningTest {
         Layers.publishLayer(CharacterResource.class);
         Layers.publishLayer(Character2Resource.class);
         Layers.publishLayer(AddressResource.class);
+
+        //Setup forecast data
+        String json = "[" +
+                "{" +
+                "\"id\":1," +
+                "\"date\": \"2021-09-28 00:00:00\"," +
+                "\"value\": 12" +
+                "}," +
+                "{" +
+                "\"id\":2," +
+                "\"date\": \"2021-09-29 00:00:00\"," +
+                "\"value\": 12" +
+                "}," +
+                "{" +
+                "\"id\":3," +
+                "\"date\": \"2021-09-30 00:00:00\"," +
+                "\"value\": 13" +
+                "}," +
+                "{" +
+                "\"id\":4," +
+                "\"date\": \"2021-10-01 00:00:00\"," +
+                "\"value\": 14" +
+                "}," +
+                "{" +
+                "\"id\":5," +
+                "\"date\": \"2021-10-02 00:00:00\"," +
+                "\"value\": 14" +
+                "}," +
+                "{" +
+                "\"id\":6," +
+                "\"date\": \"2021-10-03 00:00:00\"," +
+                "\"value\": 13" +
+                "}," +
+                "{" +
+                "\"id\":7," +
+                "\"date\": \"2021-10-04 00:00:00\"" +
+                "}," +
+                "{" +
+                "\"id\":8," +
+                "\"date\": \"2021-10-05 00:00:00\"," +
+                "\"value\": 13" +
+                "}," +
+                "{" +
+                "\"id\":9," +
+                "\"date\": \"2021-10-06 00:00:00\"," +
+                "\"value\": 13" +
+                "}," +
+                "{" +
+                "\"id\":10," +
+                "\"date\": \"2021-10-07 00:00:00\"," +
+                "\"value\": 14" +
+                "}," +
+                "{" +
+                "\"id\":11," +
+                "\"date\": \"2021-10-08 00:00:00\"" +
+                "}" +
+                "]";
+
+        forecastExample = (List) JsonUtils.createObject(json);
     }
 
     public enum Gender {
@@ -215,6 +276,12 @@ public class QueryRunningTest {
                 }
                 case ADDRESS: {
                     for(JoinableMap map : simpsonAddresses.values()) {
+                        result.add(new JoinableMap(map));
+                    }
+                    break;
+                }
+                case FORECAST_EXAMPLE: {
+                    for(Map<String,Object> map : forecastExample) {
                         result.add(new JoinableMap(map));
                     }
                     break;
@@ -1433,6 +1500,87 @@ public class QueryRunningTest {
         Query query = Query.compile(sql);
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         System.out.println();
+    }
+
+    @Test
+    public void testForecastFunction() {
+        String sql = "SELECT *, getMillisecondUnixEpoch(date) as milli, forecast('milli', 'value') FROM forecastExample order by date";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+
+        sql = "SELECT *, getMillisecondUnixEpoch(date) as milli, forecast('milli', 'value', true, 10, 0.1) FROM forecastExample order by date";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+    }
+
+    @Test
+    public void testNewMatrix() {
+        String sql = "select newMatrix(3, 2, newArray(2, -1, 3, 0, -5, 2)) as matrix from '{}' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+
+        sql = "select newIdentityMatrix(5) as matrix, isSquareMatrix(matrix) as square from '{}' as data";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+    }
+
+    @Test
+    public void testMatrixAdd() {
+        String sql = "select newMatrix(3, 2, newArray(2, -1, 3, 0, -5, 2)) as matrix1, " +
+                " newMatrix(3, 2, newArray(1, 6, -1, -2, 0, -3)) as matrix2, matrixAdd(matrix1, matrix2) as matrix3 from '{}' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+    }
+
+    @Test
+    public void matrixSubtract() {
+        String sql = "select newMatrix(2, 2, newArray(3, -1, -2, 2)) as matrix1, " +
+                " newMatrix(2, 2, newArray(2, 0, 1, 4)) as matrix2, matrixSubtract(matrix1, matrix2) as matrix3 from '{}' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+    }
+
+
+    /**
+     * private static final String MATRIX_MULTIPLY = "matrixMultiply";
+     *     private static final String MATRIX_MULTIPLY_BY_SCALAR = "matrixMultiplyByScalar";
+     *     private static final String MATRIX_TRANSPOSE = "matrixTranspose";
+     *     private static final String MATRIX_DETERMINANT = "matrixDeterminant";
+     *     private static final String MATRIX_COFACTOR = "matrixCofactor";
+     *     private static final String MATRIX_INVERSE = "matrixInverse";
+     */
+
+    @Test
+    public void matrixMultiply() {
+        String sql = "select newMatrix(2, 3, newArray(1, 0, -3, -2, 4, 1)) as matrix1, " +
+                " newMatrix(3, 4, newArray(1, 0, 4, 1, -2, 3, -1, 5, 0, -1, 2, 1)) as matrix2, matrixMultiply(matrix1, matrix2) as matrix3 from '{}' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+    }
+
+    @Test
+    public void matrixMultiplyByScalar() {
+        String sql = "select newMatrix(2, 3, newArray(1, 0, -3, -2, 4, 1)) as matrix1, " +
+                " matrixMultiplyByScalar(matrix1, 2) as matrix2 from '{}' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+    }
+
+    @Test
+    public void matrixInverse() {
+        String sql = "select newMatrix(2, 2, newArray(2, 3, 5, 8)) as matrix1, " +
+                " matrixInverse(matrix1) as matrix2 from '{}' as data";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
