@@ -182,16 +182,21 @@ public final class FileSystemWatcherService extends Service<FileSystemWatcherCon
                             List<Path> createPaths = new ArrayList<>();
                             Map<Path, String> lastChecksumMap = lastChecksum.get(path);
                             for(Path checksumPath : lastChecksumMap.keySet()) {
-                                String checksum = lastChecksumMap.get(checksumPath);
-                                if(checksumPath.toFile().exists()) {
-                                    String currentChecksum = Strings.checksum(Files.readAllBytes(checksumPath));
-                                    if (!checksum.equals(currentChecksum)) {
-                                        updatePaths.add(checksumPath);
-                                        lastChecksumMap.put(checksumPath, currentChecksum);
+                                try {
+                                    String checksum = lastChecksumMap.get(checksumPath);
+                                    if (checksumPath.toFile().exists()) {
+                                        String currentChecksum = Strings.checksum(Files.readAllBytes(checksumPath));
+                                        if (!checksum.equals(currentChecksum)) {
+                                            updatePaths.add(checksumPath);
+                                            lastChecksumMap.put(checksumPath, currentChecksum);
+                                        }
+                                    } else {
+                                        deletePaths.add(checksumPath);
+                                        lastChecksumMap.remove(checksumPath);
                                     }
-                                } else {
-                                    deletePaths.add(checksumPath);
-                                    lastChecksumMap.remove(checksumPath);
+                                } catch (Exception ex) {
+                                    Log.w(SystemProperties.get(SystemProperties.FileSystem.LOG_TAG),
+                                            "Polling path fail: %s -> %s", path.toString(), checksumPath.toString());
                                 }
                             }
                             Map<Path, String> newChecksumMap = verifyNewChecksumMap(path, lastChecksumMap, new HashMap<>());

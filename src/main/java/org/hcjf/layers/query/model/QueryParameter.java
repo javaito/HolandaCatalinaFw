@@ -47,7 +47,7 @@ public abstract class QueryParameter implements Comparable<QueryParameter>, Quer
      * Returns query instance that contains the field.
      * @return Query instance.
      */
-    protected Query getContainer() {
+    public Query getContainer() {
         return container;
     }
 

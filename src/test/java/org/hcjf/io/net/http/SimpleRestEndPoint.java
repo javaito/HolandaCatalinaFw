@@ -1,9 +1,11 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.layers.Layer;
+import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.JoinableMap;
 import org.hcjf.layers.query.Queryable;
+import org.hcjf.properties.SystemProperties;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -19,18 +21,19 @@ public class SimpleRestEndPoint {
         //HttpClient client = new HttpClient(new URL("https://beta.sitrack.io/edna?q=" + URLEncoder.encode("SELECT * FROM Account")));
         //System.out.println(client.request());
 
-        //Layers.publishLayer(Bag.class);
-        HttpResponse response = new HttpResponse();
-        response.setBody("Hello world".getBytes());
+        System.setProperty(SystemProperties.Net.Http.DataSources.THREAD_POOL_ENABLED, "true");
+        Layers.publishLayer(Bag.class);
+//        HttpResponse response = new HttpResponse();
+//        response.setBody("Hello world".getBytes());
 
-        HttpServer.create(18080, new Context(".*") {
-            @Override
-            public HttpResponse onContext(HttpRequest request) {
-                return response;
-            }
-        });
-        //HttpServer.create(9090, new RestContext(".*"));
-        //HttpServer.create(9090, new FolderContext(".*", Paths.get("/home/javaito/www"), "index.html"));
+//        HttpServer.create(18080, new Context(".*") {
+//            @Override
+//            public HttpResponse onContext(HttpRequest request) {
+//                return response;
+//            }
+//        });
+        HttpServer.create(9090, new RestContext(".*"));
+//        HttpServer.create(9090, new FolderContext(".*", Paths.get("/home/javaito/www"), "index.html"));
     }
 
     public static class Bag extends Layer implements ReadRowsLayerInterface {

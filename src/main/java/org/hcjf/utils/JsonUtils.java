@@ -93,6 +93,17 @@ public class JsonUtils {
             JsonPrimitive jsonPrimitive = new JsonPrimitive(value);
             return jsonPrimitive;
         });
+        gsonBuilder.registerTypeAdapter(JsonSerializer.class, (JsonSerializer<Matrix>) (src, typeOfSrc, context) -> {
+            JsonArray rowsObject = new JsonArray();
+            for (int i = 0; i < src.getRows(); i++) {
+                JsonArray colsObject = new JsonArray();
+                rowsObject.add(colsObject);
+                for (int j = 0; j < src.getCols(); j++) {
+                    colsObject.add(src.get(i,j));
+                }
+            }
+            return rowsObject;
+        });
         formatOptions.forEach((key,value) -> {
             switch (key){
                 case DATE_FORMAT_ARG : {

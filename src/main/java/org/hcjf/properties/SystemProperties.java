@@ -534,6 +534,12 @@ public final class SystemProperties extends Properties {
         }
     }
 
+    public static class Cache {
+        public static final String SERVICE_NAME = "hcjf.cache.service.name";
+        public static final String SERVICE_PRIORITY = "hcjf.cache.service.priority";
+        public static final String INVALIDATOR_TIME_OUT = "hcjf.cache.invalidator.time.out";
+    }
+
     //Java property names
     public static final String FILE_ENCODING = "file.encoding";
 
@@ -941,6 +947,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Queue.LOCK_NAME_TEMPLATE, "hcjf.cloud.queue.lock.name.%s");
         defaults.put(Cloud.Queue.CONDITION_NAME_TEMPLATE, "hcjf.cloud.queue.condition.name.%s");
         defaults.put(Cloud.Queue.DEFAULT_SIZE, "100000");
+
+        defaults.put(Cache.SERVICE_NAME, "Cache");
+        defaults.put(Cache.SERVICE_PRIORITY, "0");
+        defaults.put(Cache.INVALIDATOR_TIME_OUT, "30000");
 
         Properties system = System.getProperties();
         putAll(system);
