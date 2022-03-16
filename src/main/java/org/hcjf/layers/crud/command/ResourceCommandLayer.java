@@ -1,6 +1,8 @@
 package org.hcjf.layers.crud.command;
 
-public abstract class ResourceCommandLayer implements ResourceCommandLayerInterface {
+import org.hcjf.layers.Layer;
+
+public abstract class ResourceCommandLayer extends Layer implements ResourceCommandLayerInterface {
 
     private String resourceName;
 
