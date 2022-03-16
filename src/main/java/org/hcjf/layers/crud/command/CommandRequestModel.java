@@ -1,9 +1,11 @@
 package org.hcjf.layers.crud.command;
 
+import java.util.Map;
+
 public class CommandRequestModel {
 
     private String command;
-    private Object payload;
+    private Map<String, Object> payload;
 
     public String getCommand() {
         return command;
@@ -13,11 +15,11 @@ public class CommandRequestModel {
         this.command = command;
     }
 
-    public Object getPayload() {
+    public Map<String, Object> getPayload() {
         return payload;
     }
 
-    public void setPayload(Object payload) {
+    public void setPayload(Map<String, Object> payload) {
         this.payload = payload;
     }
 }
