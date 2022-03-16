@@ -316,6 +316,8 @@ public final class SystemProperties extends Properties {
             public static final String QUERY_FIELD = "hcjf.net.http.rest.query.field";
             public static final String QUERIES_FIELD = "hcjf.net.http.rest.queries.field";
             public static final String DATA_SOURCE_FIELD = "hcjf.net.http.rest.data.source.field";
+            public static final String COMMAND_FIELD = "hcjf.net.http.rest.command.field";
+            public static final String COMMANDS_FIELD = "hcjf.net.http.rest.commands.field";
         }
 
     }

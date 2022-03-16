@@ -10,9 +10,12 @@ import org.hcjf.layers.crud.CreateLayerInterface;
 import org.hcjf.layers.crud.DeleteLayerInterface;
 import org.hcjf.layers.crud.ReadLayerInterface;
 import org.hcjf.layers.crud.UpdateLayerInterface;
+import org.hcjf.layers.crud.command.CommandRequestModel;
+import org.hcjf.layers.crud.command.CommandUpdateLayerInterface;
 import org.hcjf.layers.query.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 
@@ -155,20 +158,30 @@ public class RestContext extends Context {
                 }
             }
         } else if(method.equals(HttpMethod.PUT)) {
-            // This method call to update layer interface implementation.
-            UpdateLayerInterface updateLayerInterface = Layers.get(UpdateLayerInterface.class, resourceName);
+            // This method call to update layer or command update layer interface implementation.
             RequestModel requestModel = new RequestModel(JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
-            if(requestModel.getQueryable() == null) {
-                if(id != null) {
-                    ((Map<String, Object>) requestModel.getBody()).put(Fields.ID_URL_FIELD, id);
-                }
-                if(requestModel.getBody() instanceof Collection) {
-                    jsonElement = gson.toJsonTree(updateLayerInterface.update((Collection) requestModel.getBody()));
+
+            if (requestModel.getCommands() != null || requestModel.getCommand() != null) { // request has commands
+                CommandUpdateLayerInterface commandUpdateLayerInterface = Layers.get(CommandUpdateLayerInterface.class, resourceName);
+                if (requestModel.getCommands() != null) {
+                    jsonElement = gson.toJsonTree(commandUpdateLayerInterface.executeUpdateCommands(requestModel.getCommands()));
                 } else {
-                    jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
+                    jsonElement = gson.toJsonTree(commandUpdateLayerInterface.executeUpdateCommand(requestModel.getCommand()));
                 }
-            } else {
-                jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));
+            } else { // request is a common update
+                UpdateLayerInterface updateLayerInterface = Layers.get(UpdateLayerInterface.class, resourceName);
+                if (requestModel.getQueryable() == null) {
+                    if (id != null) {
+                        ((Map<String, Object>) requestModel.getBody()).put(Fields.ID_URL_FIELD, id);
+                    }
+                    if (requestModel.getBody() instanceof Collection) {
+                        jsonElement = gson.toJsonTree(updateLayerInterface.update((Collection) requestModel.getBody()));
+                    } else {
+                        jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.getBody()));
+                    }
+                } else {
+                    jsonElement = gson.toJsonTree(updateLayerInterface.update(requestModel.queryable, requestModel.getBody()));
+                }
             }
         } else if(method.equals(HttpMethod.DELETE)) {
             // This method call to delete layer interface implementation.
@@ -272,6 +285,8 @@ public class RestContext extends Context {
         private Map<String,Object> requestConfig;
         private Map<String,Object> dataSourcesMap;
         private Queryable.DataSource<Object> dataSource;
+        private CommandRequestModel command;
+        private Collection<CommandRequestModel> commands;
 
         public RequestModel(JsonArray jsonArray) {
             body = JsonUtils.createList(jsonArray);
@@ -280,7 +295,9 @@ public class RestContext extends Context {
         public RequestModel(JsonObject jsonObject) {
             if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&
                     !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)) &&
-                    !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD))) {
+                    !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD)) &&
+                    !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.COMMAND_FIELD)) &&
+                    !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.COMMANDS_FIELD))) {
                 body = JsonUtils.createBody(jsonObject);
             } else {
                 if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD))) {
@@ -320,6 +337,35 @@ public class RestContext extends Context {
                             throw new HCJFRuntimeException("Data source not found: %s", queryable.getResourceName());
                         }
                     };
+                }
+
+                if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.COMMANDS_FIELD))) {
+                    commands = new ArrayList<>();
+                    JsonArray commandsJson = jsonObject.getAsJsonArray(SystemProperties.get(SystemProperties.Net.Rest.COMMANDS_FIELD));
+                    for (JsonElement commandJson : commandsJson) {
+                        try {
+                            CommandRequestModel command = Introspection.toInstance(
+                                    (Map<String, Object>) JsonUtils.createObject(commandJson), CommandRequestModel.class);
+                            commands.add(command);
+                        } catch (Exception e) {
+                            throw new HCJFRuntimeException("Malformed commands request", e);
+                        }
+                    }
+                }
+
+                if (jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.COMMAND_FIELD))) {
+                    JsonElement commandJson = jsonObject.get(SystemProperties.get(SystemProperties.Net.Rest.COMMAND_FIELD));
+                    try {
+                        CommandRequestModel commandModel = Introspection.toInstance(
+                                (Map<String, Object>) JsonUtils.createObject(commandJson), CommandRequestModel.class);
+                        if (commands != null) { // if both commands and command are defined, unify in a commands collection
+                            commands.add(commandModel);
+                        } else {
+                            command = commandModel;
+                        }
+                    } catch (Exception e) {
+                        throw new HCJFRuntimeException("Malformed command request", e);
+                    }
                 }
             }
         }
@@ -385,6 +431,22 @@ public class RestContext extends Context {
 
         public Queryable.DataSource<Object> getDataSource() {
             return dataSource;
+        }
+
+        /**
+         * Returns the collection of commands if specified in the request.
+         * @return collection of command instances
+         */
+        public Collection<CommandRequestModel> getCommands() {
+            return commands;
+        }
+
+        /**
+         * Returns the command if specified in the request.
+         * @return command instance
+         */
+        public CommandRequestModel getCommand() {
+            return command;
         }
     }
 }
