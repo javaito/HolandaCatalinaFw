@@ -1,5 +1,6 @@
 package org.hcjf.service.security;
 
+import org.hcjf.io.net.http.HttpResponseCode;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
@@ -13,9 +14,9 @@ import java.security.Permission;
  */
 public class ServiceSecurityManager extends SecurityManager {
 
-    private static final String GRANT_NOT_FOUND_TEMPLATE = "Grant not found %s into service session %s";
+    private static final String GRANT_NOT_FOUND_TEMPLATE = "$@{USER}Grant not found %s into service session %s";
     private static final String SECURITY_EXCEPTION_MESSAGE = "Security exception";
-
+    private static final String TAG_RESPONSE_CODE = "$@{RESPONSE_CODE}";
     @Override
     public void checkPermission(Permission perm) {
         if(perm instanceof SecurityPermissions.SecurityPermission) {
@@ -27,8 +28,10 @@ public class ServiceSecurityManager extends SecurityManager {
             }
             if (!serviceSession.isSystemSession() &&
                     !serviceSession.containsGrant(perm.getName())) {
-                throw new SecurityException(String.format(GRANT_NOT_FOUND_TEMPLATE,
-                        perm.getName(), serviceSession.getId()));
+                String message = String.format(GRANT_NOT_FOUND_TEMPLATE,
+                        perm.getName(), serviceSession.getId());
+                Throwable throwable = new Throwable(message, new Throwable(TAG_RESPONSE_CODE.concat(String.valueOf(HttpResponseCode.FORBIDDEN))));
+                throw new SecurityException(throwable);
             }
         }
     }
