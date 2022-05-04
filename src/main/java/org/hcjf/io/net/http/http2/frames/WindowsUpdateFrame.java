@@ -4,22 +4,26 @@ import java.nio.ByteBuffer;
 
 public class WindowsUpdateFrame extends Http2Frame {
 
+    private Integer windowsSize;
+
     public WindowsUpdateFrame(Integer id, Byte flags, Integer length) {
         super(id, flags, length, Type.WINDOW_UPDATE);
     }
 
     @Override
     protected Integer recalculateLength() {
-        return null;
+        return getLength();
     }
 
     @Override
     protected void processPayload() {
-
+        windowsSize = getPayload().getInt();
+        System.out.println();
     }
 
     @Override
     protected ByteBuffer serializePayload(ByteBuffer fixedBuffer) {
-        return null;
+        fixedBuffer.putInt(windowsSize);
+        return fixedBuffer;
     }
 }

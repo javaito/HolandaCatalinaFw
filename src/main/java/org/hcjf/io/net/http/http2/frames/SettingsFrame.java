@@ -26,6 +26,17 @@ public class SettingsFrame extends Http2Frame {
         this.order.addAll(settingsFrame.order);
     }
 
+    public static SettingsFrame createDefaultSettingsFrame(Integer id) {
+        SettingsFrame settingsFrame = new SettingsFrame(id, (byte)0, 1);
+        settingsFrame.setMaxHeaderListSize(Settings.SETTINGS_MAX_HEADER_LIST_SIZE.getDefaultValue());
+        settingsFrame.setMaxConcurrentStreams(Settings.SETTINGS_MAX_CONCURRENT_STREAMS.getDefaultValue());
+        settingsFrame.setMaxFrameSize(Settings.SETTINGS_MAX_FRAME_SIZE.getDefaultValue());
+        settingsFrame.setInitialWindowsSize(Settings.SETTINGS_INITIAL_WINDOW_SIZE.getDefaultValue());
+        settingsFrame.setHeaderTableSize(Settings.SETTINGS_HEADER_TABLE_SIZE.getDefaultValue());
+        //settingsFrame.setEnablePush(Settings.SETTINGS_ENABLE_PUSH.getDefaultValue());
+        return settingsFrame;
+    }
+
     @Override
     protected Integer recalculateLength() {
         Integer length = settings.size() * SETTING_PAYLOAD_LENGTH;
@@ -139,5 +150,8 @@ public class SettingsFrame extends Http2Frame {
             return id;
         }
 
+        public int getDefaultValue() {
+            return defaultValue;
+        }
     }
 }

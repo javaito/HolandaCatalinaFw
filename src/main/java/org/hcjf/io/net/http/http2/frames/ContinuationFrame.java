@@ -20,6 +20,6 @@ public class ContinuationFrame extends Http2Frame {
 
     @Override
     protected ByteBuffer serializePayload(ByteBuffer fixedBuffer) {
-        return null;
+        return fixedBuffer;
     }
 }

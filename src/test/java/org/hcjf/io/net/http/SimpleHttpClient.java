@@ -21,7 +21,7 @@ public class SimpleHttpClient {
                 client.setHttpMethod(HttpMethod.GET);
                 HttpResponse callback = client.request();
                 Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
-                System.out.println(callback);
+//                System.out.println(callback);
                 System.out.printf("Request %d: ok\r\n", i);
             } catch (Exception ex){
                 ex.printStackTrace();
@@ -76,9 +76,11 @@ public class SimpleHttpClient {
 //    @Test
     public void testHttpsAsyncClientImage() {
 
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+
 //        String url = "https://www.google.com.ar/";
 //        String url = "https://www.example.com/";
-        String url = "http://storage.googleapis.com/beta-gdalcalcout-0000001f-0494-45f1-0000-002e52e279b1//Gdal/calc/gdalCalctest.tif";
+        String url = "https://upload.wikimedia.org/wikipedia/commons/e/e9/Felis_silvestris_silvestris_small_gradual_decrease_of_quality.png";
 
         for (int i = 0; i < 1; i++) {
             try {
@@ -87,7 +89,7 @@ public class SimpleHttpClient {
                 HttpResponse callback = client.asyncRequest(new HttpResponseHandler() {
                     @Override
                     protected void consume(ByteBuffer fragment) {
-                        System.out.println("Datos:" + new String(fragment.array()));
+//                        System.out.println("Datos:" + new String(fragment.array()));
                         System.out.println("Length: " + fragment.limit());
                         /*
                         try {
@@ -99,7 +101,7 @@ public class SimpleHttpClient {
                     }
                 });
                 ((HttpResponseHandler)callback.getTransferDecodingLayer()).get();
-                System.out.println("Response:" + callback);
+                //                System.out.println("Response:" + callback);
                 System.out.printf("Request %d: ok\r\n", i);
             } catch (Exception ex){
                 ex.printStackTrace();
@@ -167,6 +169,20 @@ public class SimpleHttpClient {
                 System.out.printf("Request %d: fail\r\n", i);
                 Assert.fail();
             }
+        }
+    }
+
+    //@Test
+    public void testOauth() {
+        try {
+            HttpClient client = new HttpClient(new URL("https://api.touchapp.cl/ccuprod/oauth2/token?grant_type=client_credentials&client_id=m2qek40CbfzOpSwH7X7g836tCQ2U9dRP&client_secret=cDtMbry1OV0TSG2AbK6V51YgAKwVqUBa"));
+            client.setHttpMethod(HttpMethod.POST);
+            HttpResponse callback = client.request();
+            //Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
+            System.out.println(callback);
+        } catch (Exception ex){
+            ex.printStackTrace();
+            Assert.fail();
         }
     }
 }

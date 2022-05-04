@@ -117,7 +117,8 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                             null,
                             null,
                             null,
-                            null);
+                            null,
+                            false);
 
                     for(KubernetesSpyConsumer consumer : consumers) {
                         fork(() -> {
@@ -139,7 +140,8 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
                             null,
                             null,
                             null,
-                            null);
+                            null,
+                            false);
 
                     for(KubernetesSpyConsumer consumer : consumers) {
                         fork(() -> {

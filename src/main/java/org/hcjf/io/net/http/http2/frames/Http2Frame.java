@@ -14,10 +14,10 @@ public abstract class Http2Frame {
     //https://httpwg.org/specs/rfc7540.html#FramingLayer
     public static final Integer FRAME_HEADER_LENGTH = 9;
 
-    private final Integer id;
-    private final Byte flags;
+    private Integer id;
+    private Byte flags;
     private Integer length;
-    private final Type type;
+    private Type type;
     private ByteBuffer payload;
 
     protected Http2Frame(Integer id, Byte flags, Integer length, Type type) {
@@ -28,23 +28,39 @@ public abstract class Http2Frame {
         this.payload = ByteBuffer.allocate(length);
     }
 
-    public final Type getType() {
-        return type;
-    }
-
-    public final Byte getFlags() {
-        return flags;
-    }
-
-    public final Integer getLength() {
-        return length;
-    }
-
-    public final Integer getId() {
+    public Integer getId() {
         return id;
     }
 
-    public final ByteBuffer getPayload() {
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Byte getFlags() {
+        return flags;
+    }
+
+    public void setFlags(Byte flags) {
+        this.flags = flags;
+    }
+
+    public Integer getLength() {
+        return length;
+    }
+
+    public void setLength(Integer length) {
+        this.length = length;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
+    public ByteBuffer getPayload() {
         return payload;
     }
 

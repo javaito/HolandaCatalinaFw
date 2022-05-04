@@ -70,7 +70,9 @@ public abstract class HttpResponseHandler extends Layer implements HttpPackage.T
                 length = Long.parseLong(contentLengthHeader.getHeaderValue().trim());
             }
         }
-        this.done = counter.get() >= length;
+        if(counter.get() >= length) {
+            done = true;
+        }
         return done;
     }
 

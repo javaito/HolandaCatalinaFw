@@ -9,6 +9,7 @@ import org.hcjf.io.net.http.http2.StreamSettings;
 import org.hcjf.io.net.http.http2.frames.DataFrame;
 import org.hcjf.io.net.http.http2.frames.Http2Frame;
 import org.hcjf.io.net.http.http2.frames.SettingsFrame;
+import org.hcjf.io.net.http.http2.frames.WindowsUpdateFrame;
 import org.hcjf.io.net.http.pipeline.HttpPipelineResponse;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
@@ -165,6 +166,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected final HttpPackage decode(NetPackage netPackage) {
         HttpRequest request = null;
+        System.out.println("Previous Add data>>>!!!: " + Strings.bytesToHex(netPackage.getPayload()));
         if(((HttpSession)netPackage.getSession()).getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
             Stream stream = ((HttpSession)netPackage.getSession()).getStream();
             byte[] data = netPackage.getPayload();
@@ -176,25 +178,39 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 stream.addData(data, 0);
             }
 
-            for(Http2Frame frame : stream.getFrames()) {
+            for(Http2Frame frame : stream.getAndRemoveFrames()) {
                 System.out.println(frame);
                 if(frame instanceof SettingsFrame) {
-                    stream.getFrames().remove(frame);
                     SettingsFrame settingsFrame = (SettingsFrame) frame;
                     if(settingsFrame.getFlags() != 0x01) {
-                        SettingsFrame copy = new SettingsFrame(settingsFrame.getId(), (byte) 0x01, 0);
                         try {
-                            byte[] responseData = settingsFrame.serialize().array();
+                            byte[] responseData = SettingsFrame.createDefaultSettingsFrame(0).serialize().array();
                             getService().writeData(netPackage.getSession(), responseData);
                             System.out.println("Response data<<<!!!: " + Strings.bytesToHex(responseData));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                    } else {
+                        DataFrame dataFrame = new DataFrame(0, (byte)0, 0);
+                        dataFrame.setData(ByteBuffer.wrap("Hola Mundo".getBytes()));
+                        dataFrame.setPathLength((byte)0);
+                        try {
+                            getService().writeData(netPackage.getSession(), dataFrame.serialize().array());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else if (frame instanceof WindowsUpdateFrame) {
+                    WindowsUpdateFrame windowsUpdateFrame = (WindowsUpdateFrame) frame;
+                    try {
+                        byte[] responseData = windowsUpdateFrame.serialize().array();
+                        getService().writeData(netPackage.getSession(), responseData);
+                        System.out.println("Response data<<<!!!: " + Strings.bytesToHex(responseData));
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
             }
-
-            System.out.println();
         } else {
             request = requestBuffers.get(netPackage.getSession());
             if (request == null) {
@@ -316,11 +332,14 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     HttpHeader connection = request.getHeader(HttpHeader.CONNECTION);
                     HttpHeader http2Settings = request.getHeader(HttpHeader.HTTP2_SETTINGS);
 
+                    SettingsFrame settingsFrame = SettingsFrame.createDefaultSettingsFrame(0);
+
                     if (upgrade.getHeaderValue().trim().equalsIgnoreCase(HttpHeader.HTTP2_REQUEST)) {
                         session.setStream(new Stream(1, new StreamSettings()));
                         response = new HttpResponse();
                         response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
                         response.addHeader(upgrade);
+                        response.setBody(settingsFrame.serialize().array());
                     } else {
                         throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
                     }

@@ -326,8 +326,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
         }
     }
 
-    private static int index = 0;
-
     /**
      *
      * @param session Net session.
@@ -336,7 +334,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      */
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
-        System.out.println("Index: " + ++index);
         if(getResponseHandler() == null) {
             if (response.isComplete()) {
                 synchronized (readMonitor) {

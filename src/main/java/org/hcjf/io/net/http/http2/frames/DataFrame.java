@@ -38,18 +38,20 @@ public class DataFrame extends Http2Frame {
 
     @Override
     protected Integer recalculateLength() {
-        return null;
+        return getData().limit() + (getPadding() != null ? getPadding().limit() : 0) + 1;
     }
 
     @Override
     protected void processPayload() {
-
     }
 
     @Override
     protected ByteBuffer serializePayload(ByteBuffer fixedBuffer) {
         fixedBuffer.put(getPathLength());
         fixedBuffer.put(getData());
+        if(getPathLength() > 0) {
+            fixedBuffer.put(getPadding());
+        }
         return fixedBuffer;
     }
 }

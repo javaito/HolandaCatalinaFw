@@ -712,8 +712,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Ssl.DEFAULT_KEY_PASSWORD, "hcjfkeypassword");
         defaults.put(Net.Ssl.DEFAULT_KEY_TYPE, "JKS");
         defaults.put(Net.Ssl.DEFAULT_KEYSTORE_PASSWORD, "hcjfkeystorepassword");
-        defaults.put(Net.Ssl.DEFAULT_KEYSTORE_FILE_PATH, "./src/resources/org/hcjf/io/net/https/keystore.jks");
-        defaults.put(Net.Ssl.DEFAULT_TRUSTED_CERTS_FILE_PATH, "./src/resources/org/hcjf/io/net/https/cacerts.jks");
+        defaults.put(Net.Ssl.DEFAULT_KEYSTORE_FILE_PATH, "/home/javaito/Git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/keystore.jks");
+        defaults.put(Net.Ssl.DEFAULT_TRUSTED_CERTS_FILE_PATH, "/home/javaito/Git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/cacerts.jks");
         defaults.put(Net.Ssl.DEFAULT_PROTOCOL, "TLSv1.2");
         defaults.put(Net.Ssl.IO_THREAD_NAME, "SslIoThread");
         defaults.put(Net.Ssl.ENGINE_THREAD_NAME, "SslEngineThread");

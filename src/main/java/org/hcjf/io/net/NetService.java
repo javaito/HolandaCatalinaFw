@@ -1578,6 +1578,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     try {
                         destroyChannel(channel);
                     } catch (Exception ex) {
+                        Log.e("CONNECTION_TIMEOUT_TASK", "Fork fail", ex);
                     }
                 }
             });
@@ -1648,7 +1649,8 @@ public final class NetService extends Service<NetServiceConsumer> {
             engineName = String.format(ENGINE_NAME_TEMPLATE, consumer.getName());
 
             //Start handshaking
-            instance.fork(this, ioName, ioExecutor);
+//            instance.fork(this, ioName, ioExecutor);
+            run();
         }
 
         /**
@@ -1677,7 +1679,8 @@ public final class NetService extends Service<NetServiceConsumer> {
                     total += ((SocketChannel) selectableChannel).write(encrypted);
                 }
             } catch (IOException ex) {
-                throw new RuntimeException("", ex);
+                Log.e("SSL_HELPER", "On write tail", ex);
+                throw new RuntimeException("On write fail", ex);
             }
         }
 
@@ -1719,7 +1722,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         @Override
         public void run() {
             while (this.isHandShaking()) {
-                continue;
             }
         }
 
@@ -1740,6 +1742,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                                 0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.WRITE);
                         defaultNetPackage.setSession(netPackage.getSession());
                     } catch (Exception ex) {
+                        Log.e("SSL_HELPER", "Write fail", ex);
                     }
                 }
             } else {
@@ -1748,6 +1751,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                             0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.WRITE);
                     defaultNetPackage.setSession(netPackage.getSession());
                 } catch (Exception ex) {
+                    Log.e("SSL_HELPER", "On write fail", ex);
                 }
             }
             return defaultNetPackage;
@@ -1769,12 +1773,14 @@ public final class NetService extends Service<NetServiceConsumer> {
                 try {
                     arrayResult = decryptedPlace.toByteArray();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("SSL_HELPER", "Read fail", e);
                 } finally {
                     decryptedPlace.reset();
                     try {
                         decryptedPlace.close();
-                    } catch (IOException e) { }
+                    } catch (IOException e) {
+                        Log.e("SSL_HELPER", "Read fail", e);
+                    }
                 }
             }
 
@@ -1791,6 +1797,7 @@ public final class NetService extends Service<NetServiceConsumer> {
             try {
                 sslEngine.closeInbound();
             } catch (SSLException e) {
+                Log.d("SSL_HELPER", "Close fail", e);
             }
             sslEngine.closeOutbound();
         }

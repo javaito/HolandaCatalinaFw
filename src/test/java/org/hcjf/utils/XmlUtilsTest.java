@@ -1,7 +1,9 @@
 package org.hcjf.utils;
 
+import org.hcjf.io.net.http.HttpRequest;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class XmlUtilsTest {

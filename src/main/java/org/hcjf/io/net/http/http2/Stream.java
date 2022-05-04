@@ -5,6 +5,8 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -68,8 +70,12 @@ public class Stream {
         return http2Preface;
     }
 
-    public Queue<Http2Frame> getFrames() {
-        return frames;
+    public Collection<Http2Frame> getAndRemoveFrames() {
+        Collection<Http2Frame> result = new ArrayList<>();
+        while(!frames.isEmpty()) {
+            result.add(frames.remove());
+        }
+        return result;
     }
 
     public void setHttpClientPreface(String http2Preface) {
