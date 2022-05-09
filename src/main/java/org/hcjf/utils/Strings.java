@@ -914,16 +914,7 @@ public final class Strings {
                     result = trimmedStringValue;
                 }
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_DECIMAL_NUMBER_REGEX))) {
-                try {
-                    synchronized (SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT)) {
-                        result = SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_NUMBER_FORMAT).parse(trimmedStringValue);
-                        if(result instanceof Long) {
-                            result = ((Long) result).doubleValue();
-                        }
-                    }
-                } catch (ParseException e) {
                     result = trimmedStringValue;
-                }
             } else if (trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_SCIENTIFIC_NUMBER_REGEX))) {
                 try {
                     synchronized (SystemProperties.getDecimalFormat(SystemProperties.HCJF_DEFAULT_SCIENTIFIC_NUMBER_FORMAT)) {
