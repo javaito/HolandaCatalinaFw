@@ -344,6 +344,7 @@ public final class SystemProperties extends Properties {
         public static final String JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX = "hcjf.query.join.dynamic.resource.alias.index";
         public static final String JOIN_CONDITIONAL_BODY_INDEX = "hcjf.query.join.conditional.body.index";
         public static final String UNION_REGULAR_EXPRESSION = "hcjf.query.union.regular.expression";
+        public static final String SOURCE_REGULAR_EXPRESSION = "hcjf.query.source.regular.expression";
         public static final String AS_REGULAR_EXPRESSION = "hcjf.query.as.regular.expression";
         public static final String DESC_REGULAR_EXPRESSION = "hcjf.query.desc.regular.expression";
         public static final String ENVIRONMENT_GROUP_INDEX = "hcjf.query.environment.group.index";
@@ -409,6 +410,8 @@ public final class SystemProperties extends Properties {
             public static final String AS = "hcjf.query.as.reserved.word";
             public static final String GROUP_BY = "hcjf.query.group.by.reserved.word";
             public static final String DISJOINT_BY = "hcjf.query.disjoint.by.reserved.word";
+            public static final String UNDERLYING = "hcjf.query.underlying.reserved.word";
+            public static final String SRC = "hcjf.query.src.reserved.word";
         }
 
         public static class Function {
@@ -796,7 +799,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<environment>environment[ ]{1,}'¡[0-9]{1,}·'[ ]{1,}){0,1}(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿·@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿·'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿·.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by ))");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by | underlying )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by | underlying ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)(((?<resourceValue>[a-zA-Z_0-9$¡¿·.]{1,})(?<dynamicResource>[ ]as[ ](?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,})|[ ]?)) on (?<conditionalBody>[a-zA-Z_0-9'=,.~+-\\/* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,}))");
@@ -805,6 +808,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.JOIN_DYNAMIC_RESOURCE_ALIAS_INDEX, "dynamicResourceAlias");
         defaults.put(Query.JOIN_CONDITIONAL_BODY_INDEX, "conditionalBody");
         defaults.put(Query.UNION_REGULAR_EXPRESSION, "(?i)((?<=( union ))|(?=( union )))");
+        defaults.put(Query.SOURCE_REGULAR_EXPRESSION, "(?i)((?<=( src ))|(?=( src )))");
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
         defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)((?<=( desc| asc))|(?=( desc| asc)))");
         defaults.put(Query.ENVIRONMENT_GROUP_INDEX, "environment");
@@ -868,6 +872,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.AS, "AS");
         defaults.put(Query.ReservedWord.GROUP_BY, "GROUP BY");
         defaults.put(Query.ReservedWord.DISJOINT_BY, "DISJOINT BY");
+        defaults.put(Query.ReservedWord.UNDERLYING, "UNDERLYING");
+        defaults.put(Query.ReservedWord.SRC, "SRC");
         defaults.put(Query.Function.NAME_PREFIX, "query.");
         defaults.put(Query.Function.MATH_FUNCTION_NAME, "math");
         defaults.put(Query.Function.STRING_FUNCTION_NAME, "string");

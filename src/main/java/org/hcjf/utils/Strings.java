@@ -1029,6 +1029,25 @@ public final class Strings {
     }
 
     /**
+     * This method remove some places from a path string.
+     * @param path Path string, it path has the next syntax: 'field.field.field'. We call 'places' each word between dots.
+     * @param removePlaces Array with all the indexes to remove of the path.
+     * @return Returns the new path without places indexed.
+     */
+    public static String removeFromPath(String path, Integer... removePlaces) {
+        Builder builder = new Builder();
+        List<Integer> places = Arrays.asList(removePlaces);
+        String[] parts = path.split(Strings.CLASS_SEPARATOR_WITH_SCAPE_CHARACTER);
+        for (int i = 0; i < parts.length; i++) {
+            if(!places.contains(i)) {
+                builder.append(parts[i], CLASS_SEPARATOR);
+            }
+        }
+        builder.cleanBuffer();
+        return builder.toString();
+    }
+
+    /**
      * This class is a StringBuilder wrapper that add a way to append objects
      * with a buffer to be used in the next append or discard the buffer is there are not
      * a other append operation

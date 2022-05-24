@@ -12,6 +12,7 @@ import org.hcjf.utils.Strings;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 public class SQLSerializer extends Layer implements QuerySerializer {
@@ -92,11 +93,13 @@ public class SQLSerializer extends Layer implements QuerySerializer {
             }
         }
 
+        // Print conditional body
         if (query.getEvaluators().size() > 0) {
             resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.WHERE)).append(Strings.WHITE_SPACE);
             toStringEvaluatorCollection(resultBuilder, query);
         }
 
+        // Print group sentences
         if (query.getGroupParameters().size() > 0) {
             if(query.isDisjoint()) {
                 resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.DISJOINT_BY)).append(Strings.WHITE_SPACE);
@@ -110,6 +113,7 @@ public class SQLSerializer extends Layer implements QuerySerializer {
             resultBuilder.append(Strings.WHITE_SPACE);
         }
 
+        // Print order sentences
         if (query.getOrderParameters().size() > 0) {
             resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.ORDER_BY)).append(Strings.WHITE_SPACE);
             for (QueryOrderParameter orderField : query.getOrderParameters()) {
@@ -146,6 +150,25 @@ public class SQLSerializer extends Layer implements QuerySerializer {
             resultBuilder.append(Strings.ARGUMENT_SEPARATOR).append(query.getUnderlyingLimit());
         }
 
+        // Print underlying body
+        if(query.getUnderlyingFunctions() != null) {
+            for (String resource : query.getUnderlyingFunctions().keySet()) {
+                List<QueryReturnFunction> functions = query.getUnderlyingFunctions().get(resource);
+                resultBuilder.append(Strings.WHITE_SPACE);
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.UNDERLYING));
+                for (QueryReturnFunction function : functions) {
+                    resultBuilder.append(Strings.WHITE_SPACE);
+                    resultBuilder = toStringQueryReturnValue(resultBuilder, function);
+                }
+                resultBuilder.cleanBuffer();
+                resultBuilder.append(Strings.WHITE_SPACE);
+                resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.SRC));
+                resultBuilder.append(Strings.WHITE_SPACE);
+                resultBuilder.append(resource);
+            }
+        }
+
+        // Print unions
         for(Queryable queryable : query.getUnions()) {
             resultBuilder.append(Strings.WHITE_SPACE);
             resultBuilder.append(SystemProperties.get(SystemProperties.Query.ReservedWord.UNION));
