@@ -26,6 +26,8 @@ public interface Queryable extends BsonParcelable {
      */
     String getResourceName();
 
+    Query getQuery();
+
     /**
      * This method evaluate each object of the collection and sort filtered
      * object to create a result add with the object filtered and sorted.

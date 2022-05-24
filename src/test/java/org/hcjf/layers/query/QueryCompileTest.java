@@ -593,4 +593,18 @@ public class QueryCompileTest {
         System.out.println(query.toString());
         System.out.println();
     }
+
+    @Test
+    public void testUnderlyingFunctions() {
+        String sql = "select * from resource where field1 = 3 underlying function('text') as field SRC resource";
+        Query query = Query.compile(sql);
+        System.out.println(query.toString());
+        System.out.println();
+
+        sql = "select * from store.dynamic.ccu.planilla join lala on true underlying count() as count, fields('numero', 'centro') src store.dynamic.ccu.planilla " +
+                "underlying count() as count, fields('numero', 'centro') src lala";
+        query = Query.compile(sql);
+        System.out.println(query.toString());
+        System.out.println();
+    }
 }

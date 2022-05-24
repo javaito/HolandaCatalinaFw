@@ -19,6 +19,7 @@ import org.hcjf.service.ServiceThread;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.LruMap;
 import org.hcjf.utils.NamedUuid;
+import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.*;
@@ -50,6 +51,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private boolean returnAll;
     private boolean disjoint;
     private Map<String,Object> environment;
+    private Map<String,List<QueryReturnFunction>> underlyingFunctions;
 
     static {
         //Init query compiler cache
@@ -133,6 +135,15 @@ public class Query extends EvaluatorCollection implements Queryable {
         this.unions.addAll(source.unions);
     }
 
+    /**
+     * Returns the query associated to the instance.
+     * @return Query instance.
+     */
+    @Override
+    public Query getQuery() {
+        return this;
+    }
+
     private QueryParameter checkQueryParameter(QueryParameter queryParameter) {
         if(queryParameter instanceof QueryField) {
             QueryField queryField = (QueryField) queryParameter;
@@ -176,6 +187,53 @@ public class Query extends EvaluatorCollection implements Queryable {
      */
     public void setEnvironment(Map<String, Object> environment) {
         this.environment = environment;
+    }
+
+    /**
+     * Returns a list of underlying functions for the current resource name.
+     * @return List of underlying functions.
+     */
+    public List<QueryReturnFunction> getCurrentUnderlyingFunctions() {
+        return getUnderlyingFunctions().get(getResourceName());
+    }
+
+    /**
+     * Returns the map with underlying functions.
+     * @return Underlying functions.
+     */
+    public Map<String, List<QueryReturnFunction>> getUnderlyingFunctions() {
+        return underlyingFunctions;
+    }
+
+    /**
+     * Returns the map with underlying functions only for a one particular resource.
+     * @param resourceName Resource name.
+     * @return Underlying functions.
+     */
+    private Map<String, List<QueryReturnFunction>> getUnderlyingFunctions(String resourceName) {
+        return getUnderlyingFunctionsAndChangeName(resourceName, resourceName);
+    }
+
+    /**
+     * Returns the map with underlying functions only for a one particular resource and rename the resource into map.
+     * @param originalResourceName Resource name.
+     * @param newResourceName New name to index the functions into map.
+     * @return Underlying functions.
+     */
+    private Map<String, List<QueryReturnFunction>> getUnderlyingFunctionsAndChangeName(String originalResourceName, String newResourceName) {
+        Map<String,List<QueryReturnFunction>> result = new HashMap<>();
+        if(underlyingFunctions != null && underlyingFunctions.containsKey(originalResourceName)) {
+            result.put(newResourceName, underlyingFunctions.get(originalResourceName));
+        }
+        return result;
+    }
+
+    /**
+     * Set the map with underlying functions.
+     * @param underlyingFunctions Underlying functions.
+     */
+    public void setUnderlyingFunctions(Map<String, List<QueryReturnFunction>> underlyingFunctions) {
+        this.underlyingFunctions = underlyingFunctions;
     }
 
     /**
@@ -373,7 +431,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Add a name of the field for order the data collection. This name must be exist
+     * Add a name of the field for order the data collection. This name must be existed
      * like a setter/getter method in the instances of the data collection.
      * @param orderParameter Order parameter.
      * @return Return the same instance of this class.
@@ -406,7 +464,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Add the name of the field to be returned in the result set.
+     * Add the name of the field to be returned to the result set.
      * @param returnParameter Return parameter.
      * @return Return the same instance of this class.
      */
@@ -566,7 +624,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     return compareResult;
                 });
             } else {
-                //If the query has not order fields then creates a linked hash set to
+                //If the query has not ordered fields then creates a linked hash set to
                 //maintain the natural order of the data.
                 result = new ArrayList<>();
             }
@@ -587,6 +645,8 @@ public class Query extends EvaluatorCollection implements Queryable {
                     //If the query has not joins then data source must return data from
                     //resource of the query.
                     if(getResource() instanceof QueryDynamicResource) {
+                        Query dynamicResourceQuery =  ((QueryDynamicResource)getResource()).getQuery();
+                        dynamicResourceQuery.setUnderlyingFunctions(getUnderlyingFunctionsAndChangeName(getResourceName(), dynamicResourceQuery.getResourceName()));
                         data = (Collection<O>) resolveDynamicResource((QueryDynamicResource) getResource(),
                                 (DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
                     } else if(getResource() instanceof QueryJsonResource) {
@@ -601,6 +661,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                         resolveQuery.setUnderlyingLimit(getUnderlyingLimit());
                         resolveQuery.setStart(getStart());
                         resolveQuery.setUnderlyingStart(getUnderlyingStart());
+                        resolveQuery.setUnderlyingFunctions(getUnderlyingFunctions(getResourceName()));
                         for(QueryOrderParameter orderParameter : getOrderParameters()) {
                             resolveQuery.addOrderParameter(orderParameter);
                         }
@@ -833,7 +894,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     /**
      * This method verify if the conditions of the query are true or not.
      * @param object Object to use as condition parameters.
-     * @return Returns if the evaluation of conditions are true or false in the otherwise.
+     * @return Returns if the evaluation of conditions are true or false in otherwise.
      */
     public final boolean verifyCondition(Object object) {
         Consumer consumer = new Queryable.IntrospectionConsumer<>();
@@ -846,7 +907,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param object Object to use as condition parameters.
      * @param dataSource Data source.
      * @param consumer Consumer.
-     * @return Returns if the evaluation of conditions are true or false in the otherwise.
+     * @return Returns if the evaluation of conditions are true or false in otherwise.
      */
     public final boolean verifyCondition(Object object, DataSource dataSource, Consumer consumer) {
         Boolean result = true;
@@ -869,7 +930,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     /**
      * This method check if the evaluator is evaluated previously into the current session.
      * @param evaluator Checking evaluator.
-     * @return Return true if the evaluator is done and false in the otherwise.
+     * @return Return true if the evaluator is done and false in otherwise.
      */
     private boolean isEvaluatorDone(Evaluator evaluator) {
         boolean result = false;
@@ -973,6 +1034,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         Query query = new Query(getResource());
         query.setEnvironment(getEnvironment());
         query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
+        query.setUnderlyingFunctions(getUnderlyingFunctions(getResourceName()));
         for (Evaluator evaluator : getEvaluatorsFromResource(this, query, query.getResource())) {
             query.addEvaluator(evaluator);
         }
@@ -981,17 +1043,22 @@ public class Query extends EvaluatorCollection implements Queryable {
         Collection<? extends Joinable> leftData = getJoinData(query, dataSource, consumer);
 
         for(Join join : getJoins()) {
-            //Creates the first query for the original resource.
+            // Creates the first query for the original resource.
             query = new Query(join.getResource());
             query.setEnvironment(getEnvironment());
             query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
+            query.setUnderlyingFunctions(getUnderlyingFunctions(join.getResourceName()));
+
+            // This loop checks the 'on' clause and copy the evaluators in the sub query to resolve join.
             for (Evaluator evaluator : optimizeJoin(leftData, join)) {
-//                if(join.getResource() instanceof QueryDynamicResource) {
-//                    ((QueryDynamicResource)join.getResource()).getQuery().addEvaluator(evaluator);
-//                } else {
-                query.addEvaluator(evaluator);
-//                }
+                if(join.getResource() instanceof QueryDynamicResource) {
+                    ((QueryDynamicResource)join.getResource()).getQuery().addEvaluator(evaluator);
+                } else {
+                    query.addEvaluator(evaluator);
+                }
             }
+
+            // This loop check the 'where' clause and copy the evaluators for each resource.
             for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
                 query.addEvaluator(evaluator);
             }
@@ -1011,10 +1078,13 @@ public class Query extends EvaluatorCollection implements Queryable {
     private Collection<? extends Joinable> getJoinData(Query query, Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
         Collection<? extends Joinable> result;
         if(query.getResource() instanceof  QueryDynamicResource) {
+            Query dynamicResourceQuery = ((QueryDynamicResource)query.getResource()).getQuery();
+            dynamicResourceQuery.setUnderlyingFunctions(getUnderlyingFunctionsAndChangeName(query.getResourceName(), dynamicResourceQuery.getResourceName()));
             result = resolveDynamicResource((QueryDynamicResource) query.getResource(), dataSource, consumer);
         } else if(getResource() instanceof QueryJsonResource) {
             result = ((QueryJsonResource)getResource()).getResourceValues();
         } else {
+            query.setUnderlyingFunctions(getUnderlyingFunctions(query.getResourceName()));
             result = dataSource.getResourceData(verifyInstance(query, consumer));
         }
         return setResource(result, query.getResourceName());
@@ -1057,7 +1127,13 @@ public class Query extends EvaluatorCollection implements Queryable {
                                     reducerList.add(foreignKeyValue);
                                 }
                             }
-                            In inEvaluator = new In(key, reducerList);
+                            In inEvaluator;
+                            if(join.getResource() instanceof QueryDynamicResource) {
+                                QueryField queryField = new QueryField(key.getContainer(), key.getFieldPath());
+                                inEvaluator = new In(queryField, reducerList);
+                            } else {
+                                inEvaluator = new In(key, reducerList);
+                            }
                             result.add(inEvaluator);
                         }
                     }

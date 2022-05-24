@@ -8,6 +8,7 @@ import org.hcjf.layers.Layers;
 import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
+import org.hcjf.layers.query.model.QueryReturnFunction;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
@@ -556,6 +557,15 @@ public class QueryRunningTest {
 
         query = Query.compile("SELECT * FROM character JOIN (SELECT * FROM character) AS ch ON character.id = ch.id");
         resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
+    public void testUnderlyingFunctions() {
+        Query query = Query.compile("SELECT * FROM character JOIN (SELECT * FROM character) AS ch ON character.id = ch.id " +
+                "UNDERLYING function('Hola Mundo', 4, name) as func SRC character " +
+                "UNDERLYING function1(3.1, '2022-05-25 00:00:00') as func1 SRC ch");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
         System.out.println();
     }
 
@@ -1604,6 +1614,12 @@ public class QueryRunningTest {
 
         @Override
         public Collection<JoinableMap> readRows(Queryable queryable) {
+            List<QueryReturnFunction> functions = queryable.getQuery().getCurrentUnderlyingFunctions();
+            if(functions != null) {
+                for(QueryReturnFunction returnFunction : functions) {
+                    System.out.println();
+                }
+            }
             return queryable.evaluate(simpsonCharacters.values());
         }
     }

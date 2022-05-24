@@ -27,7 +27,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
     }
 
     /**
-     * Create a query instance from a expression.
+     * Create a query instance from an expression.
      * @param queryExpression Expression that represents a query.
      * @return Query instance.
      */
@@ -143,7 +143,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                             query.setDisjoint(true);
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LIMIT))) {
-                        if(elementValue == null || elementValue.isBlank()) {
+                        if(elementValue.isBlank()) {
                             throw new HCJFRuntimeException("Undeclared limit value");
                         }
 
@@ -164,7 +164,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                             }
                         }
                     } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.START))) {
-                        if(elementValue == null || elementValue.isBlank()) {
+                        if(elementValue.isBlank()) {
                             throw new HCJFRuntimeException("Undeclared start value");
                         }
 
@@ -184,6 +184,33 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                                 throw new HCJFRuntimeException("The underlying start value must be an integer", ex);
                             }
                         }
+                    } else if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.UNDERLYING))) {
+
+                        Map<String,List<QueryReturnFunction>> underlyingMap = query.getUnderlyingFunctions();
+                        if(underlyingMap == null) {
+                            underlyingMap = new HashMap<>();
+                            query.setUnderlyingFunctions(underlyingMap);
+                        }
+
+                        Pattern sourcePatter = SystemProperties.getPattern(SystemProperties.Query.SOURCE_REGULAR_EXPRESSION, Pattern.CASE_INSENSITIVE);
+                        String[] underlyingParts = sourcePatter.split(elementValue);
+                        String resource;
+                        String functionsBody = underlyingParts[0];
+                        List<QueryReturnFunction> functions = new ArrayList<>();
+
+                        if(underlyingParts.length == 1) {
+                            resource = query.getResourceName();
+                        } else if(underlyingParts.length == 3) {
+                            resource = underlyingParts[2];
+                        } else {
+                            throw new HCJFRuntimeException("Malformed query underlying body");
+                        }
+
+                        for(String functionBody : functionsBody.split(Strings.ARGUMENT_SEPARATOR)) {
+                            functions.add((QueryReturnFunction) processStringValue(query, groups, richTexts, functionBody, placesIndex, QueryReturnParameter.class, new ArrayList<>()));
+                        }
+
+                        underlyingMap.put(resource, functions);
                     }
                 }
             }
