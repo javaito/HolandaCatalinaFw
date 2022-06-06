@@ -1097,6 +1097,26 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void testPlusMinusDateFunctions() {
+        Collection<JoinableMap> resultSet;
+        Query query = Query.compile("SELECT minusDays(now(),day) as date FROM '[{\"day\":1}]' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT plusDays(now(),day) as date FROM '[{\"day\":1}]' as data");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT minusDays(now(),1) as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+
+        query = Query.compile("SELECT plusDays(now(),1) as date FROM character");
+        resultSet = query.evaluate(dataSource);
+        System.out.println();
+    }
+
+    @Test
     public void testCollectionFunctions() {
         Query query = Query.compile("SELECT *, aggregateContext(sort(name)) as sortedNames FROM character GROUP BY addressId");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
