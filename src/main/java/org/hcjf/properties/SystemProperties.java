@@ -788,6 +788,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Net.Rest.QUERY_FIELD, "_query");
         defaults.put(Net.Rest.QUERIES_FIELD, "_queries");
         defaults.put(Net.Rest.DATA_SOURCE_FIELD, "_dataSource");
+        defaults.put(Net.Rest.COMMAND_FIELD, "_command");
+        defaults.put(Net.Rest.COMMANDS_FIELD, "_commands");
 
         defaults.put(ProcessDiscovery.LOG_TAG, "PROCESS_DISCOVERY");
         defaults.put(ProcessDiscovery.SERVICE_NAME, "Process Discovery Service");
