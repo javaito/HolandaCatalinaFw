@@ -194,7 +194,11 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @return List of underlying functions.
      */
     public List<QueryReturnFunction> getCurrentUnderlyingFunctions() {
-        return getUnderlyingFunctions().get(getResourceName());
+        List<QueryReturnFunction> result = null;
+        if (getUnderlyingFunctions() != null) {
+            result = getUnderlyingFunctions().get(getResourceName());
+        }
+        return result;
     }
 
     /**
