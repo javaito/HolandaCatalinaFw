@@ -1,11 +1,13 @@
 package org.hcjf.layers.crud.command;
 
+import org.hcjf.utils.bson.BsonParcelable;
+
 import java.util.Map;
 
 /**
  * Represents a command request. Specifies the command name and its associated payload.
  */
-public class CommandRequestModel {
+public class CommandRequestModel implements BsonParcelable {
 
     private String command;
     private Map<String, Object> payload;
