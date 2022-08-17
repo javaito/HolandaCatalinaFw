@@ -19,7 +19,6 @@ import org.hcjf.service.ServiceThread;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.LruMap;
 import org.hcjf.utils.NamedUuid;
-import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonParcelable;
 
 import java.util.*;
@@ -1117,13 +1116,13 @@ public class Query extends EvaluatorCollection implements Queryable {
                         if (!((QueryField) equals.getLeftValue()).getResource().equals(join.getResource()) &&
                                 ((QueryField) equals.getRightValue()).getResource().equals(join.getResource())) {
                             foreignKey = (QueryField) equals.getLeftValue();
-                            key = (QueryField) equals.getRightValue();
+                            key = getQueryField(join, (QueryField) equals.getRightValue());
                         } else if (!((QueryField) equals.getRightValue()).getResource().equals(join.getResource()) &&
                                 ((QueryField) equals.getLeftValue()).getResource().equals(join.getResource())) {
                             foreignKey = (QueryField) equals.getRightValue();
-                            key = (QueryField) equals.getLeftValue();
+                            key = getQueryField(join,(QueryField) equals.getLeftValue());
                         }
-                        if(foreignKey != null) {
+                        if(foreignKey != null && key != null) {
                             Collection<Object> reducerList = new HashSet<>();
                             for(Object currentObject : leftData) {
                                 Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getFieldPath());
@@ -1144,7 +1143,29 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             }
         }
+        return result;
+    }
 
+    public QueryField getQueryField(Join join, QueryField key) {
+        QueryField result = null;
+        if(join.getResource() instanceof QueryDynamicResource) {
+            List<QueryReturnParameter> parameters = ((QueryDynamicResource) join.getResource()).getQuery().getReturnParameters();
+            for(QueryReturnParameter parameter : parameters) {
+                if(parameter instanceof QueryReturnField) {
+                    /**
+                     * If fieldPath of Key its equals to some QueryReturnField or
+                     * the alias of the QueryReturnField, return his fieldPath (Field name)
+                     */
+                    if((((QueryReturnField) parameter).getFieldPath().equals(key.getFieldPath())) ||
+                            (parameter.getAlias() != null && !parameter.getAlias().isBlank() && parameter.getAlias().equals(key.getFieldPath()))) {
+                        result = new QueryField(key.getContainer(), ((QueryReturnField) parameter).getFieldPath());
+                        break;
+                    }
+                }
+            }
+        } else {
+            result = key;
+        }
         return result;
     }
 

@@ -166,7 +166,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected final HttpPackage decode(NetPackage netPackage) {
         HttpRequest request = null;
-        System.out.println("Previous Add data>>>!!!: " + Strings.bytesToHex(netPackage.getPayload()));
+        //System.out.println("Previous Add data>>>!!!: " + Strings.bytesToHex(netPackage.getPayload()));
         if(((HttpSession)netPackage.getSession()).getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
             Stream stream = ((HttpSession)netPackage.getSession()).getStream();
             byte[] data = netPackage.getPayload();
