@@ -580,6 +580,17 @@ public class QueryCompileTest {
     }
 
     @Test
+    public void testCompileQueryUnionWithEnvironment() {
+        String sql = "environment '{\"field\":[4,5,2]}' select * from '[{\"field\":2}, {\"field\":4}]' as resource where field = $field.0 " +
+                "union select * from '[{\"field\":2}, {\"field\":4}]' as resource where field = $field.1";
+        Query query = Query.compile(sql);
+        for (Queryable union : query.getUnions()){
+            Query queryUnion = (Query) union;
+            Assert.assertEquals(query.getEnvironment(), queryUnion.getEnvironment());
+        }
+    }
+
+    @Test
     public void queryWithTwoSubQueries() {
         String sql = "select zona as geometry, new('#ff0000') as fillColor, new('#b80004') as strokeColor, toUpperCase(nombre) as label from store.dynamic.ccu.zona.riesgo where region = (select region from store.dynamic.ccu.centro.distribucion where codigo=(select centroDistribucion from store.dynamic.ccu.lastplanilla where planilla=7799086))";
         Query query = Query.compile(sql);

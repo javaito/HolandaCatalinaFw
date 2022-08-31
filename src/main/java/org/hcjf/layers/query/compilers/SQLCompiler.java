@@ -196,16 +196,19 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                     query.addReturnField(queryReturnParameter);
                 }
             }
+            for (int i = 2; i < unions.length; i+=2) {
+                groups.set(groups.size() - 1, unions[i].trim());
+                Query queryUnion = compile(groups, richTexts, groups.size() - 1, placesIndex);
+                if (environmentBody != null){
+                    queryUnion.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
+                }
+                query.addUnion(queryUnion);
+            }
         } else {
             String value = queryDefinition;
             int place = Strings.getNoMatchPlace(matcher, queryDefinition);
             String nearFrom = Strings.getNearFrom(value, place, 5);
             throw new HCJFRuntimeException("Query match fail near from ( '...%s...' ), query body: '%s'", nearFrom, value);
-        }
-
-        for (int i = 2; i < unions.length; i+=2) {
-            groups.set(groups.size() - 1, unions[i].trim());
-            query.addUnion(compile(groups, richTexts, groups.size() - 1, placesIndex));
         }
 
         return query;
