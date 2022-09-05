@@ -137,5 +137,14 @@ public class JavaCodeTest {
             System.out.println(executionResult.getResult().toString());
         }
     }
+    
+    @Test
+    public void testSimpleDateFormat() {
+        String script = "return new SimpleDateFormat(\"yyyy-MM-dd HH:mm:ss\").format(new Date());";
+        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
+        Map<String, Object> parameters = new HashMap<>();
+        ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
+        Assert.assertEquals("SUCCESS", executionResult.getState().toString());
+    }
 
 }
