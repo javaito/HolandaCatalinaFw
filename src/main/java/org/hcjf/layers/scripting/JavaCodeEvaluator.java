@@ -24,7 +24,8 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
     private static final String[] imports = {
             "import java.util.*;",
             "import org.hcjf.utils.*;",
-            "import org.hcjf.bson.*;"
+            "import org.hcjf.bson.*;",
+            "import java.text.SimpleDateFormat;"
     };
 
     private static final String METHOD_WRAPPER = "public Object method_%s(Map<String,Object> parameters) throws Exception {%s}";
