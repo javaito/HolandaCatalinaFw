@@ -53,7 +53,6 @@ public class SettingsFrame extends Http2Frame {
             setSetting(settingId, settingValue);
             order.add(settingId);
         }
-        System.out.println();
     }
 
     @Override

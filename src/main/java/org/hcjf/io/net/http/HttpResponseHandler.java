@@ -96,7 +96,6 @@ public abstract class HttpResponseHandler extends Layer implements HttpPackage.T
                 if (fragment != null) {
                     consume(fragment);
                     counter.addAndGet(fragment.limit());
-                    System.out.println("Total: " + counter.get() + " of " + length);
                 } else {
                     synchronized (queue) {
                         try {

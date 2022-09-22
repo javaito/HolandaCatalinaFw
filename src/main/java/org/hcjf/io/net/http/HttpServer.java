@@ -166,7 +166,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     @Override
     protected final HttpPackage decode(NetPackage netPackage) {
         HttpRequest request = null;
-        //System.out.println("Previous Add data>>>!!!: " + Strings.bytesToHex(netPackage.getPayload()));
         if(((HttpSession)netPackage.getSession()).getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
             Stream stream = ((HttpSession)netPackage.getSession()).getStream();
             byte[] data = netPackage.getPayload();
@@ -179,14 +178,12 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
             }
 
             for(Http2Frame frame : stream.getAndRemoveFrames()) {
-                System.out.println(frame);
                 if(frame instanceof SettingsFrame) {
                     SettingsFrame settingsFrame = (SettingsFrame) frame;
                     if(settingsFrame.getFlags() != 0x01) {
                         try {
                             byte[] responseData = SettingsFrame.createDefaultSettingsFrame(0).serialize().array();
                             getService().writeData(netPackage.getSession(), responseData);
-                            System.out.println("Response data<<<!!!: " + Strings.bytesToHex(responseData));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -205,7 +202,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     try {
                         byte[] responseData = windowsUpdateFrame.serialize().array();
                         getService().writeData(netPackage.getSession(), responseData);
-                        System.out.println("Response data<<<!!!: " + Strings.bytesToHex(responseData));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

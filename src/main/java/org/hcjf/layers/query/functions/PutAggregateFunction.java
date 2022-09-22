@@ -35,7 +35,6 @@ public class PutAggregateFunction extends BaseQueryAggregateFunctionLayer {
                     } else {
                         Map<String,Object> values = resolveValue(row, parameters[1]);
                         Introspection.resolveAndPutAll(row, path, values);
-                        System.out.println();
                     }
                 }
             } catch (Exception ex){

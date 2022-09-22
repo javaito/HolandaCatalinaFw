@@ -83,7 +83,6 @@ public class Stream {
     }
 
     public synchronized final void addData(byte[] data, int start) {
-        System.out.println("Add data>>>!!!: " + Strings.bytesToHex(data));
         Integer dataStart = start;
         Integer dataLength = (data.length - start) - (buffer.capacity() - buffer.position());
         if(dataLength < 0) {

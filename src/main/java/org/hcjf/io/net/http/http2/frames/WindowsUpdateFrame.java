@@ -18,7 +18,6 @@ public class WindowsUpdateFrame extends Http2Frame {
     @Override
     protected void processPayload() {
         windowsSize = getPayload().getInt();
-        System.out.println();
     }
 
     @Override

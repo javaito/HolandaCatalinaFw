@@ -361,7 +361,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             }
 
             if(status == Status.CONNECTING) {
-                System.out.println("Timeout connecting");
                 status = Status.ERROR;
                 errorCode = HttpResponseCode.REQUEST_TIMEOUT;
             }
@@ -375,7 +374,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
             try {
                 write(getSession(), request, true);
             } catch (Exception ex) {
-                System.out.println("Error writing");
                 status = Status.ERROR;
                 errorCode = HttpResponseCode.BAD_REQUEST;
             }
@@ -391,7 +389,6 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
                     }
 
                     if (status == Status.WRITING) {
-                        System.out.println("Timeout writing");
                         status = Status.ERROR;
                         errorCode = HttpResponseCode.REQUEST_TIMEOUT;
                     }

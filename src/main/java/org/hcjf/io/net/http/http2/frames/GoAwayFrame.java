@@ -48,7 +48,6 @@ public class GoAwayFrame extends Http2Frame {
         byte[] debugData = new byte[getLength() - 8];
         getPayload().get(debugData);
         setAdditionalDebugData(new String(debugData));
-        System.out.println("Go Away: " + getAdditionalDebugData());
     }
 
     @Override

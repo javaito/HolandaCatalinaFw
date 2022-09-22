@@ -100,10 +100,6 @@ public class SslServer extends SslPeer {
      */
     @Override
     public int read(SocketChannel socketChannel, ByteBuffer buffer) throws IOException {
-
-        System.out.println("Thread: " + Thread.currentThread().getId());
-        System.out.println("Session:" + socketChannel.hashCode());
-
         getPeerNetData(socketChannel).clear();
         int bytesRead = socketChannel.read(getPeerNetData(socketChannel));
         if (bytesRead > 0) {

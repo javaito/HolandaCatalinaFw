@@ -157,7 +157,6 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
 
             List<String> customImports = SystemProperties.getList(SystemProperties.CodeEvaluator.Java.IMPORTS);
             for (String i : customImports) {
-                System.out.println("ADD CUSTOM IMPORTS: " + i);
                 jShell.eval(String.format(IMPORT_TEMPLATE, i));
             }
 

@@ -15,7 +15,6 @@ public class PushPromiseFrame extends Http2Frame {
 
     @Override
     protected void processPayload() {
-        System.out.println();
     }
 
     @Override
