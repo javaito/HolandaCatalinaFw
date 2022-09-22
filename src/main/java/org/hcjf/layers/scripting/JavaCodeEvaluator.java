@@ -21,11 +21,12 @@ import java.util.*;
 public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
 
     private static final String CLASS_PATH_PROPERTY = "java.class.path";
-    private static final String[] imports = {
-            "import java.util.*;",
-            "import org.hcjf.utils.*;",
-            "import org.hcjf.bson.*;"
+    private static final String[] IMPORTS = {
+            "java.util.*",
+            "org.hcjf.utils.*",
+            "org.hcjf.bson.*"
     };
+    private static final String IMPORT_TEMPLATE = "import %s;";
 
     private static final String METHOD_WRAPPER = "public Object method_%s(Map<String,Object> parameters) throws Exception {%s}";
     private static final String CREATE_PARAMETERS = "Map<String,Object> var_%s = BsonDecoder.decode(Strings.hexToBytes(bson)).toMap();";
@@ -150,9 +151,16 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             error = new PrintStream(errorStream);
             jShell = JShell.builder().out(out).err(error).build();
             jShell.addToClasspath(System.getProperty(CLASS_PATH_PROPERTY));
-            for(String i : imports) {
-                jShell.eval(i);
+            for(String i : IMPORTS) {
+                jShell.eval(String.format(IMPORT_TEMPLATE, i));
             }
+
+            List<String> customImports = SystemProperties.getList(SystemProperties.CodeEvaluator.Java.IMPORTS);
+            for (String i : customImports) {
+                System.out.println("ADD CUSTOM IMPORTS: " + i);
+                jShell.eval(String.format(IMPORT_TEMPLATE, i));
+            }
+
             scriptCache = new LruMap<>(SystemProperties.getInteger(SystemProperties.CodeEvaluator.Java.SCRIPT_CACHE_SIZE));
         }
 
@@ -165,7 +173,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
             String resultMethod = String.format(CREATE_RESULT_METHOD, scriptId,
                     String.format(CREATE_PARAMETERS, scriptId),
                     String.format(CALL_METHOD, scriptId, scriptId, scriptId),
-                    String.format(CREATE_BSON_RESULT, scriptId, scriptId, scriptId));
+                    String.format(CREATE_BSON_RESULT, scriptId));
             return jShell.eval(resultMethod);
         }
 
@@ -191,7 +199,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
                             fail = true;
                             jShell.diagnostics(snippetEvent.snippet()).forEach(D -> {
                                 StringBuilder sourceBuilder = new StringBuilder();
-                                scriptSnippets.stream().forEach(S -> sourceBuilder.append(S.snippet().source()));
+                                scriptSnippets.forEach(S -> sourceBuilder.append(S.snippet().source()));
                                 StringBuilder builder = new StringBuilder();
                                 String source = sourceBuilder.toString();
                                 builder.append(Strings.CARRIAGE_RETURN_AND_LINE_SEPARATOR);
@@ -243,7 +251,7 @@ public class JavaCodeEvaluator extends Layer implements CodeEvaluator {
         @Override
         public synchronized void onRemove(Object key, Object value) {
             JShellScript jShellScript = (JShellScript) value;
-            jShellScript.getSnippetEvents().stream().forEach(E -> jShell.drop(E.snippet()));
+            jShellScript.getSnippetEvents().forEach(E -> jShell.drop(E.snippet()));
         }
 
         public void kill() {

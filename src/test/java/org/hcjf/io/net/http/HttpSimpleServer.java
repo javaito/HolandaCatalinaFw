@@ -6,8 +6,8 @@ public class HttpSimpleServer {
 
     public static void main(String[] args) {
 
-        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "false");
-        System.setProperty(SystemProperties.Log.LEVEL, "2");
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.LEVEL, "1");
         System.setProperty(SystemProperties.Net.Ssl.DEFAULT_KEYSTORE_FILE_PATH,
                 "/home/javaito/Git/HolandaCatalinaFw/src/main/resources/org/hcjf/io/net/https/keystore.jks");
         System.setProperty(SystemProperties.Net.Ssl.DEFAULT_TRUSTED_CERTS_FILE_PATH,
@@ -16,7 +16,7 @@ public class HttpSimpleServer {
         HttpResponse response = new HttpResponse();
         response.setResponseCode(200);
         response.setBody("Hello world".getBytes());
-        HttpServer.create(9090, new Context(".*") {
+        HttpsServer.create(9090, new Context(".*") {
             @Override
             public HttpResponse onContext(HttpRequest httpRequest) {
                 return response;

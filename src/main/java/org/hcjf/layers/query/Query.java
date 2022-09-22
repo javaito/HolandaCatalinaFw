@@ -376,7 +376,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Add a name of the field for group the data collection. This name must be exist
+     * Add a name of the field for group the data collection. This name must be existed
      * like a setter/getter method in the instances of the data collection.
      * @param groupField Name of the pair getter/setter.
      * @return Return the same instance of this class.
@@ -386,7 +386,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Add a name of the field for group the data collection. This name must be exist
+     * Add a name of the field for group the data collection. This name must be existed
      * like a setter/getter method in the instances of the data collection.
      * @param groupField Name of the pair getter/setter.
      * @return Return the same instance of this class.
@@ -453,7 +453,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Add the name of the field to be returned in the result set.
+     * Add the name of the field to be returned to the result set.
      * @param returnField Field name.
      * @return Return the same instance of this class.
      */
@@ -688,7 +688,6 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
 
                 StringBuilder hashCode;
-                Groupable groupable;
                 if (!groupParameters.isEmpty()) {
                     if(isDisjoint()) {
                         disjointResultSets = new HashMap<>();
@@ -1125,7 +1124,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                         if(foreignKey != null && key != null) {
                             Collection<Object> reducerList = new HashSet<>();
                             for(Object currentObject : leftData) {
-                                Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getFieldPath());
+                                Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getOriginalValue());
                                 if(foreignKeyValue != null) {
                                     reducerList.add(foreignKeyValue);
                                 }

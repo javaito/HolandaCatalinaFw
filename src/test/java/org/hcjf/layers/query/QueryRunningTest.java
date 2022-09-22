@@ -32,6 +32,9 @@ public class QueryRunningTest {
     private static final String Z_CHARACTER = "zCharacter";
     private static final String ADDRESS = "address";
     private static final String FORECAST_EXAMPLE = "forecastExample";
+    private static final String ARTISTS = "artists";
+    private static final String SKILLS = "skills";
+    private static final String LEVELS = "levels";
 
     private static final String ID = "id";
 
@@ -52,6 +55,9 @@ public class QueryRunningTest {
     private static final Map<UUID, JoinableMap> simpsonCharacters2 = new HashMap<>();
     private static final Map<UUID, JoinableMap> simpsonAddresses = new HashMap<>();
     private static List<Map<String,Object>> forecastExample;
+    private static List<Map<String,Object>> artists;
+    private static List<Map<String,Object>> skills;
+    private static List<Map<String,Object>> levels;
     private static final TestDataSource dataSource = new TestDataSource();
 
     @BeforeClass
@@ -237,6 +243,79 @@ public class QueryRunningTest {
                 "]";
 
         forecastExample = (List) JsonUtils.createObject(json);
+
+        artists = (List<Map<String, Object>>) JsonUtils.createObject(
+                "[" +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655440001\"," +
+                        "  \"name\":\"Leonardo\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655440002\"," +
+                        "  \"name\":\"Miguel\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655440003\"," +
+                        "  \"name\":\"Rafael\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655440004\"," +
+                        "  \"name\":\"Donatelo\"" +
+                        "}" +
+                        "]"
+        );
+
+        skills = (List<Map<String, Object>>) JsonUtils.createObject(
+                "[" +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655441001\"," +
+                        "  \"levelId\":\"550e8400-e29b-41d4-a716-446655442001\"," +
+                        "  \"artistId\":\"550e8400-e29b-41d4-a716-446655440001\"," +
+                        "  \"name\":\"Artist1 - Skill 1\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655441002\"," +
+                        "  \"levelId\":\"550e8400-e29b-41d4-a716-446655442001\"," +
+                        "  \"artistId\":\"550e8400-e29b-41d4-a716-446655440001\"," +
+                        "  \"name\":\"Artist1 - Skill 2\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655441003\"," +
+                        "  \"levelId\":\"550e8400-e29b-41d4-a716-446655442001\"," +
+                        "  \"artistId\":\"550e8400-e29b-41d4-a716-446655440002\"," +
+                        "  \"name\":\"Artist2 - Skill 1\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655441004\"," +
+                        "  \"levelId\":\"550e8400-e29b-41d4-a716-446655442002\"," +
+                        "  \"artistId\":\"550e8400-e29b-41d4-a716-446655440002\"," +
+                        "  \"name\":\"Artist2 - Skill 2\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655441005\"," +
+                        "  \"levelId\":\"550e8400-e29b-41d4-a716-446655442003\"," +
+                        "  \"artistId\":\"550e8400-e29b-41d4-a716-446655440003\"," +
+                        "  \"name\":\"Artist3 - Skill 1\"" +
+                        "}" +
+                        "]"
+        );
+
+        levels = (List<Map<String, Object>>) JsonUtils.createObject(
+                "[" +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655442001\"," +
+                        "  \"level\":\"Hard\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655442002\"," +
+                        "  \"level\":\"Medium\"" +
+                        "}," +
+                        "  {" +
+                        "  \"id\":\"550e8400-e29b-41d4-a716-446655442003\"," +
+                        "  \"level\":\"Low\"" +
+                        "}" +
+                        "]"
+        );
     }
 
     public enum Gender {
@@ -283,6 +362,24 @@ public class QueryRunningTest {
                 }
                 case FORECAST_EXAMPLE: {
                     for(Map<String,Object> map : forecastExample) {
+                        result.add(new JoinableMap(map));
+                    }
+                    break;
+                }
+                case ARTISTS: {
+                    for(Map<String,Object> map : artists) {
+                        result.add(new JoinableMap(map));
+                    }
+                    break;
+                }
+                case SKILLS: {
+                    for(Map<String,Object> map : skills) {
+                        result.add(new JoinableMap(map));
+                    }
+                    break;
+                }
+                case LEVELS: {
+                    for(Map<String,Object> map : levels) {
                         result.add(new JoinableMap(map));
                     }
                     break;
@@ -1610,6 +1707,22 @@ public class QueryRunningTest {
                 " matrixInverse(matrix1) as matrix2 from '{}' as data";
         Query query = Query.compile(sql);
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet);
+    }
+
+    @Test
+    public void testJoinWithAlias() {
+
+//        String sql = "select id, name from artists " +
+//                "inner join (select id as skillId, artistId, name from skills) as artistSkills on artists.id = artistSkills.artistId " +
+//                "inner join (select id, level from levels) as skillsLevel on artistSkills.levelId = skillsLevel.skillId";
+
+        String sql = "select id, name from artists " +
+                "inner join (select id, artistId, name from skills) as artistSkills on artists.id = artistSkills.artistId " +
+                "inner join (select id, level from levels) as skillsLevel on artistSkills.levelId = skillsLevel.id";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        System.out.println(resultSet.size());
         System.out.println(resultSet);
     }
 

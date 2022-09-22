@@ -1,22 +1,22 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.errors.Errors;
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.io.net.NetClient;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
+import org.hcjf.io.net.ssl.SslClient;
+import org.hcjf.io.net.ssl.SslPeer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
-import org.hcjf.service.ServiceThread;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.util.UUID;
 
 /**
@@ -45,6 +45,7 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
     private HttpResponseHandler responseHandler;
     private final Object connectionMonitor = new Object();
     private final Object readMonitor = new Object();
+    private SslClient sslClient;
 
     public HttpClient(URL url) {
         super(url.getHost(), url.getPort() != -1 ? url.getPort() :
@@ -213,35 +214,15 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
      * @return SSL engine instance.
      */
     @Override
-    protected SSLEngine getSSLEngine() {
-        try {
-            SSLEngine engine;
-            if(isHttpsInsecureConnection()) {
-                TrustManager[] trustAllCerts = new TrustManager[]{
-                        new X509TrustManager() {
-                            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                                return null;
-                            }
-                            public void checkClientTrusted(
-                                    java.security.cert.X509Certificate[] certs, String authType) {
-                            }
-                            public void checkServerTrusted(
-                                    java.security.cert.X509Certificate[] certs, String authType) {
-                            }
-                        }
-                };
-                SSLContext sslContext = SSLContext.getInstance("SSL");
-                sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-                engine = sslContext.createSSLEngine();
-            } else {
-                engine = SSLContext.getDefault().createSSLEngine();
+    protected synchronized SslPeer getSslPeer() {
+        if (sslClient == null) {
+            try {
+                sslClient = new SslClient("TLSv1.2", url.getHost(), url.getPort());
+            } catch (Exception ex) {
+                throw new HCJFRuntimeException("Ssl client fail", ex);
             }
-            engine.setUseClientMode(true);
-            engine.beginHandshake();
-            return engine;
-        } catch (Exception ex) {
-            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_6), ex);
         }
+        return sslClient;
     }
 
     /**
@@ -405,11 +386,12 @@ public class HttpClient extends NetClient<HttpSession, HttpPackage> {
                         try {
                             readMonitor.wait(getWriteTimeout());
                         } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
                     }
 
                     if (status == Status.WRITING) {
-                        System.out.println("Timeout reading");
+                        System.out.println("Timeout writing");
                         status = Status.ERROR;
                         errorCode = HttpResponseCode.REQUEST_TIMEOUT;
                     }

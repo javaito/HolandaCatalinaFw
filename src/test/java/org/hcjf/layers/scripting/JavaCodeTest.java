@@ -1,10 +1,12 @@
 package org.hcjf.layers.scripting;
 
 import org.hcjf.layers.Layers;
+import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.Introspection;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -13,6 +15,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class JavaCodeTest {
+
+    @BeforeClass
+    public static void setup() {
+        System.setProperty(SystemProperties.CodeEvaluator.Java.IMPORTS, "[\"java.text.SimpleDateFormat\"]");
+    }
 
     @Test
     public void test() {
@@ -138,4 +145,15 @@ public class JavaCodeTest {
         }
     }
 
+    @Test
+    public void testSimpleDateFormat() {    
+        String script = "return new SimpleDateFormat(\"yyyy-MM-dd HH:mm:ss\").format(new Date());";
+        CodeEvaluator codeEvaluator = Layers.get(CodeEvaluator.class, "java");
+        Map<String, Object> parameters = new HashMap<>();
+        ExecutionResult executionResult = codeEvaluator.evaluate(script, parameters);
+
+        System.out.println("Problemas!!!!!: " + executionResult.getResultState() + ", state: " + executionResult.getState());
+
+        Assert.assertEquals("SUCCESS", executionResult.getState().toString());
+    }
 }

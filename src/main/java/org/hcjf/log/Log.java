@@ -146,6 +146,10 @@ public final class Log extends Service<LogPrinter> {
         instance.registerConsumer(printer);
     }
 
+    private boolean verifyPrinters() {
+        return SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) || instance.printers.size() > 0;
+    }
+
     /**
      * Create a record with debug group ("[D]"). All the places in the messages
      * are replaced for each param in the natural order.
@@ -154,12 +158,11 @@ public final class Log extends Service<LogPrinter> {
      *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID d(String tag, String message, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message,
                     getCallStackInformation(), params));
         }
@@ -175,14 +178,34 @@ public final class Log extends Service<LogPrinter> {
      * @param throwable Throwable whose message will be printed as part of record
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID d(String tag, String message, Throwable throwable, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message,
                     getCallStackInformation(), throwable, params));
+        }
+        return result;
+    }
+
+    /**
+     * Create a record with debug group ("[D]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param tag Tag of the record
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
+     * @param printThrowable Flag to indicate if the record must print the throwable instance or not
+     * @param throwable Throwable whose message will be printed as part of record
+     * @param params Parameters for the places in the message.
+     * @return Returns the id assigned to the log record created, this id could be null
+     * if the service does not generate any log records
+     */
+    public static UUID d(String tag, String message, Boolean printThrowable, Throwable throwable, Object... params) {
+        UUID result = null;
+        if(instance.verifyPrinters()) {
+            result = instance.addRecord(new LogRecord(LogGroup.DEBUG, tag, message,
+                    getCallStackInformation(), printThrowable, throwable, params));
         }
         return result;
     }
@@ -195,12 +218,11 @@ public final class Log extends Service<LogPrinter> {
      *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID i(String tag, String message, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.INFO, tag, message,
                     getCallStackInformation(), params));
         }
@@ -215,12 +237,11 @@ public final class Log extends Service<LogPrinter> {
      *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID in(String tag, String message, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.INPUT, tag, message,
                     getCallStackInformation(), params));
         }
@@ -235,12 +256,11 @@ public final class Log extends Service<LogPrinter> {
      *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID out(String tag, String message, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.OUTPUT, tag, message,
                     getCallStackInformation(), params));
         }
@@ -255,12 +275,11 @@ public final class Log extends Service<LogPrinter> {
      *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID w(String tag, String message, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message,
                     getCallStackInformation(), params));
         }
@@ -276,14 +295,34 @@ public final class Log extends Service<LogPrinter> {
      * @param throwable Throwable whose message will be printed as part of record
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID w(String tag, String message, Throwable throwable, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message,
                     getCallStackInformation(), throwable, params));
+        }
+        return result;
+    }
+
+    /**
+     * Create a record with warning group ("[W]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param tag Tag of the record
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
+     * @param printThrowable Flag to indicate if the record must print the throwable instance or not
+     * @param throwable Throwable whose message will be printed as part of record
+     * @param params Parameters for the places in the message.
+     * @return Returns the id assigned to the log record created, this id could be null
+     * if the service does not generate any log records
+     */
+    public static UUID w(String tag, String message, Boolean printThrowable, Throwable throwable, Object... params) {
+        UUID result = null;
+        if(instance.verifyPrinters()) {
+            result = instance.addRecord(new LogRecord(LogGroup.WARNING, tag, message,
+                    getCallStackInformation(), printThrowable, throwable, params));
         }
         return result;
     }
@@ -296,12 +335,11 @@ public final class Log extends Service<LogPrinter> {
      *                {@link java.util.Formatter}.
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID e(String tag, String message, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message,
                     getCallStackInformation(), params));
         }
@@ -317,14 +355,34 @@ public final class Log extends Service<LogPrinter> {
      * @param throwable Throwable whose message will be printed as part of record
      * @param params Parameters for the places in the message.
      * @return Returns the id assigned to the log record created, this id could be null
-     * if the service does not generates any log records
+     * if the service does not generate any log records
      */
     public static UUID e(String tag, String message, Throwable throwable, Object... params) {
         UUID result = null;
-        if(SystemProperties.getBoolean(SystemProperties.Log.SYSTEM_OUT_ENABLED) ||
-                instance.printers.size() > 0) {
+        if(instance.verifyPrinters()) {
             result = instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message,
                     getCallStackInformation(), throwable, params));
+        }
+        return result;
+    }
+
+    /**
+     * Create a record with error group ("[E]"). All the places in the messages
+     * are replaced for each param in the natural order.
+     * @param tag Tag of the record
+     * @param message Message to the record. This message use the syntax for class
+     *                {@link java.util.Formatter}.
+     * @param printThrowable Flag to indicate if the record must print the throwable instance or not
+     * @param throwable Throwable whose message will be printed as part of record
+     * @param params Parameters for the places in the message.
+     * @return Returns the id assigned to the log record created, this id could be null
+     * if the service does not generate any log records
+     */
+    public static UUID e(String tag, String message, Boolean printThrowable, Throwable throwable, Object... params) {
+        UUID result = null;
+        if(instance.verifyPrinters()) {
+            result = instance.addRecord(new LogRecord(LogGroup.ERROR, tag, message,
+                    getCallStackInformation(), printThrowable, throwable, params));
         }
         return result;
     }
@@ -397,7 +455,7 @@ public final class Log extends Service<LogPrinter> {
     /**
      * This class contains all the information to write a record in the log.
      * The instances of this class will be queued sorted chronologically waiting for
-     * be write
+     * be written
      */
     public static final class LogRecord {
 
@@ -413,6 +471,7 @@ public final class Log extends Service<LogPrinter> {
         private final SimpleDateFormat dateFormat;
         private final Object[] params;
         private final Throwable throwable;
+        private final Boolean printThrowable;
         private final ServiceSession currentSession;
 
         /**
@@ -421,10 +480,10 @@ public final class Log extends Service<LogPrinter> {
          * @param tag Tag for the record.
          * @param message Message with wildcard for the parameters.
          * @param throwable The error object, could be null
-         * @param params Values that will be put in the each places of the message.
+         * @param params Values that will be put in for each places of the message.
          */
         private LogRecord(LogGroup group, String tag, String message, String[] callStackInformation,
-                          Throwable throwable, Object... params) {
+                          Boolean printThrowable, Throwable throwable, Object... params) {
             this.id = UUID.randomUUID();
             this.date = new Date();
             this.group = group;
@@ -435,6 +494,7 @@ public final class Log extends Service<LogPrinter> {
             this.methodName = callStackInformation[1];
             this.lineNumber = callStackInformation[2];
             this.params = params;
+            this.printThrowable = printThrowable;
             this.throwable = throwable;
 
             if(Thread.currentThread() instanceof ServiceThread) {
@@ -449,11 +509,23 @@ public final class Log extends Service<LogPrinter> {
          * @param group Group of the record.
          * @param tag Tag for the record.
          * @param message Message with wildcard for the parameters.
-         * @param params Values that will be put in the each places of the message.
+         * @param params Values that will be put in for each places of the message.
+         */
+        private LogRecord(LogGroup group, String tag, String message,
+                          String[] callStackInformation, Throwable throwable, Object... params) {
+            this(group, tag, message, callStackInformation, true, throwable, params);
+        }
+
+        /**
+         * Constructor
+         * @param group Group of the record.
+         * @param tag Tag for the record.
+         * @param message Message with wildcard for the parameters.
+         * @param params Values that will be put in for each places of the message.
          */
         private LogRecord(LogGroup group, String tag, String message,
                           String[] callStackInformation, Object... params) {
-            this(group, tag, message, callStackInformation, null, params);
+            this(group, tag, message, callStackInformation, false, null, params);
         }
 
         /**
@@ -524,7 +596,7 @@ public final class Log extends Service<LogPrinter> {
             printWriter.print("] ");
             printWriter.printf(originalMessage, params);
 
-            if(throwable != null) {
+            if(throwable != null && printThrowable) {
                 printWriter.print("\r\n");
                 throwable.printStackTrace(printWriter);
             }

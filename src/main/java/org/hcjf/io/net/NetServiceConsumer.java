@@ -1,6 +1,7 @@
 package org.hcjf.io.net;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.io.net.ssl.SslPeer;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
@@ -165,7 +166,7 @@ public abstract class NetServiceConsumer<S extends NetSession, D extends Object>
      * This method should create the ssl engine for the consumer.
      * @return SSL engine implementation.
      */
-    protected SSLEngine getSSLEngine() {
+    protected SslPeer getSslPeer() {
         throw new  UnsupportedOperationException("Unsupported ssl engine");
     }
 

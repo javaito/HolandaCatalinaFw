@@ -1,6 +1,9 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.errors.Errors;
+import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.io.net.ssl.SslPeer;
+import org.hcjf.io.net.ssl.SslServer;
 import org.hcjf.properties.SystemProperties;
 
 import javax.net.ssl.*;
@@ -23,6 +26,7 @@ public class HttpsServer extends HttpServer {
     private String keyType;
     private Provider provider;
     private String sslProtocol;
+    private SslServer sslServer;
 
     public HttpsServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Https.DEFAULT_SERVER_PORT));
@@ -51,21 +55,15 @@ public class HttpsServer extends HttpServer {
      * @return SSL engine instance.
      */
     @Override
-    protected SSLEngine getSSLEngine() {
-        try {
-            SSLContext context = SSLContext.getInstance(getSslProtocol());
-            context.init(createKeyManagers(), createTrustManagers(), new SecureRandom());
-
-            SSLSession dummySession = context.createSSLEngine().getSession();
-            dummySession.invalidate();
-
-            SSLEngine engine = context.createSSLEngine();
-            engine.setUseClientMode(false);
-            engine.beginHandshake();
-            return engine;
-        } catch (Exception ex) {
-            throw new IllegalArgumentException(Errors.getMessage(Errors.ORG_HCJF_IO_NET_HTTP_6), ex);
+    protected SslPeer getSslPeer() {
+        if (sslServer == null) {
+            try {
+                sslServer = new SslServer("TLSv1.2");
+            } catch (Exception ex) {
+                throw new HCJFRuntimeException("Ssl server fail", ex);
+            }
         }
+        return sslServer;
     }
 
     /**

@@ -1,9 +1,13 @@
 package org.hcjf.io.net.http;
 
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.service.Service;
+import org.hcjf.service.ServiceSession;
+import org.hcjf.utils.JsonUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -13,17 +17,29 @@ import java.nio.file.StandardOpenOption;
 
 public class SimpleHttpClient {
 
-//    @Test
+    //@Test
     public void testHttpClient() {
-        for (int i = 0; i < 20; i++) {
+
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.LEVEL, "1");
+
+        String url = "https://api.openweathermap.org/data/2.5/forecast?lat=-33.38779&lon=-70.52915&units=metric&appid=023ae9df86450046fb344b38a0709efd";
+        //String url = "https://www.waze.com/live-map/api/reverse-geocoding?lat=-33.38779&lng=-70.52915&geoEnv=row&radius=0.0005";
+
+        for (int i = 0; i < 1; i++) {
             try {
-                HttpClient client = new HttpClient(new URL("https://apis.digital.gob.cl/fl/feriados/2021"));
+                HttpClient client = new HttpClient(new URL(url));
+                client.setReadTimeout(50000L);
+                client.setWriteTimeout(50000L);
                 client.setHttpMethod(HttpMethod.GET);
                 HttpResponse callback = client.request();
-                Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
-//                System.out.println(callback);
+                //Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
+                System.out.println(callback);
+
+                System.out.println(JsonUtils.toJsonTree(new String(callback.getBody())).toString());
+
                 System.out.printf("Request %d: ok\r\n", i);
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 ex.printStackTrace();
                 System.out.printf("Request %d: fail\r\n", i);
                 Assert.fail();
@@ -31,11 +47,12 @@ public class SimpleHttpClient {
         }
     }
 
-//    @Test
+    //@Test
     public void testHttpClient2() {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 1; i++) {
             try {
-                HttpClient client = new HttpClient(new URL("https://apis.digital.gob.cl/fl/feriados/2021"));
+                HttpClient client = new HttpClient(new URL("https://www.example.com/"));
+                client.setHttpsInsecureConnection(true);
                 client.setHttpMethod(HttpMethod.GET);
                 HttpResponse callback = client.request();
                 Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
@@ -49,7 +66,7 @@ public class SimpleHttpClient {
         }
     }
 
-//    @Test
+    //@Test
     public void testHttpsClient() {
 
 //        String url = "https://www.google.com.ar/";
@@ -73,14 +90,14 @@ public class SimpleHttpClient {
         }
     }
 
-//    @Test
+    //@Test
     public void testHttpsAsyncClientImage() {
 
         System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
 
 //        String url = "https://www.google.com.ar/";
 //        String url = "https://www.example.com/";
-        String url = "https://upload.wikimedia.org/wikipedia/commons/e/e9/Felis_silvestris_silvestris_small_gradual_decrease_of_quality.png";
+        String url = "http://cordova.apache.org/static/img/cordova_bot.png";
 
         for (int i = 0; i < 1; i++) {
             try {
@@ -91,13 +108,11 @@ public class SimpleHttpClient {
                     protected void consume(ByteBuffer fragment) {
 //                        System.out.println("Datos:" + new String(fragment.array()));
                         System.out.println("Length: " + fragment.limit());
-                        /*
                         try {
                             Files.write(Path.of("/home/javaito/Descargas/image2.png"), fragment.array(), StandardOpenOption.CREATE_NEW);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                         */
                     }
                 });
                 ((HttpResponseHandler)callback.getTransferDecodingLayer()).get();

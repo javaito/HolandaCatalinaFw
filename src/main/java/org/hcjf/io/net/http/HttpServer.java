@@ -705,12 +705,4 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         }
     }
 
-    public static void main(String[] args) {
-        byte b = (byte) 0b10000011;
-        System.out.println(b);
-        System.out.println(Integer.toBinaryString(b));
-        b &= ~0b10000000;
-        System.out.println(b);
-        System.out.println(Integer.toBinaryString(b));
-    }
 }

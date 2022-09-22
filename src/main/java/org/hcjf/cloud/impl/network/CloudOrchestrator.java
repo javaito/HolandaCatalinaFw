@@ -380,7 +380,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                         }
                     }
                 } catch (Exception ex) {
-                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to publish the service: %s", ex, serviceEndPoint);
+                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to make publication %s ---> %s",
+                            SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.NETWORKING_HANDSHAKE_DETAILS_AVAILABLE, false), ex,
+                            thisServiceEndPoint.getName(), serviceEndPoint.getName());
                     try {
                         Thread.sleep(SystemProperties.getLong(
                                 SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT));
@@ -395,7 +397,9 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                     } catch (InterruptedException e) { }
                 }
             } catch (Exception ex){
-                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Fail to trying publish the service", ex);
+                Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Fail trying to make publication %s ---> %s",
+                        SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.NETWORKING_HANDSHAKE_DETAILS_AVAILABLE, false), ex,
+                        thisServiceEndPoint.getName(), serviceEndPoint.getName());
             }
         }
     }
@@ -790,7 +794,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 client = new CloudClient(host, port);
                 NetService.getInstance().registerConsumer(client);
             } catch (Exception ex) {
-                throw new HCJFRuntimeException("Unable to connect with service: " + networkComponent.getName(), ex);
+                throw new HCJFRuntimeException("Unable to connect with service: %s", ex, networkComponent.getName());
             }
             try {
                 if (client.waitForConnect()) {
@@ -820,7 +824,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 } catch (Exception ex){}
             }
         } else {
-            throw new HCJFRuntimeException("Service end point not found (" + networkComponent.getId() + ")");
+            throw new HCJFRuntimeException("Service end point not found (%s)", networkComponent.getId());
         }
         return result;
     }

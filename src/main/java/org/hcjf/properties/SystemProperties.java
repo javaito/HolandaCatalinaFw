@@ -96,6 +96,7 @@ public final class SystemProperties extends Properties {
             public static final String J_SHELL_POOL_SIZE = "hcjf.code.evaluator.java.j.shell.pool.size";
             public static final String J_SHELL_INSTANCE_TIMEOUT = "hcjf.code.evaluator.java.j.shell.instance.timeout";
             public static final String SCRIPT_CACHE_SIZE = "hcjf.code.evaluator.java.script.cache.size";
+            public static final String IMPORTS = "hcjf.code.evaluator.java.script.cache.imports";
         }
 
         public static final class Python {
@@ -466,6 +467,7 @@ public final class SystemProperties extends Properties {
             public static final String SERVICE_END_POINTS = "hcjf.cloud.orchestrator.service.end.points";
             public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED = "hcjf.cloud.orchestrator.service.publication.broadcasting.enabled";
             public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT = "hcjf.cloud.orchestrator.service.publication.broadcasting.timeout";
+            public static final String NETWORKING_HANDSHAKE_DETAILS_AVAILABLE = "hcjf.cloud.orchestrator.networking.handshake.details.available";
 
             public static final class Events {
                 public static final String LOG_TAG = "hcjf.cloud.orchestrator.events.log.tag";
@@ -621,6 +623,7 @@ public final class SystemProperties extends Properties {
         defaults.put(CodeEvaluator.Java.J_SHELL_POOL_SIZE, "5");
         defaults.put(CodeEvaluator.Java.J_SHELL_INSTANCE_TIMEOUT, "5000");
         defaults.put(CodeEvaluator.Java.SCRIPT_CACHE_SIZE, "10");
+        defaults.put(CodeEvaluator.Java.IMPORTS, "[]");
 
         defaults.put(CodeEvaluator.Js.IMPL_NAME, "js");
 
@@ -920,6 +923,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.SERVICE_END_POINTS, "[]");
         defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED, "true");
         defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT, "2000");
+        defaults.put(Cloud.Orchestrator.NETWORKING_HANDSHAKE_DETAILS_AVAILABLE, "false");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_node");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");

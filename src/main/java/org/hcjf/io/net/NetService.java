@@ -1,15 +1,13 @@
 package org.hcjf.io.net;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.io.net.ssl.SslClient;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceThread;
 import org.hcjf.utils.LruMap;
 
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.management.*;
@@ -46,7 +44,6 @@ public final class NetService extends Service<NetServiceConsumer> {
     private Map<SocketAddress, NetSession> sessionsByAddress;
     private Map<SelectableChannel, Long> lastWrite;
     private Map<SelectableChannel, Queue<NetPackage>> outputQueue;
-    private Map<NetSession, SSLHelper> sslHelpers;
     private Map<NetServiceConsumer,SelectorRunnable> selectors;
     private Map<NetServiceConsumer,Future> tasks;
     private SelectorHealthChecker selectorHealthChecker;
@@ -64,7 +61,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      *
      * @return Instance of the service.
      */
-    public static final NetService getInstance() {
+    public static NetService getInstance() {
         return instance;
     }
 
@@ -90,7 +87,6 @@ public final class NetService extends Service<NetServiceConsumer> {
         channels = Collections.synchronizedMap(new TreeMap<>());
         sessionsByChannel = Collections.synchronizedMap(new HashMap<>());
         sessionsByAddress = Collections.synchronizedMap(new LruMap(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_SESSIONS_SIZE)));
-        sslHelpers = Collections.synchronizedMap(new HashMap<>());
         addresses = Collections.synchronizedMap(new LruMap<>(SystemProperties.getInteger(SystemProperties.Net.IO_UDP_LRU_ADDRESSES_SIZE)));
         selectorHealthChecker = new SelectorHealthChecker();
         fork(selectorHealthChecker);
@@ -356,7 +352,7 @@ public final class NetService extends Service<NetServiceConsumer> {
      * @param session Net session.
      * @param data    Data to create the package.
      * @return Return the id of the created package.
-     * @throws IOException Exception of the write operation.
+     * @throws IOException Exception to the write operation.
      */
     public final NetPackage writeData(NetSession session, byte[] data) throws IOException {
         NetPackage netPackage;
@@ -415,13 +411,20 @@ public final class NetService extends Service<NetServiceConsumer> {
             NetSession session = sessionsByChannel.remove(channel);
             lastWrite.remove(channel);
             outputQueue.remove(channel);
-            if (sslHelpers.containsKey(session)) {
-                sslHelpers.remove(session).close();
-            }
             List<NetSession> removedSessions = new ArrayList<>();
 
             try {
                 if (session != null) {
+
+                    if (session.getConsumer().getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                        try {
+                            session.getConsumer().getSslPeer().close(channel);
+                        } catch (Exception ex) {
+                            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG),
+                                    "Fail to trying to close ssl peer", ex);
+                        }
+                    }
+
                     channels.remove(session);
                     if (session.getConsumer() instanceof NetServer) {
                         NetServer server = (NetServer) session.getConsumer();
@@ -867,7 +870,7 @@ public final class NetService extends Service<NetServiceConsumer> {
         }
 
         /**
-         * This method performs a non blocking select operation over the selector and check if the number of available
+         * This method performs a non-blocking select operation over the selector and check if the number of available
          * keys is bigger than zero. If the available keys are zero then the thread are waiting until some operation invoke
          * the wakeup method.
          * @return Returns the number of available keys into the selector.
@@ -1153,12 +1156,11 @@ public final class NetService extends Service<NetServiceConsumer> {
                     lastWrite.put(channel, System.currentTimeMillis());
 
                     if (client.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                        SSLHelper sslHelper = new SSLHelper(client.getSSLEngine(), channel, client, session);
-                        sslHelpers.put(session, sslHelper);
-                    } else {
-                        NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT);
-                        onAction(connectionPackage, client);
+                        client.getSslPeer().init(channel);
                     }
+
+                    NetPackage connectionPackage = createPackage(keyChannel, new byte[]{}, NetPackage.ActionEvent.CONNECT);
+                    onAction(connectionPackage, client);
                 } else {
                     Log.w(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Rejected connection, session null");
                     channel.close();
@@ -1179,10 +1181,10 @@ public final class NetService extends Service<NetServiceConsumer> {
     }
 
     /**
-     * This internal method is colled for the main thread when the selector accept
+     * This internal method is called for the main thread when the selector accept
      * an acceptable key to create a new socket with a remote host.
      * This method only will create a socket but without session because the session
-     * depends of the communication payload
+     * depends on the communication payload
      *
      * @param keyChannel Select's key.
      */
@@ -1210,8 +1212,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
 
                     if (server.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                        SSLHelper sslHelper = new SSLHelper(server.getSSLEngine(), socketChannel, server, session);
-                        sslHelpers.put(session, sslHelper);
+                        server.getSslPeer().init(socketChannel);
                     }
 
                     //A new readable key is created associated to the channel.
@@ -1251,10 +1252,14 @@ public final class NetService extends Service<NetServiceConsumer> {
                     inputBuffer.clear();
                     inputBuffer.rewind();
                     try {
-                        //Put all the bytes into the buffer of the IO thread.
-                        totalSize += readSize = channel.read(inputBuffer);
-                        while (readSize > 0) {
+                        if (consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
+                            totalSize = consumer.getSslPeer().read(channel, inputBuffer);
+                        } else {
+                            //Put all the bytes into the buffer of the IO thread.
                             totalSize += readSize = channel.read(inputBuffer);
+                            while (readSize > 0) {
+                                totalSize += readSize = channel.read(inputBuffer);
+                            }
                         }
                     } catch (IOException ex) {
                         destroyChannel(channel);
@@ -1274,11 +1279,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                         ((ServiceThread) Thread.currentThread()).setSession(session);
 
                         netPackage.setSession(session);
-
-                        if (consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                            netPackage = sslHelpers.get(session).read(netPackage);
-                        }
-
                         onAction(netPackage, consumer);
                     }
                 } catch (Exception ex) {
@@ -1356,7 +1356,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                 lastWrite.put(channel, System.currentTimeMillis());
                 boolean stop = false;
 
-                int count = 0;
                 while (!queue.isEmpty() && !stop) {
                     NetPackage netPackage = queue.poll();
                     if (netPackage == null) {
@@ -1368,10 +1367,10 @@ public final class NetService extends Service<NetServiceConsumer> {
                     switch (netPackage.getActionEvent()) {
                         case WRITE: {
                             try {
+                                byte[] byteData = netPackage.getPayload();
                                 if (consumer.getProtocol().equals(TransportLayerProtocol.TCP_SSL)) {
-                                    netPackage = sslHelpers.get(session).write(netPackage);
+                                    consumer.getSslPeer().write((SocketChannel) channel, ByteBuffer.wrap(byteData));
                                 } else {
-                                    byte[] byteData = netPackage.getPayload();
                                     if(byteData != null){
                                         if (byteData.length == 0) {
                                             Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "Empty write data");
@@ -1441,7 +1440,6 @@ public final class NetService extends Service<NetServiceConsumer> {
                             break;
                         }
                     }
-                    count++;
                 }
             }
         } catch (Exception ex) {
@@ -1508,8 +1506,8 @@ public final class NetService extends Service<NetServiceConsumer> {
 
         private final ByteBuffer inputBuffer;
         private final ByteBuffer outputBuffer;
-        private int inputBufferSize;
-        private int outputBufferSize;
+        private final int inputBufferSize;
+        private final int outputBufferSize;
 
         public NetIOThread(Runnable target) {
             super(target, "Net IO");
@@ -1598,356 +1596,4 @@ public final class NetService extends Service<NetServiceConsumer> {
         UDP
     }
 
-    private static class SSLHelper implements Runnable {
-
-        private static final String IO_NAME_TEMPLATE = "SSL IO (%s)";
-        private static final String ENGINE_NAME_TEMPLATE = "SSL ENGINE (%s)";
-
-        private final String ioName;
-        private final String engineName;
-        private SSLEngine sslEngine;
-        private final SelectableChannel selectableChannel;
-        private final NetServiceConsumer consumer;
-        private final NetSession session;
-
-        private final ThreadPoolExecutor ioExecutor;
-        private final ThreadPoolExecutor engineTaskExecutor;
-        private final ByteBuffer srcWrap;
-        private final ByteBuffer destWrap;
-        private final ByteBuffer srcUnwrap;
-        private final ByteBuffer destUnwrap;
-
-        private SSLHelper.SSLHelperStatus status;
-        private ByteArrayOutputStream decryptedPlace;
-
-        /**
-         * SSL Helper default constructor.
-         *
-         * @param sslEngine         SSL Engine.
-         * @param selectableChannel Selectable channel.
-         */
-        public SSLHelper(SSLEngine sslEngine, SelectableChannel selectableChannel, NetServiceConsumer consumer, NetSession session) {
-            this.sslEngine = sslEngine;
-            this.selectableChannel = selectableChannel;
-            this.consumer = consumer;
-            this.session = session;
-            this.ioExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-            this.ioExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Ssl.IO_THREAD_NAME))));
-            this.engineTaskExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(
-                    SystemProperties.getInteger(SystemProperties.Net.SSL_MAX_IO_THREAD_POOL_SIZE));
-            this.engineTaskExecutor.setThreadFactory(R -> (new ServiceThread(R, SystemProperties.get(SystemProperties.Net.Ssl.ENGINE_THREAD_NAME))));
-            srcWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE));
-            destWrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.OUTPUT_BUFFER_SIZE));
-            srcUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE));
-            destUnwrap = ByteBuffer.allocate(SystemProperties.getInteger(SystemProperties.Net.INPUT_BUFFER_SIZE));
-            srcUnwrap.limit(0);
-
-            //SSL Helper first status
-            status = SSLHelper.SSLHelperStatus.WAITING;
-
-            ioName = String.format(IO_NAME_TEMPLATE, consumer.getName());
-            engineName = String.format(ENGINE_NAME_TEMPLATE, consumer.getName());
-
-            //Start handshaking
-//            instance.fork(this, ioName, ioExecutor);
-            run();
-        }
-
-        /**
-         * This method is called when there are data into the read buffer.
-         *
-         * @param decrypted Read buffer.
-         */
-        private void onRead(ByteBuffer decrypted) {
-            byte[] decryptedArray = new byte[decrypted.limit()];
-            decrypted.get(decryptedArray);
-            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
-                decryptedPlace.writeBytes(decryptedArray);
-            }
-        }
-
-        /**
-         * This method is called when there are data into the write buffer.
-         *
-         * @param encrypted Write buffer.
-         */
-        private void onWrite(ByteBuffer encrypted) {
-            try {
-                long size = encrypted.limit();
-                long total = 0;
-                while (total < size) {
-                    total += ((SocketChannel) selectableChannel).write(encrypted);
-                }
-            } catch (IOException ex) {
-                Log.e("SSL_HELPER", "On write tail", ex);
-                throw new RuntimeException("On write fail", ex);
-            }
-        }
-
-        /**
-         * This method is called when the operation fail.
-         *
-         * @param ex Fail exception.
-         */
-        private void onFailure(Exception ex) {
-            status = SSLHelper.SSLHelperStatus.FAIL;
-        }
-
-        /**
-         * This method is called when the operation is success.
-         */
-        private void onSuccess() {
-            Log.d(SystemProperties.get(SystemProperties.Net.LOG_TAG), "SSL handshaking success");
-            status = SSLHelper.SSLHelperStatus.READY;
-            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
-                    0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.CONNECT);
-            defaultNetPackage.setSession(session);
-            if (consumer instanceof NetClient) {
-                consumer.onConnect(defaultNetPackage);
-            }
-        }
-
-        /**
-         * This method is called when the helper is closed.
-         */
-        private void onClosed() {
-            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
-                    0, consumer.getPort(), new byte[0], NetPackage.ActionEvent.DISCONNECT);
-            consumer.onDisconnect(session, defaultNetPackage);
-        }
-
-        /**
-         * Run method of the helper.
-         */
-        @Override
-        public void run() {
-            while (this.isHandShaking()) {
-            }
-        }
-
-        /**
-         * Write data into the associated channel.
-         *
-         * @param netPackage Net package.
-         * @return Net package.
-         */
-        public synchronized NetPackage write(NetPackage netPackage) {
-            DefaultNetPackage defaultNetPackage = null;
-            if(netPackage.getPayload() != null) {
-                srcWrap.put(netPackage.getPayload());
-                SSLHelper.this.run();
-                if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
-                    try {
-                        defaultNetPackage = new DefaultNetPackage("", "",
-                                0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.WRITE);
-                        defaultNetPackage.setSession(netPackage.getSession());
-                    } catch (Exception ex) {
-                        Log.e("SSL_HELPER", "Write fail", ex);
-                    }
-                }
-            } else {
-                try {
-                    defaultNetPackage = new DefaultNetPackage("", "",
-                            0, consumer.getPort(), netPackage.getPayload(), NetPackage.ActionEvent.WRITE);
-                    defaultNetPackage.setSession(netPackage.getSession());
-                } catch (Exception ex) {
-                    Log.e("SSL_HELPER", "On write fail", ex);
-                }
-            }
-            return defaultNetPackage;
-        }
-
-        /**
-         * Read data from the associated channel.
-         *
-         * @param netPackage Net package.
-         * @return Input data.
-         */
-        public synchronized NetPackage read(NetPackage netPackage) {
-            decryptedPlace = new ByteArrayOutputStream();
-            srcUnwrap.put(netPackage.getPayload());
-            SSLHelper.this.run();
-
-            byte[] arrayResult = new byte[0];
-            if (status.equals(SSLHelper.SSLHelperStatus.READY)) {
-                try {
-                    arrayResult = decryptedPlace.toByteArray();
-                } catch (Exception e) {
-                    Log.e("SSL_HELPER", "Read fail", e);
-                } finally {
-                    decryptedPlace.reset();
-                    try {
-                        decryptedPlace.close();
-                    } catch (IOException e) {
-                        Log.e("SSL_HELPER", "Read fail", e);
-                    }
-                }
-            }
-
-            DefaultNetPackage defaultNetPackage = new DefaultNetPackage("", "",
-                    0, consumer.getPort(), arrayResult, NetPackage.ActionEvent.READ);
-            defaultNetPackage.setSession(netPackage.getSession());
-            return defaultNetPackage;
-        }
-
-        /**
-         * Close the ssl engine instance.
-         */
-        public void close() {
-            try {
-                sslEngine.closeInbound();
-            } catch (SSLException e) {
-                Log.d("SSL_HELPER", "Close fail", e);
-            }
-            sslEngine.closeOutbound();
-        }
-
-        /**
-         * Return boolean to indicate if the hand shaking process is running.
-         *
-         * @return True if the process is running and false in otherwise.
-         */
-        private boolean isHandShaking() {
-            switch (sslEngine.getHandshakeStatus()) {
-                case NOT_HANDSHAKING:
-                    boolean occupied = false;
-                {
-                    if (srcWrap.position() > 0)
-                        occupied |= this.wrap();
-                    if (srcUnwrap.position() > 0)
-                        occupied |= this.unwrap();
-                }
-                return occupied;
-
-                case NEED_WRAP:
-                    if (!this.wrap())
-                        return false;
-                    break;
-
-                case NEED_UNWRAP:
-                    if (!this.unwrap())
-                        return false;
-                    break;
-
-                case NEED_TASK:
-                    final Runnable sslTask = sslEngine.getDelegatedTask();
-                    instance.fork(() -> {
-                        sslTask.run();
-                        instance.fork(SSLHelper.this, ioName, ioExecutor);
-                    }, engineName, engineTaskExecutor);
-                    return false;
-
-                case FINISHED:
-                    throw new IllegalStateException("SSL handshaking fail");
-            }
-
-            return true;
-        }
-
-        /**
-         * Wrap the output data.
-         *
-         * @return Return true if the process was success.
-         */
-        private boolean wrap() {
-            SSLEngineResult wrapResult;
-
-            try {
-                srcWrap.flip();
-                wrapResult = sslEngine.wrap(srcWrap, destWrap);
-                srcWrap.compact();
-            } catch (SSLException exc) {
-                this.onFailure(exc);
-                return false;
-            }
-
-            switch (wrapResult.getStatus()) {
-                case OK:
-                    if (destWrap.position() > 0) {
-                        destWrap.flip();
-                        this.onWrite(destWrap);
-                        destWrap.compact();
-                    }
-                    break;
-
-                case BUFFER_UNDERFLOW:
-                    // try again later
-                    break;
-
-                case BUFFER_OVERFLOW:
-                    throw new IllegalStateException("SSL failed to wrap");
-
-                case CLOSED:
-                    this.onClosed();
-                    return false;
-            }
-
-            if (consumer instanceof NetServer &&
-                    wrapResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
-                this.onSuccess();
-                return false;
-            }
-
-            return true;
-        }
-
-        /**
-         * Unwrap the input data.
-         *
-         * @return Return true if the process was success.
-         */
-        private boolean unwrap() {
-            SSLEngineResult unwrapResult;
-
-            try {
-                srcUnwrap.flip();
-                unwrapResult = sslEngine.unwrap(srcUnwrap, destUnwrap);
-                srcUnwrap.compact();
-            } catch (SSLException ex) {
-                this.onFailure(ex);
-                return false;
-            }
-
-            switch (unwrapResult.getStatus()) {
-                case OK:
-                    if (destUnwrap.position() > 0) {
-                        destUnwrap.flip();
-                        this.onRead(destUnwrap);
-                        destUnwrap.compact();
-                    }
-                    break;
-
-                case CLOSED:
-                    this.onClosed();
-                    return false;
-
-                case BUFFER_OVERFLOW:
-                    throw new IllegalStateException("SSL failed to unwrap");
-
-                case BUFFER_UNDERFLOW:
-                    return false;
-            }
-
-            if (consumer instanceof NetClient &&
-                    unwrapResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED) {
-                this.onSuccess();
-                return false;
-            }
-
-            return true;
-        }
-
-        /**
-         * Contains all the possible helper status.
-         */
-        public enum SSLHelperStatus {
-
-            WAITING,
-
-            READY,
-
-            FAIL
-
-        }
-    }
 }
