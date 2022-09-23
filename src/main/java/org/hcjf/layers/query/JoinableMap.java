@@ -366,7 +366,7 @@ public class JoinableMap implements Joinable, Groupable, Enlarged, BsonParcelabl
     @Override
     public Object put(String key, Object value) {
         String resourceName = getResourceNameForPath(key);
-        if(resourceName != null) {
+        if(resourceName != null && mapInstanceByResource.containsKey(resourceName)) {
             String keyWithoutResource = getFieldWithoutResource(resourceName, key);
             mapInstanceByResource.get(resourceName).put(keyWithoutResource, value);
         }
