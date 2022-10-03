@@ -6,6 +6,7 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.Config;
+import org.hcjf.io.net.kubernetes.artifacts.*;
 import org.hcjf.layers.Layers;
 import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
@@ -31,6 +32,11 @@ public final class KubernetesSpy extends Service<KubernetesSpyConsumer> {
         instance = new KubernetesSpy();
 
         Layers.publishLayer(KubernetesSpyResource.class);
+        Layers.publishLayer(KubernetesDeploymentResource.class);
+        Layers.publishLayer(KubernetesJobResource.class);
+        Layers.publishLayer(KubernetesCronJobResource.class);
+        Layers.publishLayer(KubernetesConfigMapResource.class);
+        Layers.publishLayer(KubernetesHorizontalPodAutoscalerResource.class);
     }
 
     /**

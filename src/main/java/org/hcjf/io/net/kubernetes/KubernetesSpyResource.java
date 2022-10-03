@@ -24,7 +24,7 @@ import org.hcjf.utils.Introspection;
 import java.io.IOException;
 import java.util.*;
 
-public class KubernetesSpyResource extends Layer implements CreateLayerInterface<Map<String,Object>>, ReadRowsLayerInterface {
+public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterface {
 
     private static final class Kinds {
         private static final String JOB = "Job";
@@ -107,7 +107,6 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
 
     private final ApiClient client;
     private final Metrics metrics;
-    private final BatchV1Api batchApi;
     private final CoreV1Api api;
 
     public KubernetesSpyResource() {
@@ -117,12 +116,10 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
             client = Config.fromCluster();
             metrics = new Metrics(client);
         } catch (IOException e) {
-            throw new RuntimeException();
+            throw new RuntimeException("Unable to create k8s client", e);
         }
         Configuration.setDefaultApiClient(client);
         this.api = new CoreV1Api();
-        this.batchApi = new BatchV1Api();
-
     }
 
     @Override
@@ -156,64 +153,6 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
                 POD_METRICS,
                 NODE_METRICS
         );
-    }
-
-    @Override
-    public Map<String, Object> create(Map<String, Object> object) {
-        Map<String,Object> result;
-        if(!object.containsKey(Fields.KIND)) {
-            throw new HCJFRuntimeException("Unable to create some kubernetes artifact if 'kind' field is not present");
-        }
-        String kind = (String) object.get(Fields.KIND);
-        switch (kind) {
-            case Kinds.JOB: {
-                result = Introspection.toMap(createJob(object));
-                break;
-            }
-            case Kinds.CONFIG_MAP: {
-                result = Introspection.toMap(createConfigMap(object));
-                break;
-            }
-            default:{
-                throw new HCJFRuntimeException("Unrecognized kubernetes artifact '%s'", kind);
-            }
-        }
-        return result;
-    }
-
-    private V1Job createJob(Map<String,Object> jobDefinition) {
-        V1Job job;
-        try {
-            job = new V1Job().
-                apiVersion(Fields.Job.API_VERSION).
-                kind((String) jobDefinition.get(Fields.KIND)).
-                metadata(new V1ObjectMeta().
-                    name((String) jobDefinition.get(Fields.Job.NAME)).
-                    namespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE))).
-                spec(new V1JobSpec().
-                    template(new V1PodTemplateSpec().
-                        metadata(new V1ObjectMeta().
-                            name((String) jobDefinition.get(Fields.Job.NAME)).
-                            namespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE))
-                        ).
-                        spec(new V1PodSpec().
-                            volumes(getVolumes((Collection<Map<String, Object>>) jobDefinition.get(Fields.Job.VOLUMES))).
-                            restartPolicy((String) jobDefinition.get(Fields.Job.RESTART_POLICY)).
-                            containers(getContainers((Collection<Map<String, Object>>) jobDefinition.get(Fields.Job.CONTAINERS)))
-                        )
-                    )
-                );
-
-            Integer replicas = (Integer) jobDefinition.get(Fields.Job.REPLICAS);
-            for (int i = 0; i < replicas; i++) {
-                batchApi.createNamespacedJob(
-                        SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                        job, null, null, null, null);
-            }
-        } catch (ApiException ex) {
-            throw new HCJFRuntimeException("Unable to create job, '%s'", ex, ex.getResponseBody());
-        }
-        return job;
     }
 
     private List<V1Container> getContainers(Collection<Map<String,Object>> definition) {
@@ -280,28 +219,6 @@ public class KubernetesSpyResource extends Layer implements CreateLayerInterface
         }
 
         return result;
-    }
-
-    private V1ConfigMap createConfigMap(Map<String,Object> configMapDefinition) {
-        V1ConfigMap configMap;
-
-        try {
-            configMap = new V1ConfigMap().
-                    apiVersion(Fields.ConfigMap.API_VERSION).
-                    kind((String) configMapDefinition.get(Fields.KIND)).
-                    metadata(new V1ObjectMeta().
-                            name((String) configMapDefinition.get(Fields.ConfigMap.NAME)).
-                            namespace(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE))).
-                    data((Map<String, String>) configMapDefinition.get(Fields.ConfigMap.DATA));
-
-            api.createNamespacedConfigMap(
-                    SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE),
-                    configMap, null, null, null, null);
-        } catch (ApiException ex){
-            throw new HCJFRuntimeException("Unable to create config map", ex);
-        }
-
-        return configMap;
     }
 
     @Override

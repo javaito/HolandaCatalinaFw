@@ -1124,7 +1124,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                         if(foreignKey != null && key != null) {
                             Collection<Object> reducerList = new HashSet<>();
                             for(Object currentObject : leftData) {
-                                Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getOriginalValue());
+                                Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getFieldPath());
                                 if(foreignKeyValue != null) {
                                     reducerList.add(foreignKeyValue);
                                 }
