@@ -1123,8 +1123,8 @@ public class Query extends EvaluatorCollection implements Queryable {
                         }
                         if(foreignKey != null && key != null) {
                             Collection<Object> reducerList = new HashSet<>();
-                            for(Object currentObject : leftData) {
-                                Object foreignKeyValue = Introspection.resolve(currentObject, foreignKey.getFieldPath());
+                            for(Joinable currentObject : leftData) {
+                                Object foreignKeyValue = getFieldValue(currentObject, foreignKey);
                                 if(foreignKeyValue != null) {
                                     reducerList.add(foreignKeyValue);
                                 }
@@ -1145,6 +1145,14 @@ public class Query extends EvaluatorCollection implements Queryable {
         return result;
     }
 
+    private Object getFieldValue(Joinable currentObject, QueryField foreignKey) {
+        Object result = currentObject.get(foreignKey.getOriginalValue());
+        if(result == null) {
+            result = Introspection.resolve(currentObject, foreignKey.getFieldPath());
+        }
+        return result;
+    }
+
     public QueryField getQueryField(Join join, QueryField key) {
         QueryField result = null;
         if(join.getResource() instanceof QueryDynamicResource) {
@@ -1152,7 +1160,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             for(QueryReturnParameter parameter : parameters) {
                 if(parameter instanceof QueryReturnField) {
                     /**
-                     * If fieldPath of Key its equals to some QueryReturnField or
+                     * If the fieldPath of Key its equals to some QueryReturnField or
                      * the alias of the QueryReturnField, return his fieldPath (Field name)
                      */
                     if((((QueryReturnField) parameter).getFieldPath().equals(key.getFieldPath())) ||
