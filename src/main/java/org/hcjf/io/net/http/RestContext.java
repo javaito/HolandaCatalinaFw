@@ -15,7 +15,6 @@ import org.hcjf.layers.crud.command.CommandUpdateLayerInterface;
 import org.hcjf.layers.query.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
-import org.hcjf.utils.DeepIntrospection;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
