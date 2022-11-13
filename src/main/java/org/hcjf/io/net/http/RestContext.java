@@ -15,6 +15,7 @@ import org.hcjf.layers.crud.command.CommandUpdateLayerInterface;
 import org.hcjf.layers.query.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
+import org.hcjf.utils.DeepIntrospection;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
@@ -127,7 +128,7 @@ public class RestContext extends Context {
                     JsonObject queriesResult = new JsonObject();
                     for(String key : requestModel.getQueryables().keySet()) {
                         try {
-                            queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(verifyDataSource(dataSource))));
+                            queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(verifyDataSourceWithRequest(dataSource, request))));
                         } catch (Throwable throwable){
                             queriesResult.add(key, createJsonFromThrowable(throwable));
                         }
@@ -266,6 +267,18 @@ public class RestContext extends Context {
 
     private Queryable.DataSource verifyDataSource(Queryable.DataSource dataSource){
         return dataSource == null ? getDataSource() : dataSource;
+    }
+
+    private Queryable.DataSource verifyDataSourceWithRequest(Queryable.DataSource dataSource, HttpRequest request){
+        JsonElement body = JsonParser.parseString(new String(request.getBody()));
+        RequestModel requestModel;
+        if (body.isJsonObject()) {
+            requestModel = new RequestModel((JsonObject) body);
+        } else {
+            requestModel = new RequestModel((JsonArray) body);
+        }
+        Queryable.DataSource  dataSourceCopy = requestModel.getDataSource();
+        return dataSource == null ? getDataSource() : dataSourceCopy;
     }
 
     protected Queryable.DataSource<JoinableMap> getDataSource(){
