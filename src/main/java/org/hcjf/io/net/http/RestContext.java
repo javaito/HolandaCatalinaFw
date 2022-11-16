@@ -127,7 +127,7 @@ public class RestContext extends Context {
                     JsonObject queriesResult = new JsonObject();
                     for(String key : requestModel.getQueryables().keySet()) {
                         try {
-                            queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(verifyDataSourceWithRequest(dataSource, request))));
+                            queriesResult.add(key, gson.toJsonTree(requestModel.getQueryables().get(key).evaluate(verifyDataSource(dataSource))));
                         } catch (Throwable throwable){
                             queriesResult.add(key, createJsonFromThrowable(throwable));
                         }
@@ -266,18 +266,6 @@ public class RestContext extends Context {
 
     private Queryable.DataSource verifyDataSource(Queryable.DataSource dataSource){
         return dataSource == null ? getDataSource() : dataSource;
-    }
-
-    private Queryable.DataSource verifyDataSourceWithRequest(Queryable.DataSource dataSource, HttpRequest request){
-        JsonElement body = JsonParser.parseString(new String(request.getBody()));
-        RequestModel requestModel;
-        if (body.isJsonObject()) {
-            requestModel = new RequestModel((JsonObject) body);
-        } else {
-            requestModel = new RequestModel((JsonArray) body);
-        }
-        Queryable.DataSource  dataSourceCopy = requestModel.getDataSource();
-        return dataSource == null ? getDataSource() : dataSourceCopy;
     }
 
     protected Queryable.DataSource<JoinableMap> getDataSource(){
