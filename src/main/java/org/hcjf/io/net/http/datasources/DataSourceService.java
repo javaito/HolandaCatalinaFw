@@ -53,7 +53,7 @@ public final class DataSourceService extends Service<DataSourceServiceConsumer> 
                 Collection<Future> futures = new ArrayList<>();
                 for (String dataSourceName : rawDataSources.keySet()) {
                     futures.add(fork(() -> {
-                        resolveDataSource(dataSourceName, rawDataSources.get(dataSourceName), dataSourcesMap);
+                        resolveDataSource(dataSourceName, rawDataSources.get(dataSourceName), dataSourcesMap, consumer.getDataSource());
                     }, THREAD_POOL_NAME, serviceExecutor));
                 }
                 for (Future future : futures) {
@@ -69,7 +69,7 @@ public final class DataSourceService extends Service<DataSourceServiceConsumer> 
         } else {
             for (String dataSourceName : rawDataSources.keySet()) {
                 try {
-                    resolveDataSource(dataSourceName, rawDataSources.get(dataSourceName), dataSourcesMap);
+                    resolveDataSource(dataSourceName, rawDataSources.get(dataSourceName), dataSourcesMap, consumer.getDataSource());
                 } catch (Exception ex){
                     consumer.setThrowable(ex);
                     break;
@@ -79,11 +79,11 @@ public final class DataSourceService extends Service<DataSourceServiceConsumer> 
         }
     }
 
-    private void resolveDataSource(String dataSourceName, Object dataSource, Map<String,Object> dataSourcesMap) {
+    private void resolveDataSource(String dataSourceName, Object dataSource, Map<String,Object> dataSourcesMap, Queryable.DataSource queryableDataSource) {
         if(dataSource instanceof String) {
             try {
                 Queryable queryable = Query.compile((String) dataSource);
-                dataSourcesMap.put(dataSourceName, Query.evaluate(queryable));
+                dataSourcesMap.put(dataSourceName, queryable.evaluate(queryableDataSource));
             } catch (Exception e) {
                 throw new HCJFRuntimeException(Strings.createTaggedMessage(String.format("Error resolving data source %s", dataSourceName), "DATA_SOURCE"), e);
             }
