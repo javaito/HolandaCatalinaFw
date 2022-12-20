@@ -113,7 +113,7 @@ public class RestContext extends Context {
             JsonElement body = JsonParser.parseString(new String(request.getBody()));
             RequestModel requestModel;
             if (body.isJsonObject()) {
-                requestModel = new RequestModel((JsonObject) body);
+                requestModel = new RequestModel(getDataSource(), (JsonObject) body);
             } else {
                 requestModel = new RequestModel((JsonArray) body);
             }
@@ -151,7 +151,7 @@ public class RestContext extends Context {
             }
         } else if(method.equals(HttpMethod.PUT)) {
             // This method call to update layer or command update layer interface implementation.
-            RequestModel requestModel = new RequestModel(JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
+            RequestModel requestModel = new RequestModel(getDataSource(), JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
 
             if (requestModel.getCommands() != null || requestModel.getCommand() != null) { // request has commands
                 CommandUpdateLayerInterface commandUpdateLayerInterface = Layers.get(CommandUpdateLayerInterface.class, resourceName);
@@ -181,7 +181,7 @@ public class RestContext extends Context {
             if(id != null && (request.getBody() == null || request.getBody().length == 0)) {
                 jsonElement = gson.toJsonTree(deleteLayerInterface.delete(id));
             } else {
-                RequestModel requestModel = new RequestModel(JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
+                RequestModel requestModel = new RequestModel(getDataSource(), JsonParser.parseString(new String(request.getBody())).getAsJsonObject());
                 if(requestModel.getQueryable() != null) {
                     jsonElement = gson.toJsonTree(deleteLayerInterface.delete(requestModel.getQueryable()));
                 } else {
@@ -292,7 +292,7 @@ public class RestContext extends Context {
             body = JsonUtils.createList(jsonArray);
         }
 
-        public RequestModel(JsonObject jsonObject) {
+        public RequestModel(Queryable.DataSource contextDataSource, JsonObject jsonObject) {
             if(!jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.BODY_FIELD)) &&
                     !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERY_FIELD)) &&
                     !jsonObject.has(SystemProperties.get(SystemProperties.Net.Rest.QUERIES_FIELD)) &&
@@ -326,7 +326,7 @@ public class RestContext extends Context {
                     Map<String, Object> rawDataSources = (Map<String, Object>)
                             JsonUtils.createObject(jsonObject.get(
                                     SystemProperties.get(SystemProperties.Net.Rest.DATA_SOURCE_FIELD)));
-                    DataSourceServiceConsumer consumer = new DataSourceServiceConsumer(rawDataSources);
+                    DataSourceServiceConsumer consumer = new DataSourceServiceConsumer(rawDataSources, contextDataSource);
                     DataSourceService.getInstance().registerConsumer(consumer);
                     dataSourcesMap = consumer.getResult();
 

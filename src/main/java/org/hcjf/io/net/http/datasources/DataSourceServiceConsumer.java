@@ -1,6 +1,7 @@
 package org.hcjf.io.net.http.datasources;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.layers.query.Queryable;
 import org.hcjf.service.ServiceConsumer;
 
 import java.util.Map;
@@ -8,15 +9,25 @@ import java.util.Map;
 public class DataSourceServiceConsumer implements ServiceConsumer {
 
     private final Map<String, Object> rawDataSources;
+    private final Queryable.DataSource dataSource;
     private Map<String, Object> result;
     private Throwable throwable;
 
     public DataSourceServiceConsumer(Map<String, Object> rawDataSources) {
+        this(rawDataSources, null);
+    }
+
+    public DataSourceServiceConsumer(Map<String, Object> rawDataSources, Queryable.DataSource dataSource) {
         this.rawDataSources = rawDataSources;
+        this.dataSource = dataSource;
     }
 
     public Map<String, Object> getRawDataSources() {
         return rawDataSources;
+    }
+
+    public Queryable.DataSource getDataSource() {
+        return dataSource;
     }
 
     public synchronized void setThrowable(Throwable throwable) {
