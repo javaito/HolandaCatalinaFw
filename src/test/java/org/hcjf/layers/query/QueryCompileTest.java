@@ -606,7 +606,7 @@ public class QueryCompileTest {
             if (queryReturnParameter instanceof QueryReturnUnprocessedValue) {
                 BaseEvaluator.UnprocessedValue baseEvaluator = ((QueryReturnUnprocessedValue) queryReturnParameter).getUnprocessedValue();
                 Query queryValue = ((BaseEvaluator.QueryValue) baseEvaluator).getQuery();
-                if (!(queryValue.getResource() instanceof QueryJsonResource) && environmentBody != null) {
+                if (environmentBody != null) {
                     Assert.assertEquals(environmentBody, queryValue.getEnvironment());
                 }
             }

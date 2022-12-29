@@ -223,7 +223,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                     if (queryReturnParameter instanceof QueryReturnUnprocessedValue) {
                         BaseEvaluator.UnprocessedValue baseEvaluator = ((QueryReturnUnprocessedValue) queryReturnParameter).getUnprocessedValue();
                         Query queryValue = ((BaseEvaluator.QueryValue) baseEvaluator).getQuery();
-                        if (!(queryValue.getResource() instanceof QueryJsonResource) && environmentBody != null) {
+                        if (environmentBody != null) {
                             queryValue.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
                         }
                     }
