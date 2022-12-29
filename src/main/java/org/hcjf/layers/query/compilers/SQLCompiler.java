@@ -220,6 +220,13 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 QueryReturnParameter queryReturnParameter = (QueryReturnParameter)
                         processStringValue(query, groups, richTexts, returnField, placesIndex, QueryReturnParameter.class, new ArrayList<>());
                 if(!queryReturnParameter.getAlias().isBlank()) {
+                    if (queryReturnParameter instanceof QueryReturnUnprocessedValue) {
+                        BaseEvaluator.UnprocessedValue baseEvaluator = ((QueryReturnUnprocessedValue) queryReturnParameter).getUnprocessedValue();
+                        Query queryValue = ((BaseEvaluator.QueryValue) baseEvaluator).getQuery();
+                        if (!(queryValue.getResource() instanceof QueryJsonResource) && environmentBody != null) {
+                            queryValue.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
+                        }
+                    }
                     query.addReturnField(queryReturnParameter);
                 }
             }

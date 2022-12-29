@@ -1,7 +1,11 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.layers.query.evaluators.BaseEvaluator;
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.model.QueryDynamicResource;
+import org.hcjf.layers.query.model.QueryJsonResource;
+import org.hcjf.layers.query.model.QueryReturnParameter;
+import org.hcjf.layers.query.model.QueryReturnUnprocessedValue;
 import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 import org.junit.Assert;
@@ -587,6 +591,25 @@ public class QueryCompileTest {
         for (Queryable union : query.getUnions()){
             Query queryUnion = (Query) union;
             Assert.assertEquals(query.getEnvironment(), queryUnion.getEnvironment());
+        }
+    }
+
+    @Test
+    public void testSubQueryWithEnvironment() {
+        String sql = "environment '{\"field\":[4,5,2]}' " +
+                "select (select * from resource where field=$field.0) as environmentAlias from '[{\"field\":2}, {\"field\":4}]' as resource where field = $field.0 " +
+                "union select * from resource where field = $field.1 and title=(select title from Resource where id=$field.2)";
+        Query query = Query.compile(sql);
+        Map<String, Object> environmentBody = query.getEnvironment();
+        List<QueryReturnParameter> returnParameterList = query.getReturnParameters();
+        for (QueryReturnParameter queryReturnParameter : returnParameterList) {
+            if (queryReturnParameter instanceof QueryReturnUnprocessedValue) {
+                BaseEvaluator.UnprocessedValue baseEvaluator = ((QueryReturnUnprocessedValue) queryReturnParameter).getUnprocessedValue();
+                Query queryValue = ((BaseEvaluator.QueryValue) baseEvaluator).getQuery();
+                if (!(queryValue.getResource() instanceof QueryJsonResource) && environmentBody != null) {
+                    Assert.assertEquals(environmentBody, queryValue.getEnvironment());
+                }
+            }
         }
     }
 
