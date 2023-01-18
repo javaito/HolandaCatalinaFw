@@ -9,6 +9,7 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
+import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
@@ -104,11 +105,12 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
     public static final String COMPONENT_STATUS = "system_k8s_component_status";
     public static final String POD_METRICS = "system_k8s_pod_metrics";
     public static final String NODE_METRICS = "system_k8s_node_metrics";
+    public static final String NAMESPACED_DEPLOYMENT = "system_k8s_namespaced_deployment";
 
     private final ApiClient client;
     private final Metrics metrics;
     private final CoreV1Api api;
-
+    private final AppsV1Api appsApi;
     public KubernetesSpyResource() {
         super(NAME);
 
@@ -120,6 +122,7 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
         }
         Configuration.setDefaultApiClient(client);
         this.api = new CoreV1Api();
+        this.appsApi = new AppsV1Api();
     }
 
     @Override
@@ -151,7 +154,8 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
                 NAMESPACED_SERVICE,
                 COMPONENT_STATUS,
                 POD_METRICS,
-                NODE_METRICS
+                NODE_METRICS,
+                NAMESPACED_DEPLOYMENT
         );
     }
 
@@ -414,6 +418,13 @@ public class KubernetesSpyResource extends Layer implements ReadRowsLayerInterfa
                     for(NodeMetrics nodeMetrics : nodeMetricsList.getItems()) {
                         result.add(new JoinableMap(Introspection.toMap(nodeMetrics)));
                     }
+                }
+                case NAMESPACED_DEPLOYMENT: {
+                    for(V1Deployment deployment : appsApi.listNamespacedDeployment(SystemProperties.get(SystemProperties.Cloud.Orchestrator.Kubernetes.NAMESPACE)
+                            , null, null,null,null,null,null,null, null, null, false).getItems()) {
+                        result.add(new JoinableMap(Introspection.toMap(deployment, consumer)));
+                    }
+                    break;
                 }
             }
         }catch (Exception ex){

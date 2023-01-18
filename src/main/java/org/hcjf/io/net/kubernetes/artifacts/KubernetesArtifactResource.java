@@ -6,13 +6,13 @@ import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.AutoscalingV1Api;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.util.Yaml;
 import io.kubernetes.client.util.Config;
 import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.layers.Layer;
 import org.hcjf.layers.crud.CreateLayerInterface;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,7 +35,6 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
     private final AppsV1Api appsApi;
     private final BatchV1Api batchApi;
     private final AutoscalingV1Api autoscalingApi;
-    private final Yaml yaml;
 
     public KubernetesArtifactResource() {
         try {
@@ -48,7 +47,6 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
         this.appsApi = new AppsV1Api();
         this.batchApi = new BatchV1Api();
         this.autoscalingApi = new AutoscalingV1Api();
-        this.yaml = new Yaml();
     }
 
     protected abstract Class<T> getArtifactType();
@@ -92,7 +90,7 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
             yamlBody = String.format(yamlBody, parameters.toArray());
         }
 
-        T artifactInstance = yaml.loadAs(yamlBody, getArtifactType());
+        T artifactInstance = Yaml.loadAs(yamlBody, getArtifactType());
         createArtifact(artifactInstance, artifact);
         return response;
     }
