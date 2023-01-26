@@ -10,6 +10,7 @@ import java.util.Map;
 public class CommandRequestModel implements BsonParcelable {
 
     private String command;
+    private Object instanceId;
     private Map<String, Object> payload;
 
     /**
@@ -22,6 +23,14 @@ public class CommandRequestModel implements BsonParcelable {
 
     public void setCommand(String command) {
         this.command = command;
+    }
+
+    public Object getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(Object instanceId) {
+        this.instanceId = instanceId;
     }
 
     /**

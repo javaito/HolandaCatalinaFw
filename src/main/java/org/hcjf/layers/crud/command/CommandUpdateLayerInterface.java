@@ -2,6 +2,7 @@ package org.hcjf.layers.crud.command;
 
 import org.hcjf.layers.LayerInterface;
 import org.hcjf.layers.Layers;
+import org.hcjf.utils.Introspection;
 
 import java.util.Collection;
 import java.util.Map;
@@ -19,6 +20,8 @@ import java.util.stream.Collectors;
  */
 public interface CommandUpdateLayerInterface extends LayerInterface {
 
+    String INSTANCE_ID = "__instanceId__";
+
     /**
      * Processes the <code>_command</code> field in a PUT request. Content should be an object
      * complying with <code>CommandRequestModel</code>
@@ -29,7 +32,19 @@ public interface CommandUpdateLayerInterface extends LayerInterface {
         String resourceName = getImplName();
         ResourceCommandLayerInterface resourceCommand = Layers.get(ResourceCommandLayerInterface.class,
                 String.format("%s::%s", resourceName, command.getCommand()));
+        Map<String,Object> payload = command.getPayload();
+        payload.put(INSTANCE_ID, command.getInstanceId());
         return resourceCommand.execute(command.getPayload());
+    }
+
+    /**
+     * Returns the id of the instance to be modified.
+     * @param payload Payload instance.
+     * @return Instance id.
+     * @param <O> Expected data type.
+     */
+    default <O> O getInstanceId(Map<String,Object> payload) {
+        return Introspection.resolve(payload, INSTANCE_ID);
     }
 
     /**
