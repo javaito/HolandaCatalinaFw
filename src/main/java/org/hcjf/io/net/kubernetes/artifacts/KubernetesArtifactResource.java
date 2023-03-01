@@ -3,7 +3,7 @@ package org.hcjf.io.net.kubernetes.artifacts;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
-import io.kubernetes.client.openapi.apis.AutoscalingV1Api;
+import io.kubernetes.client.openapi.apis.AutoscalingV2beta2Api;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.util.Yaml;
@@ -34,7 +34,7 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
     private final CoreV1Api coreApi;
     private final AppsV1Api appsApi;
     private final BatchV1Api batchApi;
-    private final AutoscalingV1Api autoscalingApi;
+    private final AutoscalingV2beta2Api autoscalingV2beta2Api;
 
     public KubernetesArtifactResource() {
         try {
@@ -46,7 +46,7 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
         this.coreApi = new CoreV1Api();
         this.appsApi = new AppsV1Api();
         this.batchApi = new BatchV1Api();
-        this.autoscalingApi = new AutoscalingV1Api();
+        this.autoscalingV2beta2Api = new AutoscalingV2beta2Api();
     }
 
     protected abstract Class<T> getArtifactType();
@@ -65,8 +65,8 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
         return batchApi;
     }
 
-    protected final AutoscalingV1Api getAutoscalingApi() {
-        return autoscalingApi;
+    protected final AutoscalingV2beta2Api getAutoscalingV2beta2Api() {
+        return autoscalingV2beta2Api;
     }
 
     protected final ApiClient getClient() {
