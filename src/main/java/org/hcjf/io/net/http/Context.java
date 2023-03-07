@@ -61,6 +61,12 @@ public abstract class Context {
      */
     public abstract HttpResponse onContext(HttpRequest request);
 
+    /**
+     * This method is called for add custom cors to a response.
+     * @param originHeader All the originHeader information.
+     * @param accessControlMap All the accessControlMap information.
+     * @return Return an HttpResponse with all the response information.
+     */
     public HttpResponse onOptions(HttpHeader originHeader, Map<String, HttpServer.AccessControl> accessControlMap) throws MalformedURLException {
         URL url = new URL(originHeader.getHeaderValue());
         HttpResponse response = new HttpResponse();
