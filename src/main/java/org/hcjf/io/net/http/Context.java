@@ -2,9 +2,14 @@ package org.hcjf.io.net.http;
 
 import org.hcjf.encoding.MimeType;
 import org.hcjf.properties.SystemProperties;
+import org.hcjf.utils.Strings;
+import org.hcjf.utils.io.net.http.HttpUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -55,6 +60,24 @@ public abstract class Context {
      * @return Return an object with all the response information.
      */
     public abstract HttpResponse onContext(HttpRequest request);
+
+    public HttpResponse onOptions(HttpHeader originHeader, Map<String, HttpServer.AccessControl> accessControlMap) throws MalformedURLException {
+        URL url = new URL(originHeader.getHeaderValue());
+        HttpResponse response = new HttpResponse();
+        HttpServer.AccessControl accessControl;
+        if ((accessControl = HttpUtils.getAccessControl(url.getHost(), accessControlMap)) != null) {
+            response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.getMaxAge().toString()));
+            if (!accessControl.getAllowMethods().isEmpty()) {
+                response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
+                        Strings.join(accessControl.getAllowMethods(), Strings.ARGUMENT_SEPARATOR)));
+            }
+            if (!accessControl.getAllowHeaders().isEmpty()) {
+                response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS,
+                        Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
+            }
+        }
+        return response;
+    }
 
     /**
      * Returns the timeout value of the context execution.
