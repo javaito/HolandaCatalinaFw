@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public class HttpUtils {
 
     /**
-     * This method is called for get accessControl from a map.
+     * This method is called for getting accessControl from a map.
      * @param host host information.
      * @param accessControlMap All the accessControlMap information.
      * @return Return an instance from the map of accessControlMap or null.
