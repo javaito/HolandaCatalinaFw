@@ -16,6 +16,7 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
 import org.hcjf.utils.Strings;
+import org.hcjf.utils.io.net.http.HttpUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -348,20 +349,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             request.setMatcher(contextMatcher.getMatcher());
                             Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request context: %s", request.getContext());
                             if (originHeader != null && request.getMethod().equals(HttpMethod.OPTIONS)) {
-                                URL url = new URL(originHeader.getHeaderValue());
-                                response = new HttpResponse();
-                                AccessControl accessControl;
-                                if ((accessControl = getAccessControl(url.getHost())) != null) {
-                                    response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_MAX_AGE, accessControl.maxAge.toString()));
-                                    if (!accessControl.getAllowMethods().isEmpty()) {
-                                        response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_METHODS,
-                                                Strings.join(accessControl.getAllowMethods(), Strings.ARGUMENT_SEPARATOR)));
-                                    }
-                                    if (!accessControl.getAllowHeaders().isEmpty()) {
-                                        response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_ALLOW_HEADERS,
-                                                Strings.join(accessControl.getAllowHeaders(), Strings.ARGUMENT_SEPARATOR)));
-                                    }
-                                }
+                                response = context.onOptions(originHeader, accessControlMap);
                             } else {
                                 if (context.getTimeout() > 0) {
                                     response = Service.call(() -> context.onContext(request),
@@ -372,7 +360,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                                 if (originHeader != null) {
                                     URL url = new URL(originHeader.getHeaderValue());
                                     AccessControl accessControl;
-                                    if ((accessControl = getAccessControl(url.getHost())) != null) {
+                                    if ((accessControl = HttpUtils.getAccessControl(url.getHost(), accessControlMap)) != null) {
                                         if (!accessControl.getExposeHeaders().isEmpty()) {
                                             response.addHeader(new HttpHeader(HttpHeader.ACCESS_CONTROL_EXPOSE_HEADERS,
                                                     Strings.join(accessControl.getExposeHeaders(), Strings.ARGUMENT_SEPARATOR)));
@@ -457,20 +445,6 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Http connection closed by server.");
             }
         }
-    }
-
-    private AccessControl getAccessControl (String host) {
-        String startChar = SystemProperties.get(SystemProperties.Net.Http.HOST_ACCESS_CONTROL_REGEX_START_CHAR);
-        for(String accessHost : accessControlMap.keySet()) {
-            if(accessHost.startsWith(startChar)) {
-                if(Pattern.matches(accessHost.substring(startChar.length()),host)) {
-                    return accessControlMap.get(accessHost);
-                }
-            } else if (accessHost.equals(host)) {
-                return accessControlMap.get(accessHost);
-            }
-        }
-        return null;
     }
 
     /**
