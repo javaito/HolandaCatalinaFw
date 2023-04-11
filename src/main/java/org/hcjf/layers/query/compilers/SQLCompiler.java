@@ -83,6 +83,10 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 environmentBody = Strings.reverseRichTextGrouping(environmentBody, richTexts);
                 environmentBody = environmentBody.substring(1, environmentBody.length() - 1);
                 query.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
+                if(query.getResource() instanceof QueryDynamicResource){
+                    ((QueryDynamicResource) query.getResource()).getQuery()
+                            .setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
+                }
             }
 
             if(conditionalBody != null) {
@@ -224,11 +228,12 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 }
             }
             for (int i = 2; i < unions.length; i+=2) {
-                groups.set(groups.size() - 1, unions[i].trim());
-                Query queryUnion = compile(groups, richTexts, groups.size() - 1, placesIndex);
-                if (environmentBody != null){
-                    queryUnion.setEnvironment((Map<String, Object>) JsonUtils.createObject(environmentBody));
+                String unionString = unions[i].trim();
+                if (!unionString.contains(SystemProperties.get(SystemProperties.Query.ENVIRONMENT_GROUP_INDEX)) && environmentBody != null){
+                    unionString = matcher.group(SystemProperties.get(SystemProperties.Query.ENVIRONMENT_GROUP_INDEX)).concat(Strings.WHITE_SPACE).concat(unionString);
                 }
+                groups.set(groups.size() - 1, unionString);
+                Query queryUnion = compile(groups, richTexts, groups.size() - 1, placesIndex);
                 query.addUnion(queryUnion);
             }
         } else {
@@ -520,6 +525,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
                 FieldEvaluator.QueryValue queryValue = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex),
                         parameterClass.equals(QueryReturnParameter.class));
+                if (query.getEnvironment() != null) queryValue.getQuery().setEnvironment(query.getEnvironment());
                 if(alias != null) {
                     result = new QueryReturnUnprocessedValue(query, trimmedStringValue, alias, queryValue);
                 } else {

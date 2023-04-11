@@ -1,9 +1,13 @@
 package org.hcjf.layers.query;
 
+import org.hcjf.layers.query.evaluators.BaseEvaluator;
+import org.hcjf.layers.query.evaluators.Evaluator;
 import org.hcjf.layers.query.evaluators.FieldEvaluator;
 import org.hcjf.layers.query.model.QueryDynamicResource;
+import org.hcjf.layers.query.model.QueryResource;
+import org.hcjf.layers.query.model.QueryReturnParameter;
+import org.hcjf.layers.query.model.QueryReturnUnprocessedValue;
 import org.hcjf.utils.JsonUtils;
-import org.hcjf.utils.Strings;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -587,6 +591,97 @@ public class QueryCompileTest {
         for (Queryable union : query.getUnions()){
             Query queryUnion = (Query) union;
             Assert.assertEquals(query.getEnvironment(), queryUnion.getEnvironment());
+        }
+    }
+
+    @Test
+    public void testSubQueryWithEnvironment() {
+        String sql = "environment '{\"field\":[4,5,2]}' " +
+                "select (select * from resource where field=$field.0) as environmentAlias from '[{\"field\":2}, {\"field\":4}]' as resource where field = $field.0 " +
+                "union select * from resource where field = $field.1 and title=(select title from Resource where id=$field.2)";
+        Query query = Query.compile(sql);
+        Map<String, Object> environmentBody = query.getEnvironment();
+        List<QueryReturnParameter> returnParameterList = query.getReturnParameters();
+        for (QueryReturnParameter queryReturnParameter : returnParameterList) {
+            if (queryReturnParameter instanceof QueryReturnUnprocessedValue) {
+                BaseEvaluator.UnprocessedValue baseEvaluator = ((QueryReturnUnprocessedValue) queryReturnParameter).getUnprocessedValue();
+                Query queryValue = ((BaseEvaluator.QueryValue) baseEvaluator).getQuery();
+                Assert.assertEquals(environmentBody, queryValue.getEnvironment());
+            }
+        }
+    }
+
+    @Test
+    public void testFieldEvaluatorsWithEnvironment() {
+        String sql = "environment '{\"field\":[4,5,2]}' " +
+                "select * from '[{\"field\":2}, {\"field\":4}]' as resource where field=(select title from Resource where id=$field.0) " +
+                "and (select title from Resource where id=$field.1)=valueExample";
+        Query query = Query.compile(sql);
+        Map<String, Object> environmentBody = query.getEnvironment();
+        Set<Evaluator> evaluators = query.getEvaluators();
+        for (Evaluator evaluator : evaluators) {
+            if (evaluator instanceof FieldEvaluator) {
+                FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+                Object leftValue = fieldEvaluator.getLeftValue();
+                Object rightValue = fieldEvaluator.getRightValue();
+                if (leftValue instanceof BaseEvaluator.QueryValue) {
+                    BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) leftValue;
+                    Assert.assertEquals(environmentBody, queryValue.getQuery().getEnvironment());
+                }
+                if (rightValue instanceof BaseEvaluator.QueryValue) {
+                    BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) rightValue;
+                    Assert.assertEquals(environmentBody, queryValue.getQuery().getEnvironment());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testQueryResourceWithEnvironment() {
+        String sql = "environment '{\"field\":[4,5,2]}' " +
+                "select * from (select * from '[{\"field\":2}, {\"field\":4}]' as resource where field=(select title from Resource where id=$field.0) " +
+                "and isNotNull((select title from Resource where id=$field.1))) as data";
+        Query query = Query.compile(sql);
+        Map<String, Object> environmentBody = query.getEnvironment();
+        QueryResource queryResource = query.getResource();
+        if (queryResource instanceof QueryDynamicResource) {
+            QueryDynamicResource queryDynamicResource = (QueryDynamicResource) queryResource;
+            Assert.assertEquals(environmentBody, queryDynamicResource.getQuery().getEnvironment());
+        }
+    }
+
+    @Test
+    public void testResourceAndEvaluatorsInUnionsWithEnvironment() {
+        String sql = "environment '{\"field\":[4,5,2]}' " +
+                "select * from '[{\"field\":2}, {\"field\":4}]' as resource where field=(select title from Resource where id=$field.0) " +
+                "and (select title from Resource where id=$field.1)=valueExample " +
+                "union select * from (select * from resource where field = $field.1 and title=(select title from Resource where id=$field.2)) " +
+                "as data where field = $field.1 and title=(select title from Resource where id=$field.2)";
+        Query query = Query.compile(sql);
+        Map<String, Object> environmentBody = query.getEnvironment();
+        for (Queryable unions : query.getUnions()) {
+            Set<Evaluator> evaluators = unions.getQuery().getEvaluators();
+            for (Evaluator evaluator : evaluators) {
+                if (evaluator instanceof FieldEvaluator) {
+                    FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+                    Object leftValue = fieldEvaluator.getLeftValue();
+                    Object rightValue = fieldEvaluator.getRightValue();
+                    if (leftValue instanceof BaseEvaluator.QueryValue) {
+                        BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) leftValue;
+                        Assert.assertEquals(environmentBody, queryValue.getQuery().getEnvironment());
+                    }
+                    if (rightValue instanceof BaseEvaluator.QueryValue) {
+                        BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) rightValue;
+                        Assert.assertEquals(environmentBody, queryValue.getQuery().getEnvironment());
+                    }
+                }
+            }
+
+            QueryResource queryResource = unions.getQuery().getResource();
+            if (queryResource instanceof QueryDynamicResource) {
+                QueryDynamicResource queryDynamicResource = (QueryDynamicResource) queryResource;
+                Assert.assertEquals(environmentBody, queryDynamicResource.getQuery().getEnvironment());
+            }
         }
     }
 
