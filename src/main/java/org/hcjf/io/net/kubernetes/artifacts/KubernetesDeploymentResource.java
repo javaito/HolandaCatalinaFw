@@ -2,8 +2,6 @@ package org.hcjf.io.net.kubernetes.artifacts;
 
 import io.kubernetes.client.openapi.models.V1Deployment;
 import org.hcjf.errors.HCJFRuntimeException;
-import org.hcjf.utils.Introspection;
-
 import java.util.Map;
 
 public class KubernetesDeploymentResource extends KubernetesArtifactResource<V1Deployment> {
@@ -21,15 +19,32 @@ public class KubernetesDeploymentResource extends KubernetesArtifactResource<V1D
     }
 
     @Override
-    protected void createArtifact(V1Deployment artifact, Map<String,Object> rawArtifact) {
+    protected void createArtifact(V1Deployment artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
         try {
-            String pretty = Introspection.resolve(rawArtifact, Fields.PRETTY);
-            String dryRun = Introspection.resolve(rawArtifact, Fields.DRY_RUN);
-            String fieldManager = Introspection.resolve(rawArtifact, Fields.FIELD_MANAGER);
-            String fieldValidation = Introspection.resolve(rawArtifact, Fields.FIELD_VALIDATION);
-            getAppsApi().createNamespacedDeployment(getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
+           getAppsApi().createNamespacedDeployment(getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
         } catch (Exception ex) {
             throw new HCJFRuntimeException("K8s deployment creation fail", ex);
         }
+    }
+
+    @Override
+    protected void updateArtifact(String name, V1Deployment artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
+        try {
+            getAppsApi().replaceNamespacedDeployment(name, getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("K8s deployment creation fail", ex);
+        }
+    }
+
+    @Override
+    protected boolean isDeployed(String manifestName) {
+        boolean result = false;
+        try {
+            V1Deployment deployment = getAppsApi().readNamespacedDeployment(manifestName, getNamespace(), null);
+            if (deployment != null){
+                result = true;
+            }
+        } catch (Exception ex) {}
+        return result;
     }
 }

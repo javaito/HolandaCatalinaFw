@@ -2,7 +2,6 @@ package org.hcjf.io.net.kubernetes.artifacts;
 
 import io.kubernetes.client.openapi.models.V1Job;
 import org.hcjf.errors.HCJFRuntimeException;
-import org.hcjf.utils.Introspection;
 
 import java.util.Map;
 
@@ -21,15 +20,32 @@ public class KubernetesJobResource extends KubernetesArtifactResource<V1Job> {
     }
 
     @Override
-    protected void createArtifact(V1Job artifact, Map<String, Object> rawArtifact) {
+    protected void createArtifact(V1Job artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
         try {
-            String pretty = Introspection.resolve(rawArtifact, Fields.PRETTY);
-            String dryRun = Introspection.resolve(rawArtifact, Fields.DRY_RUN);
-            String fieldManager = Introspection.resolve(rawArtifact, Fields.FIELD_MANAGER);
-            String fieldValidation = Introspection.resolve(rawArtifact, Fields.FIELD_VALIDATION);
             getBatchApi().createNamespacedJob(getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
         } catch (Exception ex) {
             throw new HCJFRuntimeException("K8s job creation fail", ex);
         }
+    }
+
+    @Override
+    protected void updateArtifact(String name, V1Job artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
+        try {
+            getBatchApi().replaceNamespacedJob(name, getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("K8s job creation fail", ex);
+        }
+    }
+
+    @Override
+    protected boolean isDeployed(String manifestName) {
+        boolean result = false;
+        try {
+            V1Job job = getBatchApi().readNamespacedJob(manifestName, getNamespace(), null);
+            if (job != null){
+                result = true;
+            }
+        } catch (Exception ex) {}
+        return result;
     }
 }
