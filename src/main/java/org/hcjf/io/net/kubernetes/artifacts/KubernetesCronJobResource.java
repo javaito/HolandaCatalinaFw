@@ -39,7 +39,7 @@ public class KubernetesCronJobResource extends KubernetesArtifactResource<V1Cron
     }
 
     @Override
-    protected boolean isDeployed(String manifestName) {
+    protected boolean isCreated(String manifestName) {
         boolean result = false;
         try {
             V1CronJob cronJob = getBatchApi().readNamespacedCronJob(manifestName, getNamespace(), null);

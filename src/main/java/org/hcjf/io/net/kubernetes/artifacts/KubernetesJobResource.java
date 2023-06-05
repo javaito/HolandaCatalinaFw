@@ -38,7 +38,7 @@ public class KubernetesJobResource extends KubernetesArtifactResource<V1Job> {
     }
 
     @Override
-    protected boolean isDeployed(String manifestName) {
+    protected boolean isCreated(String manifestName) {
         boolean result = false;
         try {
             V1Job job = getBatchApi().readNamespacedJob(manifestName, getNamespace(), null);

@@ -37,7 +37,7 @@ public class KubernetesDeploymentResource extends KubernetesArtifactResource<V1D
     }
 
     @Override
-    protected boolean isDeployed(String manifestName) {
+    protected boolean isCreated(String manifestName) {
         boolean result = false;
         try {
             V1Deployment deployment = getAppsApi().readNamespacedDeployment(manifestName, getNamespace(), null);

@@ -57,7 +57,7 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
     protected abstract void createArtifact(T artifact, String pretty, String dryRun, String fieldManager, String fieldValidation);
     protected abstract void updateArtifact(String name, T artifact, String pretty, String dryRun, String fieldManager, String fieldValidation);
 
-    protected abstract boolean isDeployed(String manifestName);
+    protected abstract boolean isCreated(String manifestName);
 
     protected final CoreV1Api getCoreApi() {
         return coreApi;
@@ -104,7 +104,7 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
         String dryRun = Introspection.resolve(artifact, Fields.DRY_RUN);
         String fieldManager = Introspection.resolve(artifact, Fields.FIELD_MANAGER);
         String fieldValidation = Introspection.resolve(artifact, Fields.FIELD_VALIDATION);
-        if (name != null && isDeployed(name)){
+        if (name != null && isCreated(name)){
             if (forceUpdate){
                 updateArtifact(name, artifactInstance, pretty, dryRun, fieldManager, fieldValidation);
             }

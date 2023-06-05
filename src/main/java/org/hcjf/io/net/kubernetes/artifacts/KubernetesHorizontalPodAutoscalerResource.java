@@ -38,7 +38,7 @@ public class KubernetesHorizontalPodAutoscalerResource extends KubernetesArtifac
     }
 
     @Override
-    protected boolean isDeployed(String manifestName) {
+    protected boolean isCreated(String manifestName) {
         boolean result = false;
         try {
             V2beta2HorizontalPodAutoscaler horizontalPodAutoscaler = getAutoscalingV2beta2Api().readNamespacedHorizontalPodAutoscaler(manifestName, getNamespace(), null);

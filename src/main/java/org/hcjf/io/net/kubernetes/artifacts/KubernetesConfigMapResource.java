@@ -44,7 +44,7 @@ public class KubernetesConfigMapResource extends KubernetesArtifactResource<V1Co
     }
 
     @Override
-    protected boolean isDeployed(String manifestName) {
+    protected boolean isCreated(String manifestName) {
         boolean result = false;
         try {
             V1ConfigMap configMap = getCoreApi().readNamespacedConfigMap(manifestName, getNamespace(), null);
