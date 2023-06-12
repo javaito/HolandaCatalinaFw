@@ -105,7 +105,7 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
         String fieldManager = Introspection.resolve(artifact, Fields.FIELD_MANAGER);
         String fieldValidation = Introspection.resolve(artifact, Fields.FIELD_VALIDATION);
         if (name != null && isCreated(name)){
-            if (forceUpdate){
+            if (forceUpdate != null && forceUpdate){
                 updateArtifact(name, artifactInstance, pretty, dryRun, fieldManager, fieldValidation);
             }
         } else {
