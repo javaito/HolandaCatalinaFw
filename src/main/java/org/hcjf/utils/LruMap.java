@@ -117,9 +117,14 @@ public class LruMap<K extends Object, V extends Object> implements Map<K,V> {
     public synchronized V put(K key, V value) {
         V result = mapInstance.put(key, value);
         Key<K> temporalKey = new Key<>(key);
-        keys.add(temporalKey);
-        metadata.put(key, temporalKey);
-        updateMetadata();
+        if (metadata.containsKey(key)) {
+            temporalKey = metadata.get(key);
+            updateMetadata(temporalKey);
+        } else {
+            keys.add(temporalKey);
+            metadata.put(key, temporalKey);
+            updateMetadata();
+        }
         removeOverflow();
         return result;
     }
