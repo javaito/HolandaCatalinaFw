@@ -21,15 +21,32 @@ public class KubernetesCronJobResource extends KubernetesArtifactResource<V1Cron
     }
 
     @Override
-    protected void createArtifact(V1CronJob artifact, Map<String, Object> rawArtifact) {
+    protected void createArtifact(V1CronJob artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
         try {
-            String pretty = Introspection.resolve(rawArtifact, Fields.PRETTY);
-            String dryRun = Introspection.resolve(rawArtifact, Fields.DRY_RUN);
-            String fieldManager = Introspection.resolve(rawArtifact, Fields.FIELD_MANAGER);
-            String fieldValidation = Introspection.resolve(rawArtifact, Fields.FIELD_VALIDATION);
             getBatchApi().createNamespacedCronJob(getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
         } catch (Exception ex) {
             throw new HCJFRuntimeException("K8s cron job creation fail", ex);
         }
+    }
+
+    @Override
+    protected void updateArtifact(String name, V1CronJob artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
+        try {
+            getBatchApi().replaceNamespacedCronJob(name,getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("K8s cron job creation fail", ex);
+        }
+    }
+
+    @Override
+    protected boolean isCreated(String manifestName) {
+        boolean result = false;
+        try {
+            V1CronJob cronJob = getBatchApi().readNamespacedCronJob(manifestName, getNamespace(), null);
+            if (cronJob != null){
+                result = true;
+            }
+        } catch (Exception ex) {}
+        return result;
     }
 }

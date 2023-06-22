@@ -22,8 +22,11 @@ import java.util.Map;
 public abstract class KubernetesArtifactResource<T extends Object> extends Layer implements CreateLayerInterface<Map<String,Object>> {
 
     public static final class Fields {
+        public static final String NAME = "name";
         public static final String YAML = "yaml";
         public static final String PARAMETERS = "parameters";
+        public static final String FORCE_UPDATE = "forceUpdate";
+
         public static final String PRETTY = "pretty";
         public static final String DRY_RUN = "dryRun";
         public static final String FIELD_MANAGER = "fieldManager";
@@ -51,7 +54,10 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
 
     protected abstract Class<T> getArtifactType();
 
-    protected abstract void createArtifact(T artifact, Map<String,Object> rawArtifact);
+    protected abstract void createArtifact(T artifact, String pretty, String dryRun, String fieldManager, String fieldValidation);
+    protected abstract void updateArtifact(String name, T artifact, String pretty, String dryRun, String fieldManager, String fieldValidation);
+
+    protected abstract boolean isCreated(String manifestName);
 
     protected final CoreV1Api getCoreApi() {
         return coreApi;
@@ -91,7 +97,21 @@ public abstract class KubernetesArtifactResource<T extends Object> extends Layer
         }
 
         T artifactInstance = Yaml.loadAs(yamlBody, getArtifactType());
-        createArtifact(artifactInstance, artifact);
+
+        Boolean forceUpdate = Introspection.resolve(artifact, Fields.FORCE_UPDATE);
+        String name = Introspection.resolve(artifact, Fields.NAME);
+        String pretty = Introspection.resolve(artifact, Fields.PRETTY);
+        String dryRun = Introspection.resolve(artifact, Fields.DRY_RUN);
+        String fieldManager = Introspection.resolve(artifact, Fields.FIELD_MANAGER);
+        String fieldValidation = Introspection.resolve(artifact, Fields.FIELD_VALIDATION);
+        if (name != null && isCreated(name)){
+            if (forceUpdate != null && forceUpdate){
+                updateArtifact(name, artifactInstance, pretty, dryRun, fieldManager, fieldValidation);
+            }
+        } else {
+            createArtifact(artifactInstance, pretty, dryRun, fieldManager, fieldValidation);
+        }
+
         return response;
     }
 }

@@ -2,7 +2,6 @@ package org.hcjf.io.net.kubernetes.artifacts;
 
 import io.kubernetes.client.openapi.models.V2beta2HorizontalPodAutoscaler;
 import org.hcjf.errors.HCJFRuntimeException;
-import org.hcjf.utils.Introspection;
 
 import java.util.Map;
 
@@ -21,15 +20,32 @@ public class KubernetesHorizontalPodAutoscalerResource extends KubernetesArtifac
     }
 
     @Override
-    protected void createArtifact(V2beta2HorizontalPodAutoscaler artifact, Map<String, Object> rawArtifact) {
+    protected void createArtifact(V2beta2HorizontalPodAutoscaler artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
         try {
-            String pretty = Introspection.resolve(rawArtifact, Fields.PRETTY);
-            String dryRun = Introspection.resolve(rawArtifact, Fields.DRY_RUN);
-            String fieldManager = Introspection.resolve(rawArtifact, Fields.FIELD_MANAGER);
-            String fieldValidation = Introspection.resolve(rawArtifact, Fields.FIELD_VALIDATION);
             getAutoscalingV2beta2Api().createNamespacedHorizontalPodAutoscaler(getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
         } catch (Exception ex) {
             throw new HCJFRuntimeException("K8s horizontal pod autoscaler creation fail", ex);
         }
+    }
+
+    @Override
+    protected void updateArtifact(String name, V2beta2HorizontalPodAutoscaler artifact, String pretty, String dryRun, String fieldManager, String fieldValidation) {
+        try {
+            getAutoscalingV2beta2Api().replaceNamespacedHorizontalPodAutoscaler(name,getNamespace(), artifact, pretty, dryRun, fieldManager, fieldValidation);
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("K8s cron job creation fail", ex);
+        }
+    }
+
+    @Override
+    protected boolean isCreated(String manifestName) {
+        boolean result = false;
+        try {
+            V2beta2HorizontalPodAutoscaler horizontalPodAutoscaler = getAutoscalingV2beta2Api().readNamespacedHorizontalPodAutoscaler(manifestName, getNamespace(), null);
+            if (horizontalPodAutoscaler != null){
+                result = true;
+            }
+        } catch (Exception ex) {}
+        return result;
     }
 }
