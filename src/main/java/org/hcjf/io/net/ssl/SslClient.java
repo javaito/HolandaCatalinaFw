@@ -19,6 +19,7 @@ public class SslClient extends SslPeer {
     private ByteBuffer myNetData;
     private ByteBuffer peerAppData;
     private ByteBuffer peerNetData;
+    private ByteBuffer previousNetData;
 
     public ByteBuffer getMyAppData(SocketChannel socketChannel) {
         return myAppData;
@@ -84,10 +85,10 @@ public class SslClient extends SslPeer {
                 engine.setUseClientMode(true);
 
                 SSLSession session = engine.getSession();
-                setMyAppData(socketChannel, ByteBuffer.allocate(session.getPacketBufferSize()));
-                setMyNetData(socketChannel, ByteBuffer.allocate(10080));
-                setPeerAppData(socketChannel, ByteBuffer.allocate(session.getPacketBufferSize()));
-                setPeerNetData(socketChannel, ByteBuffer.allocate(10080));
+                setMyAppData(socketChannel, ByteBuffer.allocate(1000000));
+                setMyNetData(socketChannel, ByteBuffer.allocate(1000000));
+                setPeerAppData(socketChannel, ByteBuffer.allocate(1000000));
+                setPeerNetData(socketChannel, ByteBuffer.allocate(1000000));
             }
             return engine;
         } catch (Exception ex) {
@@ -96,7 +97,7 @@ public class SslClient extends SslPeer {
     }
 
     @Override
-    public void write(SocketChannel socketChannel, ByteBuffer message) throws IOException {
+    public synchronized void write(SocketChannel socketChannel, ByteBuffer message) throws IOException {
         getMyAppData(socketChannel).clear();
         getMyAppData(socketChannel).put(message);
         getMyAppData(socketChannel).flip();
@@ -127,42 +128,58 @@ public class SslClient extends SslPeer {
     }
 
     @Override
-    public int read(SocketChannel socketChannel, ByteBuffer buffer) throws Exception  {
-        getPeerNetData(socketChannel).clear();
+    public synchronized int read(SocketChannel socketChannel, ByteBuffer buffer) throws Exception  {
         boolean exitReadLoop = false;
         int bytesRead = 0;
         while (!exitReadLoop) {
-            bytesRead += socketChannel.read(getPeerNetData(socketChannel));
-            if (bytesRead > 0) {
-                getPeerNetData(socketChannel).flip();
-                while (getPeerNetData(socketChannel).hasRemaining()) {
-                    getPeerAppData(socketChannel).clear();
-                    SSLEngineResult result = engine.unwrap(getPeerNetData(socketChannel), getPeerAppData(socketChannel));
-                    switch (result.getStatus()) {
-                        case OK:
-                            getPeerAppData(socketChannel).flip();
-                            bytesRead += getPeerAppData(socketChannel).limit();
-                            buffer.put(getPeerAppData(socketChannel));
-                            exitReadLoop = true;
-                            break;
-                        case BUFFER_OVERFLOW:
-                            setPeerAppData(socketChannel, enlargeApplicationBuffer(engine, getPeerAppData(socketChannel)));
-                            break;
-                        case BUFFER_UNDERFLOW:
-                            setPeerNetData(socketChannel, handleBufferUnderflow(engine, getPeerNetData(socketChannel)));
-                            break;
-                        case CLOSED:
-                            bytesRead = -1;
-                            break;
-                        default:
-                            throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
-                    }
+            try {
+                System.out.println("Peer net buffer remaining at begin: " + getPeerNetData(socketChannel).remaining());
+                getPeerNetData(socketChannel).clear();
+                if(previousNetData != null) {
+                    getPeerNetData(socketChannel).put(previousNetData);
                 }
-            } else {
-                break;
+                bytesRead = socketChannel.read(getPeerNetData(socketChannel));
+                if (bytesRead > 0) {
+                    getPeerNetData(socketChannel).flip();
+                    while (getPeerNetData(socketChannel).hasRemaining()) {
+                        getPeerAppData(socketChannel).clear();
+                        SSLEngineResult result = engine.unwrap(getPeerNetData(socketChannel), getPeerAppData(socketChannel));
+                        switch (result.getStatus()) {
+                            case OK:
+                                System.out.println("SSL Ok");
+                                getPeerAppData(socketChannel).flip();
+                                getPeerAppData(socketChannel).limit();
+                                buffer.put(getPeerAppData(socketChannel));
+                                previousNetData = null;
+                                exitReadLoop = true;
+                                break;
+                            case BUFFER_OVERFLOW:
+                                System.out.println("SSL Overflow");
+                                setPeerAppData(socketChannel, enlargeApplicationBuffer(engine, getPeerAppData(socketChannel)));
+                                break;
+                            case BUFFER_UNDERFLOW:
+                                System.out.println("SSL Underflow");
+                                byte[] previous = new byte[getPeerNetData(socketChannel).remaining()];
+                                getPeerNetData(socketChannel).get(previous);
+                                previousNetData = ByteBuffer.wrap(previous);
+                                exitReadLoop = true;
+                                break;
+                            case CLOSED:
+                                bytesRead = -1;
+                                break;
+                            default:
+                                throw new IllegalStateException("Invalid SSL status: " + result.getStatus());
+                        }
+                    }
+                } else {
+                    break;
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
         }
 
+        System.out.println("Read loop ends");
         return bytesRead;
     }
 

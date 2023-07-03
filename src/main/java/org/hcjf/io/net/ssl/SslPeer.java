@@ -146,7 +146,7 @@ public abstract class SslPeer {
                                 }
                                 getPeerNetData(socketChannel).clear();
                             } catch (Exception e) {
-                                Log.i("SSL", "Failed to send server's CLOSE message due to socket channel's failure.");
+                                Log.w("SSL", "Failed to send server's CLOSE message due to socket channel's failure.");
                                 handshakeStatus = engine.getHandshakeStatus();
                             }
                             break;
@@ -163,12 +163,14 @@ public abstract class SslPeer {
                     break;
                 case FINISHED:
                 case NOT_HANDSHAKING:
+                    Log.w("SSL", "Not handshaking");
                     break;
                 default:
                     throw new IllegalStateException("Invalid SSL status: " + handshakeStatus);
             }
         }
 
+        Log.i("SSL", "Return handshake");
         return true;
 
     }
@@ -183,7 +185,7 @@ public abstract class SslPeer {
 
     protected ByteBuffer enlargeBuffer(ByteBuffer buffer, int sessionProposedCapacity) {
         if (sessionProposedCapacity > buffer.capacity()) {
-            buffer = ByteBuffer.allocate(sessionProposedCapacity);
+            buffer = ByteBuffer.allocate(10000);
         } else {
             buffer = ByteBuffer.allocate(buffer.capacity() * 2);
         }

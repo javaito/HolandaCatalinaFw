@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.encoding.MimeType;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
@@ -9,6 +10,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -16,6 +18,84 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 public class SimpleHttpClient {
+
+
+  //  @Test
+    public void testHereTraffic() throws Exception {
+//        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+//        System.setProperty(SystemProperties.Log.LEVEL, "1");
+
+        String apiKey = "kyY1-iqt2fcp07vL7jEHY6B7SL8KL6sze9K6M4O0XMQ";
+        double latitude = 52.525439;
+        double longitude = 13.38727;
+        int zoom = 8;
+
+        double latRad = latitude * Math.PI / 180;
+        double n = Math.pow(2.0, zoom);
+        double xTile = n * ((longitude + 180.0) / 360.0);
+        double yTile = n * (1.0-(Math.log(Math.tan(latRad) + 1.0/Math.cos(latRad)) / Math.PI)) / 2.0;
+
+        System.out.println(xTile);
+        System.out.println(yTile);
+
+        String url = "https://data.traffic.hereapi.com/v7/flow?in=circle:%s,%s;r=%s&locationReferencing=shape&apiKey=%s";
+        url = String.format(url, latitude, longitude, 1000, apiKey);
+
+        HttpClient client = new HttpClient(new URL(url));
+        client.setReadTimeout(50000L);
+        client.setWriteTimeout(50000L);
+        client.setHttpMethod(HttpMethod.GET);
+        HttpResponse callback = client.request();
+        System.out.println(callback);
+
+        System.out.println(JsonUtils.toJsonTree(new String(callback.getBody())).toString());
+    }
+
+  //  @Test
+    public void testDarwin() throws Exception {
+        String url = "https://ramuh.syntropysystem.com/uaa/security/login";
+
+
+        String json = "{\n" +
+                "\"password\": \"ZqBd64^7b1d#\",\n" +
+                "\"username\": \"yanguas-sitrack\"\n" +
+                "}";
+
+        byte[] body = json.getBytes();
+
+        HttpClient client = new HttpClient(new URL(url));
+        client.setReadTimeout(50000L);
+        client.setWriteTimeout(50000L);
+        client.setHttpMethod(HttpMethod.POST);
+        client.setBody(body);
+        client.addHttpHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(body.length)));
+        client.addHttpHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
+        HttpResponse callback = client.request();
+        System.out.println(callback);
+
+        System.out.println(JsonUtils.toJsonTree(new String(callback.getBody())).toString());
+    }
+
+    //@Test
+    public void testHereService() throws Exception {
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.LEVEL, "1");
+
+        String url = "https://geocode.search.hereapi.com/v1/geocode" +
+                "?q=2250+Alsina%2C+Godoy+Cruz+Mendoza" +
+                "&limit=4" +
+                "&apiKey=kyY1-iqt2fcp07vL7jEHY6B7SL8KL6sze9K6M4O0XMQ";
+
+        HttpClient client = new HttpClient(new URL(url));
+        client.setReadTimeout(50000L);
+        client.setWriteTimeout(50000L);
+        client.setHttpMethod(HttpMethod.GET);
+        HttpResponse callback = client.request();
+        //Assert.assertEquals(callback.getResponseCode().longValue(), 200L);
+        System.out.println(callback);
+
+        System.out.println(JsonUtils.toJsonTree(new String(callback.getBody())).toString());
+    }
 
     //@Test
     public void testHttpClient() {
