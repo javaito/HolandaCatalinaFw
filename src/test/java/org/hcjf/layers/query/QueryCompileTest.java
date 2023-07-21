@@ -612,6 +612,23 @@ public class QueryCompileTest {
     }
 
     @Test
+    public void testRecompileQuery(){
+        String sql = "select title, id, (select name, id from Account where name=$accountData.1.name) as unAccount from " +
+                "Issue where author = (select id from Account where id = $accountData.0.accountId) and " +
+                "(title = $issuedata.0.title  or nanoId = $issuedata.1.nanoId) union select title as nombre, nanoId as " +
+                "nanoAlias, (select name, id from Account where id=$accountData.1.accountId or name=$accountData.0.name) as twoAccounts " +
+                "from Issue where author = (select id from Account where id = $accountData.0.accountId) and " +
+                "(title = $issuedata.1.title or nanoId = $issuedata.0.nanoId) union select name, (select * from ProcessScope limit 1) " +
+                "as selectToProcessScope, methodName, activationCode from Credentials LEFT JOIN Account on Credentials.accountId = " +
+                "Account.id where accountId=$accountData.1.accountId or accountId=$accountData.0.accountId";
+        Query queryOne = Query.compile(sql);
+        Query queryTwo = Query.compile(queryOne.toString());
+        Query queryThree = Query.compile(queryTwo.toString());
+        Assert.assertEquals(queryOne, queryTwo);
+        Assert.assertEquals(queryOne, queryThree);
+    }
+
+    @Test
     public void testFieldEvaluatorsWithEnvironment() {
         String sql = "environment '{\"field\":[4,5,2]}' " +
                 "select * from '[{\"field\":2}, {\"field\":4}]' as resource where field=(select title from Resource where id=$field.0) " +
