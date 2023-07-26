@@ -229,7 +229,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             }
             for (int i = 2; i < unions.length; i+=2) {
                 String unionString = unions[i].trim();
-                if (!unionString.contains(SystemProperties.get(SystemProperties.Query.ENVIRONMENT_GROUP_INDEX)) && environmentBody != null){
+                if (!unionString.toLowerCase().contains(SystemProperties.get(SystemProperties.Query.ENVIRONMENT_GROUP_INDEX)) && environmentBody != null){
                     unionString = matcher.group(SystemProperties.get(SystemProperties.Query.ENVIRONMENT_GROUP_INDEX)).concat(Strings.WHITE_SPACE).concat(unionString);
                 }
                 groups.set(groups.size() - 1, unionString);
@@ -522,10 +522,13 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
         } else if(trimmedStringValue.matches(Strings.REPLACEABLE_EXPRESSION_REGEX)) {
             Integer index = Strings.getGroupIndexAsNumber(trimmedStringValue, Strings.REPLACEABLE_GROUP);
             String group = groups.get(index);
-            if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT))) {
+            if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT)) ||
+                    group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT))) {
                 FieldEvaluator.QueryValue queryValue = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex),
                         parameterClass.equals(QueryReturnParameter.class));
-                if (query.getEnvironment() != null) queryValue.getQuery().setEnvironment(query.getEnvironment());
+                if (query.getEnvironment() != null && !group.toUpperCase().contains(SystemProperties.Query.ReservedWord.ENVIRONMENT)){
+                    queryValue.getQuery().setEnvironment(query.getEnvironment());
+                }
                 if(alias != null) {
                     result = new QueryReturnUnprocessedValue(query, trimmedStringValue, alias, queryValue);
                 } else {
