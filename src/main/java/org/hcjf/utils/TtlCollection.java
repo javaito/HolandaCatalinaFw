@@ -1,6 +1,7 @@
 package org.hcjf.utils;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -31,9 +32,11 @@ public abstract class TtlCollection<K extends Object> {
      */
     protected final synchronized void removeOldWindows() {
         Long current = System.currentTimeMillis();
-        for(Long time : timeWindows.keySet()) {
+        for(Iterator<Long> iterator = timeWindows.keySet().iterator(); iterator.hasNext();) {
+            Long time = iterator.next();
             if((time + timeWindowsSize) < current) {
                 removeOldInstance(timeWindows.get(time));
+                iterator.remove();
             }
         }
     }
