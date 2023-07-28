@@ -48,5 +48,10 @@ public class TTLMapTest {
         Thread.sleep(5500);
 
         Assert.assertTrue(superMap.isEmpty());
+
+        superMap.put("3°","3°");
+        Thread.sleep(10);
+
+        Assert.assertTrue(superMap.containsKey("3°"));
     }
 }
