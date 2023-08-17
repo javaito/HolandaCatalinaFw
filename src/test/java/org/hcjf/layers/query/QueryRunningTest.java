@@ -877,6 +877,14 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void autoRoundMathOperations() {
+        Query query = Query.compile("SELECT 2.82999899999999982025400413476745598018169403076171875 * 3  as number FROM '{}' as data");
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        String stringValue = Introspection.resolve(resultSet.stream().findFirst().get(), "number").toString();
+        Assert.assertEquals(stringValue.length(), 35);
+    }
+
+    @Test
     public void queryInsideAggregationContext() {
         Query query = Query.compile("SELECT (SELECT * FROM .) as names FROM character");
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);

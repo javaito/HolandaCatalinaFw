@@ -439,6 +439,8 @@ public final class SystemProperties extends Properties {
             public static final String COLLECTION_FUNCTION_NAME = "hcjf.query.function.collection.name";
             public static final String OBJECT_FUNCTION_NAME = "hcjf.query.function.object.name";
             public static final String BIG_DECIMAL_DIVIDE_SCALE = "hcjf.query.function.big.decimal.divide.scale";
+            public static final String MATH_OPERATION_RESULT_ROUND = "hcjf.query.function.math.operation.result.round";
+            public static final String MATH_OPERATION_RESULT_ROUND_CONTEXT = "hcjf.query.function.math.operation.result.round.context";
         }
     }
 
@@ -901,6 +903,8 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.Function.COLLECTION_FUNCTION_NAME, "collection");
         defaults.put(Query.Function.OBJECT_FUNCTION_NAME, "object");
         defaults.put(Query.Function.BIG_DECIMAL_DIVIDE_SCALE, "8");
+        defaults.put(Query.Function.MATH_OPERATION_RESULT_ROUND, "true");
+        defaults.put(Query.Function.MATH_OPERATION_RESULT_ROUND_CONTEXT, "128");
 
         defaults.put(Cloud.SERVICE_NAME, "CloudService");
         defaults.put(Cloud.SERVICE_PRIORITY, "0");

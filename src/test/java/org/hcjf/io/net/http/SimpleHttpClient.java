@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -74,6 +75,37 @@ public class SimpleHttpClient {
         System.out.println(callback);
 
         System.out.println(JsonUtils.toJsonTree(new String(callback.getBody())).toString());
+    }
+
+    @Test
+    public void testDataDog() throws Exception {
+
+        System.setProperty(SystemProperties.Log.SYSTEM_OUT_ENABLED, "true");
+        System.setProperty(SystemProperties.Log.LEVEL, "1");
+
+        String url = "https://api.datadoghq.com/api/v2/logs/events/search";
+
+        HttpClient client = new HttpClient(new URL(url));
+        client.setReadTimeout(50000L);
+        client.setWriteTimeout(50000L);
+        client.addHttpHeader(new HttpHeader("DD-APPLICATION-KEY", "f6845793aedd2976d25136832263186a1259a9d5"));
+        client.addHttpHeader(new HttpHeader("DD-API-KEY", "cf366afbb2985ad49ed5710186b28e16"));
+        client.setHttpMethod(HttpMethod.POST);
+
+        String body = "{\"filter\": {" +
+                "\"from\": \"now-5d\"," +
+                "\"to\": \"now\"," +
+                "\"query\": \"triggerid:7ea018a3-09c6-4c2c-a875-fac3acfdca29\"" +
+                "}}";
+
+        byte[] bodyBytes = body.getBytes(Charset.defaultCharset());
+        client.setBody(bodyBytes);
+        client.addHttpHeader(new HttpHeader(HttpHeader.CONTENT_TYPE, MimeType.APPLICATION_JSON.toString()));
+        client.addHttpHeader(new HttpHeader(HttpHeader.CONTENT_LENGTH, Integer.toString(bodyBytes.length)));
+
+        HttpResponse callback = client.request();
+
+        System.out.println();
     }
 
     //@Test
