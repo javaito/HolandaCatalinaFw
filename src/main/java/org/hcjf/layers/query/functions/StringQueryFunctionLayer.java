@@ -3,7 +3,10 @@ package org.hcjf.layers.query.functions;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Strings;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * @author javaito
@@ -50,7 +53,7 @@ public class StringQueryFunctionLayer extends BaseQueryFunctionLayer implements 
         switch (functionName) {
             case TRIM: result = ((String)getParameter(0, parameters)).trim();break;
             case LENGTH: result = ((String)getParameter(0, parameters)).length();break;
-            case SPLIT: result = ((String)getParameter(0, parameters)).split(getParameter(1, parameters));break;
+            case SPLIT: result = Arrays.asList(((String)getParameter(0, parameters)).split(getParameter(1, parameters)));break;
             case SPLIT_BY_LENGTH: result = Strings.splitByLength(getParameter(0, parameters), ((Number)getParameter(1, parameters)).intValue());break;
             case TO_UPPER_CASE: result = ((String)getParameter(0, parameters)).toUpperCase();break;
             case TO_LOWER_CASE: result = ((String)getParameter(0, parameters)).toLowerCase();break;
