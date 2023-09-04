@@ -39,6 +39,17 @@ public interface NumberSetFunction {
     default Number applyFunction(Number firstNumber, Number secondNumber, BiFunction<BigDecimal, BigDecimal, Number> function) {
         Number result = function.apply(new BigDecimal(firstNumber.doubleValue()),
                 new BigDecimal(secondNumber.doubleValue()));
+
+        Boolean round = SystemProperties.getBoolean(SystemProperties.Query.Function.MATH_OPERATION_RESULT_ROUND);
+        if (result instanceof BigDecimal && round) {
+            Integer mathContext = SystemProperties.getInteger(SystemProperties.Query.Function.MATH_OPERATION_RESULT_ROUND_CONTEXT);
+            switch (mathContext) {
+                case 32: result = ((BigDecimal)result).round(MathContext.DECIMAL32); break;
+                case 64: result = ((BigDecimal)result).round(MathContext.DECIMAL64); break;
+                case 128: result = ((BigDecimal)result).round(MathContext.DECIMAL128); break;
+            }
+        }
+
         return result;
     }
 
@@ -108,15 +119,6 @@ public interface NumberSetFunction {
                 throw new HCJFRuntimeException("Illegal comparator into the meth expression: %s", Objects.toString(comparator));
             }
         } else {
-            Boolean round = SystemProperties.getBoolean(SystemProperties.Query.Function.MATH_OPERATION_RESULT_ROUND);
-            if (evalResult instanceof BigDecimal && round) {
-                Integer mathContext = SystemProperties.getInteger(SystemProperties.Query.Function.MATH_OPERATION_RESULT_ROUND_CONTEXT);
-                switch (mathContext) {
-                    case 32: evalResult = ((BigDecimal)evalResult).round(MathContext.DECIMAL32); break;
-                    case 64: evalResult = ((BigDecimal)evalResult).round(MathContext.DECIMAL64); break;
-                    case 128: evalResult = ((BigDecimal)evalResult).round(MathContext.DECIMAL128); break;
-                }
-            }
             result = evalResult;
         }
 
