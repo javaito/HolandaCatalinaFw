@@ -231,6 +231,8 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             instant = ((Date) firstParam).toInstant();
         } else if(firstParam instanceof TemporalAccessor) {
             instant = Instant.from((TemporalAccessor)firstParam);
+        } else if (firstParam instanceof String) {
+            instant = new Date(firstParam.toString()).toInstant();
         } else {
             throw new HCJFRuntimeException("Illegal argument");
         }
