@@ -110,8 +110,13 @@ public class GeoQueryFunctionLayer extends BaseQueryFunctionLayer implements Que
             case Functions.GEO_AS_TEXT: result = geometry.asText(); break;
             case Functions.GEO_BOUNDARY: result = geometry.boundary(); break;
             case Functions.GEO_BUFFER: {
-                checkNumberAndType(functionName, parameters, 2, Object.class, Double.class);
-                result = geometry.buffer((Double)parameters[1]);
+                try {
+                    checkNumberAndType(functionName, parameters, 2, Object.class, Double.class);
+                    result = geometry.buffer((Double)parameters[1]);
+                }catch (Exception ex){
+                    checkNumberAndType(functionName, parameters, 3, Object.class, Double.class, Long.class);
+                    result = geometry.buffer((Double)parameters[1], ((Long) parameters[2]).intValue());
+                }
                 break;
             }
             case Functions.GEO_CENTROID: result = geometry.centroid(); break;
