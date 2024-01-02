@@ -832,13 +832,19 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         return result;
     }
-
+    /**
+     * Removes the TEMP_DISTINCTIVE_KEY entry in place from each Map in the given collection.
+     * @param result The collection of Map objects from which the TEMP_DISTINCTIVE_KEY entry will be removed.
+     */
     private void clearTempDistinctive(Collection<Map<String, Object> > result) {
         for (Map item : result){
             item.remove(TEMP_DISTINCTIVE_KEY);
         }
     }
-
+    /**
+     * Adds a unique identifier to the given Map object.
+     * @param object The Map object to which the unique identifier will be added.
+     */
     private void makeUnique(Map<String, Object> object) {
         object.put(TEMP_DISTINCTIVE_KEY, UUID.randomUUID());
     }
