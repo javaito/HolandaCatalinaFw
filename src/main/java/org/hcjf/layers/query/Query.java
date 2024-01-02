@@ -790,7 +790,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 long clearTempStartTime = System.currentTimeMillis();
                 clearTempDistinctive((Collection<Map<String, Object>>) result);
                 long clearTempEndTime = System.currentTimeMillis();
-                Log.i("Testing_Changes_Unique",String.format("The Clearing process took: ", (clearTempEndTime - clearTempStartTime) ));
+                Log.i("Temp_Unique",String.format("The Clearing process took: ", (clearTempEndTime - clearTempStartTime) ));
             }
 
             Long timeAggregatingData = System.currentTimeMillis();
