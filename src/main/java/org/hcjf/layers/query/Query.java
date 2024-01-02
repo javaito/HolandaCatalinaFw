@@ -593,7 +593,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                 //a comparator using the order fields.
                 result = new TreeSet<>((o1, o2) -> {
                     int compareResult = 0;
+                    Map<String, Object> map1 = (Map<String, Object>)o1;
+                    Map<String, Object> map2 = (Map<String, Object>)o2;
 
+                    if (!map1.containsKey(TEMP_DISTINCTIVE_KEY) && !map2.containsKey(TEMP_DISTINCTIVE_KEY)) {
+                        makeUnique((Map<String, Object>) o1);
+                    }
                     Comparable<Object> comparable1;
                     Comparable<Object> comparable2;
                     for (QueryOrderParameter orderField : orderParameters) {
@@ -704,7 +709,6 @@ public class Query extends EvaluatorCollection implements Queryable {
                     timeEvaluating = System.currentTimeMillis() - timeEvaluating;
                     timeEvaluatingConditions += timeEvaluating;
                     evaluatingCount++;
-                    makeUnique((Map<String, Object>) object);
                     if (add) {
                         Long timeFormatting = System.currentTimeMillis();
                         if (object instanceof Enlarged || object instanceof Map) {
@@ -787,10 +791,6 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             } finally {
                 clearEvaluatorsCache();
-                long clearTempStartTime = System.currentTimeMillis();
-                clearTempDistinctive((Collection<Map<String, Object>>) result);
-                long clearTempEndTime = System.currentTimeMillis();
-                Log.i("Temp_Unique",String.format("The Clearing process took: ", (clearTempEndTime - clearTempStartTime) ));
             }
 
             Long timeAggregatingData = System.currentTimeMillis();
@@ -829,14 +829,17 @@ public class Query extends EvaluatorCollection implements Queryable {
                 result.addAll(queryable.evaluate(dataSource, consumer));
             }
         }
-
+        long clearTempStartTime = System.currentTimeMillis();
+        clearTempDistinctive((Collection<Map<String, Object>>) result);
+        long clearTempEndTime = System.currentTimeMillis();
+        Log.i("Temp_Unique",String.format("The Clearing process took: ", (clearTempEndTime - clearTempStartTime)));
         return result;
     }
     /**
      * Removes the TEMP_DISTINCTIVE_KEY entry in place from each Map in the given collection.
      * @param result The collection of Map objects from which the TEMP_DISTINCTIVE_KEY entry will be removed.
      */
-    private void clearTempDistinctive(Collection<Map<String, Object> > result) {
+    private void clearTempDistinctive(Collection<Map<String, Object>> result) {
         for (Map item : result){
             item.remove(TEMP_DISTINCTIVE_KEY);
         }
