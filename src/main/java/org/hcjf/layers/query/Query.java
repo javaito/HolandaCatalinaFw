@@ -594,6 +594,10 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                     Comparable<Object> comparable1;
                     Comparable<Object> comparable2;
+                    Class classValueComparable1;
+                    Class classValueComparable2;
+                    Class defaultClass = null;
+                    int cont = 0;
                     for (QueryOrderParameter orderField : orderParameters) {
                         try {
                             if (orderField instanceof QueryOrderFunction) {
@@ -602,21 +606,30 @@ public class Query extends EvaluatorCollection implements Queryable {
                             } else {
                                 comparable1 = consumer.get(o1, (QueryParameter) orderField, dataSource);
                                 comparable2 = consumer.get(o2, (QueryParameter) orderField, dataSource);
+                                classValueComparable1 = comparable1.getClass();
+                                classValueComparable2 = comparable2.getClass();
+                                if (cont == 0){
+                                    defaultClass = comparable2.getClass();
+                                    cont = 1;
+                                }
+                                if (!classValueComparable1.equals(classValueComparable2)) {
+                                    comparable1 = transformComparableValues(defaultClass, comparable1);
+                                    comparable2 = transformComparableValues(defaultClass, comparable2);
+                                }
+                            }
+                            if (comparable1 == null ^ comparable2 == null) {
+                                compareResult = (comparable1 == null) ? -1 : 1;
+                            } else if (comparable1 == null && comparable2 == null) {
+                                compareResult = 0;
+                            } else {
+                                compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+                            }
+
+                            if (compareResult != 0) {
+                                break;
                             }
                         } catch (ClassCastException ex) {
                             throw new HCJFRuntimeException("Order field must be comparable");
-                        }
-
-                        if (comparable1 == null ^ comparable2 == null) {
-                            compareResult = (comparable1 == null) ? -1 : 1;
-                        } else if (comparable1 == null && comparable2 == null) {
-                            compareResult = 0;
-                        } else {
-                            compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
-                        }
-
-                        if (compareResult != 0) {
-                            break;
                         }
                     }
 
@@ -1457,5 +1470,30 @@ public class Query extends EvaluatorCollection implements Queryable {
     public boolean equals(Object obj) {
         return (obj instanceof Query) && obj.toString().equals(toString());
     }
+    public Comparable<Object> transformComparableValues(Class typeClass, Comparable<Object> comparable) {
+        Object newValue = null;
+        Comparable<Object> transformComparable;
+        try {
+            String valuesString = comparable.toString();
+            if (typeClass.equals(Integer.class)) {
+                newValue = Integer.valueOf(valuesString);
+            } else if (typeClass.equals(String.class)) {
+                newValue = valuesString;
+            } else if (typeClass.equals(Long.class)) {
+                newValue = Long.valueOf(valuesString);
+            } else if (typeClass.equals(Double.class)) {
+                newValue = Double.valueOf(valuesString);
+            } else if (typeClass.equals(Date.class)) {
+                newValue = new Date(valuesString);
+            } else if (typeClass.equals(Float.class)) {
+                newValue = Float.valueOf(valuesString);
+            }
+            transformComparable = (Comparable<Object>) newValue;
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("Incompatible data types to compare", ex.getStackTrace());
+        }
+        return transformComparable;
+    }
+
 
 }
