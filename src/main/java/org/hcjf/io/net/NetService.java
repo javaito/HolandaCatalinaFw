@@ -426,6 +426,7 @@ public final class NetService extends Service<NetServiceConsumer> {
                     }
 
                     channels.remove(session);
+                    selectors.get(session.getConsumer()).removeSession(session);
                     if (session.getConsumer() instanceof NetServer) {
                         NetServer server = (NetServer) session.getConsumer();
                         if (server.isDisconnectAndRemove()) {
@@ -712,7 +713,7 @@ public final class NetService extends Service<NetServiceConsumer> {
          * Returns the set of sessions.
          * @return Set of sessions.
          */
-        private Set<NetSession> getSessions() {
+        private synchronized Set<NetSession> getSessions() {
             return Collections.unmodifiableSet(sessions);
         }
 
@@ -720,9 +721,11 @@ public final class NetService extends Service<NetServiceConsumer> {
          * Add a session on the selector artifact.
          * @param session Net session instance.
          */
-        public void addSession(NetSession session) {
+        public synchronized void addSession(NetSession session) {
             sessions.add(session);
         }
+
+        public synchronized void removeSession(NetSession session) {sessions.remove(session);}
 
         /**
          * Returns the selector instance.
