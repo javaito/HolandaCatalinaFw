@@ -43,7 +43,7 @@ public class JsonUtilsTest {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSX");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Map jsonMAp = Map.of("date",dateFormat.parse("2020-02-18 16:34:28.123+00:00"));
+        Map jsonMAp = Map.of("date",dateFormat.parse("2020-02-18 13:34:28.123+00:00"));
 
         JsonElement element = JsonUtils.toJsonTree(jsonMAp);
         Assert.assertEquals("\"2020-02-18 13:34:28\"", element.getAsJsonObject().get("date").toString());
