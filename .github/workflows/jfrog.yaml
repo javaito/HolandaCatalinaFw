@@ -22,26 +22,8 @@ jobs:
     - name: Run Tests
       run: mvn test
 
-    - name: Build with Maven
-      run:  mvn clean install -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip
-
-  upload-to-jfrog:
-    runs-on: self-hosted
-
-    needs: build
-
-    steps:
-    - name: Get Tag Name
-      id: tag_name
-      run: echo "::set-output name=tag::$(git describe --tags --abbrev=0)"
-
-    - name: Upload to JFrog
-      uses: jfrog/github-actions/artifactory-upload@v1
-      with:
-        username: deploy
-        password: RT3409dp!
-        server-url: 'http://jfrog.sitrack.io'  # Cambia esto según tu instancia de JFrog
-        repository: 'shelbyville'  # Cambia esto según tu repositorio en JFrog
-        package: "com/github/javaito/hcjf/${{ steps.tag_name.outputs.tag }}"  # Incorpora el tag en el nombre del paquete
-        spec: 'target/*.jar'
-
+    - name: Deploy to Jfrog
+      env:
+        USER: ${{ secrets.CI_JFROG_USERNAME }}
+        PASS: ${{ secrets.CI_JFROG_PASSWORD }}
+      run:   mvn deploy --settings settings.xml -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog  -Denv.CI_JFROG_USERNAME=${USER} -Denv.CI_JFROG_PASSWORD=${PASS}
