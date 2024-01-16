@@ -7,7 +7,7 @@
     <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>2.4.21</version>
+    <version>${hcjf.version}</version>
     <packaging>jar</packaging>
     <description>Java framework to develop platforms based on distributed services</description>
     <url>https://github.com/javaito/HolandaCatalinaFw</url>
@@ -43,6 +43,9 @@
     <profiles>
         <profile>
             <id>sonatype</id>
+            <properties>
+                <hcjf.version>2.4.21</hcjf.version>
+            </properties>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -57,6 +60,9 @@
         </profile>
         <profile>
             <id>jfrog</id>
+            <properties>
+                <hcjf.version>${version}</hcjf.version>
+            </properties>
             <distributionManagement>
                 <repository>
                     <id>jfrog-sitrack</id>

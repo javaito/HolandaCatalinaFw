@@ -6,8 +6,8 @@ on:
       - '*'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: self-hosted
 
     steps:
     - name: Checkout Repository
@@ -22,8 +22,26 @@ jobs:
     - name: Run Tests
       run: mvn test
 
-    - name: Deploy to Jfrog
-      env:
-        USER: ${{ secrets.CI_JFROG_USERNAME }}
-        PASS: ${{ secrets.CI_JFROG_PASSWORD }}
-      run:   mvn deploy --settings settings.xml -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog  -Denv.CI_JFROG_USERNAME=${USER} -Denv.CI_JFROG_PASSWORD=${PASS}
+  deploy:
+    needs: test
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 12
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '12'
+
+      - name: Get Tag Name
+        id: tag_name
+        run: echo "::set-output name=tag::$(git describe --tags --abbrev=0)"
+
+      - name: Deploy to Jfrog
+        env:
+          USER: ${{ secrets.CI_JFROG_USERNAME }}
+          PASS: ${{ secrets.CI_JFROG_PASSWORD }}
+        run: mvn deploy --settings settings.xml -Dversion=${{ needs.test.outputs.version }} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog -Denv.CI_JFROG_USERNAME=${USER} -Denv.CI_JFROG_PASSWORD=${PASS}
