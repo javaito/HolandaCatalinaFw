@@ -6,7 +6,7 @@ on:
       - '*'
 
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,7 @@ jobs:
         run: mvn test
 
   deploy:
-    needs: build
+    needs: tests
     runs-on: ubuntu-latest
 
     steps:
@@ -44,4 +44,4 @@ jobs:
         env:
           USER: ${{ secrets.CI_JFROG_USERNAME }}
           PASS: ${{ secrets.CI_JFROG_PASSWORD }}
-        run: mvn deploy --settings settings.xml -Dversion=${{ needs.test.outputs.version }} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog -Denv.CI_JFROG_USERNAME=${USER} -Denv.CI_JFROG_PASSWORD=${PASS}
+        run: mvn deploy --settings settings.xml -Dversion=${{  steps.tag_name.outputs.tag }} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog -Denv.CI_JFROG_USERNAME=${USER} -Denv.CI_JFROG_PASSWORD=${PASS}
