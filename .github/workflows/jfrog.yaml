@@ -6,24 +6,24 @@ on:
       - '*'
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
-    - name: Set up JDK 12
-      uses: actions/setup-java@v2
-      with:
-        distribution: 'adopt'
-        java-version: '12'
+      - name: Set up JDK 12
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '12'
 
-    - name: Run Tests
-      run: mvn test
+      - name: Run Tests
+        run: mvn test
 
   deploy:
-    needs: test
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
