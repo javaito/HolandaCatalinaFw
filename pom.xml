@@ -7,7 +7,7 @@
     <name>Holanda Catalina Java Framework</name>
     <groupId>com.github.javaito</groupId>
     <artifactId>hcjf</artifactId>
-    <version>2.4.21</version>
+    <version>${hcjf.version}</version>
     <packaging>jar</packaging>
     <description>Java framework to develop platforms based on distributed services</description>
     <url>https://github.com/javaito/HolandaCatalinaFw</url>
@@ -32,13 +32,44 @@
         <url>https://github.com/javaito/HolandaCatalinaFw</url>
     </scm>
 
-    <distributionManagement>
-        <repository>
-            <id>sonatype-nexus-staging</id>
-            <name>Nexus Release Repository</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
+    <profiles>
+        <profile>
+            <id>sonatype</id>
+            <properties>
+                <hcjf.version>2.4.21</hcjf.version>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <distributionManagement>
+                <repository>
+                    <id>sonatype-nexus</id>
+                    <name>Nexus Release Repository</name>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <layout>default</layout>
+                </repository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>jfrog</id>
+            <properties>
+                <hcjf.version>${version}</hcjf.version>
+            </properties>
+            <distributionManagement>
+                <repository>
+                    <id>jfrog-sitrack</id>
+                    <name>Jfrog Sitrack</name>
+                    <releases>
+                        <enabled>true</enabled>
+                        <updatePolicy>always</updatePolicy>
+                        <checksumPolicy>warn</checksumPolicy>
+                    </releases>
+                    <url>http://jfrog.sitrack.io/artifactory/shelbyville/</url>
+                    <layout>default</layout>
+                </repository>
+            </distributionManagement>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
