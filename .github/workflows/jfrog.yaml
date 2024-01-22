@@ -45,3 +45,8 @@ jobs:
           USER: ${{ secrets.CI_JFROG_USERNAME }}
           PASS: ${{ secrets.CI_JFROG_PASSWORD }}
         run: mvn deploy --settings settings.xml -Dversion=${{  steps.tag_name.outputs.TAG }} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog -Denv.CI_JFROG_USERNAME=${USER} -Denv.CI_JFROG_PASSWORD=${PASS}
+
+      - name: Deploy to Maven
+        env:
+          PHRASE: ${{ secrets.CI_MAVEN_GPG_PHRASE }}
+        run: mvn deploy --settings settings.xml -Dversion=${{  steps.tag_name.outputs.TAG }} -Dgpg.passphrase=${PHRASE}
