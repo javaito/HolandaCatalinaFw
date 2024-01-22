@@ -11,11 +11,11 @@ import java.util.stream.Collectors;
 /**
  * Executes commands to update a resource through the REST interface.<br/>
  * When a resource layer implements this interface, it is able to receive PUT requests
- * with the <code>_command</code> or <code>_commands</code> field, specifying an action
- * and a payload.<br/>
- * The default implementation looks for a layer with implementation name <code>Resource::command</code>.
+ * with the _command or _commands field, specifying an action
+ * and a payload.
+ * The default implementation looks for a layer with implementation name Resource::command.
  * To provide such a layer, extend the ResourceCommandLayer class. Each of these layers should implement
- * a single command and return the corresponding result.<br/>
+ * a single command and return the corresponding result.
  * Methods in this interface can be overridden to provide a different command handling algorithm.
  */
 public interface CommandUpdateLayerInterface extends LayerInterface {
@@ -23,8 +23,8 @@ public interface CommandUpdateLayerInterface extends LayerInterface {
     String INSTANCE_ID = "__instanceId__";
 
     /**
-     * Processes the <code>_command</code> field in a PUT request. Content should be an object
-     * complying with <code>CommandRequestModel</code>
+     * Processes the _command field in a PUT request. Content should be an object
+     * complying with CommandRequestModel
      * @param command the parsed content of the command
      * @return the command's result
      */
@@ -48,8 +48,8 @@ public interface CommandUpdateLayerInterface extends LayerInterface {
     }
 
     /**
-     * Processes de <code>_commands</code> field in a PUT request. Content should be an array
-     * of objects complying with <code>CommandRequestModel</code>
+     * Processes de _commands field in a PUT request. Content should be an array
+     * of objects complying with CommandRequestModel
      * @param commands the parsed array of commands
      * @return a list of results, in the same order as the commands were specified in the request
      */
