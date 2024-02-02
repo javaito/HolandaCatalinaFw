@@ -589,7 +589,6 @@ public class Query extends EvaluatorCollection implements Queryable {
             if (orderParameters.size() > 0) {
                 //If the query has order fields then creates a tree set with
                 //a comparator using the order fields.
-                Object test = new Object();
                 result = new TreeSet<>((o1, o2) -> {
                     int compareResult = 0;
 
@@ -598,10 +597,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                     Class classValueComparable1;
                     Class classValueComparable2;
                     Class defaultClass = null;
-//                    if(!(orderParameters.stream().findFirst().get() instanceof QueryOrderFunction)){
-//QueryOrderParameter parameter = orderParameters.stream().findFirst().get();
-//                                    Comparable<Object> comparableDefaultValue = consumer.get(o1, (QueryParameter) parameter, dataSource);
-//                    }
+
                     for (QueryOrderParameter orderField : orderParameters) {
                         try {
                             if (orderField instanceof QueryOrderFunction) {
