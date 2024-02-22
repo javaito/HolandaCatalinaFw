@@ -120,9 +120,9 @@
             <version>16.0.0</version>
         </dependency>
         <dependency>
-            <groupId>com.esri.geometry</groupId>
-            <artifactId>esri-geometry-api</artifactId>
-            <version>geometry-api-2.2.5-STK</version>
+            <groupId>io.github.fabian-maysen</groupId>
+            <artifactId>stk-geometry-api</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
