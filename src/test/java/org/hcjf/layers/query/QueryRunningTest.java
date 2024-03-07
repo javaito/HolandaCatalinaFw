@@ -1736,7 +1736,7 @@ public class QueryRunningTest {
 
     @Test
     public void testGetNumberOfWeek() {
-        String sql = "select date, getMillisecondUnixEpoch(date) as milli, getNumberOfWeek(milli) as week from forecastExample";
+        String sql = "select date, getWeekOfYear(date) as week from forecastExample";
         Query query = Query.compile(sql);
         Collection<JoinableMap> resultSet = query.evaluate(dataSource);
         Assert.assertEquals(resultSet.stream().findFirst().get().get("week"), 40);

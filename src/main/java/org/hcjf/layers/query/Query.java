@@ -91,7 +91,6 @@ public class Query extends EvaluatorCollection implements Queryable {
         Layers.publishLayer(PutAggregateFunction.class);
         Layers.publishLayer(AddAggregateFunction.class);
         Layers.publishLayer(ForecastFunctionLayer.class);
-        Layers.publishLayer(GetNumberOfWeekQueryFunctionLayer.class);
     }
 
     public Query(QueryResource resource, QueryId id) {
