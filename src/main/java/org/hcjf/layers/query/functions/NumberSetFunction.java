@@ -37,8 +37,13 @@ public interface NumberSetFunction {
     }
 
     default Number applyFunction(Number firstNumber, Number secondNumber, BiFunction<BigDecimal, BigDecimal, Number> function) {
-        Number result = function.apply(new BigDecimal(firstNumber.doubleValue()),
-                new BigDecimal(secondNumber.doubleValue()));
+        Number result;
+        if (firstNumber.equals(Double.MIN_VALUE) && this.getClass().equals(MaxAggregateFunctionLayer.class)){
+            result = new BigDecimal(secondNumber.doubleValue());
+        } else {
+            result = function.apply(new BigDecimal(firstNumber.doubleValue()),
+                    new BigDecimal(secondNumber.doubleValue()));
+        }
 
         Boolean round = SystemProperties.getBoolean(SystemProperties.Query.Function.MATH_OPERATION_RESULT_ROUND);
         if (result instanceof BigDecimal && round) {
