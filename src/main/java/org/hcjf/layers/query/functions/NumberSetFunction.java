@@ -144,4 +144,5 @@ public interface NumberSetFunction {
         }
         return result;
     }
+
 }
