@@ -196,7 +196,7 @@ public abstract class BaseEvaluator implements Evaluator {
                 result = query.evaluate(dataSource, consumer);
             } else {
                 if(!cachedResult) {
-                    Collection subQueryResult = query.evaluate(new Queryable.ReadableDataSource(), consumer);
+                    Collection subQueryResult = query.evaluate(dataSource, consumer);
                     if (query.getReturnParameters().size() == 1) {
                         QueryReturnParameter queryReturnParameter = query.getReturnParameters().get(0);
                         List<Object> listResult = new ArrayList<>();
