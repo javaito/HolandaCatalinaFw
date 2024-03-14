@@ -332,7 +332,8 @@ public class RestContext extends Context {
 
                     dataSource = queryable -> {
                         if(dataSourcesMap.containsKey(queryable.getResourceName())) {
-                            return (Collection<Object>) dataSourcesMap.get(queryable.getResourceName());
+                            return (Collection<Object>) JsonUtils.createList(JsonUtils.toJsonTree(
+                                    dataSourcesMap.get(queryable.getResourceName())).getAsJsonArray());
                         } else {
                             throw new HCJFRuntimeException("Data source not found: %s", queryable.getResourceName());
                         }
