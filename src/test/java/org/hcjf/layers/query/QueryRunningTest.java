@@ -1734,6 +1734,14 @@ public class QueryRunningTest {
         System.out.println(resultSet);
     }
 
+    @Test
+    public void testGetNumberOfWeek() {
+        String sql = "select date, getWeekOfYear(date) as week from forecastExample";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findFirst().get().get("week"), 40);
+    }
+
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
         public CustomFunction() {

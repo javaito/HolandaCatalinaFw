@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalField;
+import java.time.temporal.WeekFields;
 import java.time.zone.ZoneOffsetTransition;
 import java.util.*;
 
@@ -25,6 +26,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
     private static final String GET_DAY_OF_MONTH = "getDayOfMonth";
     private static final String GET_DAY_OF_WEEK = "getDayOfWeek";
     private static final String GET_DAY_OF_YEAR = "getDayOfYear";
+    private static final String GET_WEEK_OF_YEAR = "getWeekOfYear";
     private static final String GET_HOUR = "getHour";
     private static final String GET_MINUTE = "getMinute";
     private static final String GET_SECOND = "getSecond";
@@ -67,6 +69,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
         addFunctionName(GET_DAY_OF_MONTH);
         addFunctionName(GET_DAY_OF_WEEK);
         addFunctionName(GET_DAY_OF_YEAR);
+        addFunctionName(GET_WEEK_OF_YEAR);
         addFunctionName(GET_HOUR);
         addFunctionName(GET_MINUTE);
         addFunctionName(GET_SECOND);
@@ -117,6 +120,7 @@ public class DateQueryFunctionLayer extends BaseQueryFunctionLayer implements Qu
             case GET_DAY_OF_MONTH: result = getZonedDateTimeFromDate(parameters).getDayOfMonth(); break;
             case GET_DAY_OF_WEEK: result = getZonedDateTimeFromDate(parameters).getDayOfWeek(); break;
             case GET_DAY_OF_YEAR: result = getZonedDateTimeFromDate(parameters).getDayOfYear(); break;
+            case GET_WEEK_OF_YEAR: result = getZonedDateTimeFromDate(parameters).get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear()); break;
             case GET_HOUR: result = getZonedDateTimeFromDate(parameters).getHour(); break;
             case GET_MINUTE: result = getZonedDateTimeFromDate(parameters).getMinute(); break;
             case GET_SECOND: result = getZonedDateTimeFromDate(parameters).getSecond(); break;
