@@ -1,9 +1,13 @@
 package org.hcjf.layers.query.functions;
 
 import org.hcjf.errors.HCJFRuntimeException;
+import org.hcjf.properties.SystemProperties;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 public class MaxAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer implements NumberSetFunction {
 
@@ -11,6 +15,29 @@ public class MaxAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
 
     public MaxAggregateFunctionLayer() {
         super(NAME);
+    }
+
+    @Override
+    public Number applyFunction(Number firstNumber, Number secondNumber, BiFunction<BigDecimal, BigDecimal, Number> function) {
+        Number result;
+        if (firstNumber.equals(Double.MIN_VALUE) && this.getClass().equals(MaxAggregateFunctionLayer.class)){
+            result = new BigDecimal(secondNumber.doubleValue());
+        } else {
+            result = function.apply(new BigDecimal(firstNumber.doubleValue()),
+                    new BigDecimal(secondNumber.doubleValue()));
+        }
+
+        Boolean round = SystemProperties.getBoolean(SystemProperties.Query.Function.MATH_OPERATION_RESULT_ROUND);
+        if (result instanceof BigDecimal && round) {
+            Integer mathContext = SystemProperties.getInteger(SystemProperties.Query.Function.MATH_OPERATION_RESULT_ROUND_CONTEXT);
+            switch (mathContext) {
+                case 32: result = ((BigDecimal)result).round(MathContext.DECIMAL32); break;
+                case 64: result = ((BigDecimal)result).round(MathContext.DECIMAL64); break;
+                case 128: result = ((BigDecimal)result).round(MathContext.DECIMAL128); break;
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -31,5 +58,10 @@ public class MaxAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
             throw new HCJFRuntimeException("Max aggregate function need at leas one parameter");
         }
         return result;
+    }
+
+    @Override
+    public Number[] accumulateFunction(Number accumulatedValue, Object[] parameters, BiFunction<BigDecimal, BigDecimal, Number> function) {
+        return NumberSetFunction.super.accumulateFunction(accumulatedValue, parameters, function);
     }
 }
