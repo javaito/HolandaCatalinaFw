@@ -939,10 +939,12 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         ServiceSession session = ServiceSession.getCurrentSession();
         if(session != null) {
-            List<Evaluator> evaluatorsCache = (List<Evaluator>) session.getProperties().get(
+            HashMap<Evaluator, Object> evaluatorsCache = (HashMap<Evaluator, Object>) session.getProperties().get(
                     SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
             if(evaluatorsCache != null) {
-                result = evaluatorsCache.contains(evaluator);
+                if(evaluatorsCache.containsKey(evaluator) && (evaluatorsCache.get(evaluator).equals(false))){
+                    result = true;
+                }
             }
         }
 
@@ -956,7 +958,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         ServiceSession session = ServiceSession.getCurrentIdentity();
         if(session != null) {
             session.put(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME),
-                    new ArrayList<Evaluator>());
+                    new HashMap<Evaluator, Object>());
             session.put(SystemProperties.get(SystemProperties.Query.EVALUATOR_LEFT_VALUES_CACHE_NAME),
                     new HashMap<Evaluator, Object>());
             session.put(SystemProperties.get(SystemProperties.Query.EVALUATOR_RIGHT_VALUES_CACHE_NAME),
