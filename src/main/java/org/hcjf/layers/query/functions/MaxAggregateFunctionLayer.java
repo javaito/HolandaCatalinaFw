@@ -60,8 +60,4 @@ public class MaxAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
         return result;
     }
 
-    @Override
-    public Number[] accumulateFunction(Number accumulatedValue, Object[] parameters, BiFunction<BigDecimal, BigDecimal, Number> function) {
-        return NumberSetFunction.super.accumulateFunction(accumulatedValue, parameters, function);
-    }
 }
