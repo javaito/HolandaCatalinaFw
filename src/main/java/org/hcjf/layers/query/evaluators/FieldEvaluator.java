@@ -2,11 +2,13 @@ package org.hcjf.layers.query.evaluators;
 
 import org.hcjf.layers.query.Queryable;
 import org.hcjf.layers.query.model.QueryField;
+import org.hcjf.layers.query.model.QueryFunction;
 import org.hcjf.layers.query.model.QueryParameter;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.ServiceSession;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -58,18 +60,19 @@ public abstract class FieldEvaluator extends BaseEvaluator {
      */
     protected final Object getProcessedLeftValue(Object currentResultSetElement, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result;
-        if(getLeftValue() instanceof QueryParameter) {
-            result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
-        } else {
-            Map<Evaluator, Object> cache = getLeftCache();
-            if(cache != null) {
-                result = cache.get(this);
-                if (result == null) {
-                    result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
+        Map<Evaluator, Object> cache = getLeftCache();
+        if (cache != null) {
+            result = cache.get(this);
+            if (result == null) {
+                result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
+                if (!evaluateDataInEvaluator(this, currentResultSetElement)){
                     cache.put(this, result);
                 }
-            } else {
-                result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
+            }
+        } else {
+            result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
+            if (!evaluateDataInEvaluator(this, currentResultSetElement)){
+                cache.put(this, result);
             }
         }
         return result;
@@ -100,18 +103,19 @@ public abstract class FieldEvaluator extends BaseEvaluator {
      */
     protected final Object getProcessedRightValue(Object currentResultSetElement, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Object result;
-        if(getRightValue() instanceof QueryParameter) {
-            result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
-        } else {
-            Map<Evaluator, Object> cache = getRightCache();
-            if(cache != null) {
-                result = cache.get(this);
-                if (result == null) {
-                    result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
+        Map<Evaluator, Object> cache = getRightCache();
+        if (cache != null) {
+            result = cache.get(this);
+            if (result == null) {
+                result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
+                if (!evaluateDataInEvaluator(this, currentResultSetElement)){
                     cache.put(this, result);
                 }
-            } else {
-                result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
+            }
+        } else {
+            result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
+            if (!evaluateDataInEvaluator(this, currentResultSetElement)){
+                cache.put(this, result);
             }
         }
         return result;
@@ -185,6 +189,36 @@ public abstract class FieldEvaluator extends BaseEvaluator {
     @Override
     public String toString() {
         return getClass() + "[" + leftValue + "," + rightValue + "]";
+    }
+
+    /**
+     * This method checks if the Evaluator contains a QueryFunction
+     * and if it contains a reference to a field of the DataSource.
+     * @param evaluator
+     * @param dateElement - Datasource Element
+     * @return
+     */
+    public static Boolean evaluateDataInEvaluator(Evaluator evaluator, Object dateElement) {
+        Map<String, Object> transform = (Map<String, Object>) dateElement;
+        Boolean contains = false;
+        FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+        for (String key : transform.keySet()) {
+            if (fieldEvaluator.getLeftValue() instanceof QueryFunction) {
+                Boolean leftFunctionContainsKey = ((QueryFunction) fieldEvaluator.getLeftValue()).getOriginalValue().contains(key);
+                if (leftFunctionContainsKey) {
+                    contains = true;
+                    break;
+                }
+            }
+            if (fieldEvaluator.getRightValue() instanceof QueryFunction) {
+                Boolean rightFunctionContainsKey = ((QueryFunction) fieldEvaluator.getRightValue()).getOriginalValue().contains(key);
+                if (rightFunctionContainsKey) {
+                    contains = true;
+                    break;
+                }
+            }
+        }
+        return contains;
     }
 
 }
