@@ -65,13 +65,15 @@ public abstract class FieldEvaluator extends BaseEvaluator {
             result = cache.get(this);
             if (result == null) {
                 result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
-                cache.put(this, result);
-                evaluateDataInEvaluator(this, currentResultSetElement);
+                if (!evaluateDataInEvaluator(this, currentResultSetElement)){
+                    cache.put(this, result);
+                }
             }
         } else {
             result = getProcessedValue(currentResultSetElement, getLeftValue(), dataSource, consumer);
-            cache.put(this, result);
-            evaluateDataInEvaluator(this, currentResultSetElement);
+            if (!evaluateDataInEvaluator(this, currentResultSetElement)){
+                cache.put(this, result);
+            }
         }
         return result;
     }
@@ -106,13 +108,15 @@ public abstract class FieldEvaluator extends BaseEvaluator {
             result = cache.get(this);
             if (result == null) {
                 result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
-                cache.put(this, result);
-                evaluateDataInEvaluator(this, currentResultSetElement);
+                if (!evaluateDataInEvaluator(this, currentResultSetElement)){
+                    cache.put(this, result);
+                }
             }
         } else {
             result = getProcessedValue(currentResultSetElement, getRightValue(), dataSource, consumer);
-            cache.put(this, result);
-            evaluateDataInEvaluator(this, currentResultSetElement);
+            if (!evaluateDataInEvaluator(this, currentResultSetElement)){
+                cache.put(this, result);
+            }
         }
         return result;
     }
@@ -187,34 +191,34 @@ public abstract class FieldEvaluator extends BaseEvaluator {
         return getClass() + "[" + leftValue + "," + rightValue + "]";
     }
 
-    public static void evaluateDataInEvaluator (Evaluator evaluator, Object dateElement) {
+    /**
+     * This method checks if the Evaluator contains a QueryFunction
+     * and if it contains a reference to a field of the DataSource.
+     * @param evaluator
+     * @param dateElement - Datasource Element
+     * @return
+     */
+    public static Boolean evaluateDataInEvaluator(Evaluator evaluator, Object dateElement) {
         Map<String, Object> transform = (Map<String, Object>) dateElement;
         Boolean contains = false;
-        HashMap<Evaluator, Object> evaluatorCache = ServiceSession.getCurrentIdentity().get(SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
         FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
-        if (!evaluatorCache.containsKey(evaluator)){
-            for (String key : transform.keySet()) {
-                if (fieldEvaluator.getLeftValue() instanceof QueryFunction) {
-                    Boolean leftFunctionContainsKey = ((QueryFunction) fieldEvaluator.getLeftValue()).getOriginalValue().contains(key);
-                    if (leftFunctionContainsKey){
-                        contains = true;
-                        evaluatorCache.put(fieldEvaluator,true);
-                        break;
-                    }
-                }
-                if (fieldEvaluator.getRightValue() instanceof QueryFunction) {
-                    Boolean rightFunctionContainsKey = ((QueryFunction) fieldEvaluator.getRightValue()).getOriginalValue().contains(key);
-                    if (rightFunctionContainsKey) {
-                        contains = true;
-                        evaluatorCache.put(fieldEvaluator, true);
-                        break;
-                    }
+        for (String key : transform.keySet()) {
+            if (fieldEvaluator.getLeftValue() instanceof QueryFunction) {
+                Boolean leftFunctionContainsKey = ((QueryFunction) fieldEvaluator.getLeftValue()).getOriginalValue().contains(key);
+                if (leftFunctionContainsKey) {
+                    contains = true;
+                    break;
                 }
             }
-            if (!contains){
-                evaluatorCache.put(fieldEvaluator, false);
+            if (fieldEvaluator.getRightValue() instanceof QueryFunction) {
+                Boolean rightFunctionContainsKey = ((QueryFunction) fieldEvaluator.getRightValue()).getOriginalValue().contains(key);
+                if (rightFunctionContainsKey) {
+                    contains = true;
+                    break;
+                }
             }
         }
+        return contains;
     }
 
 }

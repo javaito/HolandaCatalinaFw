@@ -942,7 +942,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             HashMap<Evaluator, Object> evaluatorsCache = (HashMap<Evaluator, Object>) session.getProperties().get(
                     SystemProperties.get(SystemProperties.Query.EVALUATORS_CACHE_NAME));
             if(evaluatorsCache != null) {
-                if(evaluatorsCache.containsKey(evaluator) && (evaluatorsCache.get(evaluator).equals(false))){
+                if(evaluatorsCache.containsKey(evaluator)){
                     result = true;
                 }
             }
