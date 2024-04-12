@@ -586,7 +586,15 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
         } else if(trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION)) &&
                 trimmedStringValue.matches(SystemProperties.get(SystemProperties.HCJF_MATH_REGULAR_EXPRESSION))) {
             //If the string matchs with a math expression then creates a function that resolves this math expression.
-            String[] mathExpressionParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.HCJF_MATH_SPLITTER_REGULAR_EXPRESSION));
+            String[] mathExpressionParts;
+            if (trimmedStringValue.contains(SystemProperties.get(SystemProperties.Query.Function.MATH_GREATER_THAN_OR_EQUALS)) ||
+                    trimmedStringValue.contains(SystemProperties.get(SystemProperties.Query.Function.MATH_LESS_THAN_OR_EQUALS)) ||
+                    trimmedStringValue.contains(SystemProperties.get(SystemProperties.Query.Function.MATH_DISTINCT)) ||
+                    trimmedStringValue.contains(SystemProperties.get(SystemProperties.Query.Function.MATH_DISTINCT_2))) {
+                mathExpressionParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.HCJF_MATH_SPLITTER_REGULAR_EXPRESSION_COMPOUND_OPERATORS));
+            } else {
+                mathExpressionParts = trimmedStringValue.split(SystemProperties.get(SystemProperties.HCJF_MATH_SPLITTER_REGULAR_EXPRESSION_SIMPLE_OPERATORS));
+            }
             List<Object> parameters = new ArrayList<>();
             String currentValue;
             boolean desc = false;
