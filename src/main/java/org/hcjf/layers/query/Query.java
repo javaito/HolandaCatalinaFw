@@ -45,6 +45,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private final List<QueryReturnParameter> groupParameters;
     private final List<QueryOrderParameter> orderParameters;
     private final List<QueryReturnParameter> returnParameters;
+    private List<QueryReturnParameter> originalReturnParameters;
     private final List<Join> joins;
     private final List<Queryable> unions;
     private boolean returnAll;
@@ -452,6 +453,14 @@ public class Query extends EvaluatorCollection implements Queryable {
         return Collections.unmodifiableList(returnParameters);
     }
 
+    public List<QueryReturnParameter> getOriginalReturnParameters() {
+        return originalReturnParameters;
+    }
+
+    public void setOriginalReturnParameters(List<QueryReturnParameter> originalReturnParameters){
+        this.originalReturnParameters = originalReturnParameters;
+    }
+
     /**
      * Add the name of the field to be returned to the result set.
      * @param returnField Field name.
@@ -665,6 +674,11 @@ public class Query extends EvaluatorCollection implements Queryable {
                         resolveQuery.setStart(getStart());
                         resolveQuery.setUnderlyingStart(getUnderlyingStart());
                         resolveQuery.setUnderlyingFunctions(getUnderlyingFunctions(getResourceName()));
+                        if (getOriginalReturnParameters() == null || getOriginalReturnParameters().isEmpty()){
+                            resolveQuery.setOriginalReturnParameters(getReturnParameters());
+                        } else {
+                            resolveQuery.setOriginalReturnParameters(getOriginalReturnParameters());
+                        }
                         for(QueryOrderParameter orderParameter : getOrderParameters()) {
                             resolveQuery.addOrderParameter(orderParameter);
                         }
