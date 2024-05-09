@@ -450,7 +450,6 @@ public class QueryRunningTest {
             Assert.assertTrue(result.containsKey("addressId"));
             Assert.assertEquals(result.size(), 2);
         }
-        System.out.println();
     }
 
     @Test
