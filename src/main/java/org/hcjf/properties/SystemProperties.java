@@ -40,6 +40,7 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_LRU_MAP_SIZE = "hcjf.default.lru.map.size";
     public static final String HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG = "hcjf.default.exception.message.tag";
     public static final String HCJF_CHECKSUM_ALGORITHM = "hcjf.checksum.algorithm";
+    public static final String HCJF_JOIN_ONE_EVALUATOR = "hcjf.query.join.one.evaluator";
 
     public static final class Locale {
         public static final String LOG_TAG = "hcjf.locale.log.tag";
