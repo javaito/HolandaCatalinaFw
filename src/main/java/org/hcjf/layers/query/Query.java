@@ -1256,10 +1256,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                 String fieldPath;
                 if (rightJoinableContainsRightValue) {
                     fieldPath = ((QueryField) equals.getRightValue()).getFieldPath();
-                    currentKey = rightJoinable.get(((QueryField) equals.getRightValue()).getFieldPath());
+                    currentKey = rightJoinable.get(fieldPath);
                 } else {
                     fieldPath = ((QueryField) equals.getLeftValue()).getFieldPath();
-                    currentKey = rightJoinable.get(((QueryField) equals.getLeftValue()).getFieldPath());
+                    currentKey = rightJoinable.get(fieldPath);
                 }
                 Collection<Joinable> rightCollection = right.stream().filter(rightMap ->
                         rightMap.get(fieldPath).equals(currentKey)).collect(Collectors.toList());
