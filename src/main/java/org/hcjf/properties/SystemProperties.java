@@ -40,7 +40,6 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_DEFAULT_LRU_MAP_SIZE = "hcjf.default.lru.map.size";
     public static final String HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG = "hcjf.default.exception.message.tag";
     public static final String HCJF_CHECKSUM_ALGORITHM = "hcjf.checksum.algorithm";
-    public static final String HCJF_JOIN_ONE_EVALUATOR = "hcjf.query.join.one.evaluator";
 
     public static final class Locale {
         public static final String LOG_TAG = "hcjf.locale.log.tag";
@@ -369,6 +368,7 @@ public final class SystemProperties extends Properties {
         public static final String COMPILER_CACHE_SIZE = "hcjf.query.compiler.cache.size";
         public static final String DEFAULT_COMPILER = "hcjf.query.default.compiler";
         public static final String DEFAULT_SERIALIZER = "hcjf.query.default.serializer";
+        public static final String HCJF_USE_NESTED_JOIN_METHOD = "hcjf.query.use.nested.join.method";
 
         public static final class ReservedWord {
             public static final String ENVIRONMENT = "hcjf.query.environment.reserved.word";
@@ -800,6 +800,7 @@ public final class SystemProperties extends Properties {
         defaults.put(ProcessDiscovery.SERVICE_PRIORITY, "1");
         defaults.put(ProcessDiscovery.DELAY, "3000");
 
+        defaults.put(Query.HCJF_USE_NESTED_JOIN_METHOD, true);
         defaults.put(Query.SINGLE_PATTERN, "SELECT * FROM %s");
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");

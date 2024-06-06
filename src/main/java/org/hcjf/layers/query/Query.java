@@ -1211,7 +1211,7 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
         Collection<Joinable> result = new ArrayList<>();
         Joinable row;
-        if (!SystemProperties.getBoolean(SystemProperties.HCJF_JOIN_ONE_EVALUATOR, false)) {
+        if (SystemProperties.getBoolean(SystemProperties.Query.HCJF_USE_NESTED_JOIN_METHOD, true)) {
             Boolean rowEvaluation;
             for (Joinable leftJoinable : left) {
                 for (Joinable rightJoinable : right) {
