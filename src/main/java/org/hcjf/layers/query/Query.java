@@ -1209,40 +1209,95 @@ public class Query extends EvaluatorCollection implements Queryable {
                 break;
             }
         }
-
         Collection<Joinable> result = new ArrayList<>();
         Joinable row;
-        Boolean rowEvaluation;
-        for(Joinable leftJoinable : left) {
-            for(Joinable rightJoinable : right) {
-                row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
-                rowEvaluation = false;
+        if (join.isNestedJoin()) {
+            Boolean rowEvaluation;
+            for (Joinable leftJoinable : left) {
+                for (Joinable rightJoinable : right) {
+                    row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
+                    rowEvaluation = false;
+                    for (Evaluator evaluator : join.getEvaluators()) {
+                        if (!(rowEvaluation = evaluator.evaluate(row, dataSource, consumer))) {
+                            break;
+                        }
+                    }
 
-                for(Evaluator evaluator : join.getEvaluators()) {
-                    if(!(rowEvaluation = evaluator.evaluate(row, dataSource, consumer))) {
-                        break;
+                    if (join.getOuter()) {
+                        rowEvaluation = !rowEvaluation;
+                    }
+
+                    if (rowEvaluation) {
+                        result.add(row);
+                        switch (join.getType()) {
+                            case LEFT: {
+                                leftCopy.remove(leftJoinable);
+                                break;
+                            }
+                            case RIGHT: {
+                                rightCopy.remove(rightJoinable);
+                                break;
+                            }
+                            case FULL: {
+                                leftCopy.remove(leftJoinable);
+                                rightCopy.remove(rightJoinable);
+                                break;
+                            }
+                        }
                     }
                 }
-
-                if(join.getOuter()) {
-                    rowEvaluation = !rowEvaluation;
+            }
+        } else {
+            Equals equals = (Equals) join.getEvaluators().stream().findFirst().get();
+            Map<Object, Collection> rightIndexCollection = new HashMap<>();
+            for (Joinable rightJoinable : right) {
+                Object currentKey;
+                boolean rightJoinableContainsRightValue = ((JoinableMap) rightJoinable).getResources().contains(((QueryField) equals.getRightValue()).getResource().toString());
+                String fieldPath;
+                if (rightJoinableContainsRightValue) {
+                    fieldPath = ((QueryField) equals.getRightValue()).getFieldPath();
+                    currentKey = rightJoinable.get(fieldPath);
+                } else {
+                    fieldPath = ((QueryField) equals.getLeftValue()).getFieldPath();
+                    currentKey = rightJoinable.get(fieldPath);
                 }
-
-                if(rowEvaluation) {
-                    result.add(row);
-                    switch (join.getType()) {
-                        case LEFT: {
-                            leftCopy.remove(leftJoinable);
-                            break;
-                        }
-                        case RIGHT: {
-                            rightCopy.remove(rightJoinable);
-                            break;
-                        }
-                        case FULL: {
-                            leftCopy.remove(leftJoinable);
-                            rightCopy.remove(rightJoinable);
-                            break;
+                Collection<Joinable> rightCollection = right.stream().filter(rightMap ->
+                        rightMap.get(fieldPath).equals(currentKey)).collect(Collectors.toList());
+                rightIndexCollection.put(currentKey, rightCollection);
+            }
+            for (Joinable leftJoinable : left) {
+                Object key;
+                boolean leftJoinableContainsRightValue = ((JoinableMap) leftJoinable).getResources().contains(((QueryField) equals.getRightValue()).getResource().toString());
+                if (leftJoinableContainsRightValue) {
+                    key = leftJoinable.get(((QueryField) equals.getRightValue()).getFieldPath());
+                } else {
+                    key = leftJoinable.get(((QueryField) equals.getLeftValue()).getFieldPath());
+                }
+                if (rightIndexCollection.containsKey(key)) {
+                    Collection<Joinable> joinableCollectionById = rightIndexCollection.get(key);
+                    for (Joinable rightJoinable : joinableCollectionById) {
+                        if (rightJoinable != null) {
+                            try {
+                                row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
+                                result.add(row);
+                                switch (join.getType()) {
+                                    case LEFT: {
+                                        leftCopy.remove(leftJoinable);
+                                        break;
+                                    }
+                                    case RIGHT: {
+                                        rightCopy.remove(rightJoinable);
+                                        break;
+                                    }
+                                    case FULL: {
+                                        leftCopy.remove(leftJoinable);
+                                        rightCopy.remove(rightJoinable);
+                                        break;
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                throw new HCJFRuntimeException("Error in join: ", ex.getMessage());
+                            }
                         }
                     }
                 }
@@ -1264,7 +1319,6 @@ public class Query extends EvaluatorCollection implements Queryable {
                 break;
             }
         }
-
         return result;
     }
 

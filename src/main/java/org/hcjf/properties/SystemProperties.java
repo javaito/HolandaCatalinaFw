@@ -379,6 +379,7 @@ public final class SystemProperties extends Properties {
             public static final String INNER = "hcjf.query.inner.join.reserved.word";
             public static final String LEFT = "hcjf.query.left.join.reserved.word";
             public static final String RIGHT = "hcjf.query.right.join.reserved.word";
+            public static final String HASH = "hcjf.query.hash.join.reserved.word";
             public static final String ON = "hcjf.query.on.reserved.word";
             public static final String WHERE = "hcjf.query.where.reserved.word";
             public static final String ORDER_BY = "hcjf.query.order.by.reserved.word";
@@ -806,7 +807,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<environment>environment[ ]{1,}'¡[0-9]{1,}·'[ ]{1,}){0,1}(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿·@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿·'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿·.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
-        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by | underlying )))|(?=(^((inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( inner | left | right | full )?join )| where | limit | start | order by | group by | disjoint by | underlying ))");
+        defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((hash )?(inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( (hash )?(inner |left |right |full )?join ))| where | limit | start | order by | group by | disjoint by | underlying )))|(?=(^((hash )?(inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( (hash )?(inner |left |right |full )?join ))| where | limit | start | order by | group by | disjoint by | underlying ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
         defaults.put(Query.OPERATION_REGULAR_EXPRESSION, "(?i)(?<=(=|<>|!=|>|<|>=|<=| in | not in | like ))|(?=(=|<>|!=|>|<|>=|<=| in | not in | like ))");
         defaults.put(Query.JOIN_REGULAR_EXPRESSION, "(?i)(((?<resourceValue>[a-zA-Z_0-9$¡¿·.]{1,})(?<dynamicResource>[ ]as[ ](?<dynamicResourceAlias>[a-zA-Z_0-9.]{1,})|[ ]?)) on (?<conditionalBody>[a-zA-Z_0-9'=,.~+-\\/* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,}))");
@@ -847,6 +848,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.ReservedWord.INNER, "INNER");
         defaults.put(Query.ReservedWord.LEFT, "LEFT");
         defaults.put(Query.ReservedWord.RIGHT, "RIGHT");
+        defaults.put(Query.ReservedWord.HASH, "HASH");
         defaults.put(Query.ReservedWord.ON, "ON");
         defaults.put(Query.ReservedWord.WHERE, "WHERE");
         defaults.put(Query.ReservedWord.ORDER_BY, "ORDER BY");
