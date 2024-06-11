@@ -13,6 +13,7 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
     private final QueryResource resource;
     private final JoinType type;
     private final Boolean outer;
+    private Boolean isNestedJoin;
 
     public Join(Query query, String resourceName, JoinType type) {
         this(query, new QueryResource(resourceName), type, false);
@@ -63,6 +64,22 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
      */
     public Boolean getOuter() {
         return outer;
+    }
+
+    /**
+     * Return if is nested join
+     * @return true if the join is nestedJoin
+     * */
+    public Boolean isNestedJoin() {
+        return isNestedJoin;
+    }
+
+    /**
+     * Set value to isNestedJoin
+     * @param isNestedJoin
+     * */
+    public void setIsNestedJoin(boolean isNestedJoin){
+        this.isNestedJoin = isNestedJoin;
     }
 
     /**

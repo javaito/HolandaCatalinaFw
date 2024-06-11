@@ -93,11 +93,19 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                 for (int i = 0; i < conditionalElements.size(); i++) {
                     element = conditionalElements.get(i++).trim();
                     elementValue = conditionalElements.get(i).trim();
-                    if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
+                    if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.HASH)) ||
+                            element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.JOIN)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.FULL)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.INNER)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.LEFT)) ||
                             element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.RIGHT))) {
+
+                        boolean isNestedJoin;
+                        if (element.equalsIgnoreCase(SystemProperties.get(SystemProperties.Query.ReservedWord.HASH))){
+                            isNestedJoin = false;
+                            element = conditionalElements.get(i++).trim();
+                            elementValue = conditionalElements.get(i).trim();
+                        }else isNestedJoin = true;
 
                         Join.JoinType type = Join.JoinType.valueOf(element.toUpperCase());
                         if(type != Join.JoinType.JOIN) {
@@ -121,6 +129,7 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
                         }
 
                         Join join = new Join(query, joinResource, type);
+                        join.setIsNestedJoin(isNestedJoin);
                         query.getResources().add(join.getResource());
                         completeEvaluatorCollection(query, joinConditionalBody, groups, richTexts, join, 0, placesIndex);
                         query.addJoin(join);
