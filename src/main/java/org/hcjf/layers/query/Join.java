@@ -67,7 +67,7 @@ public class Join extends EvaluatorCollection implements Comparable<Join> {
     }
 
     /**
-     * Return if is nested join
+     * Return true if is nested join
      * @return true if the join is nestedJoin
      * */
     public Boolean isNestedJoin() {
