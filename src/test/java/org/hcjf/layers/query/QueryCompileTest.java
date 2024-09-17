@@ -730,4 +730,40 @@ public class QueryCompileTest {
         System.out.println(query.toString());
         System.out.println();
     }
+
+    @Test
+    public void testQueryWithThreeOrMoreSubQueries() {
+        String sql  = "ENVIRONMENT '{\"streetId\":[1198,1257,1271]}' " +
+                "SELECT id, name FROM Account WHERE id IN " +
+                "(SELECT id FROM Account WHERE parentAccount IN " +
+                "(SELECT parentAccount FROM Account WHERE parentAccount IN (555, 666, 777) AND contains(namespaces, 'sitrack') limit 5) limit 5)";
+        Query query = Query.compile(sql);
+        Assert.assertTrue(isEnvironmentInSubQueries(query));
+        sql  = "ENVIRONMENT '{\"streetId\":[1198,1257,1271]}' " +
+                "SELECT id, name FROM Account WHERE id IN " +
+                "(SELECT id FROM Account WHERE parentAccount IN " +
+                "(SELECT parentAccount FROM Account WHERE parentAccount IN $service.0.streetId AND name IN " +
+                "(SELECT name FROM Account LIMIT 10) limit 5) limit 5)";
+        query = Query.compile(sql);
+        Assert.assertTrue(isEnvironmentInSubQueries(query));
+    }
+
+    public boolean isEnvironmentInSubQueries(Query query) {
+        Map<String, Object> environment = query.getEnvironment();
+        for (Evaluator evaluator : query.getEvaluators()) {
+            if (evaluator instanceof FieldEvaluator) {
+                FieldEvaluator fieldEvaluator = (FieldEvaluator) evaluator;
+                Object rightValue = fieldEvaluator.getRightValue();
+                if (rightValue instanceof BaseEvaluator.QueryValue) {
+                    BaseEvaluator.QueryValue queryValue = (BaseEvaluator.QueryValue) rightValue;
+                    if(environment.equals(queryValue.getQuery().getEnvironment())){
+                        isEnvironmentInSubQueries(queryValue.getQuery());
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 }
