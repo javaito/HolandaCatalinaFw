@@ -20,6 +20,7 @@ import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.security.LazyPermission;
 import org.hcjf.service.security.Permission;
 import org.hcjf.service.security.SecurityPermissions;
+import org.hcjf.service.security.SuperClassPermission;
 import org.hcjf.utils.NamedUuid;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.Version;
@@ -454,13 +455,18 @@ public final class Layers {
         }
 
         Class classToIntrospect = layerInstance.getClass();
+        Class className;
         while(!classToIntrospect.equals(Layer.class) && !classToIntrospect.equals(Object.class)) {
             for (Method method : classToIntrospect.getDeclaredMethods()) {
+                className = layerInstance.getClass();
+                if (method.getDeclaredAnnotationsByType(SuperClassPermission.class).length > 0) {
+                    className = method.getDeclaredAnnotation(SuperClassPermission.class).value();
+                }
                 for (Permission permission : method.getDeclaredAnnotationsByType(Permission.class)) {
-                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
+                    SecurityPermissions.publishPermission(className, permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
                 }
                 for (LazyPermission permission : method.getDeclaredAnnotationsByType(LazyPermission.class)) {
-                    SecurityPermissions.publishPermission(layerInstance.getClass(), permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
+                    SecurityPermissions.publishPermission(className, permission.value(), permission.title(), permission.description(), List.of(permission.tags()));
                 }
             }
             classToIntrospect = classToIntrospect.getSuperclass();
