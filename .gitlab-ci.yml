@@ -1,0 +1,17 @@
+image: maven:3-jdk-12
+
+cache:
+  paths:
+    - .m2/repository
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+test:
+  script: "mvn test --settings settings.xml"
+
+deploy:
+  script:
+    - mvn deploy -Drevision=stk-$CI_COMMIT_TAG --settings settings.xml -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog
+  only:
+    - tags
