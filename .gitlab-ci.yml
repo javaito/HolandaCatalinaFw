@@ -12,6 +12,6 @@ test:
 
 deploy:
   script:
-    - mvn deploy -Drevision=stk-$CI_COMMIT_TAG --settings settings.xml -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog
+    - mvn deploy -Dversion="stk-$CI_COMMIT_TAG" --settings settings.xml -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dgpg.skip -P jfrog
   only:
     - tags
