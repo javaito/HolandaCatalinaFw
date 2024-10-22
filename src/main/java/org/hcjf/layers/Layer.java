@@ -9,6 +9,7 @@ import org.hcjf.service.ServiceSession;
 import org.hcjf.service.ServiceThread;
 import org.hcjf.service.security.Permission;
 import org.hcjf.service.security.SecurityPermissions;
+import org.hcjf.service.security.SuperClassPermission;
 import org.hcjf.utils.SynchronizedCountOperation;
 
 import java.lang.reflect.Method;
@@ -197,8 +198,12 @@ public abstract class Layer implements LayerInterface {
 
                 if (!method.getDeclaringClass().equals(LayerInterface.class)) {
                     Method implementationMethod = getTarget().getClass().getMethod(method.getName(), method.getParameterTypes());
+                    Class clazz = getTarget().getClass();
+                    if (implementationMethod.getDeclaredAnnotationsByType(SuperClassPermission.class).length > 0) {
+                        clazz = implementationMethod.getDeclaredAnnotation(SuperClassPermission.class).value();
+                    }
                     for (Permission permission : implementationMethod.getDeclaredAnnotationsByType(Permission.class)) {
-                        SecurityPermissions.checkPermission(getTarget().getClass(), permission.value());
+                        SecurityPermissions.checkPermission(clazz, permission.value());
                     }
                 }
 
