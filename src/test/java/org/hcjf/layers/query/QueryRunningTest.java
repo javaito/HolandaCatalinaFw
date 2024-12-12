@@ -1742,6 +1742,28 @@ public class QueryRunningTest {
         Assert.assertEquals(resultSet.stream().findFirst().get().get("week"), 40);
     }
 
+    @Test
+    public void testQueryWithSubquery() {
+        String queryString = "select street from address where addressId=(select addressId from character where name ='Homer Jay')";
+        Query query = Query.compile(queryString);
+        Collection<JoinableMap> result = query.evaluate(dataSource);
+        Assert.assertEquals(result.stream().findFirst().get().get("street"), "Evergreen Terrace");
+    }
+
+    @Test
+    public void testQueryWithSubqueryAndIn() {
+        String queryString = "select street from address where addressId in (select addressId from character where name ='Homer Jay' or name='Maurice Lester')";
+        Query query = Query.compile(queryString);
+        Collection<JoinableMap> result = query.evaluate(dataSource);
+        ArrayList<String> streets = new ArrayList<>();
+        for (JoinableMap element : result) {
+            String street = (String) element.get("street");
+            streets.add(street);
+        }
+        Assert.assertEquals(streets.get(0),  "Evergreen Terrace");
+        Assert.assertEquals(streets.get(1),  "Buenos Aires");
+    }
+
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
         public CustomFunction() {
