@@ -1764,6 +1764,15 @@ public class QueryRunningTest {
         Assert.assertEquals(streets.get(1),  "Buenos Aires");
     }
 
+    @Test
+    public void testAggregateMaxFunction() {
+        String queryString = "SELECT  aggregateMax(array) as valor FROM '[ {\"array\":[-4,-10,-5,-67,-3]}]' AS data";
+        Query query = Query.compile(queryString);
+        Collection<JoinableMap> result = query.evaluate(dataSource);
+        BigDecimal expected = new BigDecimal(-3);
+        Assert.assertEquals(result.stream().findFirst().get().get("valor"), expected);
+    }
+
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
         public CustomFunction() {
