@@ -397,6 +397,48 @@ public class QueryCompileTest {
     }
 
     @Test
+    public void testHashJoin() {
+        Query query = Query.compile("SELECT id, Credentials.id, name FROM resource " +
+                "join Credentials on Credentials.resourceId = resource.id " +
+                "hash left join Account on Account.resourceId = resource.id " +
+                "hash full join Issue on Issue.accountId = Account.id " +
+                "hash right join Permission on Permission.id = Account.id " +
+                "left join Grant on Grant.id = Permission.id " +
+                "hash join PermissionGrant on PermissionGrant.id = Grant.id " +
+                "join Policy on Policy.id = PermissionGrant.id");
+        List<Join> joins = query.getJoins();
+        Assert.assertEquals(joins.get(0).isNestedJoin(), true);
+        Assert.assertEquals(joins.get(1).isNestedJoin(), false);
+        Assert.assertEquals(joins.get(2).isNestedJoin(), false);
+        Assert.assertEquals(joins.get(3).isNestedJoin(), false);
+        Assert.assertEquals(joins.get(4).isNestedJoin(), true);
+        Assert.assertEquals(joins.get(5).isNestedJoin(), false);
+        Assert.assertEquals(joins.get(6).isNestedJoin(), true);
+    }
+
+    @Test
+    public void testCompileQueryWithHashJoin() {
+        Query query = Query.compile("SELECT id, Credentials.id, name as theName, (select name from Account limit 3) as subQuery FROM resource " +
+                "join Credentials on Credentials.resourceId = resource.id " +
+                "hash left join Account on Account.resourceId = resource.id " +
+                "hash full join Issue on Issue.accountId = Account.id " +
+                "hash right join Permission on Permission.id = Account.id " +
+                "left join Grant on Grant.id = Permission.id " +
+                "hash join PermissionGrant on PermissionGrant.id = Grant.id " +
+                "join Policy on Policy.id = PermissionGrant.id where id=1234 and name='exampleName' limit 5" +
+                "union " +
+                "SELECT id, Credentials.id, name as theName, (select name from Account limit 3) as subQuery FROM resource " +
+                "join Credentials on Credentials.resourceId = resource.id " +
+                "hash left join Account on Account.resourceId = resource.id " +
+                "hash full join Issue on Issue.accountId = Account.id " +
+                "hash right join Permission on Permission.id = Account.id " +
+                "left join Grant on Grant.id = Permission.id " +
+                "hash join PermissionGrant on PermissionGrant.id = Grant.id " +
+                "join Policy on Policy.id = PermissionGrant.id order by timestamp");
+        System.out.println();
+    }
+
+    @Test
     public void testUnderlyingValues() {
         Query query = Query.compile("SELECT * FROM resource WHERE resource.field = 2821c2b9-c485-4550-8dd8-6ec83033fa84 limit 2, 50");
         Assert.assertEquals(query.getLimit().intValue(), 2);
