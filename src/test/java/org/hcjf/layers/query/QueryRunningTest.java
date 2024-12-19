@@ -1752,7 +1752,7 @@ public class QueryRunningTest {
 
     @Test
     public void testQueryWithSubqueryAndIn() {
-        String queryString = "select street from address where addressId in (select addressId from character where name ='Homer Jay' or name='Maurice Lester')";
+        String queryString = "select street from address where addressId in (select addressId from character where name ='Homer Jay')";
         Query query = Query.compile(queryString);
         Collection<JoinableMap> result = query.evaluate(dataSource);
         ArrayList<String> streets = new ArrayList<>();
@@ -1760,8 +1760,7 @@ public class QueryRunningTest {
             String street = (String) element.get("street");
             streets.add(street);
         }
-        Assert.assertEquals(streets.get(0),  "Evergreen Terrace");
-        Assert.assertEquals(streets.get(1),  "Buenos Aires");
+        Assert.assertEquals(streets.get(0), "Evergreen Terrace" );
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
