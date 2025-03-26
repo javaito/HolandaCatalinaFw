@@ -1742,6 +1742,69 @@ public class QueryRunningTest {
         Assert.assertEquals(resultSet.stream().findFirst().get().get("week"), 40);
     }
 
+    @Test
+    public void testQueryWithSubquery() {
+        String queryString = "select street from address where addressId=(select addressId from character where name ='Homer Jay')";
+        Query query = Query.compile(queryString);
+        Collection<JoinableMap> result = query.evaluate(dataSource);
+        Assert.assertEquals(result.stream().findFirst().get().get("street"), "Evergreen Terrace");
+    }
+
+    @Test
+    public void testQueryWithSubqueryAndIn() {
+        String queryString = "select street from address where addressId in (select addressId from character where name ='Homer Jay')";
+        Query query = Query.compile(queryString);
+        Collection<JoinableMap> result = query.evaluate(dataSource);
+        ArrayList<String> streets = new ArrayList<>();
+        for (JoinableMap element : result) {
+            String street = (String) element.get("street");
+            streets.add(street);
+        }
+        Assert.assertEquals(streets.get(0), "Evergreen Terrace" );
+    }
+
+    @Test
+    public void testDateFormat() {
+        String sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-04-08',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
+        Query query = Query.compile(sql);
+        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-04-08 14:00:00");
+
+        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-07-30',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-07-30 14:00:00");
+
+        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-09-05',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-09-05 14:00:00");
+
+        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-01-20',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-01-20 13:00:00");
+
+        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-04-05',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-04-05 13:00:00");
+
+        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-10-10',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
+        query = Query.compile(sql);
+        resultSet = query.evaluate(dataSource);
+        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-10-10 13:00:00");
+    }
+
+    @Test
+    public void testAggregateMaxFunction() {
+        String queryString = "SELECT  aggregateMax(array) as valor FROM '[ {\"array\":[-4,-10,-5,-67,-3]}]' AS data";
+        Query query = Query.compile(queryString);
+        Collection<JoinableMap> result = query.evaluate(dataSource);
+        BigDecimal expected = new BigDecimal(-3);
+        Assert.assertEquals(result.stream().findFirst().get().get("valor"), expected);
+    }
+
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
 
         public CustomFunction() {

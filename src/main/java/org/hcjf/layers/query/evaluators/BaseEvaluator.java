@@ -196,7 +196,17 @@ public abstract class BaseEvaluator implements Evaluator {
                 result = query.evaluate(dataSource, consumer);
             } else {
                 if(!cachedResult) {
-                    Collection subQueryResult = query.evaluate(dataSource, consumer);
+                    Collection subQueryResult = null;
+                    try {
+                        subQueryResult = query.evaluate(new Queryable.ReadableDataSource(), consumer);
+                    } catch (Exception e) {
+                    }
+                    //If generates an error when solving the query or the first query result is empty or the first value is null,
+                    // datasource is replaced for original datasource.
+                    // Because the elements of the original dataSource do not match the query resource.
+                    if (subQueryResult == null || subQueryResult.isEmpty() || !subQueryResult.isEmpty() && subQueryResult.iterator().next().equals(null) ) {
+                        subQueryResult = query.evaluate(dataSource, consumer);
+                    }
                     if (query.getReturnParameters().size() == 1) {
                         QueryReturnParameter queryReturnParameter = query.getReturnParameters().get(0);
                         List<Object> listResult = new ArrayList<>();
