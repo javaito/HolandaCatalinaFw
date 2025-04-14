@@ -36,7 +36,8 @@ public final class SystemProperties extends Properties {
     public static final String HCJF_SCIENTIFIC_NUMBER_REGEX = "hcjf.scientific.number.regex";
     public static final String HCJF_MATH_REGULAR_EXPRESSION = "hcjf.math.regular.expression";
     public static final String HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION = "hcjf.math.connector.regular.expression";
-    public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION = "hcjf.math.splitter.regular.expression";
+    public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION_COMPOUND_OPERATORS = "hcjf.math.splitter.regular.expression.compound.operators";
+    public static final String HCJF_MATH_SPLITTER_REGULAR_EXPRESSION_SIMPLE_OPERATORS = "hcjf.math.splitter.regular.expression.simple.operators";
     public static final String HCJF_DEFAULT_LRU_MAP_SIZE = "hcjf.default.lru.map.size";
     public static final String HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG = "hcjf.default.exception.message.tag";
     public static final String HCJF_CHECKSUM_ALGORITHM = "hcjf.checksum.algorithm";
@@ -579,9 +580,10 @@ public final class SystemProperties extends Properties {
         defaults.put(HCJF_INTEGER_NUMBER_REGEX, "^[-]?[0-9]{1,}$");
         defaults.put(HCJF_DECIMAL_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}$");
         defaults.put(HCJF_SCIENTIFIC_NUMBER_REGEX, "^[-]?[0-9,\\.]{0,}[0-9]{1,}E[-]?[0-9]{1,}$");
-        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "[-]?(((?<subExpression>¿[\\d]+·)|(?<variable>[a-z A-Z()$_]+)|(?<decimal>[\\d]+\\.[\\d]+)|(?<integer>[\\d]+))(?<operator>[\\-+/*^%=<>! ]?))+");
+        defaults.put(HCJF_MATH_REGULAR_EXPRESSION, "[-]?(((?<subExpression>¿[\\d]+·)|(?<variable>[a-z A-Z()$_]+)|(?<decimal>[\\d]+\\.[\\d]+)|(?<integer>[\\d]+))(?<operator>[\\-+/*^%=<>! ]?)(?<compound>[<>|!=|>=|<=]?))+");
         defaults.put(HCJF_MATH_CONNECTOR_REGULAR_EXPRESSION, ".*[+\\-*/%=<>!].*");
-        defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION, "(?<=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))|(?=(\\+|\\-|\\*|/|%|=|>|<|<>|!=|>=|<=))");
+        defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION_COMPOUND_OPERATORS, "(?<=(\\+|\\-|\\*|/|%|<>|!=|>=|<=))|(?=(\\+|\\-|\\*|/|%|<>|!=|>=|<=))");
+        defaults.put(HCJF_MATH_SPLITTER_REGULAR_EXPRESSION_SIMPLE_OPERATORS, "(?<=(\\+|\\-|\\*|/|%|=|>|<))|(?=(\\+|\\-|\\*|/|%|=|>|<))");
         defaults.put(HCJF_DEFAULT_LRU_MAP_SIZE, "1000");
         defaults.put(HCJF_DEFAULT_EXCEPTION_MESSAGE_TAG, "IMPL");
         defaults.put(HCJF_CHECKSUM_ALGORITHM, "MD5");
