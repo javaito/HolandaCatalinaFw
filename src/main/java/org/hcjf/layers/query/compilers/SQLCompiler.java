@@ -533,9 +533,22 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
             String group = groups.get(index);
             if(group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT)) ||
                     group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT))) {
+                int previousIndex = index - 1;
+                if (previousIndex >= 0 && groups.get(previousIndex).toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.SELECT)) &&
+                        !group.toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT)) &&
+                        groups.get(groups.size() - 1).toUpperCase().startsWith(SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT))) {
+                    List<String> addEnvironmentToGroup = new ArrayList<>();
+                    addEnvironmentToGroup.add(0, SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT));
+                    addEnvironmentToGroup.add(1, Strings.RICH_TEXT_SEPARATOR
+                            .concat(Strings.REPLACEABLE_RICH_TEXT).concat(placesIndex.toString())
+                            .concat(Strings.END_GROUP_NAME).concat(Strings.RICH_TEXT_SEPARATOR));
+                    addEnvironmentToGroup.add(2, group);
+                    group = Strings.join(addEnvironmentToGroup, Strings.WHITE_SPACE);
+                    groups.set(index, group);
+                }
                 FieldEvaluator.QueryValue queryValue = new FieldEvaluator.QueryValue(compile(groups, richTexts, index, placesIndex),
                         parameterClass.equals(QueryReturnParameter.class));
-                if (query.getEnvironment() != null && !group.toUpperCase().contains(SystemProperties.Query.ReservedWord.ENVIRONMENT)){
+                if (query.getEnvironment() != null && !group.toUpperCase().contains(SystemProperties.get(SystemProperties.Query.ReservedWord.ENVIRONMENT))) {
                     queryValue.getQuery().setEnvironment(query.getEnvironment());
                 }
                 if(alias != null) {
