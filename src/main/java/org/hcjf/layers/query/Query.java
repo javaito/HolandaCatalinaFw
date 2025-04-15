@@ -12,6 +12,7 @@ import org.hcjf.layers.query.functions.*;
 import org.hcjf.layers.query.model.*;
 import org.hcjf.layers.query.serializer.QuerySerializer;
 import org.hcjf.layers.query.serializer.SQLSerializer;
+import org.hcjf.log.Log;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.service.Service;
 import org.hcjf.service.ServiceSession;
@@ -34,6 +35,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     public static final String QUERY_BSON_FIELD_NAME = "__query__";
     public static final String DISJOINT_RESULT_SET = "disjointResultSet";
     private static final LruMap<String,Query> cache;
+    public static final String TEMP_DISTINCTIVE_KEY = "_temp_distinctive";
 
     private final QueryId id;
     private final QueryResource resource;
@@ -591,7 +593,12 @@ public class Query extends EvaluatorCollection implements Queryable {
                 //a comparator using the order fields.
                 result = new TreeSet<>((o1, o2) -> {
                     int compareResult = 0;
+                    Map<String, Object> map1 = (Map<String, Object>)o1;
+                    Map<String, Object> map2 = (Map<String, Object>)o2;
 
+                    if (!map1.containsKey(TEMP_DISTINCTIVE_KEY) && !map2.containsKey(TEMP_DISTINCTIVE_KEY)) {
+                        makeUnique((Map<String, Object>) o1);
+                    }
                     Comparable<Object> comparable1;
                     Comparable<Object> comparable2;
                     for (QueryOrderParameter orderField : orderParameters) {
@@ -822,8 +829,27 @@ public class Query extends EvaluatorCollection implements Queryable {
                 result.addAll(queryable.evaluate(dataSource, consumer));
             }
         }
-
+        long clearTempStartTime = System.currentTimeMillis();
+        clearTempDistinctive((Collection<Map<String, Object>>) result);
+        long clearTempEndTime = System.currentTimeMillis();
+        Log.i("Temp_Unique",String.format("The Clearing process took: ", (clearTempEndTime - clearTempStartTime)));
         return result;
+    }
+    /**
+     * Removes the TEMP_DISTINCTIVE_KEY entry in place from each Map in the given collection.
+     * @param result The collection of Map objects from which the TEMP_DISTINCTIVE_KEY entry will be removed.
+     */
+    private void clearTempDistinctive(Collection<Map<String, Object>> result) {
+        for (Map item : result){
+            item.remove(TEMP_DISTINCTIVE_KEY);
+        }
+    }
+    /**
+     * Adds a unique identifier to the given Map object.
+     * @param object The Map object to which the unique identifier will be added.
+     */
+    private void makeUnique(Map<String, Object> object) {
+        object.put(TEMP_DISTINCTIVE_KEY, UUID.randomUUID());
     }
 
     /**
