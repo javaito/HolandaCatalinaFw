@@ -1790,6 +1790,13 @@ public class QueryRunningTest {
         rs = query.evaluate(ds);
         System.out.println("Time (full join): " + (System.currentTimeMillis() - time));
         System.out.println("Result size: " + rs.size());
+
+        q = "select * from scans join guides on scans.guiaId = guides.guiaId";
+        query = Query.compile(q);
+        time = System.currentTimeMillis();
+        rs = query.evaluate(ds);
+        System.out.println("Time (invert join): " + (System.currentTimeMillis() - time));
+        System.out.println("Result size: " + rs.size());
     }
 
     @Test
