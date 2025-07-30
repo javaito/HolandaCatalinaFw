@@ -1,24 +1,5 @@
 package org.hcjf.layers.query;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-
-//import io.github.ollama4j.OllamaAPI;
-//import io.github.ollama4j.exceptions.OllamaBaseException;
-//import io.github.ollama4j.exceptions.ToolInvocationException;
-//import io.github.ollama4j.models.chat.*;
-//import io.github.ollama4j.models.request.CustomModelRequest;
-//import io.github.ollama4j.types.OllamaModelType;
-import org.apache.commons.io.IOUtils;
 import org.hcjf.bson.BsonDecoder;
 import org.hcjf.bson.BsonDocument;
 import org.hcjf.bson.BsonEncoder;
@@ -28,13 +9,18 @@ import org.hcjf.layers.crud.ReadRowsLayerInterface;
 import org.hcjf.layers.query.functions.BaseQueryFunctionLayer;
 import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.layers.query.model.QueryReturnFunction;
-import org.hcjf.layers.resources.Resource;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
 import org.hcjf.utils.JsonUtils;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * @author javaito
