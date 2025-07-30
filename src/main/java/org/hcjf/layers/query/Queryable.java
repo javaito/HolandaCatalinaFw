@@ -10,6 +10,7 @@ import org.hcjf.layers.query.functions.QueryFunctionLayerInterface;
 import org.hcjf.layers.query.model.*;
 import org.hcjf.properties.SystemProperties;
 import org.hcjf.utils.Introspection;
+import org.hcjf.utils.JsonUtils;
 import org.hcjf.utils.Strings;
 import org.hcjf.utils.bson.BsonParcelable;
 
@@ -326,5 +327,36 @@ public interface Queryable extends BsonParcelable {
             return Layers.get(ReadRowsLayerInterface.class, queryable.getResourceName()).readRows(queryable);
         }
 
+    }
+
+    /**
+     * This data source read files from resources of a java project.
+     */
+    class FromResourcesDataSource implements DataSource<Map<String,Object>> {
+
+        private Map<String, List<Map<String,Object>>> listByNames;
+
+        public FromResourcesDataSource(Map<String, String> names) {
+            this.listByNames = new HashMap<>();
+
+            try {
+                for (String name : names.keySet()) {
+                    byte[] bytes = Queryable.class.getResourceAsStream(names.get(name)).readAllBytes();
+                    List<Map<String,Object>> dataList = (List<Map<String, Object>>) JsonUtils.createObject(new String(bytes));
+                    listByNames.put(name, dataList);
+                }
+            } catch ( Exception ex ) {
+                throw new HCJFRuntimeException("Resources data source fail", ex);
+            }
+        }
+
+        @Override
+        public Collection<Map<String,Object>> getResourceData(Queryable queryable) {
+            List<Map<String,Object>> dsList = listByNames.get(queryable.getResourceName());
+            if ( dsList == null ) {
+                throw new HCJFRuntimeException("Data source list not found");
+            }
+            return new ArrayList<>(dsList);
+        }
     }
 }

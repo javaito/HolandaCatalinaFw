@@ -135,7 +135,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Returns the query associated to the instance.
+     * Returns the query associated with the instance.
      * @return Query instance.
      */
     @Override
@@ -218,9 +218,9 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Returns the map with underlying functions only for a one particular resource and rename the resource into map.
+     * Returns the map with underlying functions only for a one particular resource and rename the resource into a map.
      * @param originalResourceName Resource name.
-     * @param newResourceName New name to index the functions into map.
+     * @param newResourceName New name to index the functions into a map.
      * @return Underlying functions.
      */
     private Map<String, List<QueryReturnFunction>> getUnderlyingFunctionsAndChangeName(String originalResourceName, String newResourceName) {
@@ -296,7 +296,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Returns the list of resource of the query.
+     * Returns The resource list of the query.
      * @return List of resource fo the query.
      */
     public List<QueryResource> getResources() {
@@ -508,15 +508,15 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method evaluate each object of the collection and sort filtered
-     * object to create a result add with the object filtered and sorted.
+     * This method evaluates each object of the collection and sort filtered
+     * object to create a result added with the object filtered and sorted.
      * If there are order fields added then the result implementation is a
      * {@link TreeSet} implementation else the result implementation is a
-     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * {@link LinkedHashSet} implementation to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
-     * @param <O> Kind of instances of the data collection.
-     * @return Result add filtered and sorted.
+     * @param <O> Kind of the data collection.
+     * @return Result adds filtered and sorted.
      */
     @Override
     public final <O extends Object> Collection<O> evaluate(Collection<O> dataSource) {
@@ -524,16 +524,16 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method evaluate each object of the collection and sort filtered
-     * object to create a result add with the object filtered and sorted.
+     * This method evaluates each object of the collection and sort filtered
+     * object to create a result added with the object filtered and sorted.
      * If there are order fields added then the result implementation is a
      * {@link TreeSet} implementation else the result implementation is a
-     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * {@link LinkedHashSet} implementation to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
-     * @param <O> Kind of instances of the data collection.
-     * @return Result add filtered and sorted.
+     * @param <O> Kind of the data collection.
+     * @return Result adds filtered and sorted.
      */
     @Override
     public final <O extends Object> Collection<O> evaluate(Collection<O> dataSource, Queryable.Consumer<O> consumer) {
@@ -541,15 +541,15 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method evaluate each object of the collection and sort filtered
-     * object to create a result add with the object filtered and sorted.
+     * This method evaluates each object of the collection and sort filtered
+     * object to create a result added with the object filtered and sorted.
      * If there are order fields added then the result implementation is a
      * {@link TreeSet} implementation else the result implementation is a
-     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * {@link LinkedHashSet} implementation to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
-     * @param <O> Kind of instances of the data collection.
-     * @return Result add filtered and sorted.
+     * @param <O> Kind of the data collection.
+     * @return Result adds filtered and sorted.
      */
     @Override
     public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource) {
@@ -557,16 +557,16 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method evaluate each object of the collection and sort filtered
-     * object to create a result add with the object filtered and sorted.
+     * This method evaluates each object of the collection and sort filtered
+     * object to create a result added with the object filtered and sorted.
      * If there are order fields added then the result implementation is a
      * {@link TreeSet} implementation else the result implementation is a
-     * {@link LinkedHashSet} implementation in order to guarantee the data order
+     * {@link LinkedHashSet} implementation to guarantee the data order
      * from the source
      * @param dataSource Data source to evaluate the query.
      * @param consumer Data source consumer.
-     * @param <O> Kind of instances of the data collection.
-     * @return Result add filtered and sorted.
+     * @param <O> Kind of the data collection.
+     * @return Result adds filtered and sorted.
      */
     @Override
     public final <O extends Object> Collection<O> evaluate(Queryable.DataSource<O> dataSource, Queryable.Consumer<O> consumer) {
@@ -627,8 +627,10 @@ public class Query extends EvaluatorCollection implements Queryable {
                     return compareResult;
                 });
             } else {
-                //If the query has not ordered fields then creates a linked hash set to
-                //maintain the natural order of the data.
+                /*
+                If the query has not ordered fields, then creates a linked hash set to
+                maintain the natural order of the data.
+                */
                 result = new ArrayList<>();
             }
 
@@ -643,10 +645,12 @@ public class Query extends EvaluatorCollection implements Queryable {
             Collection<O> data;
             try {
                 if (joins.size() > 0) {
-                    data = (Collection<O>) join((DataSource<Joinable>) dataSource, (Consumer<Joinable>) consumer);
+                    data = (Collection<O>) join(dataSource, consumer);
                 } else {
-                    //If the query has not joins then data source must return data from
-                    //resource of the query.
+                    /*
+                    If the query has not joined then, a data source must return data from
+                    the resource of the query.
+                     */
                     if(getResource() instanceof QueryDynamicResource) {
                         Query dynamicResourceQuery =  ((QueryDynamicResource)getResource()).getQuery();
                         dynamicResourceQuery.setUnderlyingFunctions(getUnderlyingFunctionsAndChangeName(getResourceName(), dynamicResourceQuery.getResourceName()));
@@ -861,7 +865,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     /**
      * Resolve the introspection over the result set making union of the fields values.
      * @param resultSet Result set to make introspection.
-     * @param path Path in order to found the value.
+     * @param path Path to found the value.
      * @return Returns the union of all the values.
      */
     private Collection resolveResourcePath(Collection resultSet, String path) {
@@ -894,9 +898,9 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method verify if the conditions of the query are true or not.
+     * This method verifies if the conditions of the query are true or not.
      * @param object Object to use as condition parameters.
-     * @return Returns if the evaluation of conditions are true or false in otherwise.
+     * @return Returns if the evaluation of conditions is true or false in otherwise.
      */
     public final boolean verifyCondition(Object object) {
         Consumer consumer = new Queryable.IntrospectionConsumer<>();
@@ -905,11 +909,11 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method verify if the conditions of the query are true or not.
+     * This method verifies if the conditions of the query are true or not.
      * @param object Object to use as condition parameters.
      * @param dataSource Data source.
      * @param consumer Consumer.
-     * @return Returns if the evaluation of conditions are true or false in otherwise.
+     * @return Returns if the evaluation of conditions is true or false in otherwise.
      */
     public final boolean verifyCondition(Object object, DataSource dataSource, Consumer consumer) {
         Boolean result = true;
@@ -950,7 +954,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Initialize the evaluators cache into the current session.
+     * Initialize the evaluator cache into the current session.
      */
     private void initializeEvaluatorsCache() {
         ServiceSession session = ServiceSession.getCurrentIdentity();
@@ -965,7 +969,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Removes the evaluators cache of the current session.
+     * Removes the evaluator cache of the current session.
      */
     private void clearEvaluatorsCache() {
         ServiceSession session = ServiceSession.getCurrentIdentity();
@@ -977,7 +981,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method add into the current session an instance that must be skipped of the
+     * This method adds into the current session an instance that must be skipped of the
      * platform evaluation process.
      * @param evaluator Evaluator to skip.
      */
@@ -993,37 +997,36 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Copy all the evaluator from the source collection to destiny collection.
-     * @param dest Destiny collection.
+     * Copy all the evaluator from the source collection to a destiny collection.
+     * @param destiny Destiny collection.
      * @param src Source collection.
      */
-    private void copyEvaluators(EvaluatorCollection dest, EvaluatorCollection src) {
+    private void copyEvaluators(EvaluatorCollection destiny, EvaluatorCollection src) {
         for(Evaluator evaluator : src.getEvaluators()) {
             if(evaluator instanceof FieldEvaluator) {
-                dest.addEvaluator(((FieldEvaluator)evaluator).copy());
+                destiny.addEvaluator(((FieldEvaluator)evaluator).copy());
             } else if(evaluator instanceof BooleanEvaluator) {
                 BooleanEvaluator booleanEvaluator = (BooleanEvaluator) evaluator;
                 if(booleanEvaluator.getValue() instanceof QueryFunction) {
                     QueryFunction queryFunction = (QueryFunction) booleanEvaluator.getValue();
                     if(queryFunction.isUnderlying()) {
-                        dest.addEvaluator(evaluator);
+                        destiny.addEvaluator(evaluator);
                     }
                 }
             } else if(evaluator instanceof And) {
-                copyEvaluators(dest.and(), (EvaluatorCollection) evaluator);
+                copyEvaluators(destiny.and(), (EvaluatorCollection) evaluator);
             } else if(evaluator instanceof Or) {
-                copyEvaluators(dest.or(), (EvaluatorCollection) evaluator);
+                copyEvaluators(destiny.or(), (EvaluatorCollection) evaluator);
             }
         }
     }
 
-    private Collection<? extends Joinable> setResource(Collection<? extends Joinable> resultSet, String resourceName) {
-        for(Joinable joinable : resultSet) {
-            if(joinable instanceof  JoinableMap) {
-                ((JoinableMap)joinable).setResource(resourceName);
-            }
+    private Collection<? extends Joinable> setResource(Collection<Object> resultSet, String resourceName) {
+        Collection<Joinable> result = new ArrayList<>();
+        for(Object object : resultSet) {
+            result.add(getJoinableFromObject(object, resourceName));
         }
-        return resultSet;
+        return result;
     }
 
     /**
@@ -1032,7 +1035,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param consumer Consumer instance.
      * @return Collection that is the result of the join operation.
      */
-    private Collection<? extends Joinable> join(Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
+    private Collection<? extends Joinable> join(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
         Query query = new Query(getResource());
         query.setEnvironment(getEnvironment());
         query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
@@ -1051,7 +1054,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
             query.setUnderlyingFunctions(getUnderlyingFunctions(join.getResourceName()));
 
-            // This loop checks the 'on' clause and copy the evaluators in the sub query to resolve join.
+            // This loop checks the 'on' clause and copies the evaluators in the sub query to resolve join.
             for (Evaluator evaluator : optimizeJoin(leftData, join)) {
                 if(join.getResource() instanceof QueryDynamicResource) {
                     ((QueryDynamicResource)join.getResource()).getQuery().addEvaluator(evaluator);
@@ -1060,7 +1063,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                 }
             }
 
-            // This loop check the 'where' clause and copy the evaluators for each resource.
+            // This loop checks the 'where' clause and copies the evaluators for each resource.
             for (Evaluator evaluator : getEvaluatorsFromResource(this, query, join.getResource())) {
                 query.addEvaluator(evaluator);
             }
@@ -1072,19 +1075,19 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     /**
      * Get the data for each part of the join.
-     * @param query Query associated to the join.
+     * @param query Query associated with the join.
      * @param dataSource Data source instance.
      * @param consumer Consumer instance.
      * @return Returns the result set.
      */
-    private Collection<? extends Joinable> getJoinData(Query query, Queryable.DataSource<Joinable> dataSource, Queryable.Consumer<Joinable> consumer) {
-        Collection<? extends Joinable> result;
+    private Collection<? extends Joinable> getJoinData(Query query, Queryable.DataSource dataSource, Queryable.Consumer consumer) {
+        Collection<Object> result;
         if(query.getResource() instanceof  QueryDynamicResource) {
             Query dynamicResourceQuery = ((QueryDynamicResource)query.getResource()).getQuery();
             dynamicResourceQuery.setUnderlyingFunctions(getUnderlyingFunctionsAndChangeName(query.getResourceName(), dynamicResourceQuery.getResourceName()));
             result = resolveDynamicResource((QueryDynamicResource) query.getResource(), dataSource, consumer);
         } else if(getResource() instanceof QueryJsonResource) {
-            result = ((QueryJsonResource)getResource()).getResourceValues();
+            result = Collections.singleton(((QueryJsonResource) getResource()).getResourceValues());
         } else {
             query.setUnderlyingFunctions(getUnderlyingFunctions(query.getResourceName()));
             result = dataSource.getResourceData(verifyInstance(query, consumer));
@@ -1093,11 +1096,11 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method analyze the join structure and creates a set of evaluators in order to improve the performance of
+     * This method analyzes the join structure and creates a set of evaluators to improve the performance of
      * the sub queries used to select the objects of the right resource of the join.
      * @param leftData Collection with the left data.
      * @param join Join structure.
-     * @return Returns a set of the new filters in order to reduce the information of the right data.
+     * @return Returns a set of the new filters to reduce the information of the right data.
      */
     private Collection<Evaluator> optimizeJoin(Collection<? extends Joinable> leftData, Join join) {
         Collection<Evaluator> result = new ArrayList<>();
@@ -1159,9 +1162,9 @@ public class Query extends EvaluatorCollection implements Queryable {
             List<QueryReturnParameter> parameters = ((QueryDynamicResource) join.getResource()).getQuery().getReturnParameters();
             for(QueryReturnParameter parameter : parameters) {
                 if(parameter instanceof QueryReturnField) {
-                    /**
-                     * If the fieldPath of Key its equals to some QueryReturnField or
-                     * the alias of the QueryReturnField, return his fieldPath (Field name)
+                    /*
+                     If the fieldPath of Key its equals to some QueryReturnField or
+                     the alias of the QueryReturnField, return his fieldPath (Field name)
                      */
                     if((((QueryReturnField) parameter).getFieldPath().equals(key.getFieldPath())) ||
                             (parameter.getAlias() != null && !parameter.getAlias().isBlank() && parameter.getAlias().equals(key.getFieldPath()))) {
@@ -1180,7 +1183,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * Evaluates the join and creates the product of the intersection between the first resource and the second resource.
      * @param left Left data to the product.
      * @param right Right data to the product.
-     * @param join Join object to evaluate the kind and the evaluators of the product.
+     * @param join Join an object to evaluate the kind and the evaluators of the product.
      * @param dataSource Datasource instance.
      * @param consumer Consumer instance.
      * @return Collection that is the result of the join operation.
@@ -1212,94 +1215,75 @@ public class Query extends EvaluatorCollection implements Queryable {
 
         Collection<Joinable> result = new ArrayList<>();
         Joinable row;
-        if (join.isNestedJoin()) {
-            Boolean rowEvaluation;
-            for(Joinable leftJoinable : left) {
-                for(Joinable rightJoinable : right) {
-                    row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
-                    rowEvaluation = false;
 
-                    for(Evaluator evaluator : join.getEvaluators()) {
-                        if(!(rowEvaluation = evaluator.evaluate(row, dataSource, consumer))) {
+        String foreignKey = null;
+        String key = null;
+
+        /*
+        This block of code tries to find if there is only one conditional into the join, and it is an equals'
+        evaluator. If these conditions are true, then can filter the right set to minimize the size of the loop.
+         */
+        Boolean prefilter = false;
+        if (join.getEvaluators().size() == 1) {
+            Evaluator evaluator = join.getEvaluators().stream().findFirst().get();
+            if (evaluator instanceof Equals) {
+                Equals equals = (Equals) evaluator;
+                if (equals.getLeftValue() instanceof QueryField && equals.getRightValue() instanceof QueryField) {
+                    if (!((QueryField) equals.getLeftValue()).getResource().getResourceName().equals(getResourceName()) &&
+                            ((QueryField) equals.getRightValue()).getResource().getResourceName().equals(getResourceName())) {
+                        foreignKey = ((QueryField) equals.getLeftValue()).getFieldPath();
+                        key = ((QueryField) equals.getRightValue()).getFieldPath();
+                    } else {
+                        key = ((QueryField) equals.getLeftValue()).getFieldPath();
+                        foreignKey = ((QueryField) equals.getRightValue()).getFieldPath();
+                    }
+                    prefilter = true;
+                }
+            }
+        }
+
+        Boolean rowEvaluation;
+        for(Joinable leftJoinable : left) {
+            Collection<? extends Joinable> filterRightData = right;
+
+            if (prefilter) {
+                /*
+                If the 'prefilter' flag is active, then filter the right set
+                 */
+                final String staticKey = key;
+                final String staticForeignKey = foreignKey;
+                filterRightData = right.stream().filter(joinable ->
+                        joinable.get(staticForeignKey).equals(leftJoinable.get(staticKey))).collect(Collectors.toList());
+            }
+            for(Joinable rightJoinable : filterRightData) {
+                row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
+                rowEvaluation = false;
+
+                for(Evaluator evaluator : join.getEvaluators()) {
+                    if(!(rowEvaluation = evaluator.evaluate(row, dataSource, consumer))) {
+                        break;
+                    }
+                }
+
+                if(join.getOuter()) {
+                    rowEvaluation = !rowEvaluation;
+                }
+
+                if(rowEvaluation) {
+                    result.add(row);
+                    switch (join.getType()) {
+                        case LEFT: {
+                            leftCopy.remove(leftJoinable);
                             break;
                         }
-                    }
-
-                    if(join.getOuter()) {
-                        rowEvaluation = !rowEvaluation;
-                    }
-
-                    if(rowEvaluation) {
-                        result.add(row);
-                        switch (join.getType()) {
-                            case LEFT: {
-                                leftCopy.remove(leftJoinable);
-                                break;
-                            }
-                            case RIGHT: {
-                                rightCopy.remove(rightJoinable);
-                                break;
-                            }
-                            case FULL: {
-                                leftCopy.remove(leftJoinable);
-                                rightCopy.remove(rightJoinable);
-                                break;
-                            }
+                        case RIGHT: {
+                            rightCopy.remove(rightJoinable);
+                            break;
                         }
-                    }
-                }
-            }
-        } else {
-            Equals equals = (Equals) join.getEvaluators().stream().findFirst().get();
-            Map<Object, Collection> rightIndexCollection = new HashMap<>();
-            for (Joinable rightJoinable : right) {
-                Object currentKey;
-                boolean rightJoinableContainsRightValue = ((JoinableMap) rightJoinable).getResources().contains(((QueryField) equals.getRightValue()).getResource().toString());
-                String fieldPath;
-                if (rightJoinableContainsRightValue) {
-                    fieldPath = ((QueryField) equals.getRightValue()).getFieldPath();
-                    currentKey = rightJoinable.get(fieldPath);
-                } else {
-                    fieldPath = ((QueryField) equals.getLeftValue()).getFieldPath();
-                    currentKey = rightJoinable.get(fieldPath);
-                }
-                Collection<Joinable> rightCollection = right.stream().filter(rightMap ->
-                        rightMap.get(fieldPath).equals(currentKey)).collect(Collectors.toList());
-                rightIndexCollection.put(currentKey, rightCollection);
-            }
-            for (Joinable leftJoinable : left) {
-                Object key;
-                boolean leftJoinableContainsRightValue = ((JoinableMap) leftJoinable).getResources().contains(((QueryField) equals.getRightValue()).getResource().toString());
-                if (leftJoinableContainsRightValue) {
-                    key = leftJoinable.get(((QueryField) equals.getRightValue()).getFieldPath());
-                } else {
-                    key = leftJoinable.get(((QueryField) equals.getLeftValue()).getFieldPath());
-                }
-                if (rightIndexCollection.containsKey(key)) {
-                    Collection<Joinable> joinableCollectionById = rightIndexCollection.get(key);
-                    for (Joinable rightJoinable : joinableCollectionById) {
-                        if (rightJoinable != null) {
-                            try {
-                                row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
-                                result.add(row);
-                                switch (join.getType()) {
-                                    case LEFT: {
-                                        leftCopy.remove(leftJoinable);
-                                        break;
-                                    }
-                                    case RIGHT: {
-                                        rightCopy.remove(rightJoinable);
-                                        break;
-                                    }
-                                    case FULL: {
-                                        leftCopy.remove(leftJoinable);
-                                        rightCopy.remove(rightJoinable);
-                                        break;
-                                    }
-                                }
-                            } catch (Exception ex) {
-                                throw new HCJFRuntimeException("Error in join: ", ex.getMessage());
-                            }
+                        case FULL: {
+                            leftCopy.remove(leftJoinable);
+                            rightCopy.remove(rightJoinable);
+                            break;
                         }
                     }
                 }
@@ -1322,6 +1306,32 @@ public class Query extends EvaluatorCollection implements Queryable {
             }
         }
 
+        return result;
+    }
+
+    /**
+     * Verify the type of the argument to return all the times a joinable instance. If the argument is impossible to
+     * transform to joinable instance, then this method throws an exception.
+     * @param possibleJoinable Possible joinable instance.
+     * @param resourceName Name of the resource.
+     * @return Joinable instance.
+     */
+    private Joinable getJoinableFromObject(Object possibleJoinable, String resourceName) {
+        Joinable result;
+        if (possibleJoinable instanceof JoinableMap) {
+            JoinableMap source = (JoinableMap) possibleJoinable;
+            JoinableMap newJoinableMap = new JoinableMap(resourceName);
+            newJoinableMap.putAll(source);
+            result = newJoinableMap;
+        } else if (possibleJoinable instanceof Joinable) {
+            result = (Joinable) possibleJoinable;
+        } else if (possibleJoinable instanceof Map) {
+            JoinableMap newJoinableMap = new JoinableMap(resourceName);
+            newJoinableMap.putAll((Map<? extends String, ?>) possibleJoinable);
+            result = newJoinableMap;
+        } else {
+            throw new HCJFRuntimeException("Unexpected joinable type: " + possibleJoinable.getClass().getName());
+        }
         return result;
     }
 
@@ -1400,7 +1410,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * Reduce recursively all the collection into the query.
+     * Recursively reduce all the collection into the query.
      * @param collection Collection to optimizeJoin.
      * @param evaluatorsToRemove Evaluator to remove.
      */
@@ -1455,7 +1465,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This method evaluate if the uuid instance is a uuid type 5 and contains
+     * This method evaluates if the uuid instance is a uuid type 5 and contains
      * some name of the registered resource and invoke the read method of the resource.
      * @param uuid Resource id.
      * @param <O> Expected data type.
@@ -1500,7 +1510,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     }
 
     /**
-     * This particular implementation do nothing to populate the instance.
+     * This particular implementation does nothing to populate the instance.
      * @param document Bson document to populate the parcelable.
      * @param <P> Expected bson parcelable type.
      * @return Returns the same instance.
