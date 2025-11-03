@@ -33,10 +33,64 @@ public final class SQLCompiler extends Layer implements QueryCompiler {
      */
     @Override
     public Query compile(String queryExpression) {
-        Query result = null;
+        Query result;
+
+        if (queryExpression.contains(Strings.HASH)) {
+            //Remove query comments
+            queryExpression = Strings.removeLinesByTag(queryExpression, Strings.HASH);
+        }
+
         List<String> richTexts = Strings.groupRichText(queryExpression);
         List<String> groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() - 1)));
+
+        Pattern pattern = SystemProperties.getPattern(SystemProperties.Query.CONDITIONAL_BLOCKS_REGULAR_EXPRESSION);
+        Matcher matcher = pattern.matcher(groups.get(groups.size() - 1));
+        if (matcher.matches()) {
+            // In this case, the query definitions contain a conditional blocks with many queries, going to check all
+            // the block to know witch of the queries is the correct
+            String environmentBody = matcher.group(SystemProperties.get(SystemProperties.Query.ENVIRONMENT_GROUP_INDEX));
+            environmentBody = environmentBody.substring(environmentBody.indexOf(Strings.RICH_TEXT_SEPARATOR));
+            environmentBody = Strings.reverseRichTextGrouping(environmentBody, richTexts).trim();
+            environmentBody = environmentBody.substring(1, environmentBody.length() - 1);
+            Map<String,Object> conditionalEnvironment = (Map<String, Object>) JsonUtils.createObject(environmentBody);
+            queryExpression = getQueryDefinitionFromConditionalBlock(matcher, conditionalEnvironment);
+            queryExpression = Strings.reverseRichTextGrouping(queryExpression, richTexts);
+
+            richTexts = Strings.groupRichText(queryExpression);
+            groups = Strings.replaceableGroup(Strings.removeLines(richTexts.get(richTexts.size() - 1)));
+        }
+
         result = compile(groups, richTexts, groups.size() - 1, new AtomicInteger(0));
+        return result;
+    }
+
+    /**
+     * Verify all the conditionals to return the query associated
+     * @param matcher Conditional block matcher
+     * @param conditionalEnvironment Conditional environment object.
+     * @return Query expression associated with the conditional.
+     */
+    private String getQueryDefinitionFromConditionalBlock(Matcher matcher, Map<String,Object> conditionalEnvironment) {
+        String conditionalBlockBody = matcher.group(SystemProperties.get(SystemProperties.Query.CONDITIONAL_BLOCK_GROUP_INDEX));
+        List<String> conditionalBlocks = Strings.group(conditionalBlockBody, SystemProperties.get(SystemProperties.Query.CONDITIONAL_BLOCK_GROUP_START),
+                SystemProperties.get(SystemProperties.Query.CONDITIONAL_BLOCK_GROUP_END));
+
+        String result = null;
+
+        for (int i = conditionalBlocks.size() - 1; i >= 0; i--) {
+            String[] splitBlock = conditionalBlocks.get(i).split(SystemProperties.get(SystemProperties.Query.CONDITIONAL_BLOCK_GROUP_SEPARATOR));
+            String condition = splitBlock[0].trim();
+            Query conditionEvaluator = Query.compile(String.format(SystemProperties.get(SystemProperties.Query.SINGLE_PATTERN_WITH_CONDITIONAL), "resource", condition));
+            if (conditionEvaluator.verifyCondition(conditionalEnvironment)) {
+                result = splitBlock[1].trim();
+                break;
+            }
+        }
+
+        if (result == null) {
+            throw new HCJFRuntimeException("None of the conditions have been true for the model");
+        }
+
         return result;
     }
 

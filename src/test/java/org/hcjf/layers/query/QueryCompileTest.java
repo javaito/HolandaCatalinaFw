@@ -772,4 +772,66 @@ public class QueryCompileTest {
         System.out.println(query.toString());
         System.out.println();
     }
+
+    @Test
+    public void testComments() {
+        String sql =
+                "#Comment line 0\r\n" +
+                "select * from resource \r\n" +
+                "#Comment line 1\r\n" +
+                "#Comment line 2\r\n" +
+                "where field > 1";
+        Query query = Query.compile(sql);
+        System.out.println();
+    }
+
+    @Test
+    public void testConditionalBlock() {
+        String sql =
+                "conditional environment '{\"field\":1}'\n" +
+                        "<<< field = 1 ?-> select * from resourceA >>>\n" +
+                        "<<< field = 2 ?-> select * from resourceB >>>";
+
+        Query q = Query.compile(sql);
+        System.out.println(q);
+
+        sql =
+                "conditional environment '{\"field\":2}'\n" +
+                        "<<< field = 1 ?-> select * from resourceA >>>\n" +
+                        "<<< field = 2 ?-> select * from resourceB >>>";
+
+        q = Query.compile(sql);
+        System.out.println(q);
+
+        sql =
+                "conditional environment '{\"field\":5}'\n" +
+                        "<<< field = 1 ?-> select * from resourceA >>>\n" +
+                        "<<< field = 2 ?-> select * from resourceB >>>";
+
+        try {
+            q = Query.compile(sql);
+        } catch (Exception ex) {
+            System.out.println("none");
+        }
+
+        sql =
+                "conditional environment '{\"field\":5}'\n" +
+                        "<<< field = 1 ?-> select * from resourceA >>>\n" +
+                        "<<< field = 2 ?-> select * from resourceB >>>\n" +
+                        "<<< true ?-> select * from '[]' as data >>>";
+
+        q = Query.compile(sql);
+        System.out.println(q);
+
+        sql =
+                "conditional environment '{\"field\":5}'\n" +
+                        "#Commenct line 1\n" +
+                        "<<< field = 1 ?-> select * from resourceA >>>\n" +
+                        "<<< field = 2 ?-> select * from resourceB >>>\n" +
+                        "#Commenct line 2\n" +
+                        "<<< true ?-> select * from '[]' as data >>>";
+
+        q = Query.compile(sql);
+        System.out.println(q);
+    }
 }

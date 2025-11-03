@@ -332,9 +332,11 @@ public final class SystemProperties extends Properties {
 
     public static final class Query {
         public static final String SINGLE_PATTERN = "hcjf.query.single.pattern";
+        public static final String SINGLE_PATTERN_WITH_CONDITIONAL = "hcjf.query.single.pattern.with.conditional";
         public static final String LOG_TAG = "hcjf.query.log.tag";
         public static final String DEFAULT_LIMIT = "hcjf.query.default.limit";
         public static final String DEFAULT_DESC_ORDER = "hcjf.query.default.desc.order";
+        public static final String CONDITIONAL_BLOCKS_REGULAR_EXPRESSION = "hcjf.query.conditional.blocks.regular.expression";
         public static final String SELECT_REGULAR_EXPRESSION = "hcjf.query.select.regular.expression";
         public static final String CONDITIONAL_REGULAR_EXPRESSION = "hcjf.query.conditional.regular.expression";
         public static final String EVALUATOR_COLLECTION_REGULAR_EXPRESSION = "hcjf.query.evaluator.collection.regular.expression";
@@ -349,6 +351,10 @@ public final class SystemProperties extends Properties {
         public static final String AS_REGULAR_EXPRESSION = "hcjf.query.as.regular.expression";
         public static final String DESC_REGULAR_EXPRESSION = "hcjf.query.desc.regular.expression";
         public static final String ENVIRONMENT_GROUP_INDEX = "hcjf.query.environment.group.index";
+        public static final String CONDITIONAL_BLOCK_GROUP_INDEX = "hcjf.query.conditional.block.group.index";
+        public static final String CONDITIONAL_BLOCK_GROUP_START = "hcjf.query.conditional.block.group.start";
+        public static final String CONDITIONAL_BLOCK_GROUP_END = "hcjf.query.conditional.block.group.end";
+        public static final String CONDITIONAL_BLOCK_GROUP_SEPARATOR = "hcjf.query.conditional.block.group.separator";
         public static final String SELECT_GROUP_INDEX = "hcjf.query.select.group.index";
         public static final String FROM_GROUP_INDEX = "hcjf.query.from.group.index";
         public static final String CONDITIONAL_GROUP_INDEX = "hcjf.query.conditional.group.index";
@@ -368,6 +374,7 @@ public final class SystemProperties extends Properties {
         public static final String COMPILER_CACHE_SIZE = "hcjf.query.compiler.cache.size";
         public static final String DEFAULT_COMPILER = "hcjf.query.default.compiler";
         public static final String DEFAULT_SERIALIZER = "hcjf.query.default.serializer";
+        public static final String MAX_EXECUTION_TIME = "hcjf.query.max.execution.time";
 
         public static final class ReservedWord {
             public static final String ENVIRONMENT = "hcjf.query.environment.reserved.word";
@@ -803,9 +810,11 @@ public final class SystemProperties extends Properties {
         defaults.put(ProcessDiscovery.DELAY, "3000");
 
         defaults.put(Query.SINGLE_PATTERN, "SELECT * FROM %s");
+        defaults.put(Query.SINGLE_PATTERN_WITH_CONDITIONAL, "SELECT * FROM %s WHERE %s");
         defaults.put(Query.LOG_TAG, "QUERY");
         defaults.put(Query.DEFAULT_LIMIT, "1000");
         defaults.put(Query.DEFAULT_DESC_ORDER, "false");
+        defaults.put(Query.CONDITIONAL_BLOCKS_REGULAR_EXPRESSION, "(?i)^(?<environment>conditional environment[ ]{1,}'¡[0-9]{1,}·'[ ]{1,}){1}(?<conditionalBlock>(?<condition>[ ]{0,}<<<[ ]{0,}[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,}){1}[ ]{0,}(\\?->){1}[ ]{0,}(?<query>(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿·@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿·'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿·.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,})?[$;]?[ ]{0,}>>>[ ]{0,}){1}){1,}");
         defaults.put(Query.SELECT_REGULAR_EXPRESSION, "(?i)^(?<environment>environment[ ]{1,}'¡[0-9]{1,}·'[ ]{1,}){0,1}(?<select>select[ ]{1,}[a-zA-Z_0-9'=<>!,.~+-/*\\|%\\$&¡¿·@ ]{1,})(?<from>[  ]?from[  ](?<resourceValue>[a-zA-Z_0-9$¡¿·'.]{1,})(?<dynamicResource> as (?<dynamicResourceAlias>[a-zA-Z_0-9$¡¿·.]{1,}[ ]?)|[ ]?))(?<conditionalBody>[a-zA-Z_0-9'=,.~+-/\\|* ?%\\$&¡¿·@<>!\\:\\-()\\[\\]]{1,})?[$;]?");
         defaults.put(Query.CONDITIONAL_REGULAR_EXPRESSION, "(?i)((?<=(^((hash )?(inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( (hash )?(inner |left |right |full )?join ))| where | limit | start | order by | group by | disjoint by | underlying )))|(?=(^((hash )?(inner |left |right |full )?join )|^where |^limit |^start |^order by |^group by |^disjoint by |^underlying |(( (hash )?(inner |left |right |full )?join ))| where | limit | start | order by | group by | disjoint by | underlying ))");
         defaults.put(Query.EVALUATOR_COLLECTION_REGULAR_EXPRESSION, "(?i)((?<=( and | or ))|(?=( and | or )))");
@@ -820,6 +829,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.AS_REGULAR_EXPRESSION, "(?i)((?<=( as ))|(?=( as )))");
         defaults.put(Query.DESC_REGULAR_EXPRESSION, "(?i)((?<=( desc| asc))|(?=( desc| asc)))");
         defaults.put(Query.ENVIRONMENT_GROUP_INDEX, "environment");
+        defaults.put(Query.CONDITIONAL_BLOCK_GROUP_INDEX, "conditionalBlock");
+        defaults.put(Query.CONDITIONAL_BLOCK_GROUP_START, "<<<");
+        defaults.put(Query.CONDITIONAL_BLOCK_GROUP_END, ">>>");
+        defaults.put(Query.CONDITIONAL_BLOCK_GROUP_SEPARATOR, "\\?->");
         defaults.put(Query.SELECT_GROUP_INDEX, "select");
         defaults.put(Query.FROM_GROUP_INDEX, "from");
         defaults.put(Query.CONDITIONAL_GROUP_INDEX, "conditionalBody");
@@ -839,6 +852,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Query.COMPILER_CACHE_SIZE, "1000");
         defaults.put(Query.DEFAULT_COMPILER, "SQL");
         defaults.put(Query.DEFAULT_SERIALIZER, "SQL");
+        defaults.put(Query.MAX_EXECUTION_TIME, "1000");
         defaults.put(Query.ReservedWord.ENVIRONMENT, "ENVIRONMENT");
         defaults.put(Query.ReservedWord.SELECT, "SELECT");
         defaults.put(Query.ReservedWord.FROM, "FROM");

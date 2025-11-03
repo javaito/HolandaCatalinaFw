@@ -134,6 +134,7 @@ public final class Strings {
     public static final String AT = "@";
     public static final String ALL = "*";
     public static final String ARGUMENT_IDENTIFIER = "$";
+    public static final String HASH = "#";
     public static final String NULL = "null";
 
     public static final String SPLIT_BY_LENGTH_REGEX = "(?<=\\G.{%d})";
@@ -315,6 +316,28 @@ public final class Strings {
             result.append(character);
             previousCharacter = character;
         }
+        return result.toString();
+    }
+
+    /**
+     * Split the string value into lines
+     * @param value String value.
+     * @return Lines of the string value
+     */
+    public static List<String> splitInLine(String value) {
+        String[] lines = value.split("\\r?\\n");
+        return Arrays.asList(lines);
+    }
+
+    public static String removeLinesByTag(String value, String tag) {
+        List<String> lines = splitInLine(value);
+        Strings.Builder result = new Strings.Builder();
+        for (String line : lines) {
+            if (!line.trim().startsWith(tag)) {
+                result.append(line, "\r\n");
+            }
+        }
+        result.cleanBuffer();
         return result.toString();
     }
 

@@ -1763,35 +1763,35 @@ public class QueryRunningTest {
         names.put("guides", "guides.json");
         Queryable.FromResourcesDataSource ds = new Queryable.FromResourcesDataSource(names);
 
-        String q = "select * from guides join scans on scans.guiaId = guides.guiaId";
+        String q = "environment '{\"__join_prefilter_product__\":true}' select * from guides join scans on scans.guiaId = guides.guiaId";
         Query query = Query.compile(q);
         Long time = System.currentTimeMillis();
         Collection rs = query.evaluate(ds);
         System.out.println("Time (join): " + (System.currentTimeMillis() - time));
         System.out.println("Result size): " + rs.size());
 
-        q = "select * from guides left join scans on scans.guiaId = guides.guiaId";
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from guides left join scans on scans.guiaId = guides.guiaId";
         query = Query.compile(q);
         time = System.currentTimeMillis();
         rs = query.evaluate(ds);
         System.out.println("Time (left join): " + (System.currentTimeMillis() - time));
         System.out.println("Result size: " + rs.size());
 
-        q = "select * from guides right join scans on scans.guiaId = guides.guiaId";
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from guides right join scans on scans.guiaId = guides.guiaId";
         query = Query.compile(q);
         time = System.currentTimeMillis();
         rs = query.evaluate(ds);
         System.out.println("Time (right join): " + (System.currentTimeMillis() - time));
         System.out.println("Result size: " + rs.size());
 
-        q = "select * from guides full join scans on scans.guiaId = guides.guiaId";
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from guides full join scans on scans.guiaId = guides.guiaId";
         query = Query.compile(q);
         time = System.currentTimeMillis();
         rs = query.evaluate(ds);
         System.out.println("Time (full join): " + (System.currentTimeMillis() - time));
         System.out.println("Result size: " + rs.size());
 
-        q = "select * from scans join guides on scans.guiaId = guides.guiaId";
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from scans join guides on scans.guiaId = guides.guiaId";
         query = Query.compile(q);
         time = System.currentTimeMillis();
         rs = query.evaluate(ds);

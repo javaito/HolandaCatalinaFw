@@ -33,6 +33,12 @@ public class Query extends EvaluatorCollection implements Queryable {
 
     public static final String QUERY_BSON_FIELD_NAME = "__query__";
     public static final String DISJOINT_RESULT_SET = "disjointResultSet";
+
+    public static final class Flags {
+        public static final String JOIN_PREFILTER_PRODUCT = "__join_prefilter_product__";
+        public static final String MAX_EXECUTION_TIME = "__max_execution_time__";
+    }
+
     private static final LruMap<String,Query> cache;
 
     private final QueryId id;
@@ -51,6 +57,7 @@ public class Query extends EvaluatorCollection implements Queryable {
     private boolean disjoint;
     private Map<String,Object> environment;
     private Map<String,List<QueryReturnFunction>> underlyingFunctions;
+    private Long maxExecutionTime;
 
     static {
         //Init query compiler cache
@@ -575,13 +582,14 @@ public class Query extends EvaluatorCollection implements Queryable {
         Map<String, Map<String,Object>> disjointResultSets = null;
         List<QueryReturnFunction> aggregateFunctions = new ArrayList<>();
         if(!(Thread.currentThread() instanceof ServiceThread)) {
-            //If the current thread is not a service thread then we call this
+            //If the current thread is not a service thread, then we call this
             //method again using a service thread.
             result = Service.call(()->evaluate(dataSource, consumer), ServiceSession.getGuestSession());
         } else {
+            Long startTime = System.currentTimeMillis();
             Long totalTime = System.currentTimeMillis();
 
-            //Initialize the evaluators cache because the evaluators in the simple
+            //Initialize the evaluator cache because the evaluators in the simple
             //query are valid into the platform evaluation environment.
             initializeEvaluatorsCache();
 
@@ -634,6 +642,8 @@ public class Query extends EvaluatorCollection implements Queryable {
                 result = new ArrayList<>();
             }
 
+            checkExecutionTime(startTime);
+
             Long timeCollectingData = System.currentTimeMillis();
             Integer evaluatingCount = 0;
             Integer formattingCount = 0;
@@ -645,7 +655,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             Collection<O> data;
             try {
                 if (joins.size() > 0) {
-                    data = (Collection<O>) join(dataSource, consumer);
+                    data = (Collection<O>) join(dataSource, consumer, startTime);
                 } else {
                     /*
                     If the query has not joined then, a data source must return data from
@@ -676,6 +686,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                         copyEvaluators(resolveQuery, this);
                         data = dataSource.getResourceData(verifyInstance(resolveQuery, consumer));
                     }
+                    checkExecutionTime(startTime);
                 }
                 timeCollectingData = System.currentTimeMillis() - timeCollectingData;
 
@@ -778,6 +789,7 @@ public class Query extends EvaluatorCollection implements Queryable {
                         formattingCount++;
                         timeFormattingData += timeFormatting;
                     }
+                    checkExecutionTime(startTime);
                 }
 
                 if(groupables != null) {
@@ -794,6 +806,7 @@ public class Query extends EvaluatorCollection implements Queryable {
             if(aggregateFunctions.size() > 0) {
                 for (QueryReturnFunction function : aggregateFunctions) {
                     result = consumer.resolveFunction(function, result, dataSource);
+                    checkExecutionTime(startTime);
                 }
             }
 
@@ -828,6 +841,35 @@ public class Query extends EvaluatorCollection implements Queryable {
         }
 
         return result;
+    }
+
+    /**
+     * Check if the current execution time is bigger than the max execution time of the engine.
+     * @param startTime Start time of the query execution.
+     */
+    private void checkExecutionTime(Long startTime) {
+        Long runningTime = System.currentTimeMillis() - startTime;
+        if (runningTime > getMaxExecutionTime()) {
+            throw new HCJFRuntimeException("Max execution time exceeded");
+        }
+    }
+
+    /**
+     * Gets from the properties or environment the current value of max execution time for queries and store it into
+     * the instance.
+     * @return Return the value of max execution time for the query.
+     */
+    private Long getMaxExecutionTime() {
+        if (maxExecutionTime == null) {
+            maxExecutionTime = SystemProperties.getLong(SystemProperties.Query.MAX_EXECUTION_TIME, Long.MAX_VALUE);
+            if (getEnvironment() != null && getEnvironment().containsKey(Flags.MAX_EXECUTION_TIME)) {
+                Long maxExecutionTimeFlag = Introspection.resolve(getEnvironment(), Flags.MAX_EXECUTION_TIME);
+                if (maxExecutionTimeFlag < maxExecutionTime) {
+                    maxExecutionTime = maxExecutionTimeFlag;
+                }
+            }
+        }
+        return maxExecutionTime;
     }
 
     /**
@@ -1035,7 +1077,7 @@ public class Query extends EvaluatorCollection implements Queryable {
      * @param consumer Consumer instance.
      * @return Collection that is the result of the join operation.
      */
-    private Collection<? extends Joinable> join(Queryable.DataSource dataSource, Queryable.Consumer consumer) {
+    private Collection<? extends Joinable> join(Queryable.DataSource dataSource, Queryable.Consumer consumer, Long startTime) {
         Query query = new Query(getResource());
         query.setEnvironment(getEnvironment());
         query.addReturnField(SystemProperties.get(SystemProperties.Query.ReservedWord.RETURN_ALL));
@@ -1068,7 +1110,13 @@ public class Query extends EvaluatorCollection implements Queryable {
                 query.addEvaluator(evaluator);
             }
             rightData = getJoinData(query, dataSource, consumer);
-            leftData = product(leftData, rightData, join, dataSource, consumer);
+            Boolean fixedProduct = Introspection.resolve(getEnvironment(), Flags.JOIN_PREFILTER_PRODUCT);
+            if (fixedProduct != null && fixedProduct) {
+                leftData = prefilterProduct(leftData, rightData, join, dataSource, consumer, startTime);
+            } else {
+                // If the fixed flag is not present into query environment, then call the ald product strategy
+                leftData = product(leftData, rightData, join, dataSource, consumer, startTime);
+            }
         }
         return leftData;
     }
@@ -1183,13 +1231,163 @@ public class Query extends EvaluatorCollection implements Queryable {
      * Evaluates the join and creates the product of the intersection between the first resource and the second resource.
      * @param left Left data to the product.
      * @param right Right data to the product.
+     * @param join Join object to evaluate the kind and the evaluators of the product.
+     * @param dataSource Datasource instance.
+     * @param consumer Consumer instance.
+     * @return Collection that is the result of the join operation.
+     */
+    @Deprecated
+    private Collection<Joinable> product(Collection<? extends Joinable> left, Collection<? extends Joinable> right, Join join,
+                                         Queryable.DataSource<? extends Joinable> dataSource, Queryable.Consumer<? extends Joinable> consumer, Long startTime) {
+
+        Collection<Joinable> leftCopy = null;
+        Collection<Joinable> rightCopy = null;
+        switch (join.getType()) {
+            case LEFT: {
+                leftCopy = new ArrayList<>();
+                leftCopy.addAll(left);
+                break;
+            }
+            case RIGHT: {
+                rightCopy = new ArrayList<>();
+                rightCopy.addAll(right);
+                break;
+            }
+            case FULL: {
+                leftCopy = new ArrayList<>();
+                leftCopy.addAll(left);
+                rightCopy = new ArrayList<>();
+                rightCopy.addAll(right);
+                break;
+            }
+        }
+
+        Collection<Joinable> result = new ArrayList<>();
+        Joinable row;
+        if (join.isNestedJoin()) {
+            Boolean rowEvaluation;
+            for(Joinable leftJoinable : left) {
+                for(Joinable rightJoinable : right) {
+                    row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
+                    rowEvaluation = false;
+
+                    for(Evaluator evaluator : join.getEvaluators()) {
+                        if(!(rowEvaluation = evaluator.evaluate(row, dataSource, consumer))) {
+                            break;
+                        }
+                    }
+
+                    if(join.getOuter()) {
+                        rowEvaluation = !rowEvaluation;
+                    }
+
+                    if(rowEvaluation) {
+                        result.add(row);
+                        switch (join.getType()) {
+                            case LEFT: {
+                                leftCopy.remove(leftJoinable);
+                                break;
+                            }
+                            case RIGHT: {
+                                rightCopy.remove(rightJoinable);
+                                break;
+                            }
+                            case FULL: {
+                                leftCopy.remove(leftJoinable);
+                                rightCopy.remove(rightJoinable);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            Equals equals = (Equals) join.getEvaluators().stream().findFirst().get();
+            Map<Object, Collection> rightIndexCollection = new HashMap<>();
+            for (Joinable rightJoinable : right) {
+                Object currentKey;
+                boolean rightJoinableContainsRightValue = ((JoinableMap) rightJoinable).getResources().contains(((QueryField) equals.getRightValue()).getResource().toString());
+                String fieldPath;
+                if (rightJoinableContainsRightValue) {
+                    fieldPath = ((QueryField) equals.getRightValue()).getFieldPath();
+                    currentKey = rightJoinable.get(fieldPath);
+                } else {
+                    fieldPath = ((QueryField) equals.getLeftValue()).getFieldPath();
+                    currentKey = rightJoinable.get(fieldPath);
+                }
+                Collection<Joinable> rightCollection = right.stream().filter(rightMap ->
+                        rightMap.get(fieldPath).equals(currentKey)).collect(Collectors.toList());
+                rightIndexCollection.put(currentKey, rightCollection);
+            }
+            for (Joinable leftJoinable : left) {
+                Object key;
+                boolean leftJoinableContainsRightValue = ((JoinableMap) leftJoinable).getResources().contains(((QueryField) equals.getRightValue()).getResource().toString());
+                if (leftJoinableContainsRightValue) {
+                    key = leftJoinable.get(((QueryField) equals.getRightValue()).getFieldPath());
+                } else {
+                    key = leftJoinable.get(((QueryField) equals.getLeftValue()).getFieldPath());
+                }
+                if (rightIndexCollection.containsKey(key)) {
+                    Collection<Joinable> joinableCollectionById = rightIndexCollection.get(key);
+                    for (Joinable rightJoinable : joinableCollectionById) {
+                        if (rightJoinable != null) {
+                            try {
+                                row = leftJoinable.join(getResourceName(), join.getResourceName(), rightJoinable);
+                                result.add(row);
+                                switch (join.getType()) {
+                                    case LEFT: {
+                                        leftCopy.remove(leftJoinable);
+                                        break;
+                                    }
+                                    case RIGHT: {
+                                        rightCopy.remove(rightJoinable);
+                                        break;
+                                    }
+                                    case FULL: {
+                                        leftCopy.remove(leftJoinable);
+                                        rightCopy.remove(rightJoinable);
+                                        break;
+                                    }
+                                }
+                            } catch (Exception ex) {
+                                throw new HCJFRuntimeException("Error in join: ", ex.getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        switch (join.getType()) {
+            case LEFT: {
+                result.addAll(leftCopy);
+                break;
+            }
+            case RIGHT: {
+                result.addAll(rightCopy);
+                break;
+            }
+            case FULL: {
+                result.addAll(leftCopy);
+                result.addAll(rightCopy);
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Evaluates the join and creates the product of the intersection between the first resource and the second resource.
+     * @param left Left data to the product.
+     * @param right Right data to the product.
      * @param join Join an object to evaluate the kind and the evaluators of the product.
      * @param dataSource Datasource instance.
      * @param consumer Consumer instance.
      * @return Collection that is the result of the join operation.
      */
-    private Collection<Joinable> product(Collection<? extends Joinable> left, Collection<? extends Joinable> right, Join join,
-                                         Queryable.DataSource<? extends Joinable> dataSource, Queryable.Consumer<? extends Joinable> consumer) {
+    private Collection<Joinable> prefilterProduct(Collection<? extends Joinable> left, Collection<? extends Joinable> right, Join join,
+                                                  Queryable.DataSource<? extends Joinable> dataSource, Queryable.Consumer<? extends Joinable> consumer, Long startTime) {
 
         Collection<Joinable> leftCopy = null;
         Collection<Joinable> rightCopy = null;
