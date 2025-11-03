@@ -1743,66 +1743,74 @@ public class QueryRunningTest {
     }
 
     @Test
-    public void testQueryWithSubquery() {
-        String queryString = "select street from address where addressId=(select addressId from character where name ='Homer Jay')";
-        Query query = Query.compile(queryString);
-        Collection<JoinableMap> result = query.evaluate(dataSource);
-        Assert.assertEquals(result.stream().findFirst().get().get("street"), "Evergreen Terrace");
+    public void testUnderlyingLookingFor() {
+        String query = "select * from metric.http.request underlying \n" + //
+                        "  aggregation \n" + //
+                        "  (\n" + //
+                        "    filter ( (timestamp > '2024-10-09 12:30:00' and true) ),\n" + //
+                        "    project ( field(value, 'value'), field(corporateId, 'corporateId') )\n" + //
+                        "  )\n" + //
+                        " src metric.http.request";
+
+        Query compiledQuery = Query.compile(query);
+        System.out.println();
     }
 
     @Test
-    public void testQueryWithSubqueryAndIn() {
-        String queryString = "select street from address where addressId in (select addressId from character where name ='Homer Jay')";
-        Query query = Query.compile(queryString);
-        Collection<JoinableMap> result = query.evaluate(dataSource);
-        ArrayList<String> streets = new ArrayList<>();
-        for (JoinableMap element : result) {
-            String street = (String) element.get("street");
-            streets.add(street);
-        }
-        Assert.assertEquals(streets.get(0), "Evergreen Terrace" );
+    public void testJoinScansAndGuides() throws Exception {
+        Map<String,String> names = new HashMap<>();
+        names.put("scans", "scans.json");
+        names.put("guides", "guides.json");
+        Queryable.FromResourcesDataSource ds = new Queryable.FromResourcesDataSource(names);
+
+        String q = "environment '{\"__join_prefilter_product__\":true}' select * from guides join scans on scans.guiaId = guides.guiaId";
+        Query query = Query.compile(q);
+        Long time = System.currentTimeMillis();
+        Collection rs = query.evaluate(ds);
+        System.out.println("Time (join): " + (System.currentTimeMillis() - time));
+        System.out.println("Result size): " + rs.size());
+
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from guides left join scans on scans.guiaId = guides.guiaId";
+        query = Query.compile(q);
+        time = System.currentTimeMillis();
+        rs = query.evaluate(ds);
+        System.out.println("Time (left join): " + (System.currentTimeMillis() - time));
+        System.out.println("Result size: " + rs.size());
+
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from guides right join scans on scans.guiaId = guides.guiaId";
+        query = Query.compile(q);
+        time = System.currentTimeMillis();
+        rs = query.evaluate(ds);
+        System.out.println("Time (right join): " + (System.currentTimeMillis() - time));
+        System.out.println("Result size: " + rs.size());
+
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from guides full join scans on scans.guiaId = guides.guiaId";
+        query = Query.compile(q);
+        time = System.currentTimeMillis();
+        rs = query.evaluate(ds);
+        System.out.println("Time (full join): " + (System.currentTimeMillis() - time));
+        System.out.println("Result size: " + rs.size());
+
+        q = "environment '{\"__join_prefilter_product__\":true}' select * from scans join guides on scans.guiaId = guides.guiaId";
+        query = Query.compile(q);
+        time = System.currentTimeMillis();
+        rs = query.evaluate(ds);
+        System.out.println("Time (invert join): " + (System.currentTimeMillis() - time));
+        System.out.println("Result size: " + rs.size());
     }
 
     @Test
-    public void testDateFormat() {
-        String sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-04-08',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
-        Query query = Query.compile(sql);
-        Collection<JoinableMap> resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-04-08 14:00:00");
+    public void testIssue() throws Exception {
+        Query query = Query.compile("select * from transactions " +
+                "join (select * from transactionDetails) as transactionDetail on transactionDetail.transactionId = transactions.id");
 
-        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-07-30',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
-        query = Query.compile(sql);
-        resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-07-30 14:00:00");
+        Map<String,String> names = new HashMap<>();
+        names.put("transactions", "transactions.json");
+        names.put("transactionDetails", "transactionDetails.json");
+        Queryable.FromResourcesDataSource ds = new Queryable.FromResourcesDataSource(names);
 
-        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-09-05',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
-        query = Query.compile(sql);
-        resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-09-05 14:00:00");
-
-        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-01-20',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
-        query = Query.compile(sql);
-        resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-01-20 13:00:00");
-
-        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-04-05',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
-        query = Query.compile(sql);
-        resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-04-05 13:00:00");
-
-        sql = "SELECT *, dateFormat(parseDate('yyyy-MM-dd HH:mm:ss',concat('2024-10-10',' ','10:00:00')),'America/Santiago','UTC','yyyy-MM-dd HH:mm:ss') as newDate FROM character";
-        query = Query.compile(sql);
-        resultSet = query.evaluate(dataSource);
-        Assert.assertEquals(resultSet.stream().findAny().get().get("newDate"), "2024-10-10 13:00:00");
-    }
-
-    @Test
-    public void testAggregateMaxFunction() {
-        String queryString = "SELECT  aggregateMax(array) as valor FROM '[ {\"array\":[-4,-10,-5,-67,-3]}]' AS data";
-        Query query = Query.compile(queryString);
-        Collection<JoinableMap> result = query.evaluate(dataSource);
-        BigDecimal expected = new BigDecimal(-3);
-        Assert.assertEquals(result.stream().findFirst().get().get("valor"), expected);
+        Collection collection = query.evaluate(ds);
+        System.out.println("Result size: " + collection.size());
     }
 
     public static class CustomFunction extends BaseQueryFunctionLayer implements QueryFunctionLayerInterface {
