@@ -85,6 +85,12 @@ public class HttpHeader {
     public static final String X_HCJF_QUERY_TIME_AGGREGATING_DATA = "X-HCJF-Query-Time-Aggregating-Data";
     public static final String X_HCJF_QUERY_PRESENT_FIELDS = "X-HCJF-Query-Present-Fields";
 
+    //WebSocket header names
+    public static final String SEC_WS_KEY = "Sec-WebSocket-Key";
+    public static final String SEC_WS_ACCEPT = "Sec-WebSocket-Accept";
+    public static final String SEC_WS_VERSION = "Sec-WebSocket-Version";
+    public static final String SEC_WS_PROTOCOL = "Sec-WebSocket-Protocol";
+
     //Header values
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     public static final String MULTIPART_FORM_DATA = "multipart/form-data";

@@ -5,6 +5,8 @@ import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
 import org.hcjf.io.net.NetSession;
 import org.hcjf.io.net.http.http2.Stream;
+import org.hcjf.io.net.http.ws.WebSocketContext;
+import org.hcjf.io.net.http.ws.WebSocketFrame;
 import org.hcjf.io.net.http.http2.StreamSettings;
 import org.hcjf.io.net.http.http2.frames.DataFrame;
 import org.hcjf.io.net.http.http2.frames.Http2Frame;
@@ -23,6 +25,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +40,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     private HttpSessionManager sessionManager;
     private HttpPackage.HttpProtocol httpProtocol;
     private final Map<String,AccessControl> accessControlMap;
+    private final Map<NetSession, WebSocketContext> wsContexts;
 
     public HttpServer() {
         this(SystemProperties.getInteger(SystemProperties.Net.Http.DEFAULT_SERVER_PORT));
@@ -52,6 +56,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
         requestBuffers = new HashMap<>();
         contexts = new ArrayList<>();
         accessControlMap = new HashMap<>();
+        wsContexts = new ConcurrentHashMap<>();
         httpProtocol = sslProtocol ? HttpPackage.HttpProtocol.HTTPS : HttpPackage.HttpProtocol.HTTP;
         if(SystemProperties.getBoolean(SystemProperties.Net.Http.SERVER_DECOUPLED_IO_ACTION)) {
             decoupleIoAction(
@@ -114,6 +119,7 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     /**
      * This method must update the http session with all the information of the request.
+     * For active WebSocket sessions, skips HTTP session management entirely.
      * @param session Current session.
      * @param payLoad Decoded package.
      * @param netPackage Net package.
@@ -121,6 +127,10 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
      */
     @Override
     public HttpSession checkSession(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
+        if (wsContexts.containsKey(session)) {
+            return session;
+        }
+
         HttpSessionManager sessionManager = getSessionManager();
         if(sessionManager == null) {
             sessionManager = HttpSessionManager.DEFAULT;
@@ -160,12 +170,17 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     }
 
     /**
-     * This method decode the net package to obtain the implementation data
+     * This method decode the net package to obtain the implementation data.
+     * For active WebSocket sessions, returns null to signal frame processing in onRead.
      * @param netPackage Net package.
-     * @return Return the implementation data.
+     * @return Return the implementation data, or null for WebSocket frames.
      */
     @Override
     protected final HttpPackage decode(NetPackage netPackage) {
+        if (wsContexts.containsKey(netPackage.getSession())) {
+            return null;
+        }
+
         HttpRequest request = null;
         if(((HttpSession)netPackage.getSession()).getHttpVersion().equals(HttpVersion.VERSION_2_0)) {
             Stream stream = ((HttpSession)netPackage.getSession()).getStream();
@@ -281,12 +296,18 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     /**
      * First check if the package is complete, then try to found the context using the
      * http request information a create the response package.
+     * For WebSocket sessions (payLoad == null), dispatches the raw bytes as a WS frame.
      * @param session Net session.
-     * @param payLoad Net package decoded
+     * @param payLoad Net package decoded, null for WebSocket frames.
      * @param netPackage Net package.
      */
     @Override
     protected final void onRead(HttpSession session, HttpPackage payLoad, NetPackage netPackage) {
+        if (payLoad == null) {
+            handleWebSocketFrame(session, netPackage.getPayload());
+            return;
+        }
+
         if(session.getStream() != null) {
 
         } else {
@@ -300,6 +321,30 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                     }
                 });
             }
+        }
+    }
+
+    /**
+     * Decodes a WebSocket frame from raw bytes and dispatches it to the registered context.
+     * @param session Http session in WebSocket mode.
+     * @param data    Raw bytes received from the client.
+     */
+    private void handleWebSocketFrame(HttpSession session, byte[] data) {
+        WebSocketContext ctx = wsContexts.get(session);
+        if (ctx == null) {
+            return;
+        }
+        try {
+            WebSocketFrame frame = WebSocketFrame.decode(data);
+            ctx.dispatch(session, frame);
+            if (frame.getOpcode() == WebSocketFrame.Opcode.CLOSE) {
+                wsContexts.remove(session);
+                sendWebSocketData(session, WebSocketFrame.encodeClose());
+                disconnect(session, "WebSocket CLOSE frame received");
+            }
+        } catch (Exception e) {
+            Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                    "Error processing WebSocket frame from session %s", e, session);
         }
     }
 
@@ -339,6 +384,28 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         response.setBody(settingsFrame.serialize().array());
                     } else {
                         throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
+                    }
+                } else if (upgrade != null && upgrade.getHeaderValue().trim().equalsIgnoreCase("websocket")) {
+                    ContextMatcher contextMatcher = findContext(request.getContext());
+                    if (contextMatcher != null && contextMatcher.getContext() instanceof WebSocketContext) {
+                        WebSocketContext wsCtx = (WebSocketContext) contextMatcher.getContext();
+                        HttpHeader keyHeader = request.getHeader(HttpHeader.SEC_WS_KEY);
+                        if (keyHeader != null) {
+                            String acceptKey = WebSocketFrame.computeAcceptKey(keyHeader.getHeaderValue().trim());
+                            response = new HttpResponse();
+                            response.setResponseCode(HttpResponseCode.SWITCHING_PROTOCOLS);
+                            response.addHeader(new HttpHeader(HttpHeader.UPGRADE, "websocket"));
+                            response.addHeader(new HttpHeader(HttpHeader.CONNECTION, HttpHeader.UPGRADE));
+                            response.addHeader(new HttpHeader(HttpHeader.SEC_WS_ACCEPT, acceptKey));
+                            connectionKeepAlive = true;
+                            wsContexts.put(session, wsCtx);
+                            wsCtx.registerSession(session, this);
+                        } else {
+                            response = new HttpResponse();
+                            response.setResponseCode(HttpResponseCode.BAD_REQUEST);
+                        }
+                    } else {
+                        response = onContextNotFound(request);
                     }
                 } else {
                     ContextMatcher contextMatcher = findContext(request.getContext());
@@ -559,12 +626,31 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
 
     /**
      * This method is called when the session is closed.
+     * Cleans up HTTP request buffers and notifies any active WebSocket context.
      * @param session Closed session.
      * @param netPackage Close package.
      */
     @Override
     protected final void onDisconnect(HttpSession session, NetPackage netPackage) {
         requestBuffers.remove(session);
+        WebSocketContext wsCtx = wsContexts.remove(session);
+        if (wsCtx != null) {
+            wsCtx.unregisterSession(session);
+        }
+    }
+
+    /**
+     * Sends raw bytes directly to a WebSocket session, bypassing the HTTP encoder.
+     * @param session Active WebSocket session.
+     * @param data    Encoded WebSocket frame bytes.
+     */
+    public void sendWebSocketData(HttpSession session, byte[] data) {
+        try {
+            getService().writeData(session, data);
+        } catch (IOException e) {
+            Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                    "Error sending WebSocket data to session %s", e, session);
+        }
     }
 
     /**
