@@ -472,6 +472,11 @@ public final class SystemProperties extends Properties {
             public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED = "hcjf.cloud.orchestrator.service.publication.broadcasting.enabled";
             public static final String SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT = "hcjf.cloud.orchestrator.service.publication.broadcasting.timeout";
             public static final String NETWORKING_HANDSHAKE_DETAILS_AVAILABLE = "hcjf.cloud.orchestrator.networking.handshake.details.available";
+            public static final String MASSAGE_SERVICE_PUBLICATION_ENABLED = "hcjf.cloud.orchestrator.message.service.publication.enabled";
+            public static final String SERVICE_REGISTRY_ENABLED = "hcjf.cloud.orchestrator.service.registry.enabled";
+            public static final String SERVICE_REGISTRY_IMPL = "hcjf.cloud.orchestrator.service.registry.impl";
+            public static final String INVOKE_LAYER_USING_SERVICE_REGISTRY = "hcjf.cloud.orchestrator.invoke.layer.using.service.registry";
+            public static final String INVOKE_LOCAL_LAYER_USING_SERVICE_REGISTRY = "hcjf.cloud.orchestrator.invoke.local.layer.using.service.registry";
 
             public static final class Events {
                 public static final String LOG_TAG = "hcjf.cloud.orchestrator.events.log.tag";
@@ -512,6 +517,7 @@ public final class SystemProperties extends Properties {
                 public static final String GATEWAY_PORT = "hcjf.cloud.orchestrator.this.service.end.point.gateway.port";
                 public static final String PUBLICATION_TIMEOUT = "hcjf.cloud.orchestrator.this.service.end.point.publication.timeout";
                 public static final String DISTRIBUTED_EVENT_LISTENER = "hcjf.cloud.orchestrator.this.service.end.point.distributed.event.listener";
+                public static final String DISTRIBUTED_EVENT_LISTENER_FILTER = "hcjf.cloud.orchestrator.this.service.end.point.distributed.event.listener.filter";
             }
 
             public static final class Broadcast {
@@ -932,6 +938,10 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_ENABLED, "true");
         defaults.put(Cloud.Orchestrator.SERVICE_PUBLICATION_REPLICAS_BROADCASTING_TIMEOUT, "2000");
         defaults.put(Cloud.Orchestrator.NETWORKING_HANDSHAKE_DETAILS_AVAILABLE, "false");
+        defaults.put(Cloud.Orchestrator.MASSAGE_SERVICE_PUBLICATION_ENABLED, "true");
+        defaults.put(Cloud.Orchestrator.SERVICE_REGISTRY_ENABLED, "false");
+        defaults.put(Cloud.Orchestrator.INVOKE_LAYER_USING_SERVICE_REGISTRY, "false");
+        defaults.put(Cloud.Orchestrator.INVOKE_LOCAL_LAYER_USING_SERVICE_REGISTRY, "false");
         defaults.put(Cloud.Orchestrator.CLUSTER_NAME, "hcjf");
         defaults.put(Cloud.Orchestrator.ThisNode.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_node");
         defaults.put(Cloud.Orchestrator.ThisNode.NAME, "hcjf-node");
@@ -941,6 +951,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.READABLE_LAYER_IMPLEMENTATION_NAME, "system_cloud_service");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT, "3600000");
         defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.DISTRIBUTED_EVENT_LISTENER, "false");
+        defaults.put(Cloud.Orchestrator.ThisServiceEndPoint.DISTRIBUTED_EVENT_LISTENER_FILTER, "[]");
         defaults.put(Cloud.Orchestrator.Broadcast.ENABLED, "false");
         defaults.put(Cloud.Orchestrator.Broadcast.TASK_NAME, "Cloud discovery");
         defaults.put(Cloud.Orchestrator.Broadcast.IP_VERSION, "4");
