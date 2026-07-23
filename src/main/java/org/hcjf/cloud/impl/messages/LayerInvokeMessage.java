@@ -9,6 +9,8 @@ import java.util.UUID;
  */
 public class LayerInvokeMessage extends Message {
 
+    private String className;
+    private String layerName;
     private Object[] path;
     private String methodName;
     private Class[] parameterTypes;
@@ -19,6 +21,22 @@ public class LayerInvokeMessage extends Message {
 
     public LayerInvokeMessage(UUID id) {
         super(id);
+    }
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
+    public String getLayerName() {
+        return layerName;
+    }
+
+    public void setLayerName(String layerName) {
+        this.layerName = layerName;
     }
 
     public Object[] getPath() {

@@ -43,7 +43,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
- * This class implements a orchestrator in order to maintains the connection
+ * This class implements an orchestrator to maintain the connection
  * between nodes, synchronize all the time the node information and admin the
  * communication between nodes using messages.
  * @author javaito.
@@ -80,14 +80,8 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private Map<String, ServiceEndPoint> endPointsByGatewayId;
     private Object publishMeMonitor;
 
-    private Object wagonMonitor;
-    private Long lastVisit;
-    private Long lastServicePublication;
-    private Map<String,List<Message>> wagonLoad;
-
     private CloudServer server;
     private DistributedTree sharedStore;
-    private Random random;
 
     private CloudOrchestrator() {
         super(SystemProperties.get(SystemProperties.Cloud.Orchestrator.SERVICE_NAME),
@@ -138,18 +132,18 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         thisServiceEndPoint.setGatewayAddress(SystemProperties.get(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_ADDRESS));
         thisServiceEndPoint.setGatewayPort(SystemProperties.getInteger(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.GATEWAY_PORT));
         thisServiceEndPoint.setDistributedEventListener(SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.DISTRIBUTED_EVENT_LISTENER));
+        thisServiceEndPoint.setDistributedEventListenerFilter(SystemProperties.getList(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.DISTRIBUTED_EVENT_LISTENER_FILTER));
+
+        if (SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.SERVICE_REGISTRY_ENABLED)) {
+            ServiceRegistry serviceRegistry = getServiceRegistry();
+            serviceRegistry.save();
+        }
 
         endPoints = new HashMap<>();
         endPointsByGatewayId = new HashMap<>();
 
         publishMeMonitor = new Object();
 
-        wagonMonitor = new Object();
-        lastVisit = System.currentTimeMillis();
-        lastServicePublication = System.currentTimeMillis() - SystemProperties.getLong(SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT);
-        wagonLoad = new HashMap<>();
-
-        random = new Random();
         sharedStore = new DistributedTree(Strings.EMPTY_STRING);
         server = new CloudServer();
         server.start();
@@ -249,6 +243,15 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     }
 
     /**
+     * Returns the service registry instance.
+     * @return Service registry instance.
+     */
+    private ServiceRegistry getServiceRegistry() {
+        String serviceRegistryImpl = SystemProperties.get(SystemProperties.Cloud.Orchestrator.SERVICE_REGISTRY_IMPL);
+        return Layers.get(ServiceRegistry.class, serviceRegistryImpl);
+    }
+
+    /**
      *
      * @return
      */
@@ -266,6 +269,10 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return thisServiceEndPointMap;
     }
 
+    /**
+     * Returns a map with the information about node and service.
+     * @return Map with origin information.
+     */
     private synchronized Map<String,Object> getOriginData() {
         Map<String,Object> result = new HashMap<>();
         result.put(OriginDataFields.NODE, getThisNodeMap());
@@ -346,48 +353,54 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
     private void initServicePublication(ServiceEndPoint serviceEndPoint) {
         while(!Thread.currentThread().isInterrupted()) {
             try {
-                Collection<Message> messages = createServicePublicationCollection();
-                ServiceDefinitionMessage serviceDefinitionMessage = new ServiceDefinitionMessage();
-                serviceDefinitionMessage.setId(UUID.randomUUID());
-                serviceDefinitionMessage.setMessages(messages);
-                serviceDefinitionMessage.setServiceId(thisServiceEndPoint.getId());
-                serviceDefinitionMessage.setServiceName(thisServiceEndPoint.getName());
-                serviceDefinitionMessage.setEventListener(thisServiceEndPoint.isDistributedEventListener());
-                serviceDefinitionMessage.setBroadcasting(true);
-                Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
-                try {
-                    Object responseObject = invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
-                    if(responseObject != null) {
-                        ServiceDefinitionResponseMessage definitionResponse = (ServiceDefinitionResponseMessage) responseObject;
-                        fork(() -> {
-                            if (definitionResponse.getMessages() != null) {
-                                for (Message innerMessage : definitionResponse.getMessages()) {
-                                    try {
-                                        processMessage(null, innerMessage);
-                                    } catch (Exception ex) {
-                                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
-                                                "Unable to process one message of the service publication collection: %s",
-                                                innerMessage.getClass().toString());
+                if (SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.MASSAGE_SERVICE_PUBLICATION_ENABLED)) {
+                    /*
+                    This way to publish the service is deprecated and could be replaced for service registry.
+                     */
+                    Collection<Message> messages = createServicePublicationCollection();
+                    ServiceDefinitionMessage serviceDefinitionMessage = new ServiceDefinitionMessage();
+                    serviceDefinitionMessage.setId(UUID.randomUUID());
+                    serviceDefinitionMessage.setMessages(messages);
+                    serviceDefinitionMessage.setServiceId(thisServiceEndPoint.getId());
+                    serviceDefinitionMessage.setServiceName(thisServiceEndPoint.getName());
+                    serviceDefinitionMessage.setEventListener(thisServiceEndPoint.isDistributedEventListener());
+                    serviceDefinitionMessage.setDistributedEventListenerFilter(thisServiceEndPoint.getDistributedEventListenerFilter());
+                    serviceDefinitionMessage.setBroadcasting(true);
+                    Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Sending interfaces to: %s", serviceEndPoint);
+                    try {
+                        Object responseObject = invokeNetworkComponent(serviceEndPoint, serviceDefinitionMessage);
+                        if (responseObject != null) {
+                            ServiceDefinitionResponseMessage definitionResponse = (ServiceDefinitionResponseMessage) responseObject;
+                            fork(() -> {
+                                if (definitionResponse.getMessages() != null) {
+                                    for (Message innerMessage : definitionResponse.getMessages()) {
+                                        try {
+                                            processMessage(null, innerMessage);
+                                        } catch (Exception ex) {
+                                            Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG),
+                                                    "Unable to process one message of the service publication collection: %s",
+                                                    innerMessage.getClass().toString());
+                                        }
                                     }
                                 }
-                            }
-                        });
+                            });
 
-                        try {
-                            endPoints.get(definitionResponse.getServiceId()).setName(definitionResponse.getServiceName());
-                            endPoints.get(definitionResponse.getServiceId()).setDistributedEventListener(definitionResponse.getEventListener());
-                        } catch (Exception ex) {
+                            try {
+                                endPoints.get(definitionResponse.getServiceId()).setName(definitionResponse.getServiceName());
+                                endPoints.get(definitionResponse.getServiceId()).setDistributedEventListener(definitionResponse.getEventListener());
+                            } catch (Exception ex) {
+                            }
                         }
-                    }
-                } catch (Exception ex) {
-                    Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to make publication %s ---> %s",
-                            SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.NETWORKING_HANDSHAKE_DETAILS_AVAILABLE, false), ex,
-                            thisServiceEndPoint.getName(), serviceEndPoint.getName());
-                    try {
-                        Thread.sleep(SystemProperties.getLong(
-                                SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT));
-                    } catch (InterruptedException e) {
-                        break;
+                    } catch (Exception ex) {
+                        Log.w(System.getProperty(SystemProperties.Cloud.LOG_TAG), "Unable to make publication %s ---> %s",
+                                SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.NETWORKING_HANDSHAKE_DETAILS_AVAILABLE, false), ex,
+                                thisServiceEndPoint.getName(), serviceEndPoint.getName());
+                        try {
+                            Thread.sleep(SystemProperties.getLong(
+                                    SystemProperties.Cloud.Orchestrator.ThisServiceEndPoint.PUBLICATION_TIMEOUT));
+                        } catch (InterruptedException e) {
+                            break;
+                        }
                     }
                 }
 
@@ -404,7 +417,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         }
     }
 
-    public final void publishMe() {
+    public void publishMe() {
         synchronized (publishMeMonitor) {
             publishMeMonitor.notifyAll();
         }
@@ -694,7 +707,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
                 }
                 ((ResponseMessage)responseMessage).setValue(true);
 
-                //Get the instance first time in order to crete the cache.
+                //Get the instance first time to crete the cache.
                 try {
                     Layers.get(layerInterfaceClass, implName);
                 } catch (Exception ex) {}
@@ -709,9 +722,15 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             Object result = null;
             Throwable throwable = null;
             try {
-                result = distributedLayerInvoke(layerInvokeMessage.getSessionId(), layerInvokeMessage.getSessionBean(),
-                        layerInvokeMessage.getParameterTypes(), layerInvokeMessage.getParameters(),
-                        layerInvokeMessage.getMethodName(), layerInvokeMessage.getPath());
+                if (SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.INVOKE_LOCAL_LAYER_USING_SERVICE_REGISTRY)) {
+                    result = distributedLayerInvoke(layerInvokeMessage.getClassName(), layerInvokeMessage.getLayerName(),
+                            layerInvokeMessage.getMethodName(), layerInvokeMessage.getParameterTypes(),
+                            layerInvokeMessage.getParameters(), layerInvokeMessage.getSessionId(), layerInvokeMessage.getSessionBean());
+                } else {
+                    result = distributedLayerInvoke(layerInvokeMessage.getSessionId(), layerInvokeMessage.getSessionBean(),
+                            layerInvokeMessage.getParameterTypes(), layerInvokeMessage.getParameters(),
+                            layerInvokeMessage.getMethodName(), layerInvokeMessage.getPath());
+                }
             } catch (Throwable t) {
                 throwable = t;
             }
@@ -724,11 +743,6 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
             ResponseListener responseListener = responseListeners.get(message.getId());
             if(responseListener != null) {
                 responseListener.setMessage((ResponseMessage) message);
-                if(message instanceof ServiceDefinitionResponseMessage) {
-                    for(Message innerMessage : ((ServiceDefinitionResponseMessage)message).getMessages()) {
-                        processMessage(session, innerMessage);
-                    }
-                }
             } else {
                 Log.d(System.getProperty(SystemProperties.Cloud.LOG_TAG),
                         "Response listener not found: %s", message.getId());
@@ -1040,22 +1054,79 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         return distributedLayer;
     }
 
-    public boolean isDistributedLayerPublished(Object... path) {
-        return sharedStore.getInstance(path) != null;
-    }
+    /**
+     * Verify if the layer instance identified by it class name and layer name was published for any service.
+     * @param className Distributed layer class name
+     * @param layerName Instance layer name.
+     * @return Returns true fi the instance was published or false in the otherwise.
+     */
+    public boolean isDistributedLayerPublished(String className, String layerName) {
+        // This line could be deleted when the shred store implementation when it's not used anymore
+        boolean result = sharedStore.getInstance(Layer.class.getName(), className, layerName) != null;
 
-    public String getRegexFromDistributedLayer(Object... path) {
-        String result = null;
-        DistributedLayer distributedLayer = (DistributedLayer) sharedStore.getInstance(path);
-        if(distributedLayer != null) {
-            result = distributedLayer.getRegex();
+        if (!result && SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.SERVICE_REGISTRY_ENABLED)) {
+            /*
+            In this case, if the result is null and the service registry is enabled, going to search if the layer is
+            published into the service registry.
+             */
+            DistributedLayerRegistry distributedLayerRegistry = getServiceRegistry().getDistributedLayer(
+                    DistributedLayerRegistry.createDistributedLayerId(className, layerName));
+            result = distributedLayerRegistry != null;
         }
         return result;
     }
 
-    public void publishDistributedLayer(String regex, Object... path) {
-        DistributedLayer distributedLayer = getDistributedLayer(true, path);
+    /**
+     * Returns the regex associated with the layer instance identified by it class name and layer name.
+     * @param className Distributed layer class name.
+     * @param layerName Instance layer name.
+     * @return Returns the regex of the instance.
+     */
+    public String getRegexFromDistributedLayer(String className, String layerName) {
+        String result = null;
+
+        // These lines could be deleted when the shred store implementation when it's not used anymore
+        DistributedLayer distributedLayer = (DistributedLayer) sharedStore.getInstance(Layer.class.getName(), className, layerName);
+        if(distributedLayer != null) {
+            result = distributedLayer.getRegex();
+        }
+
+        if (result == null && SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.SERVICE_REGISTRY_ENABLED)) {
+            /*
+            In this case, if the result is null and the service registry is enabled, going to search if the layer is
+            published into the service registry, then return the regex of the layer
+            */
+            DistributedLayerRegistry distributedLayerRegistry = getServiceRegistry().getDistributedLayer(
+                    DistributedLayerRegistry.createDistributedLayerId(className, layerName));
+            if (distributedLayerRegistry != null) {
+                result = distributedLayerRegistry.getRegex();
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Publish a later implementation to be visible for the other services.
+     * @param className Distributed layer class name.
+     * @param layerName Layer name.
+     * @param regex Regex of the distributed layer.
+     */
+    public void publishDistributedLayer(String className, String layerName, String regex) {
+        DistributedLayer distributedLayer = getDistributedLayer(true, Layer.class.getName(), className, layerName);
         distributedLayer.setRegex(regex);
+
+        if (SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.SERVICE_REGISTRY_ENABLED)) {
+            ServiceRegistry serviceRegistry = getServiceRegistry();
+            DistributedLayerRegistry distributedLayerRegistry = new DistributedLayerRegistry();
+            distributedLayerRegistry.setId(DistributedLayerRegistry.createDistributedLayerId(className, layerName));
+            distributedLayerRegistry.setServiceEndPoint(serviceRegistry.getThisServiceEndPoint().getId());
+            distributedLayerRegistry.setClassName(className);
+            distributedLayerRegistry.setLayerName(layerName);
+            distributedLayerRegistry.setRegex(regex);
+            distributedLayerRegistry.setProtocol(DistributedLayerRegistry.Protocol.HCM);
+            serviceRegistry.updateDistributedLayer(distributedLayerRegistry);
+        }
     }
 
     public void publishPlugin(byte[] jarFile) {
@@ -1066,31 +1137,96 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
         nodeBroadcasting(publishPluginMessage);
     }
 
-    public <O extends Object> O layerInvoke(Object[] parameters, Method method, Object... path) {
+    public <O extends Object> O layerInvoke(String className, String layerName, Method method, Object[] parameters) {
         O result;
-        DistributedLayer distributedLayer = getDistributedLayer(false, path);
+        if (SystemProperties.getBoolean(SystemProperties.Cloud.Orchestrator.INVOKE_LAYER_USING_SERVICE_REGISTRY)) {
+            DistributedLayerRegistry distributedLayerRegistry = getServiceRegistry().getDistributedLayer(
+                    DistributedLayerRegistry.createDistributedLayerId(className, layerName));
 
-        LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage(UUID.randomUUID());
-        layerInvokeMessage.setMethodName(method.getName());
-        layerInvokeMessage.setParameterTypes(method.getParameterTypes());
-        layerInvokeMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
-        layerInvokeMessage.setSessionBean(ServiceSession.getCurrentIdentity().getBody());
-        layerInvokeMessage.setParameters(parameters);
-        layerInvokeMessage.setPath(path);
+            if (distributedLayerRegistry.getProtocol().equals(DistributedLayerRegistry.Protocol.HCM)) {
+                ServiceEndPoint serviceEndPoint = getServiceRegistry().getService(distributedLayerRegistry.getServiceEndPoint());
 
-        UUID serviceEndPointId = distributedLayer.getServiceToInvoke();
-        if(serviceEndPointId != null) {
-                result = (O) invokeNetworkComponent(endPoints.get(serviceEndPointId), layerInvokeMessage);
+                LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage(UUID.randomUUID());
+                layerInvokeMessage.setMethodName(method.getName());
+                layerInvokeMessage.setParameterTypes(method.getParameterTypes());
+                layerInvokeMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
+                layerInvokeMessage.setSessionBean(ServiceSession.getCurrentIdentity().getBody());
+                layerInvokeMessage.setParameters(parameters);
+                layerInvokeMessage.setClassName(className);
+                layerInvokeMessage.setLayerName(layerName);
+                layerInvokeMessage.setPath(new Object[]{Layer.class.getName(), className, layerName});
+
+                result = (O) invokeNetworkComponent(serviceEndPoint, layerInvokeMessage);
+            } else if (distributedLayerRegistry.getProtocol().equals(DistributedLayerRegistry.Protocol.HTTP)) {
+                // Implements http invoke
+                result = null;
+            } else {
+                throw new HCJFRuntimeException("Unsupported protocol exception");
+            }
         } else {
-            throw new HCJFRuntimeException("Route not found to the layer: " + distributedLayer.getLayerInterface().getName() + "@" + distributedLayer.getLayerName());
+            DistributedLayer distributedLayer = getDistributedLayer(false, Layer.class.getName(), className, layerName);
+
+            LayerInvokeMessage layerInvokeMessage = new LayerInvokeMessage(UUID.randomUUID());
+            layerInvokeMessage.setMethodName(method.getName());
+            layerInvokeMessage.setParameterTypes(method.getParameterTypes());
+            layerInvokeMessage.setSessionId(ServiceSession.getCurrentIdentity().getId());
+            layerInvokeMessage.setSessionBean(ServiceSession.getCurrentIdentity().getBody());
+            layerInvokeMessage.setParameters(parameters);
+            layerInvokeMessage.setPath(new Object[]{Layer.class.getName(), className, layerName});
+
+            UUID serviceEndPointId = distributedLayer.getServiceToInvoke();
+            if (serviceEndPointId != null) {
+                result = (O) invokeNetworkComponent(endPoints.get(serviceEndPointId), layerInvokeMessage);
+            } else {
+                throw new HCJFRuntimeException("Route not found to the layer: " + distributedLayer.getLayerInterface().getName() + "@" + distributedLayer.getLayerName());
+            }
         }
 
         return result;
     }
 
     /**
-     * This method is called when a layer invoke message incoming.
-     * @param sessionId Is of the session that invoke the remote layer.
+     * When the server receives a message to invoke a layer implemented in this service then, this method is called
+     * to invoke a specific method of the specific layer implementation.
+     * @param className Name of the class of the layer implementation.
+     * @param layerName Name of the layer implementation.
+     * @param methodName Name of the method to invoke.
+     * @param parameterTypes Array with all the types and order of the method's signature to invoke.
+     * @param parameters Instance of the parameters, in the same order as the array of types.
+     * @param sessionId Session id.
+     * @param sessionObject Session object
+     * @return Result of the invocation.
+     */
+    private Object distributedLayerInvoke(String className, String layerName, String methodName,
+                                          Class[] parameterTypes, Object[] parameters, UUID sessionId, Map<String,Object> sessionObject) {
+        Object result;
+        DistributedLayerRegistry distributedLayerRegistry = getServiceRegistry().getDistributedLayer(
+                DistributedLayerRegistry.createDistributedLayerId(className, layerName));
+        try {
+            Class<? extends LayerInterface> layerInterfaceClass = (Class<? extends LayerInterface>) Class.forName(className);
+            Map<String, DistributedLayerInvoker> invokers =
+                    Introspection.getInvokers(layerInterfaceClass, new DistributedLayerInvokerFilter(methodName, parameterTypes));
+            if(invokers.size() == 1) {
+                LayerInterface layer = Layers.get(layerInterfaceClass, layerName);
+                ServiceSession newIdentity;
+                if(sessionObject != null && !sessionObject.isEmpty()) {
+                    newIdentity = ServiceSession.findSession(sessionObject);
+                } else {
+                    newIdentity = ServiceSession.findSession(sessionId);
+                }
+                result = ServiceSession.callAs(() -> invokers.values().iterator().next().invoke(layer, parameters), newIdentity);
+            } else  {
+                throw new HCJFRuntimeException("Method not found (%s::%s::%s::[%s])", className, layerName, methodName, parameterTypes);
+            }
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("Error trying to invoke layer (%s::%s::%s::[%s])", ex, className, layerName, methodName, parameterTypes);
+        }
+        return result;
+    }
+
+    /**
+     * This method is called when a layer invokes message incoming.
+     * @param sessionId Is of the session that invokes the remote layer.
      * @param sessionBean Serialized session instance.
      * @param parameterTypes Array with all the parameter types.
      * @param parameters Array with all the parameter instances.
@@ -1098,6 +1234,7 @@ public final class CloudOrchestrator extends Service<NetworkComponent> {
      * @param path Path to found the layer implementation.
      * @return Return value of the layer invoke.
      */
+    @Deprecated
     private Object distributedLayerInvoke(
             UUID sessionId, Map<String,Object> sessionBean, Class[] parameterTypes,
             Object[] parameters, String methodName, Object... path) {

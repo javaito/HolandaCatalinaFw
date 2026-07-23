@@ -2,6 +2,7 @@ package org.hcjf.cloud.impl.messages;
 
 import org.hcjf.io.net.messages.MessageCollection;
 
+import java.util.List;
 import java.util.UUID;
 
 public class ServiceDefinitionMessage extends MessageCollection {
@@ -10,6 +11,7 @@ public class ServiceDefinitionMessage extends MessageCollection {
     private String serviceName;
     private Boolean broadcasting;
     private Boolean eventListener;
+    private List<String> distributedEventListenerFilter;
 
     public UUID getServiceId() {
         return serviceId;
@@ -41,5 +43,13 @@ public class ServiceDefinitionMessage extends MessageCollection {
 
     public void setEventListener(Boolean eventListener) {
         this.eventListener = eventListener;
+    }
+
+    public List<String> getDistributedEventListenerFilter() {
+        return distributedEventListenerFilter;
+    }
+
+    public void setDistributedEventListenerFilter(List<String> distributedEventListenerFilter) {
+        this.distributedEventListenerFilter = distributedEventListenerFilter;
     }
 }

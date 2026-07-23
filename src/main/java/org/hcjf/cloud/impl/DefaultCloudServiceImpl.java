@@ -34,7 +34,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     /**
      * This method provides an implementation of distributed map. All the nodes
-     * on the cluster shares this instance.
+     * on the cluster share this instance.
      * @param mapName Name of the map.
      * @param <K> Type of the map's key.
      * @param <V> Type of the map's values.
@@ -55,7 +55,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     /**
      * This method provides an implementation of distributed queue. All the nodes
-     * on the cluster shares this instance.
+     * on the cluster share this instance.
      * @param queueName Name of the queue.
      * @param <V> Type of the queue's values.
      * @return Return the instance of the distributed queue.
@@ -75,7 +75,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     /**
      * This method provides an implementation of distributed set. All the nodes
-     * on the cloud shares this instance.
+     * in the cloud share this instance.
      * @param setName Name of the set.
      * @param <V> Type of the set's values.
      * @return Return the instance of the distributed set.
@@ -87,7 +87,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     /**
      * This method provides an implementation of distributed counter. All the nodes
-     * on the cloud shares this instance.
+     * in the cloud share this instance.
      * @param counterName Name of the counter.
      * @return Return thr instance of the counter.
      */
@@ -97,7 +97,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     }
 
     /**
-     * This method takes a resource an lock this for all the thread around the cluster
+     * This method takes a resource an lock this for all the thread around the cluster,
      * and this resource has locked for all the thread for execution.
      * This method is blocked until you can get the lock.
      * @param resourceName The name of the resource to lock.
@@ -137,7 +137,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     }
 
     /**
-     * Return the distributed lock condition over specific lock object.
+     * Return the distributed lock condition over a specific lock object.
      * @param conditionName Lock condition name.
      * @param lock Specific lock object.
      * @return Return the lock condition.
@@ -148,7 +148,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     }
 
     /**
-     * Creates a instance of cache into the cloud using the specific strategy to
+     * Creates an instance of cache into the cloud using the specific strategy to
      * specify the behavior of the cache instance.
      * @param cacheName Name of the cache instance.
      * @param strategies Set with the strategies for the cache instance.
@@ -160,7 +160,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
 
     /**
      * Return the instance of cache named with specific name.
-     * @param cacheName Name of the instance of cache.
+     * @param cacheName Name of the cache instance.
      * @return Instance of cache.
      */
     @Override
@@ -184,7 +184,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
      */
     @Override
     public void publishDistributedLayer(Class<? extends LayerInterface> layerClass, String implName, String regex) {
-        CloudOrchestrator.getInstance().publishDistributedLayer(regex, Layer.class.getName(), layerClass.getName(), implName);
+        CloudOrchestrator.getInstance().publishDistributedLayer(layerClass.getName(), implName, regex);
     }
 
     /**
@@ -195,22 +195,22 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
      */
     @Override
     public boolean isLayerPublished(Class<? extends LayerInterface> layerClass, String implName) {
-        return CloudOrchestrator.getInstance().isDistributedLayerPublished(Layer.class.getName(), layerClass.getName(), implName);
+        return CloudOrchestrator.getInstance().isDistributedLayerPublished(layerClass.getName(), implName);
     }
 
     /**
-     * Returns the object that represent the distributed layer.
+     * Returns the object that represents the distributed layer.
      * @param layerClass Layer class.
      * @param implName Layer implementation name.
      * @return Regex if exist or null.
      */
     @Override
     public String getRegexFromDistributedLayer(Class<? extends LayerInterface> layerClass, String implName) {
-        return CloudOrchestrator.getInstance().getRegexFromDistributedLayer(Layer.class.getName(), layerClass.getName(), implName);
+        return CloudOrchestrator.getInstance().getRegexFromDistributedLayer(layerClass.getName(), implName);
     }
 
     /**
-     * This method send the plugin for all the nodes into the cloud.
+     * This method sends the plugin for all the nodes into the cloud.
      * @param jarFile Byte array that represents the jar file.
      */
     @Override
@@ -229,7 +229,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
      */
     @Override
     public <O> O layerInvoke(Class<? extends LayerInterface> layerClass, String implName, Method method, Object... parameters) {
-        return CloudOrchestrator.getInstance().layerInvoke(parameters, method, Layer.class.getName(), layerClass.getName(), implName);
+        return CloudOrchestrator.getInstance().layerInvoke(layerClass.getName(), implName, method, parameters);
     }
 
     /**
@@ -241,7 +241,7 @@ public class DefaultCloudServiceImpl implements CloudServiceImpl {
     }
 
     /**
-     * This method start a worker over the cloud implementation to make a task and finish.
+     * This method starts a worker over the cloud implementation to make a task and finish.
      * @param workerConfig Map with all the parameters to configure a worker instance.
      */
     @Override

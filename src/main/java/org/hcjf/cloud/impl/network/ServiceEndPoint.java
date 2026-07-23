@@ -1,5 +1,7 @@
 package org.hcjf.cloud.impl.network;
 
+import java.util.List;
+
 /**
  * @author javaito
  */
@@ -10,6 +12,7 @@ public class ServiceEndPoint extends NetworkComponent {
     private String gatewayId;
     private Long lastServicePublication;
     private boolean distributedEventListener;
+    private List<String> distributedEventListenerFilter;
 
     public String getGatewayAddress() {
         return gatewayAddress;
@@ -52,5 +55,13 @@ public class ServiceEndPoint extends NetworkComponent {
 
     public void setDistributedEventListener(Boolean distributedEventListener) {
         this.distributedEventListener = distributedEventListener;
+    }
+
+    public List<String> getDistributedEventListenerFilter() {
+        return distributedEventListenerFilter;
+    }
+
+    public void setDistributedEventListenerFilter(List<String> distributedEventListenerFilter) {
+        this.distributedEventListenerFilter = distributedEventListenerFilter;
     }
 }
