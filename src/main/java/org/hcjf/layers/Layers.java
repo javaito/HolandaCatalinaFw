@@ -61,8 +61,10 @@ public final class Layers {
         Layers.publishLayer(SystemResourceReadableImplementation.class);
 
         //Publish a code evaluator implementations
-        Layers.publishLayer(JavaCodeEvaluator.class);
-        Layers.publishLayer(JsCodeEvaluator.class);
+        if (SystemProperties.getBoolean(SystemProperties.Layer.PUBLISH_EVALUATOR_IMPLEMENTATIONS, true)) {
+            Layers.publishLayer(JavaCodeEvaluator.class);
+            Layers.publishLayer(JsCodeEvaluator.class);
+        }
     }
 
     private final Map<Class<? extends Layer>, Object> initialInstances;
@@ -187,7 +189,7 @@ public final class Layers {
      * @param <L> Expected interface.
      * @return Interface implementation.
      * @throws IllegalArgumentException If can't create the instance or the implementation
-     * doesn't exist.
+     * does't exist.
      */
     public static <L extends LayerInterface> L get(Class<? extends L> layerClass, String implName) {
         L result = null;
@@ -233,7 +235,7 @@ public final class Layers {
         }
 
         //If not exists some implementation or plugin then going to check the distributed layers,
-        //if this kind of layers is available.
+        //if this kind of layers are available.
         if(result == null) {
             if (SystemProperties.getBoolean(SystemProperties.Layer.DISTRIBUTED_LAYER_ENABLED) &&
                     Cloud.isLayerPublished(layerClass, implName)) {
@@ -275,7 +277,7 @@ public final class Layers {
 
     /**
      * This method returns all the implementation of the specified layer class as parameter
-     * that matches with the specified matcher as parameter.
+     * that match with the specified matcher as parameter.
      * @param layerClass King of layer founding.
      * @param matcher Matcher instance.
      * @param <L> Expected layer interface type.
@@ -287,12 +289,12 @@ public final class Layers {
 
     /**
      * This method returns the first implementation of the specified layer class as parameter
-     * that matches with the specified matcher as parameter.
+     * that match with the specified matcher as parameter.
      * @param layerClass Kind of layer founding.
      * @param matcher Matcher instance.
      * @param <L> Expected layer implementation type.
-     * @return First implementation that matches.
-     * @throws IllegalArgumentException if any, implementation of this kind of layer match.
+     * @return First implementation that match.
+     * @throws IllegalArgumentException if any implementation of this kind of layer match.
      */
     public static <L extends LayerInterface> L get(Class<? extends L> layerClass, LayerMatcher<L> matcher) {
         Set<L> result = match(layerClass, matcher, true);
@@ -367,7 +369,7 @@ public final class Layers {
     }
 
     /**
-     * This method publishes the layers to be used by anyone
+     * This method publish the layers in order to be used by anyone
      * that has the credentials to use the layer.
      * @param layerInstance Layer instance.
      * @param <L> Expected layer type.
@@ -393,12 +395,12 @@ public final class Layers {
                 instance.implAlias.put(layerInterfaceClass, new HashMap<>());
             }
 
-            //Check if the impl name exists into the implementations.
+            //Check if the impl name exist into the implementations.
             if (instance.layerImplementations.get(layerInterfaceClass).containsKey(implName)) {
                 checkOverwriteAlias(layerInterfaceClass, layerInstance, implName);
             }
 
-            //Check if some alias exists into the map of aliases for the specific interface.
+            //Check if the some alias exist into the map of aliases for the specific interface.
             if (layerInstance.getAliases() != null) {
                 for (String alias : layerInstance.getAliases()) {
                     checkOverwriteAlias(layerInterfaceClass, layerInstance, alias);
@@ -476,7 +478,7 @@ public final class Layers {
     }
 
     /**
-     * This method publishes the layers to be used by anyone
+     * This method publish the layers in order to be used by anyone
      * that has the credentials to use the layer.
      * @param layerClass Layer class.
      * @return Implementation name.
@@ -518,7 +520,7 @@ public final class Layers {
     }
 
     /**
-     * This method publishes all the layer into the plugin jar.
+     * This method publish all the layer into the plugin jar.
      * @param jarBuffer Plugin jar.
      * @return Plugin instance.
      */
