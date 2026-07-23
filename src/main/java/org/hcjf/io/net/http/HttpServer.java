@@ -1,5 +1,6 @@
 package org.hcjf.io.net.http;
 
+import org.hcjf.errors.HCJFRuntimeException;
 import org.hcjf.io.net.NetPackage;
 import org.hcjf.io.net.NetServer;
 import org.hcjf.io.net.NetService;
@@ -224,15 +225,20 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 }
             }
         } else {
-            request = requestBuffers.get(netPackage.getSession());
-            if (request == null) {
-                synchronized (requestBuffers) {
-                    request = new HttpRequest();
-                    request.setProtocol(httpProtocol);
-                    requestBuffers.put(netPackage.getSession(), request);
+            try {
+                request = requestBuffers.get(netPackage.getSession());
+                if (request == null) {
+                    synchronized (requestBuffers) {
+                        request = new HttpRequest();
+                        request.setProtocol(httpProtocol);
+                        requestBuffers.put(netPackage.getSession(), request);
+                    }
                 }
+                request.addData(netPackage.getPayload());
+            } catch (Throwable e) {
+                Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG), "Request instance creation fail", e);
+                throw new HCJFRuntimeException("Request instance fail");
             }
-            request.addData(netPackage.getPayload());
         }
         return request;
     }
@@ -332,19 +338,23 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
     private void handleWebSocketFrame(HttpSession session, byte[] data) {
         WebSocketContext ctx = wsContexts.get(session);
         if (ctx == null) {
+            Log.w(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                    "[WS] Frame received but session %s has no registered WS context", session.getId());
             return;
         }
         try {
             WebSocketFrame frame = WebSocketFrame.decode(data);
+            Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                    "[WS] Frame received opcode=%s session=%s", frame.getOpcode(), session.getId());
             ctx.dispatch(session, frame);
             if (frame.getOpcode() == WebSocketFrame.Opcode.CLOSE) {
-                wsContexts.remove(session);
                 sendWebSocketData(session, WebSocketFrame.encodeClose());
                 disconnect(session, "WebSocket CLOSE frame received");
+                // onDisconnect() handles wsContexts.remove() and unregisterSession()/onClose()
             }
         } catch (Exception e) {
             Log.e(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
-                    "Error processing WebSocket frame from session %s", e, session);
+                    "[WS] Error processing WebSocket frame from session %s", e, session);
         }
     }
 
@@ -386,6 +396,8 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                         throw new IllegalArgumentException("Unsupported upgrade connection " + upgrade.getHeaderValue());
                     }
                 } else if (upgrade != null && upgrade.getHeaderValue().trim().equalsIgnoreCase("websocket")) {
+                    Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                            "[WS] Upgrade http session to websocket context: %s", request.getContext());
                     ContextMatcher contextMatcher = findContext(request.getContext());
                     if (contextMatcher != null && contextMatcher.getContext() instanceof WebSocketContext) {
                         WebSocketContext wsCtx = (WebSocketContext) contextMatcher.getContext();
@@ -400,11 +412,17 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                             connectionKeepAlive = true;
                             wsContexts.put(session, wsCtx);
                             wsCtx.registerSession(session, this);
+                            Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                                    "[WS] Handshake completed, sending 101 for session %s", session.getId());
                         } else {
+                            Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                                    "[WS] Sec-WebSocket-Key missing, responding 400");
                             response = new HttpResponse();
                             response.setResponseCode(HttpResponseCode.BAD_REQUEST);
                         }
                     } else {
+                        Log.d(SystemProperties.get(SystemProperties.Net.Http.LOG_TAG),
+                                "[WS] WebSocket context not found for: %s", request.getContext());
                         response = onContextNotFound(request);
                     }
                 } else {
@@ -540,6 +558,11 @@ public class HttpServer extends NetServer<HttpSession, HttpPackage>  {
                 SystemProperties.getBoolean(SystemProperties.Net.Http.ENABLE_AUTOMATIC_RESPONSE_CONTENT_LENGTH) &&
                 !(response instanceof HttpPipelineResponse)) {
             result = true;
+
+            // RFC 7230 §3.3.2: Content-Length MUST NOT appear in 1xx responses
+            if (response.getResponseCode() != null && response.getResponseCode() >= 100 && response.getResponseCode() < 200) {
+                result = false;
+            }
 
             //Verify if exist some response code to change the response value
             try {
