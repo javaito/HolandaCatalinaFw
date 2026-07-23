@@ -55,6 +55,7 @@ public final class SystemProperties extends Properties {
         public static final String PLUGIN_THREADING_GRANT = "hcjf.layers.plugin.threading.grant";
         public static final String PLUGIN_FILE_ACCESS_GRANT = "hcjf.layers.plugin.file.access.grant";
         public static final String DISTRIBUTED_LAYER_ENABLED = "hcjf.layers.distributed.layer.enabled";
+        public static final String PUBLISH_EVALUATOR_IMPLEMENTATIONS = "hcjf.layers.publish.evaluator.implementations";
     }
 
     public static final class Service {
@@ -595,6 +596,7 @@ public final class SystemProperties extends Properties {
         defaults.put(Layer.READABLE_ALL_LAYER_IMPLEMENTATION_NAME, "system_layer");
         defaults.put(Layer.READABLE_LAYER_IMPLEMENTATION_NAME, "system_readable_layer");
         defaults.put(Layer.DISTRIBUTED_LAYER_ENABLED, "false");
+        defaults.put(Layer.PUBLISH_EVALUATOR_IMPLEMENTATIONS, "true");
 
         defaults.put(Service.STATIC_THREAD_NAME, "StaticServiceThread");
         defaults.put(Service.STATIC_THREAD_POOL_CORE_SIZE, "2");

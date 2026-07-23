@@ -61,8 +61,10 @@ public final class Layers {
         Layers.publishLayer(SystemResourceReadableImplementation.class);
 
         //Publish a code evaluator implementations
-        Layers.publishLayer(JavaCodeEvaluator.class);
-        Layers.publishLayer(JsCodeEvaluator.class);
+        if (SystemProperties.getBoolean(SystemProperties.Layer.PUBLISH_EVALUATOR_IMPLEMENTATIONS, true)) {
+            Layers.publishLayer(JavaCodeEvaluator.class);
+            Layers.publishLayer(JsCodeEvaluator.class);
+        }
     }
 
     private final Map<Class<? extends Layer>, Object> initialInstances;
