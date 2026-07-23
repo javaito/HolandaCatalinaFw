@@ -9,14 +9,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
 /**
- * Codec de frames WebSocket según RFC 6455.
+ * WebSocket frame codec according to RFC 6455.
  *
- * Formato de frame (simplificado):
+ * Frame format (simplified):
  *   Byte 0: FIN(1) | RSV(3) | Opcode(4)
  *   Byte 1: MASK(1) | PayloadLen(7)
- *   [2 bytes si len=126] [8 bytes si len=127]
- *   [4 bytes máscara si MASK=1]
- *   Payload (desenmascarado si es cliente→servidor)
+ *   [2 bytes if len=126] [8 bytes if len=127]
+ *   [4 bytes mask if MASK=1]
+ *   Payload (unmasked if client→server)
  *
  * @author javaito
  */
@@ -25,7 +25,7 @@ public final class WebSocketFrame {
     private static final String WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
     /**
-     * Opcodes definidos por RFC 6455.
+     * Opcodes defined by RFC 6455.
      */
     public enum Opcode {
         CONTINUATION(0x0),
@@ -65,17 +65,17 @@ public final class WebSocketFrame {
         this.payload = payload;
     }
 
-    // ── Decodificación ────────────────────────────────────────────────────
+    // ── Decoding ────────────────────────────────────────────────────────────
 
     /**
-     * Decodifica un frame recibido del cliente.
-     * Los frames cliente→servidor siempre vienen enmascarados (RFC 6455 §5.3).
-     * @param data Bytes crudos del frame.
-     * @return Frame decodificado.
+     * Decodes a frame received from the client.
+     * Client→server frames are always masked (RFC 6455 §5.3).
+     * @param data Raw frame bytes.
+     * @return Decoded frame.
      */
     public static WebSocketFrame decode(byte[] data) {
         if (data == null || data.length < 2) {
-            throw new IllegalArgumentException("WebSocket frame demasiado corto");
+            throw new IllegalArgumentException("WebSocket frame too short");
         }
 
         boolean fin    = (data[0] & 0x80) != 0;
@@ -112,38 +112,38 @@ public final class WebSocketFrame {
         return new WebSocketFrame(fin, Opcode.fromCode(opcodeCode), payload);
     }
 
-    // ── Encoding estático (servidor→cliente, sin máscara) ─────────────────
+    // ── Static encoding (server→client, unmasked) ────────────────────────────
 
     /**
-     * Codifica un mensaje de texto como frame WebSocket TEXT.
-     * @param message Texto a enviar.
-     * @return Bytes del frame codificado.
+     * Encodes a text message as a WebSocket TEXT frame.
+     * @param message Text to send.
+     * @return Encoded frame bytes.
      */
     public static byte[] encodeText(String message) {
         return encode(Opcode.TEXT, message.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
-     * Codifica datos binarios como frame WebSocket BINARY.
-     * @param data Datos a enviar.
-     * @return Bytes del frame codificado.
+     * Encodes binary data as a WebSocket BINARY frame.
+     * @param data Data to send.
+     * @return Encoded frame bytes.
      */
     public static byte[] encodeBinary(byte[] data) {
         return encode(Opcode.BINARY, data);
     }
 
     /**
-     * Codifica un frame PONG con el payload del PING correspondiente.
-     * @param payload Payload del PING recibido.
-     * @return Bytes del frame PONG.
+     * Encodes a PONG frame with the payload of the corresponding PING.
+     * @param payload Payload of the received PING.
+     * @return PONG frame bytes.
      */
     public static byte[] encodePong(byte[] payload) {
         return encode(Opcode.PONG, payload);
     }
 
     /**
-     * Codifica un frame CLOSE para cerrar la conexión normalmente.
-     * @return Bytes del frame CLOSE.
+     * Encodes a CLOSE frame to close the connection normally.
+     * @return CLOSE frame bytes.
      */
     public static byte[] encodeClose() {
         return encode(Opcode.CLOSE, new byte[0]);
@@ -168,17 +168,17 @@ public final class WebSocketFrame {
             out.write(payload);
             return out.toByteArray();
         } catch (IOException e) {
-            throw new RuntimeException("Error codificando frame WebSocket", e);
+            throw new RuntimeException("Error encoding WebSocket frame", e);
         }
     }
 
     // ── Handshake ─────────────────────────────────────────────────────────
 
     /**
-     * Calcula el valor de Sec-WebSocket-Accept a partir del Sec-WebSocket-Key del cliente.
-     * SHA-1(key + GUID) codificado en Base64.
-     * @param clientKey Valor del header Sec-WebSocket-Key.
-     * @return Valor para el header Sec-WebSocket-Accept.
+     * Computes the Sec-WebSocket-Accept value from the client's Sec-WebSocket-Key.
+     * SHA-1(key + GUID) encoded in Base64.
+     * @param clientKey Value of the Sec-WebSocket-Key header.
+     * @return Value for the Sec-WebSocket-Accept header.
      */
     public static String computeAcceptKey(String clientKey) {
         try {
@@ -187,19 +187,19 @@ public final class WebSocketFrame {
             byte[] hash = sha1.digest(raw.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-1 no disponible", e);
+            throw new RuntimeException("SHA-1 not available", e);
         }
     }
 
-    // ── Accesores ─────────────────────────────────────────────────────────
+    // ── Accessors ─────────────────────────────────────────────────────────
 
     public Opcode getOpcode()  { return opcode; }
     public byte[] getPayload() { return payload; }
     public boolean isFin()     { return fin; }
 
     /**
-     * Retorna el payload decodificado como texto UTF-8.
-     * Solo válido para frames TEXT.
+     * Returns the decoded payload as UTF-8 text.
+     * Only valid for TEXT frames.
      */
     public String getText() {
         return new String(payload, StandardCharsets.UTF_8);

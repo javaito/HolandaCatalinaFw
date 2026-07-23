@@ -14,13 +14,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Clase base para implementar endpoints WebSocket integrados al pipeline de HttpServer.
+ * Base class for implementing WebSocket endpoints integrated into the HttpServer pipeline.
  *
- * Al agregar un WebSocketContext al HttpServer mediante addContext(), el servidor
- * detecta automáticamente los requests de upgrade (Upgrade: websocket), realiza
- * el handshake RFC 6455 y comienza a enrutar frames al contexto correspondiente.
+ * When a WebSocketContext is added to the HttpServer via addContext(), the server
+ * automatically detects upgrade requests (Upgrade: websocket), performs the
+ * RFC 6455 handshake and starts routing frames to the corresponding context.
  *
- * Uso típico:
+ * Typical usage:
  * <pre>
  *   HttpServer server = new HttpServer(8080);
  *   server.addContext(new WebSocketContext("/ws/events") {
@@ -39,16 +39,16 @@ public abstract class WebSocketContext extends Context {
     private final Map<UUID, HttpSession> sessions = new ConcurrentHashMap<>();
 
     /**
-     * @param contextRegex Regex del path que atiende este contexto (e.g. "/ws/events").
+     * @param contextRegex Regex of the path served by this context (e.g. "/ws/events").
      */
     public WebSocketContext(String contextRegex) {
         super(contextRegex);
     }
 
     /**
-     * Este método no debería ser invocado directamente para conexiones WebSocket.
-     * HttpServer intercepta el upgrade antes de llegar aquí.
-     * Si el cliente accede al path sin header de upgrade, retorna 400.
+     * This method should not be invoked directly for WebSocket connections.
+     * HttpServer intercepts the upgrade before reaching here.
+     * If the client accesses the path without an upgrade header, returns 400.
      */
     @Override
     public final HttpResponse onContext(HttpRequest request) {
@@ -57,12 +57,12 @@ public abstract class WebSocketContext extends Context {
         return response;
     }
 
-    // ── Ciclo de vida interno (llamado por HttpServer) ────────────────────
+    // ── Internal lifecycle (called by HttpServer) ────────────────────────
 
     /**
-     * Registra la sesión como activa y notifica onOpen.
-     * @param session Sesión HTTP que completó el handshake WS.
-     * @param server  Referencia al server para poder enviar frames.
+     * Registers the session as active and notifies onOpen.
+     * @param session HTTP session that completed the WS handshake.
+     * @param server  Reference to the server to be able to send frames.
      */
     public final void registerSession(HttpSession session, HttpServer server) {
         this.server = server;
@@ -71,8 +71,8 @@ public abstract class WebSocketContext extends Context {
     }
 
     /**
-     * Elimina la sesión y notifica onClose.
-     * @param session Sesión que se desconectó.
+     * Removes the session and notifies onClose.
+     * @param session Session that disconnected.
      */
     public final void unregisterSession(HttpSession session) {
         if (sessions.remove(session.getId()) != null) {
@@ -81,10 +81,10 @@ public abstract class WebSocketContext extends Context {
     }
 
     /**
-     * Despacha un frame recibido al hook correspondiente.
-     * Los frames PING son respondidos automáticamente con PONG.
-     * @param session Sesión origen del frame.
-     * @param frame   Frame decodificado.
+     * Dispatches a received frame to the corresponding hook.
+     * PING frames are automatically answered with PONG.
+     * @param session Source session of the frame.
+     * @param frame   Decoded frame.
      */
     public final void dispatch(HttpSession session, WebSocketFrame frame) {
         switch (frame.getOpcode()) {
@@ -98,36 +98,36 @@ public abstract class WebSocketContext extends Context {
                 server.sendWebSocketData(session, WebSocketFrame.encodePong(frame.getPayload()));
                 break;
             case CLOSE:
-                // El cierre del canal lo maneja HttpServer; aquí solo notificamos
+                // The channel close is handled by HttpServer; here we only notify
                 break;
             default:
                 break;
         }
     }
 
-    // ── API para subclases ────────────────────────────────────────────────
+    // ── API for subclasses ────────────────────────────────────────────────
 
     /**
-     * Envía un mensaje de texto a una sesión específica.
-     * @param session Sesión destino.
-     * @param message Texto a enviar.
+     * Sends a text message to a specific session.
+     * @param session Target session.
+     * @param message Text to send.
      */
     protected final void sendText(HttpSession session, String message) {
         server.sendWebSocketData(session, WebSocketFrame.encodeText(message));
     }
 
     /**
-     * Envía datos binarios a una sesión específica.
-     * @param session Sesión destino.
-     * @param data    Datos a enviar.
+     * Sends binary data to a specific session.
+     * @param session Target session.
+     * @param data    Data to send.
      */
     protected final void sendBinary(HttpSession session, byte[] data) {
         server.sendWebSocketData(session, WebSocketFrame.encodeBinary(data));
     }
 
     /**
-     * Envía un mensaje de texto a todas las sesiones activas en este contexto.
-     * @param message Texto a broadcast.
+     * Sends a text message to all active sessions in this context.
+     * @param message Text to broadcast.
      */
     protected final void broadcast(String message) {
         byte[] frame = WebSocketFrame.encodeText(message);
@@ -137,47 +137,47 @@ public abstract class WebSocketContext extends Context {
     }
 
     /**
-     * Retorna una vista no modificable de las sesiones activas.
-     * @return Sesiones activas.
+     * Returns an unmodifiable view of the active sessions.
+     * @return Active sessions.
      */
     public Collection<HttpSession> getSessions() {
         return Collections.unmodifiableCollection(sessions.values());
     }
 
     /**
-     * Retorna el número de sesiones activas.
-     * @return Cantidad de sesiones.
+     * Returns the number of active sessions.
+     * @return Session count.
      */
     public int getSessionCount() {
         return sessions.size();
     }
 
-    // ── Hooks abstractos ─────────────────────────────────────────────────
+    // ── Abstract hooks ────────────────────────────────────────────────────
 
     /**
-     * Llamado cuando un cliente completa el handshake WebSocket.
-     * @param session Sesión del nuevo cliente.
+     * Called when a client completes the WebSocket handshake.
+     * @param session Session of the new client.
      */
     public abstract void onOpen(HttpSession session);
 
     /**
-     * Llamado cuando se recibe un frame TEXT del cliente.
-     * @param session Sesión origen.
-     * @param message Texto recibido.
+     * Called when a TEXT frame is received from the client.
+     * @param session Source session.
+     * @param message Received text.
      */
     public abstract void onMessage(HttpSession session, String message);
 
     /**
-     * Llamado cuando se recibe un frame BINARY del cliente.
-     * Por defecto no hace nada; sobreescribir si se necesita.
-     * @param session Sesión origen.
-     * @param data    Datos binarios recibidos.
+     * Called when a BINARY frame is received from the client.
+     * Does nothing by default; override if needed.
+     * @param session Source session.
+     * @param data    Received binary data.
      */
     public void onBinaryMessage(HttpSession session, byte[] data) {}
 
     /**
-     * Llamado cuando el cliente cierra la conexión o se desconecta abruptamente.
-     * @param session Sesión que se cerró.
+     * Called when the client closes the connection or disconnects abruptly.
+     * @param session Session that was closed.
      */
     public abstract void onClose(HttpSession session);
 }
