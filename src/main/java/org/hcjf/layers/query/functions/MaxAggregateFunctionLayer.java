@@ -59,4 +59,5 @@ public class MaxAggregateFunctionLayer extends BaseQueryAggregateFunctionLayer i
         }
         return result;
     }
+
 }
