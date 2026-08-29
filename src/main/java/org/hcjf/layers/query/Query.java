@@ -594,29 +594,52 @@ public class Query extends EvaluatorCollection implements Queryable {
 
                     Comparable<Object> comparable1;
                     Comparable<Object> comparable2;
+                    Class classValueComparable1;
+                    Class classValueComparable2;
+                    Class defaultClass = null;
+
                     for (QueryOrderParameter orderField : orderParameters) {
                         try {
                             if (orderField instanceof QueryOrderFunction) {
-                                comparable1 = consumer.resolveFunction(((QueryOrderFunction) orderField), o1, dataSource);
-                                comparable2 = consumer.resolveFunction(((QueryOrderFunction) orderField), o2, dataSource);
+                                comparable1 = consumer.resolveFunction((QueryOrderFunction) orderField, o1, dataSource);
+                                comparable2 = consumer.resolveFunction((QueryOrderFunction) orderField, o2, dataSource);
                             } else {
                                 comparable1 = consumer.get(o1, (QueryParameter) orderField, dataSource);
                                 comparable2 = consumer.get(o2, (QueryParameter) orderField, dataSource);
+                                classValueComparable1 = comparable1.getClass();
+                                classValueComparable2 = comparable2.getClass();
+
+                                if (!classValueComparable1.equals(classValueComparable2)
+                                        && !(comparable1 instanceof Number && comparable2 instanceof Number)
+                                        && !(comparable1 instanceof Collection || comparable2 instanceof Collection)) {
+                                    String queryString = "SELECT %s from %s";
+                                    Query query = Query.compile(String.format(queryString, orderField.toString(), this.getResource()));
+                                    Queryable queryable = (Queryable) query;
+                                    Collection<?> collectDatasource = dataSource.getResourceData(queryable);
+
+                                    List<Object> defaultList = collectDatasource instanceof ResultSet ?
+                                            new ArrayList<>(Arrays.asList(collectDatasource.toArray())) :
+                                            (List<Object>) collectDatasource;
+
+                                    defaultClass = findDefaultClass(defaultList, orderField.toString());
+                                    comparable1 = transformComparableValues(defaultClass, comparable1);
+                                    comparable2 = transformComparableValues(defaultClass, comparable2);
+                                }
+                            }
+
+                            if (comparable1 == null ^ comparable2 == null) {
+                                compareResult = (comparable1 == null) ? -1 : 1;
+                            } else if (comparable1 == null && comparable2 == null) {
+                                compareResult = 0;
+                            } else {
+                                compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
+                            }
+
+                            if (compareResult != 0) {
+                                break;
                             }
                         } catch (ClassCastException ex) {
                             throw new HCJFRuntimeException("Order field must be comparable");
-                        }
-
-                        if (comparable1 == null ^ comparable2 == null) {
-                            compareResult = (comparable1 == null) ? -1 : 1;
-                        } else if (comparable1 == null && comparable2 == null) {
-                            compareResult = 0;
-                        } else {
-                            compareResult = comparable1.compareTo(comparable2) * (orderField.isDesc() ? -1 : 1);
-                        }
-
-                        if (compareResult != 0) {
-                            break;
                         }
                     }
 
@@ -1514,5 +1537,59 @@ public class Query extends EvaluatorCollection implements Queryable {
     public boolean equals(Object obj) {
         return (obj instanceof Query) && obj.toString().equals(toString());
     }
+    /**
+     * This implementation receives the default class from the Datasource and casts the elements to that class.
+     */
+    public Comparable<Object> transformComparableValues(Class typeClass, Comparable<Object> comparable) {
+        Object newValue = null;
+        Comparable<Object> transformComparable;
+        try {
+            String valuesString = comparable.toString();
+            if (typeClass.equals(Integer.class)) {
+                newValue = Integer.valueOf(valuesString);
+            } else if (typeClass.equals(String.class)) {
+                newValue = valuesString;
+            } else if (typeClass.equals(Long.class)) {
+                newValue = Long.valueOf(valuesString);
+            } else if (typeClass.equals(Double.class)) {
+                newValue = Double.valueOf(valuesString);
+            } else if (typeClass.equals(Date.class)) {
+                newValue = new Date(valuesString);
+            } else if (typeClass.equals(Float.class)) {
+                newValue = Float.valueOf(valuesString);
+            }
+            transformComparable = (Comparable<Object>) newValue;
+        } catch (Exception ex) {
+            throw new HCJFRuntimeException("Incompatible data types to compare", ex.getStackTrace());
+        }
+        return transformComparable;
+    }
 
+    /**
+     * This implementation returns the default class of the entered Datasource
+     * @ DataOrigin : List of Object containing Datasource
+     * @ Value : Parameter to search.
+     * @return Returns the class that has the most occurrences in the list.
+     */
+
+    public static Class findDefaultClass (List<Object> dataOrigin, String value) {
+
+        List<Object> data = new ArrayList<>() ;
+        for (Object obj : dataOrigin){
+            Object originValue;
+            if (obj instanceof JoinableMap){
+                originValue = ((JoinableMap) obj).get(value);
+                data.add(originValue);
+            }
+        }
+
+        Map<Class<?>, Long> conteoPorTipo = data.stream()
+                .collect(Collectors.groupingBy(Object::getClass, Collectors.counting()));
+
+        Class defaultClass = conteoPorTipo.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+        return defaultClass;
+    }
 }
