@@ -442,6 +442,17 @@ public class QueryRunningTest {
     }
 
     @Test
+    public void originalReturnParameterTest() {
+        Query query = Query.compile("SELECT street, addressId FROM character WHERE addressId = (SELECT addressId FROM address where street like 'Evergreen')");
+        Collection<JoinableMap> resultSet = Query.evaluate(query);
+        for (JoinableMap result : resultSet){
+            Assert.assertTrue(result.containsKey("street"));
+            Assert.assertTrue(result.containsKey("addressId"));
+            Assert.assertEquals(result.size(), 2);
+        }
+    }
+
+    @Test
     public void aggregateFunction() {
         Query query = Query.compile("SELECT addressId, aggregateProduct(weight) as aggregateWeight FROM character group by addressId");
         Collection<JoinableMap> resultSet = Query.evaluate(query);
